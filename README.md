@@ -80,7 +80,7 @@ The API returns the a JSON object that shows packages that are available on the 
 
 
 ### [GET] /twinpack.php?controller=package-versions&repository=&name=&version=
-Use this API to get more information about a specific package by its repository and name. The additional version parameter is optional and can be used to check if a package already exists on the server. The request has to set parameters for the repository and the name of the package and responds with a list of all available versions of the requested package
+Use this API to get more information about a specific package by its repository and name. The additional version parameter is optional and can be used to check if a package already exists on the server. The response of the request looks like this
   
 ```json
 [
