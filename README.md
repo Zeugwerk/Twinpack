@@ -12,8 +12,8 @@ This is used to submit a package to the Twinpack server. The request should cont
 
 ```json
 {
-  "name": "TcUnit",
-  "description": "Fancy pancy new",
+  "name": "Struckig",
+  "description": "...",
   "authors": "",                             // optional, defaults to ""
   "entitlement": "",                         // optional, defaults to ""
 
