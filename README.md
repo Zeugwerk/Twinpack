@@ -7,7 +7,7 @@ This is the home of the Twinpack, a lightweight standalone package manager for T
 
 The API of a Twinpack Server implements the following endpoints
 
-### [POST] /twinpack.php?package
+### [POST] /twinpack.php?controller=package
 This is used to submit a package to the Twinpack server. The request should contain a JSON object, which has the following fields
 
 ```json
@@ -33,7 +33,7 @@ Note that the fields `authors`, `description` and `entitlement` are used for the
 The combination of `ZGWK-USERNAME`, `name` and `version` has to be unique as this API does not allow to overwrite an already existing package.
 
  
-### [GET] /twinpack.php?package
+### [GET] /twinpack.php?controller=package&id=package-id
 Use this endpoint to download a specific package. You can use the catalog and product-version APIs to find the package identifier. The request takes a JSON object, which contains the following fields.
 
 - *id*: Unique identifier of the package to retrieve
@@ -51,7 +51,7 @@ The API returns the a JSON object that contains the relevant information of the 
 }
 ```
 
-### [GET] /twinpack.php?catalog
+### [GET] /twinpack.php?controller=catalog
 The API returns the a JSON object that contains packages that are available on the Twinpack Server
 
 ```json
@@ -79,19 +79,8 @@ The API returns the a JSON object that contains packages that are available on t
 ```
 
 
-### [GET] /twinpack.php?package-versions
-Use this API to get more information about a specific package by its repository and name. The request should look like
-
-```json
-[
-  {
-      "repository": "bot",
-      "name": "struckig"
-  }
-]
-```
-
-and it response with a list of all available versions of the requested package
+### [GET] /twinpack.php?controller=package-versions&repository=&name=
+Use this API to get more information about a specific package by its repository and name. The request has to set parameters for the repository and the name of the package and responds with a list of all available versions of the requested package
   
 ```json
 [
