@@ -12,7 +12,7 @@ This is used to submit a package to the Twinpack server. The request should cont
 
 ```json
 {
-  "name": "Struckig",
+  "name": "struckig",
   "description": "...",
   "authors": "",                             // optional, defaults to ""
   "entitlement": "",                         // optional, defaults to ""
