@@ -13,13 +13,13 @@ This is used to submit a package to the Twinpack server. The request should cont
 ```json
 {
   "name": "struckig",
-  "description": "...",
+  "description": "...",                      // optional, defaults to ""
   "authors": "",                             // optional, defaults to ""
   "entitlement": "",                         // optional, defaults to ""
 
   "version": "1.1.1.2",
   "binary": "...",
-  "license": "MIT",
+  "license": "MIT",                          // optional, defaults to ""
   "branch": "main",                          // optional, defaults to "main"
   "released": 1,                             // optional, defaults to 1
   "notes": "Some small thing has changed",   // optional, defaults to ""
