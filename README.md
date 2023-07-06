@@ -18,10 +18,12 @@ This is used to submit a package to the Twinpack server. The request should cont
   "entitlement": "",                         // optional, defaults to ""
 
   "version": "1.1.1.2",
+  "target": "TC3.1",                         // twincat version the library is developed for, you can use TC3.1, TC3.1.4024 or TC.3.1.4024.47
   "binary": "...",
   "license": "MIT",                          // optional, defaults to ""
   "branch": "main",                          // optional, defaults to "main"
   "released": 1,                             // optional, defaults to 1
+  "compiled": 0,                             // .library or .library-compiled file? Defaults to .library
   "notes": "Some small thing has changed",   // optional, defaults to ""
   "license-binary": "...",                   // optional, defaults to ""
 }
@@ -48,6 +50,7 @@ The API returns the a JSON object that contains the relevant information of the 
     "license": "MIT",
     "license-binary": "...",
     "released": 1,
+    "compiled": 0
 }
 ```
 
@@ -61,7 +64,8 @@ The API returns the a JSON object that shows packages that are available on the 
         "repository": "<repository_name>",
         "entitlement": null,
         "description": "<short description of the package>",
-        "versions": "3",
+        "versions": 3,
+        "downloads": 5
         "created": "2023-07-04 08:41:23",
         "modified": "2023-07-04 08:44:49"
     },
@@ -70,7 +74,8 @@ The API returns the a JSON object that shows packages that are available on the 
         "repository": "<repository_name>",
         "entitlement": null,
         "description": "<short description of the package>",
-        "versions": "2",
+        "versions": 2,
+        "downloads": 10,
         "created": "2023-07-04 08:59:56",
         "modified": "2023-07-04 09:35:08"
     },
