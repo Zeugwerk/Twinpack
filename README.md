@@ -35,7 +35,7 @@ Note that the fields `authors`, `description` and `entitlement` are used for the
 The combination of `ZGWK-USERNAME`, `name` and `version` has to be unique as this API does not allow to overwrite an already existing package.
 
  
-### [GET] /twinpack.php?controller=package&id=
+### [GET] /twinpack.php?controller=package&id= or /twinpack.php?controller=package&repository=&name=&branch=&tcversion=&version=
 Use this endpoint to download a specific package. You can use the catalog and product-version APIs to find the package identifier. The request takes a JSON object, which contains the following fields.
 
 - *id*: Unique identifier of the package to retrieve
