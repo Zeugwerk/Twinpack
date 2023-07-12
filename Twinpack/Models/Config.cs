@@ -23,6 +23,9 @@ namespace Twinpack.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public String WorkingDirectory { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public String FilePath { get; set; }
+
         [JsonPropertyName("fileversion")]
         public int Fileversion { get; set; }
 
@@ -114,7 +117,8 @@ namespace Twinpack.Models
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public PlcProjectType PlcType {
-            get {
+            get
+            {
                 if (Type != null)
                 {
                     switch (Type.ToLower())
@@ -129,7 +133,7 @@ namespace Twinpack.Models
                 }
 
                 return PlcProjectType.FrameworkLibrary;
-            };
+            }
         }
         
         [JsonPropertyName("version")]
@@ -269,7 +273,7 @@ namespace Twinpack.Models
                     return this["zeugwerk"];
 
                 var Zeugwerk = new ConfigFramework();
-                Zeugwerk.Repositories = new List<String> { Config.DefaultRepository };
+                Zeugwerk.Repositories = new List<String> { ConfigFactory.DefaultRepository };
 
                 return null;
             }
