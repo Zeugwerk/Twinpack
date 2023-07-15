@@ -14,7 +14,7 @@ Whether you are a seasoned TwinCAT developer or just getting started, Twinpack e
 
 ## Concept
 
-The TwinCAT Library Package Manager is designed to facilitate the sharing of TwinCAT libraries within the community. It provides a centralized repository of libraries contributed by the community, allowing you to enhance your projects with pre-built functionality and accelerate development and to share your libraries with thecommunity. Keep track of library versions and easily switch between different versions within your projects. Twinpack ensures that you have full control over the libraries you use, allowing you to maintain compatibility and stability as your projects evolve.
+Twinpack is designed to facilitate the sharing of TwinCAT libraries within the community. It provides a centralized repository of libraries contributed by the community, allowing you to enhance your projects with pre-built functionality and accelerate development and to share your libraries with thecommunity. Keep track of library versions and easily switch between different versions within your projects. Twinpack ensures that you have full control over the libraries you use, allowing you to maintain compatibility and stability as your projects evolve.
 
 ## Installation
 
