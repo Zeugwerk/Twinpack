@@ -15,7 +15,8 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Xml.Linq;
 using TCatSysManagerLib;
-using Twinpack;
+using Twinpack.Models;
+using Twinpack.Exceptions;
 
 namespace Twinpack
 {
@@ -161,18 +162,18 @@ namespace Twinpack
             return true;
         }
 
-        static public void Pull(string username, string password, string configuration, string branch, string target)
+        static public async Task PullAsync(string username, string password, string configuration, string branch, string target)
         {
             var filePath = $@".Zeugwerk\libraries\{target}";
             Directory.CreateDirectory(filePath);
-            var config = Models.ConfigFactory.Load();
+            var config = ConfigFactory.Load();
 
             _logger.Info($"Pulling packages required by {config.Solution} from Twinpack Server");
             var plcs = config.Projects.SelectMany(x => x.Plcs);
 
             foreach (var plc in plcs)
             {
-                foreach(var package in plc.Packages ?? new List<Models.ConfigPlcPackage>())
+                foreach(var package in plc.Packages ?? new List<ConfigPlcPackage>())
                 {
                     _logger.Info($"Downloading {package.Name} (version: {package.Version}, configuration: {configuration}, branch: {package.Branch}, target: {target})");
                     using (HttpClient client = new HttpClient())
@@ -188,21 +189,22 @@ namespace Twinpack
 
                         request.Headers.Add("zgwk-username", username);
                         request.Headers.Add("zgwk-password", password);
-                        var response = client.SendAsync(request).Result;
-
+                        var response = await client.SendAsync(request);
+                        var responseBody = await response.Content.ReadAsStringAsync();
+                        
                         try
                         {
-                            var responseBody = JsonSerializer.Deserialize<Models.PackageVersionGetResponse>(response.Content.ReadAsStringAsync().Result);
-                            var extension = responseBody.Compiled == 1 ? ".compiled-library" : ".library";
-                            File.WriteAllText($@"{filePath}\{responseBody.Name}_{responseBody.Version}.library", Encoding.ASCII.GetString(Convert.FromBase64String(responseBody.Binary)));
+                            var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                            var extension = packageVersion.Compiled == 1 ? ".compiled-library" : ".library";
+                            File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.library", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
                         }
                         catch(Exception)
                         {
-                            JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(response.Content.ReadAsStringAsync().Result);
+                            JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
                             JsonElement message = new JsonElement();
-                            if (responseBody.TryGetProperty("message", out message))
+                            if (responseJsonBody.TryGetProperty("message", out message))
                             {
-                                throw new PushException(message.ToString());
+                                throw new PostException(message.ToString());
                             }
                         }
                     }
@@ -210,15 +212,15 @@ namespace Twinpack
             }
         }
 
-        static public void Push(string username, string password, string configuration, string branch, string target, string notes, bool compiled)
+        static public async Task PushAsync(string username, string password, string configuration, string branch, string target, string notes, bool compiled)
         {
-            var config = Models.ConfigFactory.Load();
+            var config = ConfigFactory.Load();
 
             _logger.Info($"Pushing packages of {config.Solution} to Twinpack Server");
             var suffix = compiled ? "compiled-library" : "library";
             var plcs = config.Projects.SelectMany(x => x.Plcs)
-                                         .Where(x => x.PlcType == Models.ConfigPlcProject.PlcProjectType.FrameworkLibrary ||
-                                                x.PlcType == Models.ConfigPlcProject.PlcProjectType.Library);
+                                         .Where(x => x.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary ||
+                                                x.PlcType == ConfigPlcProject.PlcProjectType.Library);
             // check if all requested files are present
             foreach (var plc in plcs)
             {
@@ -237,7 +239,7 @@ namespace Twinpack
             {
                 string binary = Convert.ToBase64String(File.ReadAllBytes($@".Zeugwerk\libraries\{target}\{plc.Name}_{plc.Version}.{suffix}"));
                 string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
-                var requestBody = new Models.PackageVersionPostRequest()
+                var requestBody = new PackageVersionPostRequest()
                 {
                     Name = plc.Name,
                     Version = plc.Version,
@@ -268,13 +270,13 @@ namespace Twinpack
                     request.Content = new StreamContent(
                         new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-                    var response = client.SendAsync(request).Result.Content.ReadAsStringAsync().Result;
+                    var response = await client.SendAsync(request);
+                    var responseBody = await response.Content.ReadAsStringAsync();
 
-                    _logger.Debug($"Reponse: {response}");
-                    JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(response);
+                    JsonElement packageVersion = JsonSerializer.Deserialize<dynamic>(responseBody);
                     JsonElement message = new JsonElement();
-                    if(responseBody.TryGetProperty("message", out message))
-                        throw new PushException(message.ToString());
+                    if(packageVersion.TryGetProperty("message", out message))
+                        throw new PostException(message.ToString());
                 }
             }
         }
@@ -310,7 +312,7 @@ namespace Twinpack
 
                         try
                         {
-                            var pagination = JsonSerializer.Deserialize<Models.PaginationHeader>(h);
+                            var pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
                             if (pagination.Next == null)
                             {
                                 hasNextPage = false;
@@ -321,7 +323,7 @@ namespace Twinpack
                         }
                         catch(Exception)
                         {
-                            JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(response.Content.ReadAsStringAsync().Result);
+                            JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(data);
                             JsonElement message = new JsonElement();
                             if (responseBody.TryGetProperty("message", out message))
                             {
@@ -335,48 +337,159 @@ namespace Twinpack
             return results;
         }
 
-        static public async Task<IEnumerable<Models.CatalogItemGetResponse>> CatalogAsync(string username, string password, string search, int page=1, int perPage=5)
+        static public async Task<IEnumerable<CatalogItemGetResponse>> GetCatalogAsync(string username, string password, string search, int page=1, int perPage=5)
         {
             _logger.Info($"Retrieving package catalog of Twinpack Server");
-            return await QueryWithPagination<Models.CatalogItemGetResponse>(username, password,
+            return await QueryWithPagination<CatalogItemGetResponse>(username, password,
                                                 $"twinpack.php?controller=catalog" +
                                                 $"&search={search}", page, perPage);
         }
 
-        static public async Task<IEnumerable<Models.PackageVersionsItemGetResponse>> PackageVersionsAsync(string username, string password, int packageId, int page=1, int perPage=5)
+        static public async Task<IEnumerable<PackageVersionsItemGetResponse>> GetPackageVersionsAsync(string username, string password, int packageId, int page=1, int perPage=5)
         {
             _logger.Info($"Retrieving package catalog of Twinpack Server");
-            return await QueryWithPagination<Models.PackageVersionsItemGetResponse>(username, password,
+            return await QueryWithPagination<PackageVersionsItemGetResponse>(username, password,
                                             $"twinpack.php?controller=package-versions" +
                                             $"&id={packageId}", page, perPage);
         }
         
-        static public async Task<IEnumerable<Models.PackageVersionsItemGetResponse>> PackageVersionsAsync(string username, string password, string repository, string name, int page=1, int perPage=5)
+        static public async Task<IEnumerable<PackageVersionsItemGetResponse>> GetPackageVersionsAsync(string username, string password, string repository, string name, int page=1, int perPage=5)
         {
             _logger.Info($"Retrieving package catalog of Twinpack Server");
-            return await QueryWithPagination<Models.PackageVersionsItemGetResponse>(username, password,
+            return await QueryWithPagination<PackageVersionsItemGetResponse>(username, password,
                                             $"twinpack.php?controller=package-versions" +
                                                         $"&repository={HttpUtility.UrlEncode(repository)}" +
                                                         $"&name={HttpUtility.UrlEncode(name)}", page, perPage);
         }
 
-        static public async Task<Models.PackageVersionGetResponse> PackageVersionAsync(string username, string password, int packageVersionId)
+        static public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string username, string password, int packageVersionId)
         {
-            _logger.Info($"Retrieving package catalog of Twinpack Server");
-            var result = await QueryWithPagination<Models.PackageVersionGetResponse>(username, password,
-                                            $"twinpack.php?controller=package-version" +
-                                            $"&id={packageVersionId}", 1, 1);
-            return result.FirstOrDefault();
+            _logger.Info($"Retrieving package version from Twinpack Server");
+            using (HttpClient client = new HttpClient())
+            {
+                var request = CreateHttpRequest(new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version&id={packageVersionId}"), HttpMethod.Get, authorize: true);
+                request.Headers.Add("zgwk-username", username);
+                request.Headers.Add("zgwk-password", password);
+
+                var response = await client.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                }
+                catch (Exception ex)
+                {
+                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                    JsonElement message = new JsonElement();
+                    if (responseJsonBody.TryGetProperty("message", out message))
+                    {
+                        throw new GetException(message.ToString());
+                    }
+                    else
+                    {
+                        throw ex;
+                    }
+                }
+            }
         }
 
-        static public async Task<Models.PackageGetResponse> PackageAsync(string username, string password, int packageId)
+        static public async Task<PackageGetResponse> GetPackageAsync(string username, string password, int packageId)
         {
-            _logger.Info($"Retrieving package catalog of Twinpack Server");
-            var result = await QueryWithPagination<Models.PackageGetResponse>(username, password,
-                                            $"twinpack.php?controller=package-version" +
-                                            $"&id={packageId}", 1, 1);
-            return result.FirstOrDefault();
-        }        
+            _logger.Info($"Retrieving package from Twinpack Server");
+            using (HttpClient client = new HttpClient())
+            {
+                var request = CreateHttpRequest(new Uri(TwinpackUrl + $"/twinpack.php?controller=package&id={packageId}"), HttpMethod.Get, authorize: true);
+                request.Headers.Add("zgwk-username", username);
+                request.Headers.Add("zgwk-password", password);
+
+                var response = await client.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+                }
+                catch(Exception ex)
+                {
+                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                    JsonElement message = new JsonElement();
+                    if (responseJsonBody.TryGetProperty("message", out message))
+                        throw new GetException(message.ToString());
+                    else
+                        throw ex;
+                }
+            }
+        }
+
+        static public async Task<PackageVersionGetResponse> PutPackageVersionAsync(string username, string password, PackageVersionPatchRequest package)
+        {
+            var requestBodyJson = JsonSerializer.Serialize(package);
+
+            using (HttpClient client = new HttpClient())
+            {
+                var request = CreateHttpRequest(new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"), HttpMethod.Put, authorize: true);
+                request.Headers.Add("zgwk-username", username);
+                request.Headers.Add("zgwk-password", password);
+                request.Content = new StreamContent(
+                    new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
+
+                var response = await client.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                }
+                catch (Exception ex)
+                {
+                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                    JsonElement message = new JsonElement();
+                    if (responseJsonBody.TryGetProperty("message", out message))
+                        throw new PutException(message.ToString());
+                    else
+                        throw ex;
+                }
+
+
+            }
+
+            return null;
+        }
+
+
+        static public async Task<PackageGetResponse> PutPackageAsync(string username, string password, PackagePatchRequest package)
+        {        
+            var requestBodyJson = JsonSerializer.Serialize(package);
+
+            using (HttpClient client = new HttpClient())
+            {
+                var request = CreateHttpRequest(new Uri(TwinpackUrl + "/twinpack.php?controller=package"), HttpMethod.Put, authorize: true);
+                request.Headers.Add("zgwk-username", username);
+                request.Headers.Add("zgwk-password", password);
+                request.Content = new StreamContent(
+                    new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
+
+                var response = await client.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+                }
+                catch (Exception)
+                {
+                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                    JsonElement message = new JsonElement();
+                    if (responseJsonBody.TryGetProperty("message", out message))
+                        throw new PutException(message.ToString());
+                }
+            }
+
+            return null;
+        } 
+
+        
         
         static public async Task<bool> LoginAsync(string username, string password)
         {
