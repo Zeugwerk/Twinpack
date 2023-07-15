@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<Extern href="stdidcmd.h" />
+	<Extern href="vsshlids.h" />
+
+	<Include href="KnownImageIds.vsct" />
+	<Commands package="guidTwinpackPackage">
+		<Groups>
+			<Group guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectLibraries" priority="0x002">
+				<Parent guid="plcProjectCommandSet" id="plcProjectLibraries" />
+			</Group>
+			<Group guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectMenu" priority="0x002">
+				<Parent guid="plcProjectCommandSet" id="plcProjectMenu" />
+			</Group>
+		</Groups>
+
+		<Buttons>
+			<Button guid="guidTwinpackCmdSet" id="cmdidCatalog" priority="0x0100" type="Button">
+				<Parent guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectLibraries" />
+				<Icon guid="ImageCatalogGuid" id="UpdateDatabase" />
+				<CommandFlag>IconIsMoniker</CommandFlag>
+				<CommandFlag>DefaultInvisible</CommandFlag>
+				<CommandFlag>DynamicVisibility</CommandFlag>
+				<Strings>
+					<CommandName>UploadCommand</CommandName>
+					<ButtonText>Twinpack Catalog...</ButtonText>
+				</Strings>
+			</Button>
+
+			<Button guid="guidTwinpackCmdSet" id="cmdidPublish" priority="0x0101" type="Button">
+				<Parent guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectMenu" />
+				<Icon guid="ImageCatalogGuid" id="UpdateDatabase" />
+				<CommandFlag>IconIsMoniker</CommandFlag>
+				<CommandFlag>DefaultInvisible</CommandFlag>
+				<CommandFlag>DynamicVisibility</CommandFlag>
+				<Strings>
+					<CommandName>UploadCommand</CommandName>
+					<ButtonText>Publish with Twinpack...</ButtonText>
+				</Strings>
+			</Button>
+		</Buttons>
+	</Commands>
+
+	<Symbols>
+		<GuidSymbol name="guidTwinpackPackage" value="{26e0356d-ac0e-4e6a-a50d-dd2a812f6f23}" />
+		<GuidSymbol name="guidTwinpackCmdSet" value="{0ee4f42e-82af-4eba-92b9-bc7691b0de49}">
+			<IDSymbol value="4146" name="ContextMenuGroup_plcProjectLibraries" />
+			<IDSymbol value="4147" name="ContextMenuGroup_plcProjectMenu" />
+			
+			<IDSymbol value="260" name="cmdidCatalog" />
+			<IDSymbol value="261" name="cmdidPublish" />
+		</GuidSymbol>
+
+		<!-- Guids from TwinCAT extensions -->
+		<!--TsProject-Node: GuidID = 257, CmdID = 32808 NameLoc=XAE-Project                                      -->
+		<!--PlcConfig:      GuidID = 257, CmdID = 32773 NameLoc=PlcConfig                                        -->
+		<!--Project:        GuidID = 257, CmdID = 32770 NameLoc=Projects                                         -->
+		<!--PlcProject:     GuidID = 271, CmdID = 36883 NameLoc=PlcProject                                       -->
+		<!--PlcProjectInst: GuidID = 257, CmdID = 32786 NameLoc=TComObj                                          -->
+		<!--Folder in Plc:  GuidID = 271, CmdID = 36890 NameLoc=Type Reference Container -> External Types       -->
+		<!--Libraries:      GuidID = 271, CmdID = 36888 NameLoc=Libraries -> References node                     -->
+		<!--Folder in Plc:  GuidID = 271, CmdID = 36880 NameLoc=PlcFolder                                        -->
+		<!--FB:             GuidID = 271, CmdID = 36881 NameLoc=PlcFile                                          -->
+		<!--Tmc-File:       GuidID = 271, CmdID = 1072  NameLoc=ItemNode                                         -->
+		<!--ContextMenuCode:GuidID = 271, CmdID = 36887 NameLoc=PlcCodeWinContextMenu                            -->
+
+		<!-- items below the plc project -->
+		<GuidSymbol name="plcProjectCommandSet" value="{3B11520B-7E70-4008-A6CF-B60AE84E12B1}">
+			<IDSymbol name="plcProjectTmcFile" value="0x0430" />
+			<IDSymbol name="plcProjectSourceFolder" value="0x9010" />
+			<IDSymbol name="plcProjectFB" value="0x9011" />
+			<IDSymbol name="plcProjectMenu" value="0x9013" />
+			<IDSymbol name="plcProjectCtxMenuCodeWindow" value="0x9017" />
+			<IDSymbol name="plcProjectLibraries" value="0x9018" />
+			<IDSymbol name="plcProjectLibrary" value="0x9019" />
+			<IDSymbol name="plcProjectExternalReferencesFolder" value="0x901A" />
+			<IDSymbol name="plcProjectExternalReference" value="0x901B" />
+		</GuidSymbol>
+
+		<!-- items below the solution -->
+		<GuidSymbol name="xaeProjectCommandSet" value="{40EE08E0-8FB4-46E9-BAAB-100E60019B7B}">
+
+			<IDSymbol name="projects" value="0x8002" />
+			<IDSymbol name="ioDevices" value="0x8003" />
+			<IDSymbol name="ioDevice" value="0x8004" />
+			<IDSymbol name="plcConfig" value="0x8005" />
+			<!-- PLC -->
+			<IDSymbol name="cplusplus" value="0x8008" />
+			<IDSymbol name="safety" value="0x8009" />
+			<IDSymbol name="ioBox" value="0x800B" />
+
+			<IDSymbol name="plcProjectInstance" value="0x8012" />
+			<IDSymbol name="inputsOutputs" value="0x8014" />
+			<!-- ios for plc instance and io node -->
+			<IDSymbol name="ioLink" value="0x8015" />
+			<!-- link of a single io -->
+			<IDSymbol name="mappings" value="0x801B" />
+			<IDSymbol name="tsProject" value="0x8028" />
+			<IDSymbol name="syncUnit" value="0x8029" />
+			<IDSymbol name="motion" value="0x8037" />
+		</GuidSymbol>
+
+		<GuidSymbol value="{b6f0936d-18c3-40e8-9760-b66e2dbd3a89}" name="guidImages">
+			<IDSymbol name="bmpPic1" value="1" />
+			<IDSymbol name="bmpPic2" value="2" />
+			<IDSymbol name="bmpPicSearch" value="3" />
+			<IDSymbol name="bmpPicX" value="4" />
+			<IDSymbol name="bmpPicArrows" value="5" />
+			<IDSymbol name="bmpPicStrikethrough" value="6" />
+		</GuidSymbol>
+	</Symbols>
+</CommandTable>

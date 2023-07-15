@@ -1,0 +1,203 @@
+﻿<UserControl x:Class="Twinpack.Dialogs.CatalogWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Twinpack.Dialogs"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="700">
+    <UserControl.Resources>
+        <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <local:UrlToImageConverter x:Key="UrlToImageConverter"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"></RowDefinition>
+            <RowDefinition Height="auto"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.Background>
+                <SolidColorBrush Color="#FFcad0de"/>
+            </Grid.Background>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Image Grid.Column="0" Height="50" Source="Images/Twinpack.png" HorizontalAlignment="Center" VerticalAlignment="Center"></Image>
+            <TextBlock Grid.Column="1" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontFamily="Menrope" FontWeight="DemiBold" Foreground="#FF2A334B">
+        <Run Text="Twinpack Catalog"/>
+            </TextBlock>
+        </Grid>
+        <Grid HorizontalAlignment="Stretch"  Grid.Row="1" Margin="5 0 5 0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <TextBlock VerticalAlignment="Center"  Grid.Column="0" Text="Search: "></TextBlock>
+            <TextBox Grid.Column="1" x:Name="SearchTextBox" TextChanged="SearchTextBox_TextChanged" Width="200" Margin="5,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Left">
+            </TextBox>
+            <Button Grid.Column="2" Click="ReloadButton_Click" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent">
+                            <Grid>
+                                <Path Fill="#FF000000" Data="M12,5.25V1L7,6L12,11V7.75C15.07,7.75 17.5,10.18 17.5,13.25C17.5,16.32 15.07,18.75 12,18.75C8.93,18.75 6.5,16.32 6.5,13.25H5C5,17.52 8.48,21 12.75,21C17.02,21 20.5,17.52 20.5,13.25C20.5,8.98 17.02,5.5 12.75,5.5H12V5.25Z" />
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <ComboBox Grid.Column="4" Width="150" Margin="0,5,0,5">
+                <ComboBoxItem IsSelected="True" IsEnabled="False" Content="https://twinpack.dev"/>
+            </ComboBox>
+            <Button x:Name="btnLogin" Grid.Column="5" Width="80" Margin="5 5 0 5" Click="LoginButton_Click">Login</Button>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="5 0 5 0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+
+            <ListView Grid.Column="0" x:Name="CatalogView" VerticalContentAlignment="Stretch" 
+                      
+                      BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
+                      ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" Width="48" Height="48"/>
+                            <StackPanel Orientation="Vertical">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Margin="8 0 0 0">
+                                    <Run Text="{Binding DisplayName}"  FontWeight="SemiBold" FontSize="16"/>
+                                    <Run Text="  maintained by"/>
+                                    <Run Text="{Binding Repository}"/>
+                                    <Run Text=","/><Run Text="{Binding Downloads}" FontWeight="SemiBold"/>
+                                    <Run Text="downloads"/>
+                                    </TextBlock>
+
+                                </StackPanel>
+                                <TextBlock Margin="8 0 0 0" Text="{Binding Name}" FontWeight="SemiBold"/>
+                                <TextBlock Margin="8 0 0 0" Text="{Binding Description}"/>
+
+                            </StackPanel>
+
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <ScrollViewer x:Name="PackageVersionView" Margin="5,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <StackPanel Orientation="Vertical">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"></ColumnDefinition>
+                            <ColumnDefinition Width="auto"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="PackageDisplayName" Text="" FontSize="20" FontWeight="SemiBold"></TextBlock>
+                    </Grid>
+                    <TextBlock Margin="10,0,0,0"  FontSize="10">
+                        <Run Text="{Binding Name}" FontWeight="SemiBold"/>
+                        <Run Text="maintained by"></Run>
+                        <Run x:Name="PackageRepository" Text=""></Run>
+                    </TextBlock>
+
+                    <StackPanel Orientation="Vertical" Margin="0,20,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                                <ColumnDefinition Width="*"></ColumnDefinition>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Installed" Grid.Column="0" Grid.Row="0" Margin="5,0,5,5"></TextBlock>
+                            <TextBlock Text="Available" Grid.Column="0" Grid.Row="1" Margin="5,0,5,5"></TextBlock>
+
+                            <TextBox x:Name="PackageVersionInstalledTextBox" Padding="3,0,0,0" IsReadOnly="True" Text="" IsEnabled="False" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="0" Margin="5,0,5,5"/>
+
+                            <ComboBox x:Name="PackageVersionsView" d:ItemsSource="{d:SampleData ItemCount=3}" IsEnabled="False" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="1" Margin="5,0,5,5">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock HorizontalAlignment="Stretch" Text="">
+                                                <Run Text="{Binding Version}"></Run>
+                                            </TextBlock>
+
+                                            <TextBlock HorizontalAlignment="Stretch">
+                                                <Run Text="branch:"></Run>                                                                                                                                                                                                
+                                                <Run Text="{Binding Branch}"></Run>
+                                                <LineBreak></LineBreak>                                                                                                                                            
+                                                <Run Text="{Binding Configuration}"/><Run Text=" ("/><Run Text="{Binding Target}"/><Run Text=")"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <CheckBox x:Name="FilterByInstalledSettingsCheck" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">Filter by used package settings</CheckBox>
+
+                            <Button x:Name="UninstallButton" IsEnabled="False" Grid.Column="2" Grid.Row="0" Margin="0,0,5,5">Uninstall</Button>
+                            <Button Grid.Column="2" Grid.Row="1" Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Install</Button>
+                            <Button Grid.Column="2" Grid.Row="2" x:Name="btnEditPackage" Width="80" Margin="0,0,5,5" HorizontalAlignment="Right" Click="EditPackageButton_Click">Edit Package</Button>
+                        </Grid>
+
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="Notes: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
+                            <TextBlock x:Name="PackageNotes" TextWrapping="Wrap" Text="" Margin="15,0,0,0"></TextBlock>
+
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                                <TextBlock Text="Branch: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock x:Name="PackageBranch" TextWrapping="Wrap" Text=""></TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                                <TextBlock Text="Configuration: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock x:Name="PackageConfiguration" TextWrapping="Wrap" Text=""></TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                                <TextBlock Text="Target: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock x:Name="PackageTarget" TextWrapping="Wrap" Text=""></TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                                <TextBlock Text="Version: " FontWeight="SemiBold"  ></TextBlock>
+                                <TextBlock x:Name="PackageVersion" TextWrapping="Wrap" Text=""></TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                                <TextBlock Text="Authors: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock x:Name="PackageAuthors" TextWrapping="Wrap" Text=""></TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                                <TextBlock Text="License: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock x:Name="PackageLicense" TextWrapping="Wrap" Text=""></TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                                <TextBlock Text="Project URL: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock x:Name="PackageProjectUrl" TextWrapping="Wrap" Text=""></TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

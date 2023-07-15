@@ -21,7 +21,7 @@ namespace Twinpack.Models
     public class CatalogItemGetResponse
     {
         [JsonPropertyName("package-id")]
-        public int PackageId { get; set; }
+        public int? PackageId { get; set; }
         [JsonPropertyName("name")]
         public string Name { get; set; }
         [JsonPropertyName("repository")]
@@ -51,9 +51,9 @@ namespace Twinpack.Models
     public class PackageVersionsItemGetResponse
     {
         [JsonPropertyName("package-version-id")]
-        public int PackageVersionId { get; set; }
+        public int? PackageVersionId { get; set; }
         [JsonPropertyName("package-id")]
-        public int PackageId { get; set; }
+        public int? PackageId { get; set; }
         [JsonPropertyName("private")]
         public int Private { get; set; }
         [JsonPropertyName("name")]
@@ -99,7 +99,7 @@ namespace Twinpack.Models
     public class PackageVersionGetResponse : PackageGetResponse
     {
         [JsonPropertyName("package-version-id")]
-        public int PackageVersionId { get; set; }
+        public int? PackageVersionId { get; set; }
         [JsonPropertyName("version")]
         public string Version { get; set; }
         [JsonPropertyName("target")]
@@ -112,12 +112,18 @@ namespace Twinpack.Models
         public string LicenseBinary { get; set; }
         [JsonPropertyName("compiled")]
         public int Compiled { get; set; }
+        [JsonPropertyName("notes")]
+        public string Notes { get; set; }
+        [JsonPropertyName("authors")]
+        public string Authors { get; set; }
+        [JsonPropertyName("license")]
+        public string License { get; set; }
     }
 
-    public class PackagePostRequest
+    public class PackagePatchRequest
     {
         [JsonPropertyName("package-id")]
-        public string PackageId { get; set; }
+        public int? PackageId { get; set; }
         [JsonPropertyName("description")]
         public string Description { get; set; }
         [JsonPropertyName("icon-url")]
@@ -128,6 +134,20 @@ namespace Twinpack.Models
         public string ProjectUrl { get; set; }
         [JsonPropertyName("entitlement")]
         public string Entitlement { get; set; }
+    }
+
+    public class PackageVersionPatchRequest
+    {
+        [JsonPropertyName("package-version-id")]
+        public int? PackageVersionId { get; set; }
+        [JsonPropertyName("compiled")]
+        public int Compiled { get; set; }
+        [JsonPropertyName("license")]
+        public string License { get; set; }
+        [JsonPropertyName("authors")]
+        public string Authors { get; set; }
+        [JsonPropertyName("notes")]
+        public string Notes { get; set; }
     }
 
     public class PackageVersionPostRequest
