@@ -19,6 +19,11 @@ using System.Runtime.InteropServices;
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 
+// replaces app.config BindingRedirection in vsix extension (app.config belongs to an exe)
+[assembly: ProvideBindingRedirection(AssemblyName = "System.Runtime.CompilerServices.Unsafe",
+           NewVersion = "6.0.0.0", OldVersionLowerBound = "0.0.0.0",
+           OldVersionUpperBound = "6.0.0.0")]
+
 // Version information for an assembly consists of the following four values:
 //
 //      Major Version
