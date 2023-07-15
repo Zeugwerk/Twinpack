@@ -1,0 +1,18 @@
+# Disclaimer
+
+Twinpack is a tool developed by Zeugwerk GmbH to facilitate the distribution and management of packages within the Twincat system.
+Zeugwerk GmbH acknowledge that Twinpack allows users to distribute their own packages through its platform. 
+However, Zeugwerk GmbH explicitly states that it does not assume responsibility for any packages distributed by users through Twinpack.
+
+While Zeugwerk endeavors to provide a reliable and secure platform, Twinpack operates on a user-driven model where packages are 
+created and shared by individual users. Zeugwerk GmbH does not perform extensive verification or validation of these packages, 
+nor does it endorse or guarantee the quality, safety, or suitability of any package available through Twinpack.
+
+Users of Twinpack must exercise their own discretion and undertake thorough evaluation and testing of any packages they 
+choose to download, install, or use. Zeugwerk GmbH shall not be held liable for any damages, losses, or adverse consequences 
+arising from the use of packages distributed through Twinpack, including but not limited to software malfunctions, 
+data corruption, system failures, or any other issues that may arise.
+
+By using the Twinpack and accessing packages distributed through it, users accept and agree to assume all risks associated 
+with the use of such packages. It is strongly recommended that users employ appropriate security measures, including but not 
+limited to utilizing antivirus software, regularly backing up data, and ensuring compatibility with their specific system requirements.
