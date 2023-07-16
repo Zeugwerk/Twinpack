@@ -74,39 +74,30 @@ namespace Twinpack.Models
         [JsonPropertyName("name")]
         public string Name { get; set; }
         [DefaultValue("main")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("branch")]
         public string Branch { get; set; }
         [DefaultValue("TC3.1")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("target")]
         public string Target { get; set; }
         [DefaultValue("Release")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("configuration")]
         public string Configuration { get; set; }
         [DefaultValue(null)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("vendor")]
         public string Vendor { get; set; }
         [DefaultValue(null)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("namespace")]
         public string Namespace { get; set; }
         [DefaultValue(false)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("qualified-only")]
         public bool QualifiedOnly { get; set; }
         [DefaultValue(null)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("parameters")]
         public Dictionary<string, string> Parameters { get; set; }
         [DefaultValue(false)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("hide")]
         public bool Hide { get; set; }
         [DefaultValue(null)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("framework")]
         public string Framework { get; set; }
     }
