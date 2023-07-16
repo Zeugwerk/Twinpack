@@ -8,10 +8,11 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using NLog;
+using TCatSysManagerLib;
 
 namespace Twinpack.Models
 {
-    class ConfigFactory
+    public class ConfigFactory
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -22,8 +23,8 @@ namespace Twinpack.Models
         public static Config Load(string path = ".")
         {
             Config config = null;
+            var usedPrefix = "";
             path = Path.IsPathRooted(path) ? path : $@".\{path}";
-            String usedPrefix = "";
             foreach (var p in DefaultLocations)
             {
                 if (File.Exists($@"{path}\{p}config.json"))
@@ -32,10 +33,10 @@ namespace Twinpack.Models
                         throw new Exception("found multiple configuration files");
 
                     usedPrefix = p;
+                    config = new Config();
                     config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     config.WorkingDirectory = path;
                     config.FilePath = $@"{path}\{p}config.json";
-
 
                     foreach (var project in config.Projects)
                     {
@@ -45,14 +46,12 @@ namespace Twinpack.Models
                             plc.ProjectName = project.Name;
                         }
                     }
+
+                    return config;
                 }
             }
 
-            // check if we found a valid config
-            if (config == null)
-                throw new FileNotFoundException($"config.json not found in any commonly used path ({String.Join(",", DefaultLocations)})");
-
-            return config;
+            return null;
         }
 
         public static Config Create(string solutionName, List<ConfigProject> projects = null, string filepath = null)
@@ -68,22 +67,53 @@ namespace Twinpack.Models
             return config;
         }
 
+        public static Config CreateFromSolution(EnvDTE.Solution solution)
+        {
+            Config config = new Config();
+
+            config.Fileversion = 1;
+            config.Solution = solution.FileName;
+            config.FilePath = Path.GetDirectoryName(solution.FullName);
+            config.WorkingDirectory = Path.GetDirectoryName(solution.FullName);
+            config.Projects = new List<ConfigProject>();
+
+            foreach (EnvDTE.Project prj in solution.Projects)
+            {
+                ITcSysManager2 systemManager = prj.Object as ITcSysManager2;
+                var project = new ConfigProject();
+                project.Name = prj.Name;
+
+                ITcSmTreeItem plcs = systemManager.LookupTreeItem("TIPC");
+                foreach (ITcSmTreeItem9 plc in plcs)
+                {
+                    if (plc is ITcProjectRoot)
+                    {
+                        string xml = plc.ProduceXml();
+                        string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
+                        project.Plcs.Add(ConfigPlcProjectFactory.Create(projectPath));
+                    }
+                }
+
+                config.Projects.Add(project);
+            }
+
+            return config;
+        }
+
         public static Config Create(string path = ".")
         {
             Config config = new Config();
-            config.WorkingDirectory = path;
             var solutions = Directory.GetFiles(path, "*.sln", SearchOption.AllDirectories);
 
             if (solutions.Count() > 1)
                 _logger.Warn("There is more than 1 solution present in the current directory, only the first one is considered!");
-
-            if (solutions.Length > 0)
-            {
-                config.Solution = Path.GetFileName(solutions.First());
-                config.FilePath = Path.GetDirectoryName(solutions.First()) + @"\.Zeugwerk\config.json";
-            }
+            else if (solutions.Any() == false)
+                return null;
 
             config.Fileversion = 1;
+            config.Solution = Path.GetFileName(solutions.First());
+            config.FilePath = Path.GetDirectoryName(solutions.First()) + @"\.Zeugwerk\config.json";
+            config.WorkingDirectory = path;
 
             var project = new ConfigProject();
             project.Name = config.Solution?.Split('.').First();
@@ -91,7 +121,7 @@ namespace Twinpack.Models
 
             foreach (var plcpath in Directory.GetFiles(path, "*.plcproj", SearchOption.AllDirectories))
             {
-                project.Plcs.Add(new ConfigPlcProject { FilePath = plcpath });
+                project.Plcs.Add(ConfigPlcProjectFactory.Create(plcpath));
             }
 
             config.Projects = new List<ConfigProject>();

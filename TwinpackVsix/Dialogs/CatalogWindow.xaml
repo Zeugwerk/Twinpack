@@ -68,7 +68,6 @@
             </Grid.ColumnDefinitions>
 
             <ListView Grid.Column="0" x:Name="CatalogView" VerticalContentAlignment="Stretch" 
-                      
                       BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
                       ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <ListView.ItemTemplate>

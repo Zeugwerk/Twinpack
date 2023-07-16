@@ -53,6 +53,7 @@
     <Compile Include="Commands\ICommand.cs" />
     <Compile Include="Commands\CatalogCommand.cs" />
     <Compile Include="Commands\PublishCommand.cs" />
+    <Compile Include="Dialogs\Authentication.cs" />
     <Compile Include="Dialogs\Converters\BooleanToInverseBooleanConverter.cs" />
     <Compile Include="Dialogs\Converters\BooleanToVisibilityConverter.cs" />
     <Compile Include="Dialogs\Converters\UrlToImageConverter.cs" />
@@ -66,8 +67,7 @@
       <DependentUpon>PublishWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Extensions\DirectoryExtension.cs" />
-    <Compile Include="Panels\TwinpackPanel.cs" />
-    <Compile Include="Panels\TwinpackPublishPanel.cs" />
+    <Compile Include="Panels\CatalogPane.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TwincatUtil.cs" />
     <Compile Include="TwinpackPackage.cs" />
@@ -76,6 +76,7 @@
   <ItemGroup>
     <Content Include="Dialogs\Images\Twinpack.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="NLog.dll.nlog">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

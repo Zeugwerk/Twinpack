@@ -13,10 +13,12 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
+using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Models;
 using Twinpack.Exceptions;
+using EnvDTE80;
 
 namespace Twinpack
 {
@@ -162,10 +164,45 @@ namespace Twinpack
             return true;
         }
 
-        static public async Task PullAsync(string username, string password, string configuration, string branch, string target)
+        static public int BuildErrorCount(EnvDTE80.DTE2 dte)
         {
-            var filePath = $@".Zeugwerk\libraries\{target}";
-            Directory.CreateDirectory(filePath);
+            int errorCount = 0;
+            EnvDTE80.ErrorItems errors = dte.ToolWindows.ErrorList.ErrorItems;
+            for (int i = 1; i <= errors.Count; i++)
+            {
+                var item = errors.Item(i);
+
+                switch (item.ErrorLevel)
+                {
+                    case EnvDTE80.vsBuildErrorLevel.vsBuildErrorLevelHigh:
+                        errorCount++;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            return errorCount;
+        }
+
+        static public void UpdatePlcVersion(ITcPlcIECProject2 plc, Version version)
+        {
+            StringWriter stringWriter = new StringWriter();
+            using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
+            {
+                writer.WriteStartElement("TreeItem");
+                writer.WriteStartElement("IECProjectDef");
+                writer.WriteStartElement("ProjectInfo");
+                writer.WriteElementString("Version", version.ToString());
+                writer.WriteEndElement();     // ProjectInfo
+                writer.WriteEndElement();     // IECProjectDef
+                writer.WriteEndElement();     // TreeItem 
+            }
+            (plc as ITcSmTreeItem).ConsumeXml(stringWriter.ToString());
+        }
+
+        static public async Task PullAsync(string username, string password, string configuration, string branch, string target, string cachePath=null)
+        {
             var config = ConfigFactory.Load();
 
             _logger.Info($"Pulling packages required by {config.Solution} from Twinpack Server");
@@ -176,43 +213,12 @@ namespace Twinpack
                 foreach(var package in plc.Packages ?? new List<ConfigPlcPackage>())
                 {
                     _logger.Info($"Downloading {package.Name} (version: {package.Version}, configuration: {configuration}, branch: {package.Branch}, target: {target})");
-                    using (HttpClient client = new HttpClient())
-                    {
-                        var request = CreateHttpRequest(
-                            new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
-                            $"&repository={HttpUtility.UrlEncode(package.Repository)}" +
-                            $"&name={HttpUtility.UrlEncode(package.Name)}" +
-                            $"&version={HttpUtility.UrlEncode(package.Version)}" +
-                            $"&configuration={HttpUtility.UrlEncode(configuration)}" +
-                            $"&branch={HttpUtility.UrlEncode(branch)}" +
-                            $"&target={HttpUtility.UrlEncode(target)}"), HttpMethod.Get, authorize: true);
-
-                        request.Headers.Add("zgwk-username", username);
-                        request.Headers.Add("zgwk-password", password);
-                        var response = await client.SendAsync(request);
-                        var responseBody = await response.Content.ReadAsStringAsync();
-                        
-                        try
-                        {
-                            var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-                            var extension = packageVersion.Compiled == 1 ? ".compiled-library" : ".library";
-                            File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.library", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
-                        }
-                        catch(Exception)
-                        {
-                            JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                            JsonElement message = new JsonElement();
-                            if (responseJsonBody.TryGetProperty("message", out message))
-                            {
-                                throw new PostException(message.ToString());
-                            }
-                        }
-                    }
+                    GetPackageVersionAsync(username, password, username, package.Name, package.Version, configuration, branch, target, includeBinary: true, cachePath: cachePath);
                 }
             }
         }
 
-        static public async Task PushAsync(string username, string password, string configuration, string branch, string target, string notes, bool compiled)
+        static public async Task PushAsync(string username, string password, string configuration, string branch, string target, string notes, bool compiled, string cachePath=null)
         {
             var config = ConfigFactory.Load();
 
@@ -224,7 +230,7 @@ namespace Twinpack
             // check if all requested files are present
             foreach (var plc in plcs)
             {
-                var fileName = $@".Zeugwerk\libraries\{target}\{plc.Name}_{plc.Version}.{suffix}";
+                var fileName = $@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}";
                 if (!File.Exists(fileName))
                     throw new LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{fileName}'");
 
@@ -237,47 +243,63 @@ namespace Twinpack
 
             foreach (var plc in plcs)
             {
-                string binary = Convert.ToBase64String(File.ReadAllBytes($@".Zeugwerk\libraries\{target}\{plc.Name}_{plc.Version}.{suffix}"));
-                string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
-                var requestBody = new PackageVersionPostRequest()
+                await PostPackageVersionAsync(username, password, plc, configuration, branch, target, notes, compiled);
+            }
+        }
+
+        static public async Task<PackageVersionGetResponse> PostPackageVersionAsync(string username, string password, ConfigPlcProject plc, string configuration, string branch, string target, string notes, bool compiled, string cachePath=null)
+        {
+            var suffix = compiled ? "compiled-library" : "library";
+            string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
+            string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
+            var requestBody = new PackageVersionPostRequest()
+            {
+                Name = plc.Name,
+                Version = plc.Version,
+                Binary = binary,
+                Target = target,
+                License = plc.License,
+                Description = plc.Description,
+                Authors = plc.Authors,
+                Entitlement = plc.Entitlement,
+                ProjectUrl = plc.ProjectUrl,
+                DisplayName = plc.DisplayName,
+                IconUrl = plc.IconUrl,
+                Branch = branch,
+                Configuration = configuration,
+                Compiled = compiled ? 1 : 0,
+                Notes = notes,
+                LicenseBinary = licenseBinary
+            };
+
+            var requestBodyJson = JsonSerializer.Serialize(requestBody);
+            _logger.Debug($"Pushing {plc.Name}: {requestBodyJson}");
+
+            using (HttpClient client = new HttpClient())
+            {
+                var request = CreateHttpRequest(new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"), HttpMethod.Post, authorize: true);
+                request.Headers.Add("zgwk-username", username);
+                request.Headers.Add("zgwk-password", password);
+                request.Content = new StreamContent(
+                    new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
+
+                var response = await client.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                try
                 {
-                    Name = plc.Name,
-                    Version = plc.Version,
-                    Binary = binary,
-                    Target = target,
-                    License = plc.License,
-                    Description = plc.Description,
-                    Authors = plc.Authors,
-                    Entitlement = plc.Entitlement,
-                    ProjectUrl = plc.ProjectUrl,
-                    DisplayName = plc.DisplayName,
-                    IconUrl = plc.IconUrl,                    
-                    Branch = branch,
-                    Configuration = configuration,
-                    Compiled = compiled ? 1 : 0,
-                    Notes = notes,
-                    LicenseBinary = licenseBinary
-                };
-
-                var requestBodyJson = JsonSerializer.Serialize(requestBody);
-                _logger.Debug($"Pushing {plc.Name}: {requestBodyJson}");
-
-                using (HttpClient client = new HttpClient())
+                    return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                }
+                catch(Exception ex)
                 {
-                    var request = CreateHttpRequest(new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"), HttpMethod.Post, authorize: true);
-                    request.Headers.Add("zgwk-username", username);
-                    request.Headers.Add("zgwk-password", password);
-                    request.Content = new StreamContent(
-                        new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
-
-                    var response = await client.SendAsync(request);
-                    var responseBody = await response.Content.ReadAsStringAsync();
-
                     JsonElement packageVersion = JsonSerializer.Deserialize<dynamic>(responseBody);
                     JsonElement message = new JsonElement();
-                    if(packageVersion.TryGetProperty("message", out message))
+                    if (packageVersion.TryGetProperty("message", out message))
                         throw new PostException(message.ToString());
+                    else
+                        throw ex;
                 }
+ 
             }
         }
 
@@ -362,12 +384,12 @@ namespace Twinpack
                                                         $"&name={HttpUtility.UrlEncode(name)}", page, perPage);
         }
 
-        static public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string username, string password, int packageVersionId)
+        static public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string username, string password, int packageVersionId, bool includeBinary, string cachePath=null)
         {
             _logger.Info($"Retrieving package version from Twinpack Server");
             using (HttpClient client = new HttpClient())
             {
-                var request = CreateHttpRequest(new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version&id={packageVersionId}"), HttpMethod.Get, authorize: true);
+                var request = CreateHttpRequest(new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version&id={packageVersionId}&include-binary=0"), HttpMethod.Get, authorize: true);
                 request.Headers.Add("zgwk-username", username);
                 request.Headers.Add("zgwk-password", password);
 
@@ -376,7 +398,17 @@ namespace Twinpack
 
                 try
                 {
-                    return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                    var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+
+                    if (includeBinary)
+                    {
+                        var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
+                        Directory.CreateDirectory(filePath);
+                        var extension = packageVersion.Compiled == 1 ? ".compiled-library" : ".library";
+                        File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.library", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
+                    }
+
+                    return packageVersion;
                 }
                 catch (Exception ex)
                 {
@@ -390,6 +422,84 @@ namespace Twinpack
                     {
                         throw ex;
                     }
+                }
+            }
+        }
+
+        static public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string username, string password, string repository, string name, string version, string configuration, string branch, string target, bool includeBinary, string cachePath)
+        {
+            _logger.Info($"Retrieving package version from Twinpack Server");
+            using (HttpClient client = new HttpClient())
+            {
+                var request = CreateHttpRequest(
+                    new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
+                    $"&repository={HttpUtility.UrlEncode(repository)}" +
+                    $"&name={HttpUtility.UrlEncode(name)}" +
+                    $"&version={HttpUtility.UrlEncode(version)}" +
+                    $"&configuration={HttpUtility.UrlEncode(configuration)}" +
+                    $"&branch={HttpUtility.UrlEncode(branch)}" +
+                    $"&target={HttpUtility.UrlEncode(target)}" +
+                    $"&include-binary={(includeBinary ? 1 : 0)}"), HttpMethod.Get, authorize: true);
+
+                request.Headers.Add("zgwk-username", username);
+                request.Headers.Add("zgwk-password", password);
+                var response = await client.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+
+                    if(includeBinary)
+                    {
+                        var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}";
+                        var extension = packageVersion.Compiled == 1 ? ".compiled-library" : ".library";
+                        File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.library", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
+                    }
+
+                    return packageVersion;
+                }
+                catch (Exception)
+                {
+                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                    JsonElement message = new JsonElement();
+                    if (responseJsonBody.TryGetProperty("message", out message))
+                    {
+                        throw new PostException(message.ToString());
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        static public async Task<PackageGetResponse> GetPackageAsync(string username, string password, string repository, string packageName)
+        {
+            _logger.Info($"Retrieving package from Twinpack Server");
+            using (HttpClient client = new HttpClient())
+            {
+                var request = CreateHttpRequest(new Uri(TwinpackUrl + $"/twinpack.php?controller=package" +
+                    $"&repository={HttpUtility.UrlEncode(repository)}" +
+                    $"&name={HttpUtility.UrlEncode(packageName)}"), HttpMethod.Get, authorize: true);
+
+                request.Headers.Add("zgwk-username", username);
+                request.Headers.Add("zgwk-password", password);
+
+                var response = await client.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+                }
+                catch (Exception ex)
+                {
+                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                    JsonElement message = new JsonElement();
+                    if (responseJsonBody.TryGetProperty("message", out message))
+                        throw new GetException(message.ToString());
+                    else
+                        throw ex;
                 }
             }
         }

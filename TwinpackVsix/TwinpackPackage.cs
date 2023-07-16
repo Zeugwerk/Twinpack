@@ -54,8 +54,7 @@ namespace Twinpack
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(TwinpackPackage.PackageGuidString)]
-    [ProvideToolWindow(typeof(Dialogs.CatalogWindowPane))]
-    [ProvideToolWindow(typeof(Dialogs.TwinpackPublishPane))]
+    [ProvideToolWindow(typeof(Dialogs.CatalogPane))]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class TwinpackPackage : AsyncPackage, IVsSolutionEvents
     {
@@ -206,6 +205,13 @@ namespace Twinpack
         public PackageContext Context { get; private set; }
 
         public bool IsInitialized { get; private set; }
+
+        protected override WindowPane InstantiateToolWindow(Type toolWindowType)
+        {
+            if (toolWindowType == typeof(Dialogs.CatalogPane))
+                return new Dialogs.CatalogPane(Context);
+            return base.InstantiateToolWindow(toolWindowType);
+        }
 
         public int OnAfterOpenProject(IVsHierarchy pHierarchy, int fAdded)
         {
