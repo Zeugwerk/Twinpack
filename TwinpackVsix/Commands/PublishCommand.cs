@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Twinpack;
+using TCatSysManagerLib;
 using Task = System.Threading.Tasks.Task;
 
 namespace Twinpack.Commands
@@ -77,19 +78,14 @@ namespace Twinpack.Commands
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
 
+            EnvDTE.Project activePlc = null;
+
+            if (_package.Context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
+                activePlc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
+
             _logger.Debug("Execute Command");
-
-            // Get the instance number 0 of this tool window. This window is single instance so this instance
-            // is actually the only one.
-            // The last flag is set to true so that if the tool window does not exists it will be created.
-            ToolWindowPane window = _package.FindToolWindow(typeof(Dialogs.TwinpackPublishPane), 0, true);
-            if ((null == window) || (null == window.Frame))
-            {
-                throw new NotSupportedException("Cannot create tool window");
-            }
-
-            IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
-            Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
+            var publishWindow = new Dialogs.PublishWindow(_package.Context, activePlc);
+            publishWindow.ShowDialog();
         }
     }
 }

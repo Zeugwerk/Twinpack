@@ -81,7 +81,7 @@ namespace Twinpack.Models
     public class PackageGetResponse
     {
         [JsonPropertyName("package-id")]
-        public int PackageId { get; set; }
+        public int? PackageId { get; set; }
         [JsonPropertyName("name")]
         public string Name { get; set; }
         [JsonPropertyName("display-name")]

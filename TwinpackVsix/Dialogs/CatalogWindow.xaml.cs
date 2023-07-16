@@ -17,6 +17,7 @@ namespace Twinpack.Dialogs
     {
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
 
+        private PackageContext _context;
         private ObservableCollection<Models.CatalogItemGetResponse> _catalog = new ObservableCollection<Models.CatalogItemGetResponse>();
         private ObservableCollection<Models.PackageVersionsItemGetResponse> _packageVersions = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
         private Models.PackageGetResponse _packageVersion = new Twinpack.Models.PackageGetResponse();
@@ -29,12 +30,11 @@ namespace Twinpack.Dialogs
         private bool _isPackageVersionsFetching = false;
         private bool _isPackageVersionFetching = false;
         private string _searchText = "";
-        private string _username;
-        private string _password;
-        private bool _loggedIn;
+        private Authentication _auth = new Authentication();
 
-        public CatalogWindow()
+        public CatalogWindow(PackageContext context)
         {
+            _context = context;
             DataContext = this;
 
             InitializeComponent();
@@ -63,28 +63,27 @@ namespace Twinpack.Dialogs
 
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
         {
-            var credentials = CredentialManager.ReadCredential("Twinpack");
-            if (credentials != null)
+            try
             {
-                try
-                {
-                    _loggedIn = await TwinpackService.LoginAsync(credentials.UserName, credentials.Password);
-                    btnLogin.Content = _loggedIn ? "Logout" : "Login";
-
-                    if (_loggedIn)
-                    {
-                        _username = credentials.UserName;
-                        _password = credentials.Password;
-                    }
-                }
-                catch(Exception ex)
-                {
-                    _logger.Error(ex.Message);
-                }
-
+                await _auth.InitializeAsync();
+            }
+            catch(Exception ex)
+            {
+                _logger.Error(ex.Message);
+            }
+            finally
+            {
+                btnLogin.Content = _auth.LoggedIn ? "Logout" : "Login";
             }
 
-            await LoadFirstCatalogPageAsync();
+            try
+            {
+                await LoadFirstCatalogPageAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.Message);
+            }
         }
 
         
@@ -96,62 +95,40 @@ namespace Twinpack.Dialogs
 
             var packageVersionId = (PackageVersionsView.SelectedItem as Models.PackageVersionsItemGetResponse)?.PackageVersionId;
 
-            var packagePublish = new PublishWindow(packageId, packageVersionId, _username, _password);
+            var packagePublish = new PublishWindow(_context, null, packageId, packageVersionId, _auth.Username, _auth.Password);
             packagePublish.ShowDialog();
         }
 
         public async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            if(!_loggedIn)
+            try
             {
-                var credentials = CredentialManager.PromptForCredentials(
-                    messageText: $"Login to your Twinpack Server account. Logging in will give you access to additional features. " +
-                    $"It enables you to intall packages that are maintained by you, but not yet released. It also allows you to upload a new package into your Twinpack repository.", 
-                    captionText: "Twinpack Server login", saveCredential: CredentialSaveOption.Hidden);
-
-                if(credentials != null)
-                {
-                    try
-                    {
-                        _loggedIn = await TwinpackService.LoginAsync(credentials.UserName, credentials.Password);
-                        if (_loggedIn)
-                            CredentialManager.WriteCredential("Twinpack", credentials.UserName, credentials.Password, CredentialPersistence.LocalMachine);
-                    }
-                    catch (Exceptions.LoginException ex)
-                    {
-                        try
-                        {
-                            CredentialManager.DeleteCredential("Twinpack");
-                        }
-                        catch { }
-                        credentials = null;
-                        MessageBox.Show(ex.Message, "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    catch(Exception ex)
-                    {
-                        _logger.Error(ex.Message);
-                    }
-                    _username = credentials?.UserName;
-                    _password = credentials?.Password;
-                }
+                if(!_auth.LoggedIn)
+                    await _auth.LoginAsync();
+                else
+                    _auth.Logout();
             }
-            else
+            catch (Exceptions.LoginException ex)
             {
-                try
-                {
-                    CredentialManager.DeleteCredential("Twinpack");
-                }
-                catch { }
-
-                _loggedIn = false;
-                _username = "";
-                _password = "";
+                MessageBox.Show(ex.Message, "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch(Exception ex)
+            {
+                _logger.Error(ex.Message);
+            }
+            finally
+            {
+                btnLogin.Content = _auth.LoggedIn ? "Logout" : "Login";
             }
 
-
-            btnLogin.Content = _loggedIn ? "Logout" : "Login";
-
-            await LoadFirstCatalogPageAsync();
+            try
+            {
+                await LoadFirstCatalogPageAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+            }
         }
 
         private ScrollViewer GetScrollViewer(ListView view)
@@ -169,7 +146,7 @@ namespace Twinpack.Dialogs
 
             try
             {
-                return await Twinpack.TwinpackService.GetPackageAsync(_username, _password, packageVersionId);
+                return await Twinpack.TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, packageVersionId);
             }
             catch (Exception ex)
             {
@@ -204,7 +181,7 @@ namespace Twinpack.Dialogs
                 if (reset)
                     _currentPackageVersionsPage = 1;
 
-                var results = await Twinpack.TwinpackService.GetPackageVersionsAsync(_username, _password, packageId, _currentPackageVersionsPage, _itemsPerPage);
+                var results = await TwinpackService.GetPackageVersionsAsync(_auth.Username, _auth.Password, packageId, _currentPackageVersionsPage, _itemsPerPage);
 
                 if (reset)
                     _packageVersions.Clear();
@@ -247,7 +224,7 @@ namespace Twinpack.Dialogs
                 if(reset)
                     _currentCatalogPage = 1;
 
-                var results = await Twinpack.TwinpackService.GetCatalogAsync(_username, _password, text, _currentCatalogPage, _itemsPerPage);
+                var results = await Twinpack.TwinpackService.GetCatalogAsync(_auth.Username, _auth.Password, text, _currentCatalogPage, _itemsPerPage);
 
                 if (reset)
                     _catalog.Clear();
@@ -322,7 +299,7 @@ namespace Twinpack.Dialogs
             if (_packageVersions.Any())
                 PackageVersionsView.SelectedIndex = 0;
 
-            btnEditPackage.Visibility = _catalog.Any() && item.Repository == _username ? Visibility.Visible : Visibility.Hidden;
+            btnEditPackage.Visibility = _catalog.Any() && item.Repository == _auth.Username ? Visibility.Visible : Visibility.Hidden;
             PackageVersionView.Visibility = _catalog.Any() ? Visibility.Visible : Visibility.Hidden;
             CatalogView.IsEnabled = true;
         }
