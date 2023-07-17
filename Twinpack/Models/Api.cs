@@ -198,5 +198,7 @@ namespace Twinpack.Models
         public List<string> Entitlements { get; set; }
         [JsonPropertyName("flags")]
         public List<string> Flags { get; set; }
+        [JsonPropertyName("message")]
+        public string Message { get; set; }        
     }    
 }
