@@ -29,8 +29,8 @@ namespace Twinpack.Models
         public string Repository { get; set; }
         [JsonPropertyName("description")]
         public string Description { get; set; }
-        [JsonPropertyName("icon-url")]
-        public string IconUrl { get; set; }
+        [JsonPropertyName("icon-binary")]
+        public string IconBinary { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
         [JsonPropertyName("versions")]
@@ -95,8 +95,8 @@ namespace Twinpack.Models
         public string Entitlement { get; set; }
         [JsonPropertyName("project-url")]
         public string ProjectUrl { get; set; }
-        [JsonPropertyName("icon-url")]
-        public string IconUrl { get; set; }
+        [JsonPropertyName("icon-binary")]
+        public string IconBinary { get; set; }
     }
 
     public class PackageVersionGetResponse : PackageGetResponse
@@ -111,10 +111,6 @@ namespace Twinpack.Models
         public string Target { get; set; }
         [JsonPropertyName("configuration")]
         public string Configuration { get; set; }
-        [JsonPropertyName("binary")]
-        public string Binary { get; set; }
-        [JsonPropertyName("license-binary")]
-        public string LicenseBinary { get; set; }
         [JsonPropertyName("compiled")]
         public int Compiled { get; set; }
         [JsonPropertyName("notes")]
@@ -125,6 +121,10 @@ namespace Twinpack.Models
         public string License { get; set; }
         [JsonPropertyName("vendor")]
         public string Vendor { get; set; }
+        [JsonPropertyName("binary")]
+        public string Binary { get; set; }
+        [JsonPropertyName("license-binary")]
+        public string LicenseBinary { get; set; }
 
         public static bool operator ==(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
         {
@@ -149,14 +149,14 @@ namespace Twinpack.Models
         public int? PackageId { get; set; }
         [JsonPropertyName("description")]
         public string Description { get; set; }
-        [JsonPropertyName("icon-url")]
-        public string IconUrl { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
         [JsonPropertyName("project-url")]
         public string ProjectUrl { get; set; }
         [JsonPropertyName("entitlement")]
         public string Entitlement { get; set; }
+        [JsonPropertyName("icon-binary")]
+        public string IconBinary { get; set; }
     }
 
     public class PackageVersionPatchRequest
@@ -179,8 +179,6 @@ namespace Twinpack.Models
         public string Name { get; set; }
         [JsonPropertyName("version")]
         public string Version { get; set; }
-        [JsonPropertyName("binary")]
-        public string Binary { get; set; }
         [JsonPropertyName("target")]
         public string Target { get; set; }
         [JsonPropertyName("compiled")]
@@ -191,8 +189,6 @@ namespace Twinpack.Models
         public string Description { get; set; }
         [JsonPropertyName("authors")]
         public string Authors { get; set; }
-        [JsonPropertyName("icon-url")]
-        public string IconUrl { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
         [JsonPropertyName("project-url")]
@@ -205,8 +201,14 @@ namespace Twinpack.Models
         public string Configuration { get; set; }
         [JsonPropertyName("notes")]
         public string Notes { get; set; }
+        [JsonPropertyName("vendor")]
+        public string Vendor { get; set; }
         [JsonPropertyName("license-binary")]
         public string LicenseBinary { get; set; }
+        [JsonPropertyName("icon-binary")]
+        public string IconBinary { get; set; }
+        [JsonPropertyName("binary")]
+        public string Binary { get; set; }
     }
 
     public class LoginPostResponse
