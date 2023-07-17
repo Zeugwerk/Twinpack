@@ -61,6 +61,17 @@ namespace Twinpack.Dialogs
             InitializeComponent();
         }
 
+        private async Task LoginAsync()
+        {
+            await _auth.InitializeAsync();
+            if (!_auth.LoggedIn)
+            {
+                await _auth.LoginAsync();
+                if (!_auth.LoggedIn)
+                    MessageBox.Show("Login was not successful! Go to https://twinpack.dev/wp-login.php to register", "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -68,9 +79,7 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await _auth.InitializeAsync();
-                if (!_auth.LoggedIn)
-                    await _auth.LoginAsync();
+                await LoginAsync();
             }
             catch (Exception ex)
             {
@@ -409,9 +418,7 @@ namespace Twinpack.Dialogs
 
             try
             {
-                if (!_auth.LoggedIn)
-                    await _auth.LoginAsync();
-
+                await LoginAsync();
                 var packageResult = await TwinpackService.PutPackageAsync(_auth.Username, _auth.Password, package);
 
                 DisplayName = packageResult.DisplayName;
@@ -451,9 +458,7 @@ namespace Twinpack.Dialogs
 
             try
             {
-                if (!_auth.LoggedIn)
-                    await _auth.LoginAsync();
-
+                await LoginAsync();
                 var packageVersionResult = await TwinpackService.PutPackageVersionAsync(_auth.Username, _auth.Password, packageVersion);
 
                 Authors = packageVersionResult.Authors;
@@ -502,9 +507,7 @@ namespace Twinpack.Dialogs
 
                 try
                 {
-                    if (!_auth.LoggedIn)
-                        await _auth.LoginAsync();
-
+                    await LoginAsync();
                     _packageVersion = await TwinpackService.PostPackageVersionAsync(_auth.Username, _auth.Password, _plcConfig, "Release", "main", "TC3.1", Notes, false, cachePath: $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries");
                     _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, (int)_packageVersion.PackageId);
 
