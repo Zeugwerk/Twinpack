@@ -185,4 +185,18 @@ namespace Twinpack.Models
         [JsonPropertyName("license-binary")]
         public string LicenseBinary { get; set; }
     }
+
+    public class LoginPostResponse
+    {
+        [JsonPropertyName("user")]
+        public string User { get; set; }
+        [JsonPropertyName("configurations")]
+        public List<string> Configurations { get; set; }
+        [JsonPropertyName("targets")]
+        public List<string> Targets { get; set; }
+        [JsonPropertyName("entitlements")]
+        public List<string> Entitlements { get; set; }
+        [JsonPropertyName("flags")]
+        public List<string> Flags { get; set; }
+    }    
 }
