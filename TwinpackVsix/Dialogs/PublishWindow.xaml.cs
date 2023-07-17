@@ -63,13 +63,23 @@ namespace Twinpack.Dialogs
 
         private async Task LoginAsync()
         {
-            await _auth.InitializeAsync();
-            if (!_auth.LoggedIn)
-            {
-                await _auth.LoginAsync();
+            try
+            { 
                 if (!_auth.LoggedIn)
-                    MessageBox.Show("Login was not successful! Go to https://twinpack.dev/wp-login.php to register", "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                {
+                    await _auth.LoginAsync();
+                    if(!_auth.LoggedIn)
+                        throw new Exceptions.LoginException("Login was not successful! Go to https://twinpack.dev/wp-login.php to register");
+                }
             }
+            catch(Exceptions.LoginException ex)
+            {
+                MessageBox.Show(ex.Message, "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }          
+            catch (Exception ex)
+            {
+                _logger.Error(ex.Message);
+            }            
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -79,130 +89,131 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await LoginAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex.Message);
-            }
-
-            IsVersionDataReadOnly = false;
-            IsGeneralDataReadOnly = false;
-
-            _plcConfig = null;
-            if(!string.IsNullOrEmpty(_context?.Solution?.FullName))
-            {
-                var config = Models.ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
-                config = null;
-                if (config == null)
-                    config = Models.ConfigFactory.CreateFromSolution(_context.Solution);
-
-                string projectName = null;
-                foreach (EnvDTE.Project prj in _context.Solution.Projects)
+                await _auth.InitializeAsync();
+                if(!_auth.LoggedIn)
+                    await LoginAsync();
+               
+                IsVersionDataReadOnly = false;
+                IsGeneralDataReadOnly = false;
+    
+                _plcConfig = null;
+                if(!string.IsNullOrEmpty(_context?.Solution?.FullName))
+                {
+                    var config = Models.ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
+                    config = null;
+                    if (config == null)
+                        config = Models.ConfigFactory.CreateFromSolution(_context.Solution);
+    
+                    string projectName = null;
+                    foreach (EnvDTE.Project prj in _context.Solution.Projects)
+                    {
+                        try
+                        {
+                            ITcSmTreeItem plcs = (prj.Object as ITcSysManager).LookupTreeItem("TIPC");
+                            foreach (ITcSmTreeItem9 plc in plcs)
+                                if (Object.ReferenceEquals((_plc.Object as dynamic).Parent, plc))
+                                {
+                                    projectName = plc.Name;
+                                    break;
+                                }
+                        }
+                        catch (Exception) { }
+                    }
+    
+                    _plcConfig = config.Projects.Where(x => x.Name == projectName).SelectMany(x => x.Plcs).Where(x => x.Name == _plc.Name).FirstOrDefault();
+                    if (_package.PackageId == null && _plcConfig != null)
+                        _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _plcConfig.Name);
+                }
+    
+                if (_package.PackageId != null)
                 {
                     try
                     {
-                        ITcSmTreeItem plcs = (prj.Object as ITcSysManager).LookupTreeItem("TIPC");
-                        foreach (ITcSmTreeItem9 plc in plcs)
-                            if (Object.ReferenceEquals((_plc.Object as dynamic).Parent, plc))
-                            {
-                                projectName = plc.Name;
-                                break;
-                            }
+                        var package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, (int)_package.PackageId);
+    
+                        PackageName = package.Name;
+                        DisplayName = package.DisplayName;
+                        Description = package.Description;
+                        Entitlement = package.Entitlement;
+                        ProjectUrl = package.ProjectUrl;
+                        IconUrl = package.IconUrl;
                     }
-                    catch (Exception) { }
+                    catch (Exceptions.GetException ex)
+                    {
+                        MessageBox.Show(ex.Message, "Retrieving Package failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex.Message);
+                    }
                 }
-
-                _plcConfig = config.Projects.Where(x => x.Name == projectName).SelectMany(x => x.Plcs).Where(x => x.Name == _plc.Name).FirstOrDefault();
-                if (_package.PackageId == null && _plcConfig != null)
-                    _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _plcConfig.Name);
-            }
-
-            if (_package.PackageId != null)
+                else if(_plcConfig != null)
+                {
+                    IsVersionEditable = true;
+    
+                    PackageName = _plcConfig.Name;
+                    DisplayName = _plcConfig.DisplayName;
+                    Description = _plcConfig.Description;
+                    Entitlement = _plcConfig.Entitlement;
+                    ProjectUrl = _plcConfig.ProjectUrl;
+                    IconUrl = _plcConfig.IconUrl;
+                }
+    
+                if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
+                {
+                    // try to get the specific version
+                    IsNewPackageVersion = false;
+                    _packageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username, _package.Name, _packageVersion.Version, "Release", "main", "TC3.1", false, null);
+                    // fallback to the latest available version
+                    if(_packageVersion.PackageVersionId == null)
+                    {
+                        IsNewPackageVersion = true;
+                        _packageVersion.PackageVersionId = (await TwinpackService.GetPackageVersionsAsync(_auth.Username, _auth.Password, (int)_package.PackageId, 1, 1)).FirstOrDefault()?.PackageVersionId;
+                    }
+                }
+                else if(_plcConfig != null)
+                {
+                    //Configuration = "Release";
+                    //Target = "TC3.1";
+                    Version = _plcConfig.Version;
+                    Authors = _plcConfig.Authors;
+                    Entitlement = _plcConfig.Entitlement;
+                    License = _plcConfig.License;
+                    //LicenseFile = mappedPlc.LicenseFile;
+                }
+    
+                if (_packageVersion.PackageVersionId != null)
+                { 
+                    try
+                    {
+                        var packageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, (int)_packageVersion.PackageVersionId, includeBinary: false);
+    
+                        Authors = packageVersion.Authors;
+                        License = packageVersion.License;
+                        Notes = packageVersion.Notes;
+                        Version = packageVersion.Version;
+                    }
+                    catch (Exceptions.GetException ex)
+                    {
+                        MessageBox.Show(ex.Message, "Retrieving Package failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex.Message);
+                    }
+                }
+    
+                IsNewPackage = _package.PackageId == null;
+                IsEditPackageVisible = !IsNewPackage;
+                IsApplyApplicable = false;
+                IsVersionDataReadOnly = false;
+                IsGeneralDataReadOnly = IsNewPackage;
+                IsEnabled = true;                
+             }
+            catch(Exception ex)
             {
-                try
-                {
-                    var package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, (int)_package.PackageId);
-
-                    PackageName = package.Name;
-                    DisplayName = package.DisplayName;
-                    Description = package.Description;
-                    Entitlement = package.Entitlement;
-                    ProjectUrl = package.ProjectUrl;
-                    IconUrl = package.IconUrl;
-                }
-                catch (Exceptions.GetException ex)
-                {
-                    MessageBox.Show(ex.Message, "Retrieving Package failed", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error(ex.Message);
-                }
+                _logger.Trace(ex);
             }
-            else if(_plcConfig != null)
-            {
-                IsVersionEditable = true;
-
-                PackageName = _plcConfig.Name;
-                DisplayName = _plcConfig.DisplayName;
-                Description = _plcConfig.Description;
-                Entitlement = _plcConfig.Entitlement;
-                ProjectUrl = _plcConfig.ProjectUrl;
-                IconUrl = _plcConfig.IconUrl;
-            }
-
-            if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
-            {
-                // try to get the specific version
-                IsNewPackageVersion = false;
-                _packageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username, _package.Name, _packageVersion.Version, "Release", "main", "TC3.1", false, null);
-                // fallback to the latest available version
-                if(_packageVersion.PackageVersionId == null)
-                {
-                    IsNewPackageVersion = true;
-                    _packageVersion.PackageVersionId = (await TwinpackService.GetPackageVersionsAsync(_auth.Username, _auth.Password, (int)_package.PackageId, 1, 1)).FirstOrDefault()?.PackageVersionId;
-                }
-            }
-            else if(_plcConfig != null)
-            {
-                //Configuration = "Release";
-                //Target = "TC3.1";
-                Version = _plcConfig.Version;
-                Authors = _plcConfig.Authors;
-                Entitlement = _plcConfig.Entitlement;
-                License = _plcConfig.License;
-                //LicenseFile = mappedPlc.LicenseFile;
-            }
-
-            if (_packageVersion.PackageVersionId != null)
-            { 
-                try
-                {
-                    var packageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, (int)_packageVersion.PackageVersionId, includeBinary: false);
-
-                    Authors = packageVersion.Authors;
-                    License = packageVersion.License;
-                    Notes = packageVersion.Notes;
-                    Version = packageVersion.Version;
-                }
-                catch (Exceptions.GetException ex)
-                {
-                    MessageBox.Show(ex.Message, "Retrieving Package failed", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error(ex.Message);
-                }
-            }
-
-            IsNewPackage = _package.PackageId == null;
-            IsEditPackageVisible = !IsNewPackage;
-            IsApplyApplicable = false;
-            IsVersionDataReadOnly = false;
-            IsGeneralDataReadOnly = IsNewPackage;
-
-            IsEnabled = true;
         }
 
         public async Task LoadPackageAsync(int? packageId)
