@@ -185,7 +185,7 @@ namespace Twinpack
             return errorCount;
         }
 
-        static public void UpdatePlcVersion(ITcPlcIECProject2 plc, Version version)
+        static public void SyncPlcProj(ITcPlcIECProject2 plc, Models.ConfigPlcProject plc)
         {
             StringWriter stringWriter = new StringWriter();
             using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
@@ -193,7 +193,8 @@ namespace Twinpack
                 writer.WriteStartElement("TreeItem");
                 writer.WriteStartElement("IECProjectDef");
                 writer.WriteStartElement("ProjectInfo");
-                writer.WriteElementString("Version", version.ToString());
+                writer.WriteElementString("Version", (plc.Version as Version).ToString());
+                writer.WriteElementString("Company", plc.Vendor);
                 writer.WriteEndElement();     // ProjectInfo
                 writer.WriteEndElement();     // IECProjectDef
                 writer.WriteEndElement();     // TreeItem 
