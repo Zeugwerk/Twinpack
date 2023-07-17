@@ -17,26 +17,33 @@ namespace Twinpack.Dialogs
         public bool LoggedIn { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
+        public Models.LoginPostResponse UserInfo { get; set; }
 
         public async Task InitializeAsync()
         {
             try
             {
+                LoggedIn = false;
                 var credentials = CredentialManager.ReadCredential("Twinpack");
                 if(credentials != null)
                 {
                     Username = credentials.UserName;
                     Password = credentials.Password;
-                    LoggedIn = await TwinpackService.LoginAsync(credentials.UserName, credentials.Password);
+                    UserInfo = await TwinpackService.LoginAsync(credentials.UserName, credentials.Password);
+                    LoggedIn = UserInfo.User != null;
                 }
 
             }
-            catch (Exceptions.LoginException)
+            catch (Exception) { }
+            finally
             {
-                CredentialManager.DeleteCredential("Twinpack");
-                Username = null;
-                Password = null;
-                LoggedIn = false;
+                if(!LoggedIn)
+                {
+                    CredentialManager.DeleteCredential("Twinpack");
+                    Username = null;
+                    Password = null;
+                }
+
             }
         }
 
@@ -54,25 +61,25 @@ namespace Twinpack.Dialogs
 
             try
             {
-                LoggedIn = await TwinpackService.LoginAsync(credentials.UserName, credentials.Password);
+                UserInfo = await TwinpackService.LoginAsync(credentials.UserName, credentials.Password);
+                LoggedIn = UserInfo.User != null;
 
+            }
+            catch (Exception) { }
+            finally
+            {
                 if (LoggedIn)
                 {
                     CredentialManager.WriteCredential("Twinpack", credentials.UserName, credentials.Password, CredentialPersistence.LocalMachine);
-                    Username = credentials.UserName;
-                    Password = credentials.Password;
+                    Username = credentials?.UserName;
+                    Password = credentials?.Password;
                 }
-            }
-            catch (LoginException ex)
-            {
-                CredentialManager.DeleteCredential("Twinpack");
-                credentials = null;
-                throw ex;
-            }
-            finally
-            {
-                Username = credentials?.UserName;
-                Password = credentials?.Password;
+                else
+                {
+                    CredentialManager.DeleteCredential("Twinpack");
+                    Username = null;
+                    Password = null;
+                }
             }
         }
 

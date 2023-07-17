@@ -587,7 +587,7 @@ namespace Twinpack
                 {
                     return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
                     JsonElement message = new JsonElement();
@@ -612,24 +612,24 @@ namespace Twinpack
                 request.Headers.Add("zgwk-password", password);
 
                 var response = await client.SendAsync(request);
-                var content = await response.Content.ReadAsStringAsync();
+                var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
                 {
                     return JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {                
-                    JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(content);
+                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
                     JsonElement message = new JsonElement();
-                    if(responseBody.TryGetProperty("message", out message))
+                    if(responseJsonBody.TryGetProperty("message", out message))
                         throw new LoginException(message.ToString());
                     else
                         throw ex;
                 }
             }
 
-            return true;
+            return null;
         }
     }
 }
