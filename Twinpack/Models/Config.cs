@@ -115,7 +115,7 @@ namespace Twinpack.Models
             Bindings = new Dictionary<string, List<string>>();
             Patches = new ConfigPatches();
             Description = "";
-            IconUrl = "";
+            IconFile = "";
             DisplayName = "";
             ProjectUrl = "";
             Authors = "";
@@ -194,8 +194,8 @@ namespace Twinpack.Models
         [JsonPropertyName("description")]
         public string Description { get; set; }
 
-        [JsonPropertyName("icon-url")]
-        public string IconUrl { get; set; }        
+        [JsonPropertyName("icon-file")]
+        public string IconFile { get; set; }        
 
         [JsonPropertyName("project-url")]
         public string ProjectUrl { get; set; } 
