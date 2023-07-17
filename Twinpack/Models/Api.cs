@@ -87,6 +87,8 @@ namespace Twinpack.Models
         public string Name { get; set; }
         [JsonPropertyName("repository")]
         public string Repository { get; set; }
+        [JsonPropertyName("vendor")]
+        public string Vendor { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
         [JsonPropertyName("description")]
@@ -119,8 +121,6 @@ namespace Twinpack.Models
         public string Authors { get; set; }
         [JsonPropertyName("license")]
         public string License { get; set; }
-        [JsonPropertyName("vendor")]
-        public string Vendor { get; set; }
         [JsonPropertyName("binary")]
         public string Binary { get; set; }
         [JsonPropertyName("license-binary")]
