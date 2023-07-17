@@ -154,6 +154,7 @@ namespace Twinpack.Dialogs
                     Authors = _plcConfig.Authors;
                     Entitlement = _plcConfig.Entitlement;
                     License = _plcConfig.License;
+                    Vendor = _plcConfig.Vendor;
                     //LicenseFile = mappedPlc.LicenseFile;
                 }
     
@@ -167,6 +168,7 @@ namespace Twinpack.Dialogs
                         License = packageVersion.License;
                         Notes = packageVersion.Notes;
                         Version = packageVersion.Version;
+                        Vendor = packageVersion.Vendor;
                     }
                     catch (Exceptions.GetException ex)
                     {
@@ -336,6 +338,16 @@ namespace Twinpack.Dialogs
             {
                 _packageVersion.Version = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Version)));
+            }
+        }
+
+        public string Vendor
+        {
+            get { return _packageVersion.Vendor; }
+            set
+            {
+                _packageVersion.Vendor = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Vendor)));
             }
         }
 
