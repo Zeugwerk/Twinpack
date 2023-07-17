@@ -34,6 +34,7 @@ namespace Twinpack.Dialogs
         private bool _isNewPackage;
         private bool _isNewPackageVersion;
         private string _version;
+        private string _iconFile;
         private bool _isApplyEnabled;
         private Authentication _auth = new Authentication();
 
@@ -111,7 +112,8 @@ namespace Twinpack.Dialogs
                         Description = package.Description;
                         Entitlement = package.Entitlement;
                         ProjectUrl = package.ProjectUrl;
-                        IconUrl = package.IconUrl;
+                        Vendor = package.Vendor;
+                        IconFile = _plcConfig?.IconFile;
                     }
                     catch (Exceptions.GetException ex)
                     {
@@ -131,7 +133,8 @@ namespace Twinpack.Dialogs
                     Description = _plcConfig.Description;
                     Entitlement = _plcConfig.Entitlement;
                     ProjectUrl = _plcConfig.ProjectUrl;
-                    IconUrl = _plcConfig.IconUrl;
+                    IconFile = _plcConfig.IconFile;
+                    Vendor = _plcConfig.Vendor;
                 }
     
                 if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
@@ -150,11 +153,11 @@ namespace Twinpack.Dialogs
                 {
                     //Configuration = "Release";
                     //Target = "TC3.1";
+                    //Branch = "main";
                     Version = _plcConfig.Version;
                     Authors = _plcConfig.Authors;
                     Entitlement = _plcConfig.Entitlement;
                     License = _plcConfig.License;
-                    Vendor = _plcConfig.Vendor;
                     //LicenseFile = mappedPlc.LicenseFile;
                 }
     
@@ -168,7 +171,6 @@ namespace Twinpack.Dialogs
                         License = packageVersion.License;
                         Notes = packageVersion.Notes;
                         Version = packageVersion.Version;
-                        Vendor = packageVersion.Vendor;
                     }
                     catch (Exceptions.GetException ex)
                     {
@@ -318,16 +320,16 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public string IconUrl
+        public string IconFile
         {
-            get { return _package.IconUrl; }
+            get { return _iconFile; }
             set
             {
-                _package.IconUrl = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconUrl)));
+                _iconFile = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconFile)));
 
-                if(!string.IsNullOrEmpty(_package.IconUrl))
-                    UpdateIconImage(_package.IconUrl);
+                if(!string.IsNullOrEmpty(_iconFile))
+                    UpdateIconImage(_iconFile);
             }
         }
 
@@ -411,7 +413,7 @@ namespace Twinpack.Dialogs
                 DisplayName = DisplayName,
                 Description = Description,
                 ProjectUrl = ProjectUrl,
-                IconUrl = IconUrl
+                IconBinary = IconFile
             };
 
             try
@@ -422,7 +424,7 @@ namespace Twinpack.Dialogs
                 DisplayName = packageResult.DisplayName;
                 Description = packageResult.Description;
                 ProjectUrl = packageResult.ProjectUrl;
-                IconUrl = packageResult.IconUrl;
+                Icon = packageResult.IconBinary;
             }
             catch (Exceptions.GetException ex)
             {
