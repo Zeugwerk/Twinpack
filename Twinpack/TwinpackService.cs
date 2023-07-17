@@ -483,6 +483,8 @@ namespace Twinpack
                     JsonElement message = new JsonElement();
                     if (responseJsonBody.TryGetProperty("message", out message))
                         throw new PutException(message.ToString());
+                    else
+                        throw ex;                    
                 }
             }
 
@@ -491,7 +493,7 @@ namespace Twinpack
 
         
         
-        static public async Task<bool> LoginAsync(string username, string password)
+        static public async Task<LoginPostResponse> LoginAsync(string username, string password)
         {
             using (HttpClient client = new HttpClient())
             {
@@ -502,10 +504,19 @@ namespace Twinpack
                 var response = await client.SendAsync(request);
                 var content = await response.Content.ReadAsStringAsync();
 
-                JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(content);
-                JsonElement message = new JsonElement();
-                if(responseBody.TryGetProperty("message", out message))
-                    throw new LoginException(message.ToString());
+                try
+                {
+                    return JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
+                }
+                catch (Exception)
+                {                
+                    JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(content);
+                    JsonElement message = new JsonElement();
+                    if(responseBody.TryGetProperty("message", out message))
+                        throw new LoginException(message.ToString());
+                    else
+                        throw ex;
+                }
             }
 
             return true;
