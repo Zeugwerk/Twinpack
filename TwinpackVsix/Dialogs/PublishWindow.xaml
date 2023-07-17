@@ -84,9 +84,13 @@
         <!-- Version Data -->
         <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="2" Margin="10 15 5 5" IsEnabled="{Binding IsVersionDataReadOnly, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
 
+            <Label Content="Version:" HorizontalAlignment="Left" Margin="0"/>
             <TextBlock Text="{Binding Version}" HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold"  Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
-            <Label Content="Version:" HorizontalAlignment="Left" Margin="0"  Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             <TextBox Text="{Binding Version}" Width="200" Margin="0" TextChanged="VersionTextBox_TextChanged" Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+            <Label Content="Vendor:" HorizontalAlignment="Left" Margin="0"/>
+            <TextBlock Text="{Binding Vendor}" Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
+            <TextBox Text="{Binding Vendor}" Width="200" Height="100" Margin="0" Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter}"/>
 
             <Label Content="License File:" HorizontalAlignment="Left" Margin="0"/>
             <StackPanel Orientation="Horizontal">
