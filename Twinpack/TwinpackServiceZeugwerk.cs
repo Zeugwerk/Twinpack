@@ -555,53 +555,6 @@ namespace Twinpack
             }
         }
 
-        static private void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string vendor, bool addAsPlaceholder = true)
-        {
-            // Try to remove the already existing reference
-            foreach (ITcPlcLibRef item in libManager.References)
-            {
-                string libName;
-                string itemPlaceholderName;
-                string distributor;
-                string displayName;
-
-                try
-                {
-                    ITcPlcPlaceholderRef2 plcPlaceholder;
-                    ITcPlcLibrary plcLibrary;
-                    plcPlaceholder = (ITcPlcPlaceholderRef2)item;
-
-                    itemPlaceholderName = plcPlaceholder.PlaceholderName;
-
-                    if (plcPlaceholder.EffectiveResolution != null)
-                        plcLibrary = (ITcPlcLibrary)plcPlaceholder.EffectiveResolution;
-                    else
-                        plcLibrary = (ITcPlcLibrary)plcPlaceholder.DefaultResolution;
-
-                    libName = plcLibrary.Name.Split(',')[0];
-                    distributor = plcLibrary.Distributor;
-                    displayName = plcLibrary.DisplayName;
-                }
-                catch
-                {
-                    ITcPlcLibrary plcLibrary;
-                    plcLibrary = (ITcPlcLibrary)item;
-                    libName = plcLibrary.Name.Split(',')[0];
-                    distributor = plcLibrary.Distributor;
-                    displayName = plcLibrary.DisplayName;
-                    itemPlaceholderName = libName;
-                }
-
-                if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase))
-                    libManager.RemoveReference(placeholderName);
-            }
-
-            if (addAsPlaceholder)
-                libManager.AddPlaceholder(placeholderName, libraryName, version, vendor);
-            else
-                libManager.AddLibrary(libraryName, version, vendor);
-        }
-
         static private async Task<RetrieveVersionResult> RestorePlcFrameworkAsync(List<string> repositories, string used_tcversion, Models.ConfigPlcProject.PlcProjectType type, List<string> references, string version, string targetPath)
         {
             RetrieveVersionResult restoreResult = new RetrieveVersionResult();
