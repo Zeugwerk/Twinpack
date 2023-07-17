@@ -96,35 +96,10 @@ namespace Twinpack.Dialogs
                 IsVersionDataReadOnly = false;
                 IsGeneralDataReadOnly = false;
     
-                _plcConfig = null;
-                if(!string.IsNullOrEmpty(_context?.Solution?.FullName))
-                {
-                    var config = Models.ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
-                    config = null;
-                    if (config == null)
-                        config = Models.ConfigFactory.CreateFromSolution(_context.Solution);
-    
-                    string projectName = null;
-                    foreach (EnvDTE.Project prj in _context.Solution.Projects)
-                    {
-                        try
-                        {
-                            ITcSmTreeItem plcs = (prj.Object as ITcSysManager).LookupTreeItem("TIPC");
-                            foreach (ITcSmTreeItem9 plc in plcs)
-                                if (Object.ReferenceEquals((_plc.Object as dynamic).Parent, plc))
-                                {
-                                    projectName = plc.Name;
-                                    break;
-                                }
-                        }
-                        catch (Exception) { }
-                    }
-    
-                    _plcConfig = config.Projects.Where(x => x.Name == projectName).SelectMany(x => x.Plcs).Where(x => x.Name == _plc.Name).FirstOrDefault();
-                    if (_package.PackageId == null && _plcConfig != null)
-                        _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _plcConfig.Name);
-                }
-    
+                _plcConfig = await Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
+                if (_package.PackageId == null && _plcConfig != null)
+                    _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _plcConfig.Name);
+
                 if (_package.PackageId != null)
                 {
                     try
@@ -519,7 +494,8 @@ namespace Twinpack.Dialogs
                 try
                 {
                     await LoginAsync();
-                    _packageVersion = await TwinpackService.PostPackageVersionAsync(_auth.Username, _auth.Password, _plcConfig, "Release", "main", "TC3.1", Notes, false, cachePath: $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries");
+                    _packageVersion = await TwinpackService.PostPackageVersionAsync(_auth.Username, _auth.Password, _plcConfig, "Release", "main", "TC3.1", Notes,
+                        false, cachePath: $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries");
                     _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, (int)_packageVersion.PackageId);
 
                     IsNewPackage = false;

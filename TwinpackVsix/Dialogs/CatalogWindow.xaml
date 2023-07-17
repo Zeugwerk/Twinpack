@@ -96,13 +96,14 @@
             </ListView>
 
             <ScrollViewer x:Name="PackageVersionView" Margin="5,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Vertical" IsEnabled="{Binding IsPlcConfigAvailable}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"></ColumnDefinition>
                             <ColumnDefinition Width="auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
                         <TextBlock x:Name="PackageDisplayName" Text="" FontSize="20" FontWeight="SemiBold"></TextBlock>
+                        <Button Grid.Column="1" x:Name="btnEditPackage" Width="80" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">Edit Package</Button>
                     </Grid>
                     <TextBlock Margin="10,0,0,0"  FontSize="10">
                         <Run Text="{Binding Name}" FontWeight="SemiBold"/>
@@ -124,12 +125,7 @@
                                 <RowDefinition Height="auto"></RowDefinition>
                                 <RowDefinition Height="auto"></RowDefinition>
                             </Grid.RowDefinitions>
-                            <TextBlock Text="Installed" Grid.Column="0" Grid.Row="0" Margin="5,0,5,5"></TextBlock>
-                            <TextBlock Text="Available" Grid.Column="0" Grid.Row="1" Margin="5,0,5,5"></TextBlock>
-
-                            <TextBox x:Name="PackageVersionInstalledTextBox" Padding="3,0,0,0" IsReadOnly="True" Text="" IsEnabled="False" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="0" Margin="5,0,5,5"/>
-
-                            <ComboBox x:Name="PackageVersionsView" d:ItemsSource="{d:SampleData ItemCount=3}" IsEnabled="False" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="1" Margin="5,0,5,5">
+                            <ComboBox x:Name="PackageVersionsView" d:ItemsSource="{d:SampleData ItemCount=3}" IsEnabled="False" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="0" Margin="5,0,5,5">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Vertical">
@@ -146,14 +142,16 @@
                                         </StackPanel>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
-                            </ComboBox>
-
+                            </ComboBox>                              
+                            <TextBlock Text="Installed" Grid.Column="0" Grid.Row="0" Margin="5,0,5,5"></TextBlock>
+                            <TextBlock Text="Available" Grid.Column="0" Grid.Row="1" Margin="5,0,5,5"></TextBlock>
+                            <TextBox Text="{Binding InstalledPackageVersion}" Padding="3,0,0,0" IsReadOnly="True" IsEnabled="False" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="1" Margin="5,0,5,5"/>
+                            <Button Grid.Column="2" Grid.Row="0" Margin="0,0,5,5">Uninstall</Button>
+                            <Button Grid.Column="2" Grid.Row="1" Click="AddPackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Add as Reference</Button>
+                            <Button Grid.Column="2" Grid.Row="1" Click="UpdatePackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Update Reference</Button>
                             <CheckBox x:Name="FilterByInstalledSettingsCheck" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">Filter by used package settings</CheckBox>
 
-                            <Button x:Name="UninstallButton" IsEnabled="False" Grid.Column="2" Grid.Row="0" Margin="0,0,5,5">Uninstall</Button>
-                            <Button Grid.Column="2" Grid.Row="1" Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Install</Button>
-                            <Button Grid.Column="2" Grid.Row="2" x:Name="btnEditPackage" Width="80" Margin="0,0,5,5" HorizontalAlignment="Right" Click="EditPackageButton_Click">Edit Package</Button>
-                        </Grid>
+                       </Grid>
 
                         <StackPanel Orientation="Vertical">
                             <TextBlock Text="Notes: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>

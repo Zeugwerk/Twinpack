@@ -85,6 +85,8 @@ namespace Twinpack.Models
         public int? PackageId { get; set; }
         [JsonPropertyName("name")]
         public string Name { get; set; }
+        [JsonPropertyName("repository")]
+        public string Repository { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
         [JsonPropertyName("description")]
@@ -103,6 +105,8 @@ namespace Twinpack.Models
         public int? PackageVersionId { get; set; }
         [JsonPropertyName("version")]
         public string Version { get; set; }
+        [JsonPropertyName("branch")]
+        public string Branch { get; set; }
         [JsonPropertyName("target")]
         public string Target { get; set; }
         [JsonPropertyName("configuration")]
@@ -119,6 +123,24 @@ namespace Twinpack.Models
         public string Authors { get; set; }
         [JsonPropertyName("license")]
         public string License { get; set; }
+        [JsonPropertyName("vendor")]
+        public string Vendor { get; set; }
+
+        public static bool operator ==(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
+        {
+            return lhs.Name == rhs.Name && lhs.Version == rhs.Version && lhs.Target == rhs.Target && lhs.Configuration == rhs.Configuration && lhs.Branch == rhs.Branch;
+        }
+
+        public static bool operator !=(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public static bool Equals(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
+        {
+            return lhs == rhs;
+        }
+
     }
 
     public class PackagePatchRequest

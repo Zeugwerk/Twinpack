@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using NLog;
 using TCatSysManagerLib;
@@ -149,9 +150,42 @@ namespace Twinpack.Models
     }
 
 
-    class ConfigPlcProjectFactory
+    public class ConfigPlcProjectFactory
     {
         static public XNamespace TcNs = "http://schemas.microsoft.com/developer/msbuild/2003";
+
+        static public async Task<ConfigPlcProject> MapPlcConfigToPlcProj(EnvDTE.Solution solution, EnvDTE.Project plc)
+        {
+            ConfigPlcProject plcConfig = null;
+
+            if (!string.IsNullOrEmpty(solution?.FullName))
+            {
+                var config = Models.ConfigFactory.Load(System.IO.Path.GetDirectoryName(solution.FullName));
+                config = null;
+                if (config == null)
+                    config = Models.ConfigFactory.CreateFromSolution(solution);
+
+                string projectName = null;
+                foreach (EnvDTE.Project prj in solution.Projects)
+                {
+                    try
+                    {
+                        ITcSmTreeItem plcs = (prj.Object as ITcSysManager).LookupTreeItem("TIPC");
+                        foreach (ITcSmTreeItem9 p in plcs)
+                            if (Object.ReferenceEquals((plc.Object as dynamic).Parent, p))
+                            {
+                                projectName = plc.Name;
+                                break;
+                            }
+                    }
+                    catch (Exception) { }
+                }
+
+                plcConfig = config.Projects.Where(x => x.Name == projectName).SelectMany(x => x.Plcs).Where(x => x.Name == plc.Name).FirstOrDefault();
+            }
+
+            return plcConfig;
+        }
 
         public static ConfigPlcProject Create(string plcProjFilepath)
         {

@@ -78,7 +78,7 @@ namespace Twinpack
                 }
             }
 
-            string credentials = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(username + ":" + password));
+            string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(username + ":" + password));
 
             // create Request
             HttpRequestMessage request = new HttpRequestMessage(method, uri);
@@ -201,6 +201,69 @@ namespace Twinpack
             (plc as ITcSmTreeItem).ConsumeXml(stringWriter.ToString());
         }
 
+        static public void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string vendor, bool addAsPlaceholder = true)
+        {
+            // try to find the vendor
+            if(vendor == null)
+            {
+                _logger.Warn($"Trying to add a reference {libraryName}={version} without an explicit vendor");
+                foreach (ITcPlcLibrary r in libManager.ScanLibraries())
+                {
+                    if (r.Name == libraryName && (r.Version == version || version == "*"))
+                    {
+                        vendor = r.Distributor;
+                        break;
+                    }
+                }
+                _logger.Warn($"Guessed vendor of {libraryName}={version} with {vendor}");
+            }
+
+
+            // Try to remove the already existing reference
+            foreach (ITcPlcLibRef item in libManager.References)
+            {
+                string libName;
+                string itemPlaceholderName;
+                string distributor;
+                string displayName;
+
+                try
+                {
+                    ITcPlcPlaceholderRef2 plcPlaceholder;
+                    ITcPlcLibrary plcLibrary;
+                    plcPlaceholder = (ITcPlcPlaceholderRef2)item;
+
+                    itemPlaceholderName = plcPlaceholder.PlaceholderName;
+
+                    if (plcPlaceholder.EffectiveResolution != null)
+                        plcLibrary = (ITcPlcLibrary)plcPlaceholder.EffectiveResolution;
+                    else
+                        plcLibrary = (ITcPlcLibrary)plcPlaceholder.DefaultResolution;
+
+                    libName = plcLibrary.Name.Split(',')[0];
+                    distributor = plcLibrary.Distributor;
+                    displayName = plcLibrary.DisplayName;
+                }
+                catch
+                {
+                    ITcPlcLibrary plcLibrary;
+                    plcLibrary = (ITcPlcLibrary)item;
+                    libName = plcLibrary.Name.Split(',')[0];
+                    distributor = plcLibrary.Distributor;
+                    displayName = plcLibrary.DisplayName;
+                    itemPlaceholderName = libName;
+                }
+
+                if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase))
+                    libManager.RemoveReference(placeholderName);
+            }
+
+            if (addAsPlaceholder)
+                libManager.AddPlaceholder(placeholderName, libraryName, version, vendor);
+            else
+                libManager.AddLibrary(libraryName, version, vendor);
+        }
+
         static public async Task PullAsync(string username, string password, string configuration, string branch, string target, string cachePath=null)
         {
             var config = ConfigFactory.Load();
@@ -251,6 +314,7 @@ namespace Twinpack
         {
             var suffix = compiled ? "compiled-library" : "library";
             string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
+
             string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
             var requestBody = new PackageVersionPostRequest()
             {
@@ -389,7 +453,10 @@ namespace Twinpack
             _logger.Info($"Retrieving package version from Twinpack Server");
             using (HttpClient client = new HttpClient())
             {
-                var request = CreateHttpRequest(new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version&id={packageVersionId}&include-binary=0"), HttpMethod.Get, authorize: true);
+                var request = CreateHttpRequest(new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
+                    $"&id={packageVersionId}&include-binary={(includeBinary ? 1 : 0)}"), 
+                    HttpMethod.Get, authorize: true);
+
                 request.Headers.Add("zgwk-username", username);
                 request.Headers.Add("zgwk-password", password);
 
@@ -405,7 +472,7 @@ namespace Twinpack
                         var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
                         Directory.CreateDirectory(filePath);
                         var extension = packageVersion.Compiled == 1 ? ".compiled-library" : ".library";
-                        File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.library", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
+                        File.WriteAllBytes($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.library", Convert.FromBase64String(packageVersion.Binary));
                     }
 
                     return packageVersion;
