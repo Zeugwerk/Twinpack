@@ -107,12 +107,16 @@ namespace Twinpack.Dialogs
                 {
                     await _auth.LoginAsync();
                     if(!_auth.LoggedIn)
-                        MessageBox.Show("Login was not successful! Go to https://twinpack.dev/wp-login.php to register", "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                        throw new Exceptions.LoginException("Login was not successful! Go to https://twinpack.dev/wp-login.php to register");
                 }
                 else
                 {
                     _auth.Logout();
                 }
+            }
+            catch(Exceptions.LoginException ex)
+            {
+                MessageBox.Show(ex.Message, "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch(Exception ex)
             {
