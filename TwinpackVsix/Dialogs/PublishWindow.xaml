@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              ResizeMode="NoResize"
              WindowStartupLocation="CenterScreen"
-             Height="520" Width="462">
+             SizeToContent="WidthAndHeight">
     <Window.Resources>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
@@ -15,6 +15,7 @@
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="25"/>
             <ColumnDefinition Width="Auto"/>
@@ -27,7 +28,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Grid.ColumnSpan="3">
+        <Grid Grid.Row="0" Grid.ColumnSpan="4">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"></RowDefinition>
             </Grid.RowDefinitions>
@@ -44,19 +45,17 @@
         </Grid>
 
         <!-- General Data -->
-        <StackPanel Grid.Row="1" Orientation="Vertical"  Margin="5 15 0 0">
-            <Label Content="Name:" HorizontalAlignment="Left" Margin="0"/>
+        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical"  Margin="50 15 0 0">
             <TextBlock Text="{Binding PackageName}" HorizontalAlignment="Center" Margin="0" FontSize="18" FontWeight="SemiBold" />
-             
-            <Label Content="Distributor name:" HorizontalAlignment="Left" Margin="0"/>
-            <TextBlock Text="{Binding DistributorName}" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
-            <TextBox Text="{Binding DistributorName}" Width="200" Height="100" Margin="0" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-            <Border Width="128" Height="128" Grid.Row="0" Background="#DA776D" CornerRadius="64" Margin="0 10 0 0">
-                <Image Source="{Binding ImageIcon}" Width="128" Height="128" Margin="0,0,0,10"/>
-            </Border>
+            <TextBlock Text="{Binding DistributorName}"  FontWeight="SemiBold"  HorizontalAlignment="Center" 
+                       Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
+            <Label Content="Distributor name:" HorizontalAlignment="Left" Margin="0" Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <TextBox Text="{Binding DistributorName}" Width="200" Margin="0" Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <Image Source="{Binding IconImage}" Width="128" Height="128" Margin="0,10,0,10"/>
 
-            <StackPanel Orientation="Horizontal">
+
+            <StackPanel Orientation="Horizontal" Margin="0 0 0 0" Height="30">
                 <Button x:Name="btnEditPackage"  Click="EditPackage_Click" Content="Edit Package" Width="80" Margin="5" HorizontalAlignment="Center"
                     Visibility="{Binding IsEditPackageVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
@@ -75,15 +74,15 @@
                 <Label Content="Project URL:" HorizontalAlignment="Left" Margin="0"/>
                 <TextBox Text="{Binding ProjectUrl}" Width="200" Margin="0"/>
 
-                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0 10 0 0" Visibility="{Binding IsApplyApplicable, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
-                    <Button Content="Apply" Width="50" Margin="0 5 0 5" Click="ApplyPackage_Click" HorizontalAlignment="Center" IsEnabled="{Binding IsApplyEnabled}"/>
-                    <Button Content="Cancel" Width="50" Margin="5 5 0 5" Click="CancelPackage_Click" HorizontalAlignment="Center" IsEnabled="{Binding IsApplyEnabled}"/>
+                <StackPanel Height="50" HorizontalAlignment="Right" Orientation="Horizontal" Margin="0 10 0 0" Visibility="{Binding IsApplyApplicable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Button Content="Apply" Width="50" Margin="0 5 0 5" Click="ApplyPackage_Click" VerticalAlignment="Top" HorizontalAlignment="Center" IsEnabled="{Binding IsApplyEnabled}"/>
+                    <Button Content="Cancel" Width="50" Margin="5 5 0 5" Click="CancelPackage_Click" VerticalAlignment="Top" HorizontalAlignment="Center" IsEnabled="{Binding IsApplyEnabled}"/>
                 </StackPanel>
             </StackPanel>
         </StackPanel>
 
         <!-- Version Data -->
-        <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="2" Margin="10 15 5 5" IsEnabled="{Binding IsVersionDataReadOnly, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
+        <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="3" Margin="10 15 15 5" IsEnabled="{Binding IsVersionDataReadOnly, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
 
             <Label Content="Version:" HorizontalAlignment="Left" Margin="0"/>
             <TextBlock Text="{Binding Version}" HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold"  Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
@@ -103,11 +102,38 @@
         </StackPanel>
 
         <!-- Publish Button -->
-        <StackPanel Grid.Row="2" Grid.ColumnSpan="3" HorizontalAlignment="Right" Orientation="Horizontal">
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="4" HorizontalAlignment="Right" Orientation="Horizontal">
             <Button HorizontalAlignment="Right" Content="Publish" Width="80" Margin="5" Click="Publish_Click" IsEnabled="{Binding IsNewPackageVersion}" Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             <Button HorizontalAlignment="Right" Content="Apply" Width="80" Margin="5" Click="Apply_Click" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
             <Button HorizontalAlignment="Right" Content="Close" Width="80" Margin="5" Click="Close_Click"/>
         </StackPanel>
+
+        <!--Information -->
+        <StackPanel Background="#FFcad0de" Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Margin="0" HorizontalAlignment="Stretch" Orientation="Vertical">
+
+            <StackPanel VerticalAlignment="Center" Margin="15 60 15 0">
+
+                <TextBlock  TextWrapping="Wrap" Margin="0 0 0 0">
+                    <Run FontWeight="SemiBold">Known Distributor</Run>
+                    <LineBreak></LineBreak>
+                    <Run>You already uploaded one or more packages to the Twinpack Server and setup your are distribution name.</Run>
+                </TextBlock>
+
+                <TextBlock  TextWrapping="Wrap" Margin="0 15 0 0">
+                    <Run FontWeight="SemiBold">Known Package</Run>
+                    <LineBreak></LineBreak>
+                    <Run>There are versions of this package available on the Twinpack Server. You may upload additional versions of this package or apply limited changes to the selected package.</Run>
+                </TextBlock>
+                
+                <TextBlock TextWrapping="Wrap" Margin="0 15 0 0">
+                    <Run FontWeight="SemiBold">Public Visibility</Run>
+                    <LineBreak></LineBreak>
+                    <Run>The package in the current configuration will be visible to all users of Twinpack.</Run>
+                </TextBlock>
+            </StackPanel>
+
+        </StackPanel>
+
 
     </Grid>
 </Window>

@@ -266,23 +266,17 @@ namespace Twinpack
                 libManager.AddLibrary(libraryName, version, vendor);
         }
 
-        static public async Task<BitmapImage> IconImage(string iconUrl)
+        static public  BitmapImage IconImage(string iconUrl)
         {
             if (iconUrl == null)
                 return null;
 
-            HttpClient client = new HttpClient();
             try
             {
                 BitmapImage img = new BitmapImage();
                 img.CacheOption = BitmapCacheOption.OnLoad;
                 img.BeginInit();
-
-                if(iconUrl.StartsWith("http"))
-                    img.StreamSource = await client.GetStreamAsync(iconUrl);
-                else
-                    img.UriSource = new Uri(iconUrl, UriKind.RelativeOrAbsolute);
-                   
+                img.UriSource = new Uri(iconUrl, UriKind.Absolute);
                 img.EndInit();
                 return img;
             }
@@ -352,6 +346,7 @@ namespace Twinpack
                 Target = target,
                 License = plc.License,
                 Description = plc.Description,
+                DistributorName = plc.DistributorName,
                 Authors = plc.Authors,
                 Entitlement = plc.Entitlement,
                 ProjectUrl = plc.ProjectUrl,
@@ -360,7 +355,7 @@ namespace Twinpack
                 Configuration = configuration,
                 Compiled = compiled ? 1 : 0,
                 Notes = notes,
-                IconFilename = System.IO.Path.GetFileName(plc.IconFile),
+                IconFilename = Path.GetFileName(plc.IconFile),
                 IconBinary = iconBinary,                
                 LicenseBinary = licenseBinary,
                 Binary = binary                

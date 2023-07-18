@@ -50,9 +50,7 @@ namespace Twinpack.Dialogs
         public async Task LoginAsync()
         {
             if (LoggedIn)
-            {
                 return;
-            }
 
             var credentials = CredentialManager.PromptForCredentials(
                 messageText: $"Login to your Twinpack Server account. Logging in will give you access to additional features. " +
@@ -61,6 +59,7 @@ namespace Twinpack.Dialogs
 
             try
             {
+                UserInfo = new Models.LoginPostResponse();
                 UserInfo = await TwinpackService.LoginAsync(credentials.UserName, credentials.Password);
                 LoggedIn = UserInfo.User != null;
 

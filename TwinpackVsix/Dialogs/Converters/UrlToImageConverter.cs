@@ -74,13 +74,7 @@ namespace Twinpack.Dialogs
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var val = (string)value;
-            var task = Task.Run(async () =>
-            {
-                return await TwinpackService.IconImage(val);
-            });
-            
-            return new TaskCompletionNotifier<BitmapImage>(task);
+            return TwinpackService.IconImage((string)value);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
