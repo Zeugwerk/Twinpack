@@ -178,8 +178,8 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
-                                <TextBlock Text="Vendor: " FontWeight="SemiBold"  ></TextBlock>
-                                <TextBlock x:Name="PackageVendor" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock Text="Distributor name: " FontWeight="SemiBold"  ></TextBlock>
+                                <TextBlock x:Name="DistributorName" TextWrapping="Wrap" Text=""></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
