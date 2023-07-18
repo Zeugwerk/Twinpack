@@ -27,6 +27,8 @@ namespace Twinpack.Models
         public string Name { get; set; }
         [JsonPropertyName("repository")]
         public string Repository { get; set; }
+        [JsonPropertyName("distributor-name")]
+        public string DistributorName { get; set; }        
         [JsonPropertyName("description")]
         public string Description { get; set; }
         [JsonPropertyName("icon-binary")]
@@ -87,8 +89,8 @@ namespace Twinpack.Models
         public string Name { get; set; }
         [JsonPropertyName("repository")]
         public string Repository { get; set; }
-        [JsonPropertyName("vendor")]
-        public string Vendor { get; set; }
+        [JsonPropertyName("distributor-name")]
+        public string DistributorName { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
         [JsonPropertyName("description")]
@@ -201,8 +203,8 @@ namespace Twinpack.Models
         public string Configuration { get; set; }
         [JsonPropertyName("notes")]
         public string Notes { get; set; }
-        [JsonPropertyName("vendor")]
-        public string Vendor { get; set; }
+        [JsonPropertyName("distributor-name")]
+        public string DistributorName { get; set; }
         [JsonPropertyName("license-binary")]
         public string LicenseBinary { get; set; }
         [JsonPropertyName("icon-binary")]
@@ -215,6 +217,8 @@ namespace Twinpack.Models
     {
         [JsonPropertyName("user")]
         public string User { get; set; }
+        [JsonPropertyName("distributor-name")]
+        public string DistributorName { get; set; }        
         [JsonPropertyName("configurations")]
         public List<string> Configurations { get; set; }
         [JsonPropertyName("targets")]
