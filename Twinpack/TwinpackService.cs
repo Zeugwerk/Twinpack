@@ -265,6 +265,26 @@ namespace Twinpack
                 libManager.AddLibrary(libraryName, version, vendor);
         }
 
+        static public async Task<BitmapImage> IconImage(string iconUrl)
+        {
+            HttpClient client = new HttpClient();
+        
+            try
+            {
+                BitmapImage img = new BitmapImage();
+                img.CacheOption = BitmapCacheOption.OnLoad;
+                img.BeginInit();
+                img.StreamSource = await client.GetStreamAsync(iconUrl);
+                img.EndInit();
+                return img;
+            }
+            catch (HttpRequestException)
+            {
+                // the download failed, log error
+                return null;
+            }
+        }
+        
         static public async Task PullAsync(string username, string password, string configuration, string branch, string target, string cachePath=null)
         {
             var config = ConfigFactory.Load();
