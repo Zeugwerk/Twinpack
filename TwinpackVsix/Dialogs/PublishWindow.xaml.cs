@@ -35,6 +35,7 @@ namespace Twinpack.Dialogs
         private bool _isNewPackageVersion;
         private string _version;
         private string _iconFile;
+        private BitmapImage _iconImage;
         private bool _isApplyEnabled;
         private Authentication _auth = new Authentication();
 
@@ -114,7 +115,7 @@ namespace Twinpack.Dialogs
                         ProjectUrl = package.ProjectUrl;
                         DistributorName = package.DistributorName;
                         IconFile = _plcConfig?.IconFile;
-                        UpdateIconImage(package.IconUrl);
+                        IconImage = await TwinpackService.IconImage(package.IconUrl);
                     }
                     catch (Exceptions.GetException ex)
                     {
@@ -135,8 +136,8 @@ namespace Twinpack.Dialogs
                     Entitlement = _plcConfig.Entitlement;
                     ProjectUrl = _plcConfig.ProjectUrl;
                     IconFile = _plcConfig.IconFile;
+                    IconImage = await TwinpackService.IconImage(_plcConfig.IconFile);                    
                     DistributorName = _plcConfig.DistributorName;
-                    UpdateIconImage(IconFile);
                 }
     
                 if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
@@ -329,11 +330,18 @@ namespace Twinpack.Dialogs
             {
                 _iconFile = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconFile)));
-
-                if(!string.IsNullOrEmpty(_iconFile))
-                    UpdateIconImage(_iconFile);
             }
         }
+
+        public string IconImage
+        {
+            get { return _iconImage; }
+            set
+            {
+                _iconImage = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconImage)));
+            }
+        }        
 
         public string Version
         {
@@ -392,7 +400,7 @@ namespace Twinpack.Dialogs
             IsApplyApplicable = true;
 
         }
-        private void ChangeIcon_Click(object sender, RoutedEventArgs e)
+        private await void ChangeIcon_Click(object sender, RoutedEventArgs e)
         {
             var inputDialog = new InputDialog();
             inputDialog.InputValue = _package.IconUrl;
@@ -400,7 +408,8 @@ namespace Twinpack.Dialogs
 
             if (inputDialog.DialogResult == true)
             {
-                IconUrl = inputDialog.InputValue;
+                IconFile = inputDialog.InputValue;
+                IconImage = await TwinpackService.IconImage(IconFile);
             }
         }
 
@@ -427,7 +436,7 @@ namespace Twinpack.Dialogs
                 DisplayName = packageResult.DisplayName;
                 Description = packageResult.Description;
                 ProjectUrl = packageResult.ProjectUrl;
-                UpdateIconImage(packageResult.IconUrl);
+                IconImage = await TwinpackService.IconImage(packageResult.IconUrl);
             }
             catch (Exceptions.GetException ex)
             {
@@ -609,24 +618,6 @@ namespace Twinpack.Dialogs
             IsNewPackageVersion = _packageVersion.PackageVersionId == null;
         }
 
-        private void UpdateIconImage(string iconUrl)
-        {
-            if (string.IsNullOrEmpty(iconUrl))
-                return;
 
-            try
-            {
-                BitmapImage bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(iconUrl);
-                bitmap.EndInit();
-
-                imgIcon.Source = bitmap;
-            }
-            catch (WebException ex)
-            {
-                Debug.WriteLine("Failed to download the icon image: " + ex.Message);
-            }
-        }
     }
 }
