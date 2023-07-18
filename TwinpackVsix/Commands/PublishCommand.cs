@@ -78,12 +78,8 @@ namespace Twinpack.Commands
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
 
-            EnvDTE.Project activePlc = null;
-            if (_package.Context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
-                activePlc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
-
             _logger.Debug("Execute Command");
-            var publishWindow = new Dialogs.PublishWindow(_package.Context, activePlc);
+            var publishWindow = new Dialogs.PublishWindow(_package.Context);
             publishWindow.ShowDialog();
         }
     }
