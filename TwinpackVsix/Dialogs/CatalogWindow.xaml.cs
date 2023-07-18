@@ -180,7 +180,7 @@ namespace Twinpack.Dialogs
                 var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
                 libManager.InstallLibrary("System", $@"{cachePath}\{_package.Target}\{_package.Name}_{_package.Version}.{suffix}", bOverwrite: true);
 
-                TwinpackService.AddReference(libManager, _package.Name, _package.Name, _package.Version, _package.Vendor);
+                TwinpackService.AddReference(libManager, _package.Name, _package.Name, _package.Version, _package.DistributorName);
 
                 IsNewReference = false;
                 InstalledPackageVersion = _package.Version;
@@ -195,7 +195,7 @@ namespace Twinpack.Dialogs
                                                              Configuration = _package.Configuration,
                                                              Target = _package.Target,
                                                              Version = _package.Version,
-                                                             Vendor = null // todo
+                                                             DistributorName = _package.DistributorName
                                                          });
             }
             catch (Exception ex)
