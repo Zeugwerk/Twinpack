@@ -32,6 +32,7 @@ namespace Twinpack.Dialogs
         private bool _isGeneralDataReadOnly;
         private bool _isEditPackageVisible;
         private bool _isVersionEditable;
+        private bool _isNewUser;
         private bool _isNewPackage;
         private bool _isNewPackageVersion;
         private string _version;
@@ -82,7 +83,11 @@ namespace Twinpack.Dialogs
             catch (Exception ex)
             {
                 _logger.Error(ex.Message);
-            }            
+            }
+            finally
+            {
+                IsNewUser = _auth.UserInfo.DistributorName == null;
+            }
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -95,37 +100,39 @@ namespace Twinpack.Dialogs
                 await _auth.InitializeAsync();
                 if(!_auth.LoggedIn)
                     await LoginAsync();
-               
+
+                IsNewUser = _auth.UserInfo.DistributorName == null;
                 IsVersionDataReadOnly = false;
                 IsGeneralDataReadOnly = false;
     
-
                 if(_plc != null)
                 {
                     _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
                     if (_package.PackageId == null && _plcConfig != null)
+                    {
                         _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _plcConfig.Name);
+                        _plcConfig.DistributorName = _auth.UserInfo.DistributorName ?? _plcConfig.DistributorName;
+                    }
                 }
                 else
                 {
                     _plcConfig = null;
-                    _package = new Models.PackageGetResponse();
                 }
 
                 if (_package.PackageId != null)
                 {
                     try
                     {
-                        var package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, (int)_package.PackageId);
+                        _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, (int)_package.PackageId);
     
-                        PackageName = package.Name;
-                        DisplayName = package.DisplayName;
-                        Description = package.Description;
-                        Entitlement = package.Entitlement;
-                        ProjectUrl = package.ProjectUrl;
-                        DistributorName = package.DistributorName;
+                        PackageName = _package.Name;
+                        DisplayName = _package.DisplayName;
+                        Description = _package.Description;
+                        Entitlement = _package.Entitlement;
+                        ProjectUrl = _package.ProjectUrl;
+                        DistributorName = _package.DistributorName;
                         IconFile = _plcConfig?.IconFile;
-                        IconImage = await TwinpackService.IconImage(package.IconUrl);
+                        IconImage = TwinpackService.IconImage(_package.IconUrl);
                     }
                     catch (Exceptions.GetException ex)
                     {
@@ -148,8 +155,8 @@ namespace Twinpack.Dialogs
                     IconFile = _plcConfig.IconFile;
                     DistributorName = _plcConfig.DistributorName;
 
-                    if (_plcConfig.IconFile != null)
-                        IconImage = await TwinpackService.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
+                    if (!string.IsNullOrEmpty(_plcConfig.IconFile))
+                        IconImage = TwinpackService.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
                 }
     
                 if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
@@ -166,6 +173,7 @@ namespace Twinpack.Dialogs
                 }
                 else if(_plcConfig != null)
                 {
+                    IsNewPackageVersion = true;
                     //Configuration = "Release";
                     //Target = "TC3.1";
                     //Branch = "main";
@@ -201,8 +209,8 @@ namespace Twinpack.Dialogs
                 IsEditPackageVisible = !IsNewPackage;
                 IsApplyApplicable = false;
                 IsVersionDataReadOnly = false;
-                IsGeneralDataReadOnly = IsNewPackage;
-                IsEnabled = true;                
+                IsGeneralDataReadOnly = !IsNewPackage;
+                IsEnabled = true;
              }
             catch(Exception ex)
             {
@@ -213,6 +221,16 @@ namespace Twinpack.Dialogs
         public async Task LoadPackageAsync(int? packageId)
         {
 
+        }
+
+        public bool IsNewUser
+        {
+            get { return _isNewUser; }
+            set
+            {
+                _isNewUser = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsNewUser)));
+            }
         }
 
         public bool IsNewPackage
@@ -422,8 +440,8 @@ namespace Twinpack.Dialogs
                 openFileDialog.InitialDirectory = _plcConfig.RootPath;
 			    if(openFileDialog.ShowDialog() == true)
                 {
-                    IconFile = Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, openFileDialog.FileName);
-                    IconImage = await TwinpackService.IconImage(IconFile);            
+                    IconFile = Path.Combine(_plcConfig.RootPath, Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, openFileDialog.FileName));
+                    IconImage = TwinpackService.IconImage(openFileDialog.FileName);            
                 }
             }
             catch (Exception ex)
@@ -455,7 +473,7 @@ namespace Twinpack.Dialogs
                 DisplayName = packageResult.DisplayName;
                 Description = packageResult.Description;
                 ProjectUrl = packageResult.ProjectUrl;
-                IconImage = await TwinpackService.IconImage(packageResult.IconUrl);
+                IconImage = TwinpackService.IconImage(packageResult.IconUrl);
             }
             catch (Exceptions.GetException ex)
             {

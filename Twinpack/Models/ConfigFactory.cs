@@ -91,7 +91,10 @@ namespace Twinpack.Models
                     {
                         string xml = plc.ProduceXml();
                         string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
-                        project.Plcs.Add(ConfigPlcProjectFactory.Create(projectPath));
+                        var plcConfig = ConfigPlcProjectFactory.Create(projectPath);
+                        plcConfig.ProjectName = project.Name;
+                        plcConfig.RootPath = config.WorkingDirectory;
+                        project.Plcs.Add(plcConfig);
                     }
                 }
 
@@ -160,10 +163,10 @@ namespace Twinpack.Models
 
             if (!string.IsNullOrEmpty(solution?.FullName))
             {
-                var config = Models.ConfigFactory.Load(System.IO.Path.GetDirectoryName(solution.FullName));
+                var config = ConfigFactory.Load(System.IO.Path.GetDirectoryName(solution.FullName));
                 config = null;
                 if (config == null)
-                    config = Models.ConfigFactory.CreateFromSolution(solution);
+                    config = ConfigFactory.CreateFromSolution(solution);
 
                 string projectName = null;
                 foreach (EnvDTE.Project prj in solution.Projects)

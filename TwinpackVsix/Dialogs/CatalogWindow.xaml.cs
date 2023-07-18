@@ -49,7 +49,7 @@ namespace Twinpack.Dialogs
             set
             {
                 _package = value;
-                skpPackageVersion.DataContext = _package;
+                skpPackage.DataContext = _package;
             }
         }
         
@@ -59,7 +59,7 @@ namespace Twinpack.Dialogs
             set
             {
                 _packageVersion = value;
-                skpPackage.DataContext = _package;            
+                skpPackageVersion.DataContext = _packageVersion;            
             }
         }
 
@@ -166,8 +166,7 @@ namespace Twinpack.Dialogs
                 return;
 
             var packageVersionId = (PackageVersionsView.SelectedItem as Models.PackageVersionsItemGetResponse)?.PackageVersionId;
-
-            var packagePublish = new PublishWindow(_context, null, packageId, packageVersionId, _auth.Username, _auth.Password);
+            var packagePublish = new PublishWindow(_context, _plc, packageId, packageVersionId, _auth.Username, _auth.Password);
             packagePublish.ShowDialog();
         }
 
@@ -433,17 +432,16 @@ namespace Twinpack.Dialogs
 
                 // check if the plc already contains the selected package
                 _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == item.Name);
+                 Package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, item.Name);
+
                 if (_packageConfig != null)
                 {
-                    Package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _packageConfig.Name);
-                    
                     PackageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username,
                         _packageConfig.Name, _packageConfig.Version, _packageConfig.Configuration, _packageConfig.Branch, _packageConfig.Target,
                         includeBinary: false, cachePath: null);
                 }
                 else
                 {
-                    Package = new Models.PackageGetResponse();                
                     PackageVersion = new Models.PackageVersionGetResponse();
                 }
 
@@ -479,7 +477,6 @@ namespace Twinpack.Dialogs
             PackageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username,
                 item.Name, item.Version, item.Configuration, item.Branch, item.Target,
                 includeBinary: false, cachePath: null);
-            skpPackageVersion.DataContext = PackageVersion;
         }
 
         public async void ReloadButton_Click(object sender, RoutedEventArgs e)
