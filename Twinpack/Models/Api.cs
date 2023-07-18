@@ -138,9 +138,9 @@ namespace Twinpack.Models
             return !(lhs == rhs);
         }
 
-        public static bool Equals(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
+        public bool Equals(PackageVersionGetResponse o)
         {
-            return lhs == rhs;
+            return this == o;
         }
 
     }

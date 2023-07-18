@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Twinpack.Dialogs"
+             xmlns:models="clr-namespace:Twinpack.Models"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="700">
     <UserControl.Resources>
@@ -97,18 +98,18 @@
 
             <ScrollViewer x:Name="PackageVersionView" Margin="5,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Vertical" IsEnabled="{Binding IsPlcConfigAvailable}">
-                    <Grid x:Name="skpPackage" d:DataContext="{d:DesignInstance local:PackageVersion, IsDesignTimeCreatable=True}">
+                    <Grid x:Name="skpPackage">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"></ColumnDefinition>
                             <ColumnDefinition Width="auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding DisplayName}" Text="" FontSize="20" FontWeight="SemiBold"></TextBlock>
+                        <TextBlock Text="{Binding DisplayName}" FontSize="20" FontWeight="SemiBold"></TextBlock>
                         <Button Grid.Column="1" x:Name="btnEditPackage" Width="80" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">Edit Package</Button>
                     </Grid>
                     <TextBlock Margin="10,0,0,0"  FontSize="10">
                         <Run Text="{Binding Name}" FontWeight="SemiBold"/>
                         <Run Text="maintained by"></Run>
-                        <Run Text="{Binding Repository}" Text=""></Run>
+                        <Run Text="{Binding Repository}"></Run>
                     </TextBlock>
 
                     <StackPanel Orientation="Vertical" Margin="0,20,0,0">
@@ -153,48 +154,48 @@
 
                        </Grid>
 
-                        <StackPanel x:Name="skpPackageVersion" Orientation="Vertical" d:DataContext="{d:DesignInstance local:PackageVersion, IsDesignTimeCreatable=True}">
+                        <StackPanel x:Name="skpPackageVersion" Orientation="Vertical">
                             <TextBlock Text="Notes: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
-                            <TextBlock Text="{Binding Notes}" TextWrapping="Wrap" Text="" Margin="15,0,0,0"></TextBlock>
+                            <TextBlock Text="{Binding Notes}" TextWrapping="Wrap" Margin="15,0,0,0"></TextBlock>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Branch: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock Text="{Binding Branch}" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock Text="{Binding Branch}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Configuration: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock Text="{Binding Configuration}" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock Text="{Binding Configuration}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Target: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock Text="{Binding Target}" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock Text="{Binding Target}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Version: " FontWeight="SemiBold"  ></TextBlock>
-                                <TextBlock Text="{Binding Version}" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock Text="{Binding Version}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Distributor name: " FontWeight="SemiBold"  ></TextBlock>
-                                <TextBlock Text="{Binding DistributorName}" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock Text="{Binding DistributorName}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Authors: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock Text="{Binding Authors}" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock Text="{Binding Authors}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="License: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock Text="{Binding License}" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock Text="{Binding License}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Project URL: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock Text="{Binding ProjectUrl" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock Text="{Binding ProjectUrl}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>

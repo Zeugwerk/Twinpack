@@ -4,6 +4,9 @@ using System.Globalization;
 using System.Net;
 using System.Windows.Media.Imaging;
 using System.IO;
+using System.ComponentModel;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Twinpack.Dialogs
 {
@@ -46,12 +49,7 @@ namespace Twinpack.Dialogs
     
         // Gets the task being watched. This property never changes and is never <c>null</c>.
         public Task<TResult> Task { get; private set; }
-    
-        Task ITaskCompletionNotifier.Task
-        {
-            get { return Task; }
-        }
-    
+        
         // Gets the result of the task. Returns the default value of TResult if the task has not completed successfully.
         public TResult Result { get { return (Task.Status == TaskStatus.RanToCompletion) ? Task.Result : default(TResult); } }
     
@@ -68,7 +66,6 @@ namespace Twinpack.Dialogs
         public bool IsFaulted { get { return Task.IsFaulted; } }
     
         // Gets the error message for the original faulting exception for the task. Returns <c>null</c> if the task is not faulted.
-        public string ErrorMessage { get { return (InnerException == null) ? null : InnerException.Message; } }
     
         public event PropertyChangedEventHandler PropertyChanged;
     }
