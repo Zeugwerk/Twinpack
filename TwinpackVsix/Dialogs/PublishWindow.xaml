@@ -48,9 +48,9 @@
             <Label Content="Name:" HorizontalAlignment="Left" Margin="0"/>
             <TextBlock Text="{Binding PackageName}" HorizontalAlignment="Center" Margin="0" FontSize="18" FontWeight="SemiBold" />
              
-            <Label Content="Vendor:" HorizontalAlignment="Left" Margin="0"/>
-            <TextBlock Text="{Binding Vendor}" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
-            <TextBox Text="{Binding Vendor}" Width="200" Height="100" Margin="0" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}"/>
+            <Label Content="Distributor name:" HorizontalAlignment="Left" Margin="0"/>
+            <TextBlock Text="{Binding DistributorName}" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
+            <TextBox Text="{Binding DistributorName}" Width="200" Height="100" Margin="0" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}"/>
 
             <Border Width="128" Height="128" Grid.Row="0" Background="#DA776D" CornerRadius="64" Margin="0 10 0 0">
                 <Image x:Name="imgIcon" Width="128" Height="128" Margin="0,0,0,10"/>
