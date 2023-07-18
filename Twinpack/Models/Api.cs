@@ -31,8 +31,8 @@ namespace Twinpack.Models
         public string DistributorName { get; set; }        
         [JsonPropertyName("description")]
         public string Description { get; set; }
-        [JsonPropertyName("icon-binary")]
-        public string IconBinary { get; set; }
+        [JsonPropertyName("icon-url")]
+        public string IconUrl { get; set; }    
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
         [JsonPropertyName("versions")]
@@ -99,8 +99,8 @@ namespace Twinpack.Models
         public string Entitlement { get; set; }
         [JsonPropertyName("project-url")]
         public string ProjectUrl { get; set; }
-        [JsonPropertyName("icon-binary")]
-        public string IconBinary { get; set; }
+        [JsonPropertyName("icon-url")]
+        public string IconUrl { get; set; }
     }
 
     public class PackageVersionGetResponse : PackageGetResponse
@@ -159,6 +159,8 @@ namespace Twinpack.Models
         public string Entitlement { get; set; }
         [JsonPropertyName("icon-binary")]
         public string IconBinary { get; set; }
+        [JsonPropertyName("icon-filename")]
+        public string IconFilename { get; set; }        
     }
 
     public class PackageVersionPatchRequest
@@ -205,6 +207,8 @@ namespace Twinpack.Models
         public string Notes { get; set; }
         [JsonPropertyName("distributor-name")]
         public string DistributorName { get; set; }
+        [JsonPropertyName("icon-filename")]
+        public string IconFilename { get; set; }        
         [JsonPropertyName("license-binary")]
         public string LicenseBinary { get; set; }
         [JsonPropertyName("icon-binary")]
