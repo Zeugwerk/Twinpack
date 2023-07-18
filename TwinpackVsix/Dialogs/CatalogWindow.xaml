@@ -97,18 +97,18 @@
 
             <ScrollViewer x:Name="PackageVersionView" Margin="5,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Vertical" IsEnabled="{Binding IsPlcConfigAvailable}">
-                    <Grid>
+                    <Grid x:Name="skpPackage" d:DataContext="{d:DesignInstance local:PackageVersion, IsDesignTimeCreatable=True}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"></ColumnDefinition>
                             <ColumnDefinition Width="auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="PackageDisplayName" Text="" FontSize="20" FontWeight="SemiBold"></TextBlock>
+                        <TextBlock Text="{Binding DisplayName}" Text="" FontSize="20" FontWeight="SemiBold"></TextBlock>
                         <Button Grid.Column="1" x:Name="btnEditPackage" Width="80" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">Edit Package</Button>
                     </Grid>
                     <TextBlock Margin="10,0,0,0"  FontSize="10">
                         <Run Text="{Binding Name}" FontWeight="SemiBold"/>
                         <Run Text="maintained by"></Run>
-                        <Run x:Name="PackageRepository" Text=""></Run>
+                        <Run Text="{Binding Repository}" Text=""></Run>
                     </TextBlock>
 
                     <StackPanel Orientation="Vertical" Margin="0,20,0,0">
