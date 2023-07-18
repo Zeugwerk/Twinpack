@@ -99,9 +99,18 @@ namespace Twinpack.Dialogs
                 IsVersionDataReadOnly = false;
                 IsGeneralDataReadOnly = false;
     
-                _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
-                if (_package.PackageId == null && _plcConfig != null)
-                    _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _plcConfig.Name);
+
+                if(_plc != null)
+                {
+                    _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
+                    if (_package.PackageId == null && _plcConfig != null)
+                        _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _plcConfig.Name);
+                }
+                else
+                {
+                    _plcConfig = null;
+                    _package = new Models.PackageGetResponse();
+                }
 
                 if (_package.PackageId != null)
                 {
@@ -137,8 +146,10 @@ namespace Twinpack.Dialogs
                     Entitlement = _plcConfig.Entitlement;
                     ProjectUrl = _plcConfig.ProjectUrl;
                     IconFile = _plcConfig.IconFile;
-                    IconImage = await TwinpackService.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
                     DistributorName = _plcConfig.DistributorName;
+
+                    if (_plcConfig.IconFile != null)
+                        IconImage = await TwinpackService.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
                 }
     
                 if (_packageVersion.PackageVersionId == null && _package.PackageId != null)

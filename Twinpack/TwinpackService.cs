@@ -268,8 +268,10 @@ namespace Twinpack
 
         static public async Task<BitmapImage> IconImage(string iconUrl)
         {
+            if (iconUrl == null)
+                return null;
+
             HttpClient client = new HttpClient();
-        
             try
             {
                 BitmapImage img = new BitmapImage();
