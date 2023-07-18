@@ -154,7 +154,7 @@ namespace Twinpack.Models
     {
         static public XNamespace TcNs = "http://schemas.microsoft.com/developer/msbuild/2003";
 
-        static public async Task<ConfigPlcProject> MapPlcConfigToPlcProj(EnvDTE.Solution solution, EnvDTE.Project plc)
+        static public ConfigPlcProject MapPlcConfigToPlcProj(EnvDTE.Solution solution, EnvDTE.Project plc)
         {
             ConfigPlcProject plcConfig = null;
 
@@ -199,7 +199,7 @@ namespace Twinpack.Models
             plc.Version = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Version")?.FirstOrDefault()?.Value;
             plc.Authors = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Author")?.FirstOrDefault()?.Value;
             plc.Description = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Description")?.FirstOrDefault()?.Value;
-            plc.Vendor = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Company")?.FirstOrDefault()?.Value;
+            plc.DistributorName = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Company")?.FirstOrDefault()?.Value;
             plc.IconFile = "";
             plc.DisplayName = plc.Name;
             plc.ProjectUrl = "";

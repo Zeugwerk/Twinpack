@@ -117,6 +117,7 @@ namespace Twinpack.Models
             Description = "";
             IconFile = "";
             DisplayName = "";
+            DistributorName = "";
             ProjectUrl = "";
             Authors = "";
             Entitlement = "";
@@ -166,6 +167,9 @@ namespace Twinpack.Models
         
         [JsonPropertyName("version")]
         public string Version { get; set; }
+
+        [JsonPropertyName("distributor-name")]
+        public string DistributorName { get; set; }
 
         [JsonPropertyName("name")]
         public string Name { get; set; }

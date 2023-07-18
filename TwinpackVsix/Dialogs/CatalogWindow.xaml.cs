@@ -24,7 +24,7 @@ namespace Twinpack.Dialogs
         private ObservableCollection<Models.CatalogItemGetResponse> _catalog = new ObservableCollection<Models.CatalogItemGetResponse>();
         private ObservableCollection<Models.PackageVersionsItemGetResponse> _packageVersions = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
         private Models.PackageGetResponse _package = new Twinpack.Models.PackageGetResponse();
-        private Models.PackageGetResponse _packageVersion = new Twinpack.Models.PackageVersionGetResponse();
+        private Models.PackageVersionGetResponse _packageVersion = new Twinpack.Models.PackageVersionGetResponse();
         
         private int _currentCatalogPage = 1;
         private int _currentPackageVersionsPage = 1;
@@ -49,7 +49,7 @@ namespace Twinpack.Dialogs
             set
             {
                 _package = value;
-                skpPackageVersion.DataContext = _package            
+                skpPackageVersion.DataContext = _package;
             }
         }
         
@@ -135,7 +135,7 @@ namespace Twinpack.Dialogs
                     _plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
 
                 if(_plc != null)
-                    _plcConfig = await Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
+                    _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
 
                 IsPackageVersionPanelEnabled = _plcConfig != null;
             }
@@ -188,35 +188,35 @@ namespace Twinpack.Dialogs
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 IsPackageVersionPanelEnabled = false;
 
-                if (_package.PackageVersionId == null)
+                if (PackageVersion.PackageVersionId == null)
                     return;
 
                 var cachePath = $@"{System.IO.Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries";
-                PackageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, (int)_package.PackageVersionId,
+                PackageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, (int)_packageVersion.PackageVersionId,
                     includeBinary: true, cachePath: cachePath);
 
                 var plc = (_plc.Object as dynamic);
                 var sysManager = plc.SystemManager as ITcSysManager2;
-                var suffix = _package.Compiled == 1 ? "compiled-library" : "library";
+                var suffix = PackageVersion.Compiled == 1 ? "compiled-library" : "library";
                 var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
-                libManager.InstallLibrary("System", $@"{cachePath}\{_package.Target}\{_package.Name}_{_package.Version}.{suffix}", bOverwrite: true);
+                libManager.InstallLibrary("System", $@"{cachePath}\{PackageVersion.Target}\{PackageVersion.Name}_{PackageVersion.Version}.{suffix}", bOverwrite: true);
 
-                TwinpackService.AddReference(libManager, _package.Name, _package.Name, _package.Version, _package.DistributorName);
+                TwinpackService.AddReference(libManager, Package.Name, Package.Name, PackageVersion.Version, _package.DistributorName);
 
                 IsNewReference = false;
-                InstalledPackageVersion = _package.Version;
+                InstalledPackageVersion = PackageVersion.Version;
 
                 // update config
                 _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != _package.Name && x.Repository == _package.Repository)
                                                          .Append(new Models.ConfigPlcPackage
                                                          {
-                                                             Name = _package.Name,
+                                                             Name = Package.Name,
                                                              Repository = _package.Repository,
-                                                             Branch = _package.Branch,
-                                                             Configuration = _package.Configuration,
-                                                             Target = _package.Target,
-                                                             Version = _package.Version,
-                                                             DistributorName = _package.DistributorName
+                                                             Branch = PackageVersion.Branch,
+                                                             Configuration = PackageVersion.Configuration,
+                                                             Target = PackageVersion.Target,
+                                                             Version = PackageVersion.Version,
+                                                             DistributorName = Package.DistributorName
                                                          });
             }
             catch (Exception ex)
@@ -435,7 +435,7 @@ namespace Twinpack.Dialogs
                 _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == item.Name);
                 if (_packageConfig != null)
                 {
-                    Package = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username, _packageConfig.Name);
+                    Package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _packageConfig.Name);
                     
                     PackageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username,
                         _packageConfig.Name, _packageConfig.Version, _packageConfig.Configuration, _packageConfig.Branch, _packageConfig.Target,
@@ -449,11 +449,11 @@ namespace Twinpack.Dialogs
 
 
                 var index = 0;
-                IsNewReference = _package.PackageVersionId == null;
-                if (_package.PackageVersionId != null)
+                IsNewReference = PackageVersion.PackageVersionId == null;
+                if (PackageVersion.PackageVersionId != null)
                 {
-                    InstalledPackageVersion = _package.Version ?? "n/a";
-                    index = _packageVersions.IndexOf(_packageVersions.FirstOrDefault(x => x.PackageVersionId == _package.PackageVersionId));
+                    InstalledPackageVersion = PackageVersion.Version ?? "n/a";
+                    index = _packageVersions.IndexOf(_packageVersions.FirstOrDefault(x => x.PackageVersionId == PackageVersion.PackageVersionId));
                 }
 
                 if (_packageVersions.Any())

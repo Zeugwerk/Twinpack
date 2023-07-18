@@ -16,6 +16,7 @@ using System.Windows.Media;
 using Meziantou.Framework.Win32;
 using Microsoft.VisualStudio.Threading;
 using TCatSysManagerLib;
+using Microsoft.Win32;
 
 namespace Twinpack.Dialogs
 {
@@ -98,7 +99,7 @@ namespace Twinpack.Dialogs
                 IsVersionDataReadOnly = false;
                 IsGeneralDataReadOnly = false;
     
-                _plcConfig = await Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
+                _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
                 if (_package.PackageId == null && _plcConfig != null)
                     _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _plcConfig.Name);
 
@@ -136,7 +137,7 @@ namespace Twinpack.Dialogs
                     Entitlement = _plcConfig.Entitlement;
                     ProjectUrl = _plcConfig.ProjectUrl;
                     IconFile = _plcConfig.IconFile;
-                    IconImage = await TwinpackService.IconImage(System.IO.Path.Join(_plcConfig.RootPath, _plcConfig.IconFile));
+                    IconImage = await TwinpackService.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
                     DistributorName = _plcConfig.DistributorName;
                 }
     
@@ -333,7 +334,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public string IconImage
+        public BitmapImage IconImage
         {
             get { return _iconImage; }
             set
@@ -400,16 +401,23 @@ namespace Twinpack.Dialogs
             IsApplyApplicable = true;
 
         }
-        private await void ChangeIcon_Click(object sender, RoutedEventArgs e)
+        private async void ChangeIcon_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Multiselect = false;
-            openFileDialog.Filter = "Image files (*.png;*.jpeg,*.jpg)|*.png;*.jpeg;*.jpg";
-            openFileDialog.InitialDirectory = _plcConfig.RootPath;
-			if(openFileDialog.ShowDialog() == true)
+            try
             {
-                IconFile = System.IO.Path.GetRelativePath(_plcConfig.RootPath, openFileDialog.FileName);
-                IconImage = await TwinpackService.IconImage(IconFile);            
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Multiselect = false;
+                openFileDialog.Filter = "Image files (*.png;*.jpeg,*.jpg)|*.png;*.jpeg;*.jpg";
+                openFileDialog.InitialDirectory = _plcConfig.RootPath;
+			    if(openFileDialog.ShowDialog() == true)
+                {
+                    IconFile = Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, openFileDialog.FileName);
+                    IconImage = await TwinpackService.IconImage(IconFile);            
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex.Message);
             }
         }
 
@@ -424,8 +432,8 @@ namespace Twinpack.Dialogs
                 DisplayName = DisplayName,
                 Description = Description,
                 ProjectUrl = ProjectUrl,
-                IconFilename = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : System.Path.IO.GetFileName(IconFile),
-                IconBinary = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : Convert.ToBase64String(File.ReadAllBytes(IconFile));
+                IconFilename = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : System.IO.Path.GetFileName(IconFile),
+                IconBinary = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : Convert.ToBase64String(File.ReadAllBytes(IconFile))
             };
 
             try
@@ -504,7 +512,7 @@ namespace Twinpack.Dialogs
 
                 var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
                 var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
-                TwinpackService.UpdatePlcVersion(iec, new Version(_plcConfig.Version));
+                TwinpackService.SyncPlcProj(iec, _plcConfig);
                 _logger.Info($"Checking all objects of PLC {_plcConfig.Name}");
                 if (!iec.CheckAllObjects())
                 {

@@ -19,6 +19,7 @@ using TCatSysManagerLib;
 using Twinpack.Models;
 using Twinpack.Exceptions;
 using EnvDTE80;
+using System.Windows.Media.Imaging;
 
 namespace Twinpack
 {
@@ -185,7 +186,7 @@ namespace Twinpack
             return errorCount;
         }
 
-        static public void SyncPlcProj(ITcPlcIECProject2 plc, Models.ConfigPlcProject plc)
+        static public void SyncPlcProj(ITcPlcIECProject2 plc, ConfigPlcProject plcConfig)
         {
             StringWriter stringWriter = new StringWriter();
             using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
@@ -193,8 +194,8 @@ namespace Twinpack
                 writer.WriteStartElement("TreeItem");
                 writer.WriteStartElement("IECProjectDef");
                 writer.WriteStartElement("ProjectInfo");
-                writer.WriteElementString("Version", (plc.Version as Version).ToString());
-                writer.WriteElementString("Company", plc.Vendor);
+                writer.WriteElementString("Version", (new Version(plcConfig.Version)).ToString());
+                writer.WriteElementString("Company", plcConfig.DistributorName);
                 writer.WriteEndElement();     // ProjectInfo
                 writer.WriteEndElement();     // IECProjectDef
                 writer.WriteEndElement();     // TreeItem 
@@ -275,7 +276,7 @@ namespace Twinpack
                 img.CacheOption = BitmapCacheOption.OnLoad;
                 img.BeginInit();
 
-                if(iconUrl.startsWith("http")
+                if(iconUrl.StartsWith("http"))
                     img.StreamSource = await client.GetStreamAsync(iconUrl);
                 else
                     img.UriSource = new Uri(iconUrl, UriKind.RelativeOrAbsolute);
@@ -285,7 +286,7 @@ namespace Twinpack
             }
             catch (HttpRequestException)
             {
-                return "Images/Twinpack.png";
+                return null;
             }
         }
         
@@ -301,7 +302,7 @@ namespace Twinpack
                 foreach(var package in plc.Packages ?? new List<ConfigPlcPackage>())
                 {
                     _logger.Info($"Downloading {package.Name} (version: {package.Version}, configuration: {configuration}, branch: {package.Branch}, target: {target})");
-                    GetPackageVersionAsync(username, password, username, package.Name, package.Version, configuration, branch, target, includeBinary: true, cachePath: cachePath);
+                    await GetPackageVersionAsync(username, password, username, package.Name, package.Version, configuration, branch, target, includeBinary: true, cachePath: cachePath);
                 }
             }
         }
