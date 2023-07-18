@@ -315,13 +315,13 @@ namespace Twinpack
         {
             var suffix = compiled ? "compiled-library" : "library";
             string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
-
             string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
+            string iconBinary = (!File.Exists(plc.IconFile) || string.IsNullOrEmpty(plc.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.IconFile));
+            
             var requestBody = new PackageVersionPostRequest()
             {
                 Name = plc.Name,
                 Version = plc.Version,
-                Binary = binary,
                 Target = target,
                 License = plc.License,
                 Description = plc.Description,
@@ -329,12 +329,14 @@ namespace Twinpack
                 Entitlement = plc.Entitlement,
                 ProjectUrl = plc.ProjectUrl,
                 DisplayName = plc.DisplayName,
-                IconUrl = plc.IconUrl,
                 Branch = branch,
                 Configuration = configuration,
                 Compiled = compiled ? 1 : 0,
                 Notes = notes,
-                LicenseBinary = licenseBinary
+                IconFilename = System.IO.Path.GetFileName(plc.IconFile),
+                IconBinary = iconBinary,                
+                LicenseBinary = licenseBinary,
+                Binary = binary                
             };
 
             var requestBodyJson = JsonSerializer.Serialize(requestBody);
@@ -628,13 +630,10 @@ namespace Twinpack
                     else
                         throw ex;
                 }
-
-
             }
 
             return null;
         }
-
 
         static public async Task<PackageGetResponse> PutPackageAsync(string username, string password, PackagePatchRequest package)
         {        
