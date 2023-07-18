@@ -153,28 +153,28 @@
 
                        </Grid>
 
-                        <StackPanel Orientation="Vertical">
+                        <StackPanel x:Name="skpPackageVersion" Orientation="Vertical">
                             <TextBlock Text="Notes: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
-                            <TextBlock x:Name="PackageNotes" TextWrapping="Wrap" Text="" Margin="15,0,0,0"></TextBlock>
+                            <TextBlock x:Name="Notes" TextWrapping="Wrap" Text="" Margin="15,0,0,0"></TextBlock>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Branch: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock x:Name="PackageBranch" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock x:Name="Branch" TextWrapping="Wrap" Text=""></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Configuration: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock x:Name="PackageConfiguration" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock x:Name="Configuration" TextWrapping="Wrap" Text=""></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Target: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock x:Name="PackageTarget" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock x:Name="Target" TextWrapping="Wrap" Text=""></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Version: " FontWeight="SemiBold"  ></TextBlock>
-                                <TextBlock x:Name="PackageVersion" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock x:Name="Version" TextWrapping="Wrap" Text=""></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
@@ -184,17 +184,17 @@
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Authors: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock x:Name="PackageAuthors" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock x:Name="Authors" TextWrapping="Wrap" Text=""></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="License: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock x:Name="PackageLicense" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock x:Name="License" TextWrapping="Wrap" Text=""></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Project URL: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock x:Name="PackageProjectUrl" TextWrapping="Wrap" Text=""></TextBlock>
+                                <TextBlock x:Name="ProjectUrl" TextWrapping="Wrap" Text=""></TextBlock>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
