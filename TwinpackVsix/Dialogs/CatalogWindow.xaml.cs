@@ -459,14 +459,7 @@ namespace Twinpack.Dialogs
                 item.Name, item.Version, item.Configuration, item.Branch, item.Target,
                 includeBinary: false, cachePath: null);
 
-            PackageNotes.Text = _package.Notes;
-            PackageBranch.Text = "main"; // todo
-            PackageTarget.Text = _package.Target;
-            PackageConfiguration.Text = _package.Configuration;
-            PackageAuthors.Text = _package.Authors;
-            PackageProjectUrl.Text = _package.ProjectUrl;
-            PackageVersion.Text = _package.Version;
-            PackageLicense.Text = _package.License;
+            skpPackageVersion.DataContext = _package;
         }
 
         public async void ReloadButton_Click(object sender, RoutedEventArgs e)
