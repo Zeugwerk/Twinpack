@@ -112,8 +112,9 @@ namespace Twinpack.Dialogs
                         Description = package.Description;
                         Entitlement = package.Entitlement;
                         ProjectUrl = package.ProjectUrl;
-                        Vendor = package.Vendor;
+                        DistributorName = package.DistributorName;
                         IconFile = _plcConfig?.IconFile;
+                        UpdateIconImage(package.IconUrl);
                     }
                     catch (Exceptions.GetException ex)
                     {
@@ -134,7 +135,8 @@ namespace Twinpack.Dialogs
                     Entitlement = _plcConfig.Entitlement;
                     ProjectUrl = _plcConfig.ProjectUrl;
                     IconFile = _plcConfig.IconFile;
-                    Vendor = _plcConfig.Vendor;
+                    DistributorName = _plcConfig.DistributorName;
+                    UpdateIconImage(IconFile);
                 }
     
                 if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
@@ -343,13 +345,13 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public string Vendor
+        public string DistributorName
         {
-            get { return _packageVersion.Vendor; }
+            get { return _packageVersion.DistributorName; }
             set
             {
-                _packageVersion.Vendor = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Vendor)));
+                _packageVersion.DistributorName = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DistributorName)));
             }
         }
 
@@ -413,7 +415,8 @@ namespace Twinpack.Dialogs
                 DisplayName = DisplayName,
                 Description = Description,
                 ProjectUrl = ProjectUrl,
-                IconBinary = IconFile
+                IconFilename = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : System.Path.IO.GetFileName(IconFile),
+                IconBinary = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : Convert.ToBase64String(File.ReadAllBytes(IconFile));
             };
 
             try
@@ -424,7 +427,7 @@ namespace Twinpack.Dialogs
                 DisplayName = packageResult.DisplayName;
                 Description = packageResult.Description;
                 ProjectUrl = packageResult.ProjectUrl;
-                Icon = packageResult.IconBinary;
+                UpdateIconImage(packageResult.IconUrl);
             }
             catch (Exceptions.GetException ex)
             {
