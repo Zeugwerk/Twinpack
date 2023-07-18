@@ -60,7 +60,7 @@ namespace Twinpack.Models
             Target = "TC3.1";
             Configuration = "Release";
             Version = "";
-            Vendor = null;
+            DistributorName = null;
             Namespace = null;
             Parameters = null;
             QualifiedOnly = false;
@@ -83,8 +83,8 @@ namespace Twinpack.Models
         [JsonPropertyName("configuration")]
         public string Configuration { get; set; }
         [DefaultValue(null)]
-        [JsonPropertyName("vendor")]
-        public string Vendor { get; set; }
+        [JsonPropertyName("distributor-name")]
+        public string DistributorName { get; set; }
         [DefaultValue(null)]
         [JsonPropertyName("namespace")]
         public string Namespace { get; set; }
