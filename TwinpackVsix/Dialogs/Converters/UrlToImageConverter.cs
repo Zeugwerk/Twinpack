@@ -7,37 +7,83 @@ using System.IO;
 
 namespace Twinpack.Dialogs
 {
+    // Watches a task and raises property-changed notifications when the task completes.
+    public sealed class TaskCompletionNotifier<TResult> : INotifyPropertyChanged
+    {
+        public TaskCompletionNotifier(Task<TResult> task)
+        {
+            Task = task;
+            if (!task.IsCompleted)
+            {
+                var scheduler = (SynchronizationContext.Current == null) ? TaskScheduler.Current : TaskScheduler.FromCurrentSynchronizationContext();
+                task.ContinueWith(t =>
+                {
+                    var propertyChanged = PropertyChanged;
+                    if (propertyChanged != null)
+                    {
+                        propertyChanged(this, new PropertyChangedEventArgs("IsCompleted"));
+                        if (t.IsCanceled)
+                        {
+                            propertyChanged(this, new PropertyChangedEventArgs("IsCanceled"));
+                        }
+                        else if (t.IsFaulted)
+                        {
+                            propertyChanged(this, new PropertyChangedEventArgs("IsFaulted"));
+                            propertyChanged(this, new PropertyChangedEventArgs("ErrorMessage"));
+                        }
+                        else
+                        {
+                            propertyChanged(this, new PropertyChangedEventArgs("IsSuccessfullyCompleted"));
+                            propertyChanged(this, new PropertyChangedEventArgs("Result"));
+                        }
+                    }
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                scheduler);
+            }
+        }
+    
+        // Gets the task being watched. This property never changes and is never <c>null</c>.
+        public Task<TResult> Task { get; private set; }
+    
+        Task ITaskCompletionNotifier.Task
+        {
+            get { return Task; }
+        }
+    
+        // Gets the result of the task. Returns the default value of TResult if the task has not completed successfully.
+        public TResult Result { get { return (Task.Status == TaskStatus.RanToCompletion) ? Task.Result : default(TResult); } }
+    
+        // Gets whether the task has completed.
+        public bool IsCompleted { get { return Task.IsCompleted; } }
+    
+        // Gets whether the task has completed successfully.
+        public bool IsSuccessfullyCompleted { get { return Task.Status == TaskStatus.RanToCompletion; } }
+    
+        // Gets whether the task has been canceled.
+        public bool IsCanceled { get { return Task.IsCanceled; } }
+    
+        // Gets whether the task has faulted.
+        public bool IsFaulted { get { return Task.IsFaulted; } }
+    
+        // Gets the error message for the original faulting exception for the task. Returns <c>null</c> if the task is not faulted.
+        public string ErrorMessage { get { return (InnerException == null) ? null : InnerException.Message; } }
+    
+        public event PropertyChangedEventHandler PropertyChanged;
+    }
+
     public class UrlToImageConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is string imageUrl)
+            var val = (string)value;
+            var task = Task.Run(async () =>
             {
-                // Check if the URL is valid
-                if (Uri.TryCreate(imageUrl, UriKind.Absolute, out Uri uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
-                {
-                    try
-                    {
-                        // Download the image from the URL
-                        WebClient client = new WebClient();
-                        byte[] imageData = client.DownloadData(uri);
-                        client.Dispose();
-
-                        // Create a BitmapImage from the downloaded image data
-                        BitmapImage bitmap = new BitmapImage();
-                        bitmap.BeginInit();
-                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmap.StreamSource = new MemoryStream(imageData);
-                        bitmap.EndInit();
-
-                        return bitmap;
-                    }
-                    catch (Exception) { return new BitmapImage(); }
-                }
-            }
-
-            // Return null or a default image if the URL is invalid or an error occurred
-            return "Images/Twinpack.png";
+                return await TwinpackService.IconImage(val);
+            });
+            
+            return new TaskCompletionNotifier<BitmapImage>(task);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
