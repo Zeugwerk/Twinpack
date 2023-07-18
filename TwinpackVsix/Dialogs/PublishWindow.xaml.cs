@@ -136,7 +136,7 @@ namespace Twinpack.Dialogs
                     Entitlement = _plcConfig.Entitlement;
                     ProjectUrl = _plcConfig.ProjectUrl;
                     IconFile = _plcConfig.IconFile;
-                    IconImage = await TwinpackService.IconImage(_plcConfig.IconFile);                    
+                    IconImage = await TwinpackService.IconImage(System.IO.Path.Join(_plcConfig.RootPath, _plcConfig.IconFile));
                     DistributorName = _plcConfig.DistributorName;
                 }
     
@@ -402,14 +402,14 @@ namespace Twinpack.Dialogs
         }
         private await void ChangeIcon_Click(object sender, RoutedEventArgs e)
         {
-            var inputDialog = new InputDialog();
-            inputDialog.InputValue = _package.IconUrl;
-            inputDialog.ShowDialog();
-
-            if (inputDialog.DialogResult == true)
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Multiselect = false;
+            openFileDialog.Filter = "Image files (*.png;*.jpeg,*.jpg)|*.png;*.jpeg;*.jpg";
+            openFileDialog.InitialDirectory = _plcConfig.RootPath;
+			if(openFileDialog.ShowDialog() == true)
             {
-                IconFile = inputDialog.InputValue;
-                IconImage = await TwinpackService.IconImage(IconFile);
+                IconFile = System.IO.Path.GetRelativePath(_plcConfig.RootPath, openFileDialog.FileName);
+                IconImage = await TwinpackService.IconImage(IconFile);            
             }
         }
 
