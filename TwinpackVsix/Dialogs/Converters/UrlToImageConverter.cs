@@ -74,7 +74,7 @@ namespace Twinpack.Dialogs
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return TwinpackService.IconImage((string)value);
+            return TwinpackUtils.IconImage((string)value);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

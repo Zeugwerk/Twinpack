@@ -59,7 +59,7 @@
                 <Button x:Name="btnEditPackage"  Click="EditPackage_Click" Content="Edit Package" Width="80" Margin="5" HorizontalAlignment="Center"
                     Visibility="{Binding IsEditPackageVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-                <Button Click="ChangeIcon_Click" Background="#f5f1ee" BorderThickness="0" Margin="0 -25 0 0" FontWeight="SemiBold" Foreground="#4757b8"
+                <Button Click="ChangeIcon_Click" Margin="0 -25 0 0" Background="#f5f1ee" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
                         HorizontalAlignment="Left" Content="Change Icon" VerticalAlignment="Top" Width="80"
                         Visibility="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  />
             </StackPanel>

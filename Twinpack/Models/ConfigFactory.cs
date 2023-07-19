@@ -68,7 +68,7 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static Config CreateFromSolution(EnvDTE.Solution solution)
+        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution)
         {
             Config config = new Config();
 
@@ -91,7 +91,7 @@ namespace Twinpack.Models
                     {
                         string xml = plc.ProduceXml();
                         string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
-                        var plcConfig = ConfigPlcProjectFactory.Create(projectPath);
+                        var plcConfig = await ConfigPlcProjectFactory.CreateAsync(projectPath);
                         plcConfig.ProjectName = project.Name;
                         plcConfig.RootPath = config.WorkingDirectory;
                         project.Plcs.Add(plcConfig);
@@ -104,7 +104,7 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static Config Create(string path = ".")
+        public static async Task<Config> CreateAsync(string path = ".")
         {
             Config config = new Config();
             var solutions = Directory.GetFiles(path, "*.sln", SearchOption.AllDirectories);
@@ -125,7 +125,7 @@ namespace Twinpack.Models
 
             foreach (var plcpath in Directory.GetFiles(path, "*.plcproj", SearchOption.AllDirectories))
             {
-                project.Plcs.Add(ConfigPlcProjectFactory.Create(plcpath));
+                project.Plcs.Add(await ConfigPlcProjectFactory.CreateAsync(plcpath));
             }
 
             config.Projects = new List<ConfigProject>();
@@ -157,40 +157,36 @@ namespace Twinpack.Models
     {
         static public XNamespace TcNs = "http://schemas.microsoft.com/developer/msbuild/2003";
 
-        static public ConfigPlcProject MapPlcConfigToPlcProj(EnvDTE.Solution solution, EnvDTE.Project plc)
+        static public async Task<ConfigPlcProject> MapPlcConfigToPlcProjAsync(EnvDTE.Solution solution, EnvDTE.Project prj, TwinpackServer twinpackServer)
         {
-            ConfigPlcProject plcConfig = null;
+            ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
+            var project = new ConfigProject();
+            project.Name = prj.Name;
 
-            if (!string.IsNullOrEmpty(solution?.FullName))
+            string xml = null;
+            ITcSmTreeItem plcs = systemManager.LookupTreeItem("TIPC");
+            foreach (ITcSmTreeItem9 plc in plcs)
             {
-                var config = ConfigFactory.Load(System.IO.Path.GetDirectoryName(solution.FullName));
-                config = null;
-                if (config == null)
-                    config = ConfigFactory.CreateFromSolution(solution);
-
-                string projectName = null;
-                foreach (EnvDTE.Project prj in solution.Projects)
+                if (plc is ITcProjectRoot && plc.Name == prj.Name)
                 {
-                    try
-                    {
-                        ITcSmTreeItem plcs = (prj.Object as ITcSysManager).LookupTreeItem("TIPC");
-                        foreach (ITcSmTreeItem9 p in plcs)
-                            if (Object.ReferenceEquals((plc.Object as dynamic).Parent, p))
-                            {
-                                projectName = plc.Name;
-                                break;
-                            }
-                    }
-                    catch (Exception) { }
+                    xml = plc.ProduceXml();
+                    break;
                 }
-
-                plcConfig = config.Projects.Where(x => x.Name == projectName).SelectMany(x => x.Plcs).Where(x => x.Name == plc.Name).FirstOrDefault();
             }
 
-            return plcConfig;
+            if(xml != null)
+            {
+                string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
+                var plcConfig = await CreateAsync(projectPath, twinpackServer);
+                plcConfig.ProjectName = prj.Name;
+                plcConfig.RootPath = System.IO.Path.GetDirectoryName(solution.FullName);
+                return plcConfig;
+            }
+
+            return null;
         }
 
-        public static ConfigPlcProject Create(string plcProjFilepath)
+        public static async Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, TwinpackServer twinpackServer=null)
         {
             var plc = new ConfigPlcProject();
             plc.FilePath = plcProjFilepath;
@@ -229,28 +225,28 @@ namespace Twinpack.Models
                 plc.Type = ConfigPlcProject.PlcProjectType.Library.ToString();
             }
 
-            SetLibraryReferences(plc, xdoc);
+            await SetLibraryReferencesAsync (plc, xdoc, twinpackServer);
 
             return plc;
         }
 
-        public static void UpdateLibraryReferences(ConfigPlcProject plc)
+        public static async Task UpdateLibraryReferencesAsync(ConfigPlcProject plc, TwinpackServer twinpackServer)
         {
             XDocument xdoc = XDocument.Load(GuessFilePath(plc));
-            SetLibraryReferences(plc, xdoc);
+            await SetLibraryReferencesAsync(plc, xdoc, twinpackServer);
         }
 
-        private static void SetLibraryReferences(ConfigPlcProject plc, XDocument xdoc)
+        private static async Task SetLibraryReferencesAsync(ConfigPlcProject plc, XDocument xdoc, TwinpackServer twinpackServer)
         {
             // collect references
-            var references = new List<Tuple<string, string, string>>();
+            var references = new List<PlcLibrary>();
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
             var lst = xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderResolution").Elements(TcNs + "Resolution");
             foreach (XElement g in lst)
             {
                 var match = re.Match(g.Value);
                 if (match.Success)
-                    references.Add(new Tuple<string, string, string>(match.Groups[1].Value.Trim(), match.Groups[2].Value.Trim(), match.Groups[3].Value.Trim()));
+                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
             }
 
             //ZExperimental,0.8.1.63,Zeugwerk GmbH
@@ -261,32 +257,65 @@ namespace Twinpack.Models
             {
                 var match = re.Match(g.Value);
                 if (match.Success)
-                    references.Add(new Tuple<string, string, string>(match.Groups[1].Value.Trim(), match.Groups[2].Value.Trim(), match.Groups[3].Value.Trim()));
+                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
             }
 
-            var sysref = new List<Tuple<string, string>>();
+            var sysref = new List<PlcLibrary>();
+            var packages = new List<ConfigPlcPackage>();
 
             plc.Frameworks = plc.Frameworks ?? new ConfigFrameworks();
             plc.Frameworks.Zeugwerk = plc.Frameworks.Zeugwerk ?? new ConfigFramework();
             plc.Frameworks.Zeugwerk.References = new List<string>();
             plc.Frameworks.Zeugwerk.Hide = false;
+            
             foreach (var r in references)
             {
-                if (r.Item3.Contains("Zeugwerk GmbH"))
+                // check if we find this on Twinpack
+                bool isTwinpackPackage = false;
+
+                if(twinpackServer != null)
                 {
-                    plc.Frameworks.Zeugwerk.References.Add(r.Item1);
-                    plc.Frameworks.Zeugwerk.Version = r.Item2;
+                    try
+                    {
+                        var packageVersion = await twinpackServer.ResolvePackageVersionAsync(r);
+                        if(isTwinpackPackage = packageVersion.Repository != null && packageVersion.Name != null && packageVersion.DistributorName != null)
+                        {
+                            packages.Add(new ConfigPlcPackage
+                            {
+                                DistributorName = packageVersion.DistributorName,
+                                Repository = packageVersion.Repository,
+                                Branch = packageVersion.Branch,
+                                Configuration = packageVersion.Configuration,
+                                Name = packageVersion.Name,
+                                Target = packageVersion.Target,
+                                Version = r.Version
+                            });
+                        }
+                    }
+                    catch (Exception) { }
                 }
-                else
+
+
+                if (!isTwinpackPackage)
                 {
-                    sysref.Add(new Tuple<string, string>(r.Item1, r.Item2));
+                    if (r.DistributorName.Contains("Zeugwerk GmbH"))
+                    {
+                        plc.Frameworks.Zeugwerk.References.Add(r.Name);
+                        plc.Frameworks.Zeugwerk.Version = r.Version;
+                    }
+                    else if(!isTwinpackPackage)
+                    {
+                        sysref.Add(r);
+                    }
                 }
             }
 
+            plc.Packages = packages;
             plc.Frameworks.Zeugwerk.References = plc.Frameworks.Zeugwerk.References.Distinct().ToList();
 
             if (plc.Frameworks.Zeugwerk.Repositories.Count == 0)
                 plc.Frameworks.Zeugwerk.Repositories = new List<string> { ConfigFactory.DefaultRepository };
+
 
             plc.Bindings = plc.Bindings ?? new Dictionary<string, List<string>>();
             plc.Repositories = plc.Repositories ?? new List<string>();
@@ -295,7 +324,7 @@ namespace Twinpack.Models
             plc.References["*"] = new List<string>();
             foreach (var r in sysref.Distinct())
             {
-                plc.References["*"].Add($"{r.Item1}={r.Item2}");
+                plc.References["*"].Add($"{r.Name}={r.Version}");
             }
         }
 
