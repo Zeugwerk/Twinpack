@@ -272,7 +272,7 @@ namespace Twinpack
                 img.EndInit();
                 return img;
             }
-            catch (HttpRequestException)
+            catch (Exception)
             {
                 return null;
             }
