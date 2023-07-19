@@ -10,6 +10,8 @@
     <UserControl.Resources>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <local:UrlToImageConverter x:Key="UrlToImageConverter"/>
+        <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+        <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -34,7 +36,7 @@
         <Run Text="Twinpack Catalog"/>
             </TextBlock>
         </Grid>
-        <StackPanel Grid.Row="1" Orientation="Horizontal">
+        <StackPanel IsEnabled="{Binding IsCatalogFetching, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Row="1" Orientation="Horizontal">
             <Button Click="ShowCatalog_Click" Padding="15 5 15 5" Margin="50 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">Browse</Button>
             <Button Click="ShowInstalledPackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">Installed</Button>
             <Button Click="ShowUpdateablePackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">Updates</Button>
@@ -67,24 +69,34 @@
             </ComboBox>
             <Button x:Name="btnLogin" Grid.Column="5" Width="80" Margin="5 5 0 5" Click="LoginButton_Click">Login</Button>
         </Grid>
-        <Grid Grid.Row="3" Margin="5 0 5 0">
+        <Grid Grid.Row="3" Margin="5 0 5 0" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
 
-            <ListView Grid.Column="0" x:Name="CatalogView" VerticalContentAlignment="Stretch"
+            <ListView Grid.Column="0" x:Name="CatalogView" VerticalContentAlignment="Stretch" HorizontalAlignment="Stretch"
                       ItemsSource="{Binding Catalog}"
                       BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
                       ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"></Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                            <Image Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" Width="48" Height="48"/>
-                            <StackPanel Orientation="Vertical">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                                <ColumnDefinition Width="*"></ColumnDefinition>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <Image Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" Grid.Column="0" Width="48" Height="48"/>
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Margin="8 0 0 0">
-                                    <Run Text="{Binding DisplayName}"  FontWeight="SemiBold" FontSize="16"/>
+                                    <Run Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="16"/>
                                     <Run Text="distributed by"/>
                                     <Run Text="{Binding DistributorName}"/><Run Text=","/>
                                     <Run Text="{Binding Downloads}" FontWeight="SemiBold"/>
@@ -93,15 +105,18 @@
                                 </StackPanel>
                                 <TextBlock Margin="8 0 0 0" Text="{Binding Name}" FontWeight="SemiBold"/>
                                 <TextBlock Margin="8 0 0 0" Text="{Binding Description}"/>
-
                             </StackPanel>
 
-                            <StackPanel Orientation="Vertical" VerticalAlignment="Stretch">
-                                <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold" Text="{Binding InstalledVersion}"/>
-                                <TextBlock HorizontalAlignment="Right" Text="{Binding UpdateVersion}"/>
+                            <StackPanel Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                <TextBlock HorizontalAlignment="Right" >
+                                    <Run FontWeight="SemiBold" Text="{Binding InstalledVersion}"></Run>
+                                </TextBlock>
+                                <TextBlock HorizontalAlignment="Right" >
+                                    <Run FontWeight="SemiBold" Text="{Binding UpdateVersion}"></Run>
+                                </TextBlock>
                             </StackPanel>
 
-                        </StackPanel>
+                        </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

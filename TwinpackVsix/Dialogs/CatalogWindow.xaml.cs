@@ -37,7 +37,6 @@ namespace Twinpack.Dialogs
         private bool _isCatalogFetching = false;
         private bool _isPackageVersionsFetching = false;
         private bool _isPackageVersionFetching = false;
-        private bool _isInstalledPackagesFetching = false;
         private string _searchText = "";
         private TwinpackServer _twinpackServer = new TwinpackServer();
         private Authentication _auth;
@@ -69,6 +68,16 @@ namespace Twinpack.Dialogs
             {
                 _packageVersion = value;
                 skpPackageVersion.DataContext = _packageVersion;            
+            }
+        }
+
+        public bool IsCatalogFetching
+        {
+            get { return _isCatalogFetching; }
+            set
+            {
+                _isCatalogFetching = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCatalogFetching)));
             }
         }
 
@@ -393,21 +402,18 @@ namespace Twinpack.Dialogs
 
         private async Task LoadFirstCatalogPageAsync(string text = "")
         {
-            if (_isCatalogFetching)
-                return;
-
             await LoadNextCatalogPageAsync(text, true);
         }
 
         private async Task LoadNextCatalogPageAsync(string text = "", bool reset = false)
         {
-            if (_isCatalogFetching)
+            if (IsCatalogFetching)
                 return;
-
-            _isCatalogFetching = true;
 
             try
             {
+                IsCatalogFetching = true;
+
                 if (reset)
                     _currentCatalogPage = 1;
 
@@ -439,20 +445,19 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                _isCatalogFetching = false;
+                IsCatalogFetching = false;
             }
 
-            _isCatalogFetching = false;
         }
 
         private async Task ReloadPlcConfigAsync()
         {
-            if (_isInstalledPackagesFetching)
+            if (IsCatalogFetching)
                 return;
 
             try
             {
-                _isInstalledPackagesFetching = true;
+                IsCatalogFetching = true;
                 Catalog.Clear();
 
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -499,7 +504,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                _isInstalledPackagesFetching = false;
+                IsCatalogFetching = false;
             }
         }
 
@@ -511,7 +516,7 @@ namespace Twinpack.Dialogs
 
             var scrollViewer = (ScrollViewer)sender;
             var position = scrollViewer.VerticalOffset + scrollViewer.ViewportHeight;
-            if (!_isCatalogFetching && scrollViewer.VerticalOffset > _packageVersionsScrollPosition && position >= scrollViewer.ExtentHeight)
+            if (!IsCatalogFetching && scrollViewer.VerticalOffset > _packageVersionsScrollPosition && position >= scrollViewer.ExtentHeight)
             {
                 await LoadNextPackageVersionsPageAsync((int)packageId);
             }
@@ -524,7 +529,7 @@ namespace Twinpack.Dialogs
             var text = SearchTextBox.Text;
             var scrollViewer = (ScrollViewer)sender;
             var position = scrollViewer.VerticalOffset + scrollViewer.ViewportHeight;
-            if (!_isCatalogFetching && scrollViewer.VerticalOffset > _catalogScrollPosition && position >= scrollViewer.ExtentHeight)
+            if (!IsCatalogFetching && scrollViewer.VerticalOffset > _catalogScrollPosition && position >= scrollViewer.ExtentHeight)
             {
                 await LoadNextCatalogPageAsync(text);
             }

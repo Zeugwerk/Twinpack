@@ -55,6 +55,7 @@
     <Compile Include="Commands\PublishCommand.cs" />
     <Compile Include="Dialogs\Authentication.cs" />
     <Compile Include="Dialogs\Converters\BooleanToInverseBooleanConverter.cs" />
+    <Compile Include="Dialogs\Converters\NullToVisibilityConverter.cs" />
     <Compile Include="Dialogs\Converters\BooleanToVisibilityConverter.cs" />
     <Compile Include="Dialogs\Converters\UrlToImageConverter.cs" />
     <Compile Include="Dialogs\InputDialog.xaml.cs">
