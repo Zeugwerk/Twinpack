@@ -291,7 +291,7 @@ namespace Twinpack
             }
         }
 
-        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string repository, string name, string version, string configuration, string branch, string target, bool includeBinary, string cachePath)
+        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string repository, string name, string version, string configuration, string branch, string target, bool includeBinary=false, string cachePath=null)
         {
             _logger.Info($"Retrieving package version from Twinpack Server");
             using (HttpClient client = new HttpClient())

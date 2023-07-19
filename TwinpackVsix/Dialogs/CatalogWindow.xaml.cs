@@ -449,9 +449,16 @@ namespace Twinpack.Dialogs
             if (_plcConfig != null)
             {
                 _installedPackages.Clear();
-                foreach (var item in _plcConfig.Packages.Select(x => new Models.CatalogItem(x)))
+                foreach (var item in _plcConfig.Packages)
                 {
-                    _installedPackages.Add(item);
+                    Models.CatalogItem catalogItem = new Models.CatalogItem(item);
+                    var packageVersion = await _twinpackServer.GetPackageVersionAsync(item.Repository, item.Name, item.Version, item.Configuration, item.Branch, item.Target);
+
+                    // todo: check for updates here
+                    //if (packageVersion.PackageVersionId != null)
+                    //    packageVersion = await _twinpackServer.ResolvePackageVersionAsync()
+
+                    _installedPackages.Add(catalogItem);
                 }
             }
 
