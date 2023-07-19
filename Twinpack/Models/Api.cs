@@ -101,6 +101,12 @@ namespace Twinpack.Models
         public string ProjectUrl { get; set; }
         [JsonPropertyName("icon-url")]
         public string IconUrl { get; set; }
+        [JsonPropertyName("authors")]
+        public string Authors { get; set; }
+        [JsonPropertyName("license")]
+        public string License { get; set; }
+        [JsonPropertyName("license-binary")]
+        public string LicenseBinary { get; set; }        
     }
 
     public class PackageVersionGetResponse : PackageGetResponse
@@ -119,14 +125,8 @@ namespace Twinpack.Models
         public int Compiled { get; set; }
         [JsonPropertyName("notes")]
         public string Notes { get; set; }
-        [JsonPropertyName("authors")]
-        public string Authors { get; set; }
-        [JsonPropertyName("license")]
-        public string License { get; set; }
         [JsonPropertyName("binary")]
         public string Binary { get; set; }
-        [JsonPropertyName("license-binary")]
-        public string LicenseBinary { get; set; }
 
         public static bool operator ==(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
         {
@@ -142,7 +142,6 @@ namespace Twinpack.Models
         {
             return this == o;
         }
-
     }
 
     public class PackagePatchRequest
@@ -160,7 +159,13 @@ namespace Twinpack.Models
         [JsonPropertyName("icon-binary")]
         public string IconBinary { get; set; }
         [JsonPropertyName("icon-filename")]
-        public string IconFilename { get; set; }        
+        public string IconFilename { get; set; }
+        [JsonPropertyName("authors")]
+        public string Authors { get; set; }        
+        [JsonPropertyName("license")]
+        public string License { get; set; }
+        [JsonPropertyName("license-binary")]
+        public string License { get; set; }
     }
 
     public class PackageVersionPatchRequest
@@ -169,10 +174,6 @@ namespace Twinpack.Models
         public int? PackageVersionId { get; set; }
         [JsonPropertyName("compiled")]
         public int Compiled { get; set; }
-        [JsonPropertyName("license")]
-        public string License { get; set; }
-        [JsonPropertyName("authors")]
-        public string Authors { get; set; }
         [JsonPropertyName("notes")]
         public string Notes { get; set; }
     }
