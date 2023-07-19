@@ -21,9 +21,12 @@ namespace Twinpack.Dialogs
         private Models.ConfigPlcProject _plcConfig;
         private Models.ConfigPlcPackage _packageConfig;
 
-        private ObservableCollection<Models.CatalogItemGetResponse> _catalog = new ObservableCollection<Models.CatalogItemGetResponse>();
+        private List<Models.CatalogItem> _availablePackages = new List<Models.CatalogItem>();
+        private List<Models.CatalogItem> _installedPackages = new List<Models.CatalogItem>();
+        private ObservableCollection<Models.CatalogItem> _catalog = new ObservableCollection<Models.CatalogItem>();
+
         private ObservableCollection<Models.PackageVersionsItemGetResponse> _packageVersions = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
-        private Models.PackageGetResponse _package = new Twinpack.Models.PackageGetResponse();
+        private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Twinpack.Models.PackageVersionGetResponse();
         
         private int _currentCatalogPage = 1;
@@ -35,7 +38,12 @@ namespace Twinpack.Dialogs
         private bool _isPackageVersionsFetching = false;
         private bool _isPackageVersionFetching = false;
         private string _searchText = "";
-        private Authentication _auth = new Authentication();
+        private TwinpackServer _twinpackServer = new TwinpackServer();
+        private Authentication _auth;
+
+        private bool _isBrowsingCatalog;
+        private bool _isBrowsingInstalledPackages;
+        private bool _isBrowsingUpdatablePackages;
 
         private bool _isNewReference;
         private bool _isPackageVersionPanelEnabled;
@@ -93,14 +101,26 @@ namespace Twinpack.Dialogs
             }
         }
 
+        public ObservableCollection<Models.CatalogItem> Catalog
+        {
+            get { return _catalog; }
+            set
+            {
+                _catalog = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Catalog)));
+            }
+        }
+
         public CatalogWindow(PackageContext context)
         {
+            _auth = new Authentication(_twinpackServer);
             _context = context;
+            _isBrowsingCatalog = true;
             DataContext = this;
 
             InitializeComponent();
             PackageVersionView.Visibility = Visibility.Hidden;
-            CatalogView.ItemsSource = _catalog;
+
             CatalogView.SelectionChanged += Catalog_SelectionChanged;
             CatalogView.Loaded += (s, e) =>
             {
@@ -128,16 +148,7 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await _auth.InitializeAsync();
-
-                _plc = null;
-                if (_context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
-                    _plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
-
-                if(_plc != null)
-                    _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
-
-                IsPackageVersionPanelEnabled = _plcConfig != null;
+                await _twinpackServer.LoginAsync();
             }
             catch (Exception ex)
             {
@@ -145,11 +156,12 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                btnLogin.Content = _auth.LoggedIn ? "Logout" : "Login";
+                btnLogin.Content = _twinpackServer.LoggedIn ? "Logout" : "Login";
             }
 
             try
             {
+                await ReloadPlcConfigAsync();
                 await LoadFirstCatalogPageAsync();
             }
             catch (Exception ex)
@@ -166,8 +178,13 @@ namespace Twinpack.Dialogs
                 return;
 
             var packageVersionId = (PackageVersionsView.SelectedItem as Models.PackageVersionsItemGetResponse)?.PackageVersionId;
-            var packagePublish = new PublishWindow(_context, _plc, packageId, packageVersionId, _auth.Username, _auth.Password);
+            var packagePublish = new PublishWindow(_context, _plc, packageId, packageVersionId);
             packagePublish.ShowDialog();
+        }
+
+        public async void AddPackageButton_Click(object sender, RoutedEventArgs e)
+        {
+            await AddOrUpdatePackageAsync();
         }
 
         public async void UpdatePackageButton_Click(object sender, RoutedEventArgs e)
@@ -175,9 +192,43 @@ namespace Twinpack.Dialogs
             await AddOrUpdatePackageAsync();
         }
 
-        public async void AddPackageButton_Click(object sender, RoutedEventArgs e)
+        public void ShowUpdateablePackages_Click(object sender, RoutedEventArgs e)
         {
-            await AddOrUpdatePackageAsync();
+            _isBrowsingCatalog = false;
+            _isBrowsingUpdatablePackages = true;
+            _isBrowsingInstalledPackages = false;
+
+            Catalog.Clear();
+            foreach (var p in _installedPackages.Where(x => x.InstalledVersion != x.UpdateVersion))
+            {
+                Catalog.Add(p);
+            }
+        }
+
+        public void ShowInstalledPackages_Click(object sender, RoutedEventArgs e)
+        {
+            _isBrowsingCatalog = false;
+            _isBrowsingUpdatablePackages = false;
+            _isBrowsingInstalledPackages = true;
+            Catalog.Clear();
+            foreach (var p in _installedPackages)
+            {
+                Catalog.Add(p);
+            }
+
+        }
+
+        public void ShowCatalog_Click(object sender, RoutedEventArgs e)
+        {
+            _isBrowsingCatalog = true;
+            _isBrowsingUpdatablePackages = false;
+            _isBrowsingInstalledPackages = false;
+
+            Catalog.Clear();
+            foreach(var p in _availablePackages)
+            {
+                Catalog.Add(p);
+            }
         }
 
         public async Task AddOrUpdatePackageAsync()
@@ -191,7 +242,7 @@ namespace Twinpack.Dialogs
                     return;
 
                 var cachePath = $@"{System.IO.Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries";
-                PackageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, (int)_packageVersion.PackageVersionId,
+                PackageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId,
                     includeBinary: true, cachePath: cachePath);
 
                 var plc = (_plc.Object as dynamic);
@@ -200,7 +251,7 @@ namespace Twinpack.Dialogs
                 var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
                 libManager.InstallLibrary("System", $@"{cachePath}\{PackageVersion.Target}\{PackageVersion.Name}_{PackageVersion.Version}.{suffix}", bOverwrite: true);
 
-                TwinpackService.AddReference(libManager, Package.Name, Package.Name, PackageVersion.Version, _package.DistributorName);
+                TwinpackUtils.AddReference(libManager, Package.Name, Package.Name, PackageVersion.Version, _package.DistributorName);
 
                 IsNewReference = false;
                 InstalledPackageVersion = PackageVersion.Version;
@@ -232,10 +283,10 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                if (!_auth.LoggedIn)
+                if (!_twinpackServer.LoggedIn)
                 {
                     await _auth.LoginAsync();
-                    if (!_auth.LoggedIn)
+                    if (!_twinpackServer.LoggedIn)
                         throw new Exceptions.LoginException("Login was not successful! Go to https://twinpack.dev/wp-login.php to register");
                 }
                 else
@@ -253,7 +304,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                btnLogin.Content = _auth.LoggedIn ? "Logout" : "Login";
+                btnLogin.Content = _twinpackServer.LoggedIn ? "Logout" : "Login";
             }
 
             try
@@ -281,7 +332,7 @@ namespace Twinpack.Dialogs
 
             try
             {
-                return await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, packageVersionId);
+                return await _twinpackServer.GetPackageAsync(packageVersionId);
             }
             catch (Exception ex)
             {
@@ -316,7 +367,7 @@ namespace Twinpack.Dialogs
                 if (reset)
                     _currentPackageVersionsPage = 1;
 
-                var results = await TwinpackService.GetPackageVersionsAsync(_auth.Username, _auth.Password, packageId, _currentPackageVersionsPage, _itemsPerPage);
+                var results = await _twinpackServer.GetPackageVersionsAsync(packageId, _currentPackageVersionsPage, _itemsPerPage);
 
                 if (reset)
                     _packageVersions.Clear();
@@ -359,12 +410,12 @@ namespace Twinpack.Dialogs
                 if (reset)
                     _currentCatalogPage = 1;
 
-                var results = await Twinpack.TwinpackService.GetCatalogAsync(_auth.Username, _auth.Password, text, _currentCatalogPage, _itemsPerPage);
+                var results = await _twinpackServer.GetCatalogAsync(text, _currentCatalogPage, _itemsPerPage);
 
                 if (reset)
-                    _catalog.Clear();
+                    _availablePackages.Clear();
                 foreach (var item in results)
-                    _catalog.Add(item);
+                    _availablePackages.Add(new Models.CatalogItem(item));
 
                 _currentCatalogPage++;
 
@@ -381,6 +432,32 @@ namespace Twinpack.Dialogs
 
             _isCatalogFetching = false;
         }
+
+        private async Task ReloadPlcConfigAsync()
+        {
+            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            _plc = null;
+            if (_context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
+                _plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
+
+            if (_plc != null)
+            {
+                _plcConfig = await Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProjAsync(_context.Solution, _plc, _twinpackServer);
+            }
+
+            if (_plcConfig != null)
+            {
+                _installedPackages.Clear();
+                foreach (var item in _plcConfig.Packages.Select(x => new Models.CatalogItem(x)))
+                {
+                    _installedPackages.Add(item);
+                }
+            }
+
+            IsPackageVersionPanelEnabled = _plcConfig != null;
+        }
+
         private async void PackageVersions_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             var packageId = (CatalogView.SelectedItem as Twinpack.Models.CatalogItemGetResponse)?.PackageId;
@@ -432,16 +509,17 @@ namespace Twinpack.Dialogs
 
                 // check if the plc already contains the selected package
                 _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == item.Name);
-                 Package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, item.Name);
 
                 if (_packageConfig != null)
                 {
-                    PackageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username,
+                    Package = await _twinpackServer.GetPackageAsync(_packageConfig.Repository, item.Name);
+                    PackageVersion = await _twinpackServer.GetPackageVersionAsync(_packageConfig.Repository,
                         _packageConfig.Name, _packageConfig.Version, _packageConfig.Configuration, _packageConfig.Branch, _packageConfig.Target,
                         includeBinary: false, cachePath: null);
                 }
                 else
                 {
+                    Package = await _twinpackServer.GetPackageAsync(item.Repository, item.Name);
                     PackageVersion = new Models.PackageVersionGetResponse();
                 }
 
@@ -457,8 +535,8 @@ namespace Twinpack.Dialogs
                 if (_packageVersions.Any())
                     PackageVersionsView.SelectedIndex = index >= 0 ? index : 0;
 
-                btnEditPackage.Visibility = _catalog.Any() && item.Repository == _auth.Username ? Visibility.Visible : Visibility.Hidden;
-                PackageVersionView.Visibility = _catalog.Any() ? Visibility.Visible : Visibility.Hidden;
+                btnEditPackage.Visibility = _availablePackages.Any() && item.Repository == _twinpackServer.Username ? Visibility.Visible : Visibility.Hidden;
+                PackageVersionView.Visibility = _availablePackages.Any() ? Visibility.Visible : Visibility.Hidden;
                 CatalogView.IsEnabled = true;
             }
             catch (Exception ex)
@@ -474,7 +552,7 @@ namespace Twinpack.Dialogs
             if (item == null)
                 return;
 
-            PackageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username,
+            PackageVersion = await _twinpackServer.GetPackageVersionAsync(item.Repository,
                 item.Name, item.Version, item.Configuration, item.Branch, item.Target,
                 includeBinary: false, cachePath: null);
         }
@@ -483,21 +561,39 @@ namespace Twinpack.Dialogs
         {
             var text = SearchTextBox.Text;
 
-            await LoadFirstCatalogPageAsync(text);
+            try
+            {
+                if (_isBrowsingInstalledPackages || _isBrowsingUpdatablePackages)
+                    await ReloadPlcConfigAsync();
+                else if (_isBrowsingCatalog)
+                    await LoadFirstCatalogPageAsync(text);
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+
+            }
         }
 
         public async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var text = ((TextBox)sender).Text;
-            _searchText = text;
-            await Task.Delay(100);
+            if(_isBrowsingCatalog)
+            {
+                var text = ((TextBox)sender).Text;
+                _searchText = text;
+                await Task.Delay(100);
 
-            PackageVersionView.Visibility = Visibility.Hidden;
+                PackageVersionView.Visibility = Visibility.Hidden;
 
-            if (_searchText == text)
-                await LoadFirstCatalogPageAsync(text);
+                if (_searchText == text)
+                    await LoadFirstCatalogPageAsync(text);
+            }
+            else
+            {
 
-            PackageVersionView.Visibility = _catalog.Any() ? Visibility.Visible : Visibility.Hidden;
+            }
+
+            PackageVersionView.Visibility = _availablePackages.Any() ? Visibility.Visible : Visibility.Hidden;
         }
     }
 }

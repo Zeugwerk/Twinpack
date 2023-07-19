@@ -21,6 +21,29 @@ namespace Twinpack.Models
     }
     public class CatalogItemGetResponse
     {
+        public CatalogItemGetResponse()
+        {
+
+        }
+        public CatalogItemGetResponse(CatalogItemGetResponse obj)
+        {
+            PackageId = obj.PackageId;
+            Name = obj.Name;
+            Repository = obj.Repository;
+            DistributorName = obj.DistributorName;
+            Description = obj.Description;
+            IconUrl = obj.IconUrl;
+            DisplayName = obj.DisplayName;
+            Versions = obj.Versions;
+            Configurations = obj.Configurations;
+            Targets = obj.Targets;
+            Downloads = obj.Downloads;
+            Created = obj.Created;
+            Modified = obj.Modified;
+            Entitlement = obj.Entitlement;
+            Branches = obj.Branches;
+        }
+
         [JsonPropertyName("package-id")]
         public int? PackageId { get; set; }
         [JsonPropertyName("name")]
@@ -61,6 +84,8 @@ namespace Twinpack.Models
         public int? PackageId { get; set; }
         [JsonPropertyName("private")]
         public int Private { get; set; }
+        [JsonPropertyName("repository")]
+        public string Repository { get; set; }
         [JsonPropertyName("name")]
         public string Name { get; set; }
         [JsonPropertyName("branch")]
@@ -167,7 +192,7 @@ namespace Twinpack.Models
         [JsonPropertyName("license")]
         public string License { get; set; }
         [JsonPropertyName("license-binary")]
-        public string License { get; set; }
+        public string LicenseBinary { get; set; }
     }
 
     public class PackageVersionPatchRequest
@@ -222,14 +247,32 @@ namespace Twinpack.Models
 
     public class LoginPostResponse
     {
+        public class Configuration
+        {
+            [JsonPropertyName("configuration")]
+            public string Name { get; set; }
+
+            [JsonPropertyName("public")]
+            public int Public { get; set; }
+        }
+
+        public class Target
+        {
+            [JsonPropertyName("configuration")]
+            public string Name { get; set; }
+
+            [JsonPropertyName("public")]
+            public int Public { get; set; }
+        }
+
         [JsonPropertyName("user")]
         public string User { get; set; }
         [JsonPropertyName("distributor-name")]
         public string DistributorName { get; set; }        
         [JsonPropertyName("configurations")]
-        public List<string> Configurations { get; set; }
+        public List<Configuration> Configurations { get; set; }
         [JsonPropertyName("targets")]
-        public List<string> Targets { get; set; }
+        public List<Target> Targets { get; set; }
         [JsonPropertyName("entitlements")]
         public List<string> Entitlements { get; set; }
         [JsonPropertyName("flags")]

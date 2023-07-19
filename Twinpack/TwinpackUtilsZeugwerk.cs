@@ -14,7 +14,7 @@ using TCatSysManagerLib;
 
 namespace Twinpack
 {
-    public class TwinpackServiceZeugwerk : TwinpackService
+    public class TwinpackUtilsZeugwerk : TwinpackUtils
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -237,7 +237,7 @@ namespace Twinpack
 
         private static async Task RestorePlcDependenciesAsync(Models.ConfigPlcProject plc, string tcversion, bool force = false, string targetPath = null)
         {
-            targetPath = targetPath ?? TwinpackService.DefaultLibraryCachePath;
+            targetPath = targetPath ?? TwinpackUtils.DefaultLibraryCachePath;
 
             if (!Directory.Exists($@"{targetPath}\{tcversion}"))
                 Directory.CreateDirectory($@"{targetPath}\{tcversion}");
@@ -251,7 +251,7 @@ namespace Twinpack
 
                 if (framework.References != null && framework.References.Count() > 0)
                 {
-                    if (force || framework.Version == "" || !TwinpackService.IsCached(tcversion, framework.References, framework.Version, targetPath))
+                    if (force || framework.Version == "" || !TwinpackUtils.IsCached(tcversion, framework.References, framework.Version, targetPath))
                     {
                         RetrieveVersionResult result = await RestorePlcFrameworkAsync(framework.Repositories, tcversion, plc.PlcType, framework.References, framework.Version, targetPath);
                         if (!result.Success)
@@ -319,7 +319,7 @@ namespace Twinpack
                     // Install libraries if repositories were given
                     if (plc?.Frameworks?.Zeugwerk?.Repositories?.Any() == true)
                     {
-                        string path = TwinpackService.FindLibraryFilePathWithoutExtension(tcversion, referencename, plc.Frameworks.Zeugwerk.Version, targetPath);
+                        string path = TwinpackUtils.FindLibraryFilePathWithoutExtension(tcversion, referencename, plc.Frameworks.Zeugwerk.Version, targetPath);
                         if (File.Exists(path + "compiled-library"))
                             path += "compiled-library";
                         else if (File.Exists(path + "library"))
@@ -327,7 +327,7 @@ namespace Twinpack
                         else
                             throw new DependencyNotFoundException(referencename, plc.Frameworks.Zeugwerk.Version, $"{referencename}_{plc.Frameworks.Zeugwerk.Version} not found in repository cache");
 
-                        var plcLibraryModel = new PlcLibraryModel
+                        var plcLibraryModel = new Models.PlcLibrary
                         {
                             Name = referencename,
                             Version = plc.Frameworks.Zeugwerk.Version
@@ -335,7 +335,7 @@ namespace Twinpack
 
                         if (false == InstalledLibraries?.Any(x => x.Name == plcLibraryModel.Name && x.Version == plcLibraryModel.Version))
                         {
-                            InstalledLibraries = InstalledLibraries ?? new HashSet<PlcLibraryModel>();
+                            InstalledLibraries = InstalledLibraries ?? new HashSet<Models.PlcLibrary>();
                             InstalledLibraries.Add(plcLibraryModel);
                             _logger.Info($"Installing library {plcLibraryModel.Name} {plcLibraryModel.Version} ...");
                             libManager.InstallLibrary("System", path, true);
@@ -360,11 +360,11 @@ namespace Twinpack
                         string referencename = reference.Split('=').First();
                         string referenceversion = reference.Split('=').Last();
 
-                        var path = TwinpackService.FindLibraryFilePathWithoutExtension(tcversion, referencename, referenceversion, targetPath: targetPath);
+                        var path = TwinpackUtils.FindLibraryFilePathWithoutExtension(tcversion, referencename, referenceversion, targetPath: targetPath);
                         if (path == null)
                             continue;
 
-                        var plcLibraryModel = new PlcLibraryModel
+                        var plcLibraryModel = new Models.PlcLibrary
                         {
                             Name = referencename,
                             Version = referenceversion
@@ -372,7 +372,7 @@ namespace Twinpack
 
                         if (false == InstalledLibraries?.Any(x => x.Name == plcLibraryModel.Name && x.Version == plcLibraryModel.Version))
                         {
-                            InstalledLibraries = InstalledLibraries ?? new HashSet<PlcLibraryModel>();
+                            InstalledLibraries = InstalledLibraries ?? new HashSet<Models.PlcLibrary>();
                             InstalledLibraries.Add(plcLibraryModel);
 
                             if (File.Exists(path + "compiled-library"))

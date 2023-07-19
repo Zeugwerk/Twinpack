@@ -39,7 +39,9 @@ namespace Twinpack.Dialogs
         private string _iconFile;
         private BitmapImage _iconImage;
         private bool _isApplyEnabled;
-        private Authentication _auth = new Authentication();
+
+        private TwinpackServer _twinpackServer = new TwinpackServer();
+        private Authentication _auth;
 
         private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Models.PackageVersionGetResponse();
@@ -48,6 +50,7 @@ namespace Twinpack.Dialogs
 
         public PublishWindow(PackageContext context, EnvDTE.Project plc = null, int? packageId = null, int? packageVersionId = null, string username = "", string password = "")
         {
+            _auth = new Authentication(_twinpackServer);
             _context = context;
             _plc = plc;
             DataContext = this;
@@ -69,10 +72,10 @@ namespace Twinpack.Dialogs
         {
             try
             { 
-                if (!_auth.LoggedIn)
+                if (!_twinpackServer.LoggedIn)
                 {
                     await _auth.LoginAsync();
-                    if(!_auth.LoggedIn)
+                    if(!_twinpackServer.LoggedIn)
                         throw new Exceptions.LoginException("Login was not successful! Go to https://twinpack.dev/wp-login.php to register");
                 }
             }
@@ -86,7 +89,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                IsNewUser = _auth.UserInfo.DistributorName == null;
+                IsNewUser = _twinpackServer.UserInfo.DistributorName == null;
             }
         }
 
@@ -97,21 +100,24 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await _auth.InitializeAsync();
-                if(!_auth.LoggedIn)
+                await _twinpackServer.LoginAsync();
+                if(!_twinpackServer.LoggedIn)
+                {
+                    _twinpackServer.Logout();
                     await LoginAsync();
+                }
 
-                IsNewUser = _auth.UserInfo.DistributorName == null;
+                IsNewUser = _twinpackServer.UserInfo.DistributorName == null;
                 IsVersionDataReadOnly = false;
                 IsGeneralDataReadOnly = false;
     
                 if(_plc != null)
                 {
-                    _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(_context.Solution, _plc);
+                    _plcConfig = await Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProjAsync(_context.Solution, _plc, _twinpackServer);
                     if (_package.PackageId == null && _plcConfig != null)
                     {
-                        _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, _auth.Username, _plcConfig.Name);
-                        _plcConfig.DistributorName = _auth.UserInfo.DistributorName ?? _plcConfig.DistributorName;
+                        _package = await _twinpackServer.GetPackageAsync(_twinpackServer.Username, _plcConfig.Name);
+                        _plcConfig.DistributorName = _twinpackServer.UserInfo.DistributorName ?? _plcConfig.DistributorName;
                     }
                 }
                 else
@@ -123,7 +129,7 @@ namespace Twinpack.Dialogs
                 {
                     try
                     {
-                        _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, (int)_package.PackageId);
+                        _package = await _twinpackServer.GetPackageAsync((int)_package.PackageId);
     
                         PackageName = _package.Name;
                         DisplayName = _package.DisplayName;
@@ -132,7 +138,7 @@ namespace Twinpack.Dialogs
                         ProjectUrl = _package.ProjectUrl;
                         DistributorName = _package.DistributorName;
                         IconFile = _plcConfig?.IconFile;
-                        IconImage = TwinpackService.IconImage(_package.IconUrl);
+                        IconImage = TwinpackUtils.IconImage(_package.IconUrl);
                     }
                     catch (Exceptions.GetException ex)
                     {
@@ -156,19 +162,19 @@ namespace Twinpack.Dialogs
                     DistributorName = _plcConfig.DistributorName;
 
                     if (!string.IsNullOrEmpty(_plcConfig.IconFile))
-                        IconImage = TwinpackService.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
+                        IconImage = TwinpackUtils.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
                 }
     
                 if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
                 {
                     // try to get the specific version
                     IsNewPackageVersion = false;
-                    _packageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username, _package.Name, _packageVersion.Version, "Release", "main", "TC3.1", false, null);
+                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_package.Repository, _package.Name, _packageVersion.Version, "Release", "main", "TC3.1", false, null);
                     // fallback to the latest available version
                     if(_packageVersion.PackageVersionId == null)
                     {
                         IsNewPackageVersion = true;
-                        _packageVersion.PackageVersionId = (await TwinpackService.GetPackageVersionsAsync(_auth.Username, _auth.Password, (int)_package.PackageId, 1, 1)).FirstOrDefault()?.PackageVersionId;
+                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync((int)_package.PackageId, 1, 1)).FirstOrDefault()?.PackageVersionId;
                     }
                 }
                 else if(_plcConfig != null)
@@ -188,7 +194,7 @@ namespace Twinpack.Dialogs
                 { 
                     try
                     {
-                        var packageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, (int)_packageVersion.PackageVersionId, includeBinary: false);
+                        var packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false);
     
                         Authors = packageVersion.Authors;
                         License = packageVersion.License;
@@ -441,7 +447,7 @@ namespace Twinpack.Dialogs
 			    if(openFileDialog.ShowDialog() == true)
                 {
                     IconFile = Path.Combine(_plcConfig.RootPath, Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, openFileDialog.FileName));
-                    IconImage = TwinpackService.IconImage(openFileDialog.FileName);            
+                    IconImage = TwinpackUtils.IconImage(openFileDialog.FileName);            
                 }
             }
             catch (Exception ex)
@@ -461,6 +467,8 @@ namespace Twinpack.Dialogs
                 DisplayName = DisplayName,
                 Description = Description,
                 ProjectUrl = ProjectUrl,
+                Authors = Authors,
+                License = License,
                 IconFilename = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : System.IO.Path.GetFileName(IconFile),
                 IconBinary = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : Convert.ToBase64String(File.ReadAllBytes(IconFile))
             };
@@ -468,12 +476,15 @@ namespace Twinpack.Dialogs
             try
             {
                 await LoginAsync();
-                var packageResult = await TwinpackService.PutPackageAsync(_auth.Username, _auth.Password, package);
+                var packageResult = await _twinpackServer.PutPackageAsync(package);
 
                 DisplayName = packageResult.DisplayName;
                 Description = packageResult.Description;
                 ProjectUrl = packageResult.ProjectUrl;
-                IconImage = TwinpackService.IconImage(packageResult.IconUrl);
+                Authors = packageResult.Authors;
+                License = packageResult.License;
+
+                IconImage = TwinpackUtils.IconImage(packageResult.IconUrl);
             }
             catch (Exceptions.GetException ex)
             {
@@ -500,15 +511,13 @@ namespace Twinpack.Dialogs
             var packageVersion = new Models.PackageVersionPatchRequest()
             {
                 PackageVersionId = (int)_packageVersion.PackageVersionId,
-                Authors = Authors,
-                License = License,
                 Notes = Notes
             };
 
             try
             {
                 await LoginAsync();
-                var packageVersionResult = await TwinpackService.PutPackageVersionAsync(_auth.Username, _auth.Password, packageVersion);
+                var packageVersionResult = await _twinpackServer.PutPackageVersionAsync(packageVersion);
 
                 Authors = packageVersionResult.Authors;
                 License = packageVersionResult.License;
@@ -541,11 +550,11 @@ namespace Twinpack.Dialogs
 
                 var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
                 var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
-                TwinpackService.SyncPlcProj(iec, _plcConfig);
+                TwinpackUtils.SyncPlcProj(iec, _plcConfig);
                 _logger.Info($"Checking all objects of PLC {_plcConfig.Name}");
                 if (!iec.CheckAllObjects())
                 {
-                    if (TwinpackService.BuildErrorCount(_context.Dte) > 0)
+                    if (TwinpackUtils.BuildErrorCount(_context.Dte) > 0)
                         _logger.Error($"{_plcConfig.Name} does not compile!");
                 }
 
@@ -557,9 +566,9 @@ namespace Twinpack.Dialogs
                 try
                 {
                     await LoginAsync();
-                    _packageVersion = await TwinpackService.PostPackageVersionAsync(_auth.Username, _auth.Password, _plcConfig, "Release", "main", "TC3.1", Notes,
+                    _packageVersion = await _twinpackServer.PostPackageVersionAsync(_plcConfig, "Release", "main", "TC3.1", Notes,
                         false, cachePath: $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries");
-                    _package = await TwinpackService.GetPackageAsync(_auth.Username, _auth.Password, (int)_packageVersion.PackageId);
+                    _package = await _twinpackServer.GetPackageAsync((int)_packageVersion.PackageId);
 
                     IsNewPackage = false;
                     IsNewPackageVersion = false;
@@ -645,7 +654,7 @@ namespace Twinpack.Dialogs
             try
             {
                 if (_version == text)
-                    _packageVersion = await TwinpackService.GetPackageVersionAsync(_auth.Username, _auth.Password, _auth.Username, _packageVersion.Name, _version, "Release", "main", "TC3.1", includeBinary: false, cachePath: null);
+                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_packageVersion.Repository, _packageVersion.Name, _version, "Release", "main", "TC3.1", includeBinary: false, cachePath: null);
             }
             catch (Exception ex)
             {
