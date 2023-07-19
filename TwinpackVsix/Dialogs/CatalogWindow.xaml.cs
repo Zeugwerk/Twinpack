@@ -414,9 +414,20 @@ namespace Twinpack.Dialogs
                 var results = await _twinpackServer.GetCatalogAsync(text, _currentCatalogPage, _itemsPerPage);
 
                 if (reset)
+                {
+                    if (_isBrowsingCatalog)
+                        Catalog.Clear();
+
                     _availablePackages.Clear();
+                }
                 foreach (var item in results)
-                    _availablePackages.Add(new Models.CatalogItem(item));
+                {
+                    var catalogItem = new Models.CatalogItem(item);
+                    _availablePackages.Add(catalogItem);
+
+                    if (_isBrowsingCatalog)
+                        Catalog.Add(catalogItem);
+                }
 
                 _currentCatalogPage++;
 
@@ -442,6 +453,7 @@ namespace Twinpack.Dialogs
             try
             {
                 _isInstalledPackagesFetching = true;
+                Catalog.Clear();
 
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -466,8 +478,14 @@ namespace Twinpack.Dialogs
                         if (packageVersion.PackageVersionId != null)
                         {
                             catalogItem = new Models.CatalogItem(packageVersion);
+                            catalogItem.InstalledVersion = item.Version;
                             //packageVersion = await _twinpackServer.ResolvePackageVersionAsync()
                         }
+
+                        if(_isBrowsingInstalledPackages)
+                            Catalog.Add(catalogItem);
+                        else if (_isBrowsingUpdatablePackages && catalogItem.InstalledVersion != catalogItem.UpdateVersion)
+                            Catalog.Add(catalogItem);
 
                         _installedPackages.Add(catalogItem);
                     }
@@ -590,6 +608,8 @@ namespace Twinpack.Dialogs
 
             try
             {
+                Catalog.Clear();
+
                 if (_isBrowsingInstalledPackages || _isBrowsingUpdatablePackages)
                     await ReloadPlcConfigAsync();
                 else if (_isBrowsingCatalog)

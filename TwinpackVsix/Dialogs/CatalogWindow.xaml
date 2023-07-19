@@ -79,7 +79,7 @@
                       ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
                             <Image Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" Width="48" Height="48"/>
                             <StackPanel Orientation="Vertical">
                                 <StackPanel Orientation="Horizontal">
@@ -94,6 +94,11 @@
                                 <TextBlock Margin="8 0 0 0" Text="{Binding Name}" FontWeight="SemiBold"/>
                                 <TextBlock Margin="8 0 0 0" Text="{Binding Description}"/>
 
+                            </StackPanel>
+
+                            <StackPanel Orientation="Vertical" VerticalAlignment="Stretch">
+                                <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold" Text="{Binding InstalledVersion}"/>
+                                <TextBlock HorizontalAlignment="Right" Text="{Binding UpdateVersion}"/>
                             </StackPanel>
 
                         </StackPanel>
