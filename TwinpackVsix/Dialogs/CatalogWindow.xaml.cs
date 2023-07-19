@@ -37,6 +37,7 @@ namespace Twinpack.Dialogs
         private bool _isCatalogFetching = false;
         private bool _isPackageVersionsFetching = false;
         private bool _isPackageVersionFetching = false;
+        private bool _isInstalledPackagesFetching = false;
         private string _searchText = "";
         private TwinpackServer _twinpackServer = new TwinpackServer();
         private Authentication _auth;
@@ -435,34 +436,53 @@ namespace Twinpack.Dialogs
 
         private async Task ReloadPlcConfigAsync()
         {
-            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            if (_isInstalledPackagesFetching)
+                return;
 
-            _plc = null;
-            if (_context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
-                _plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
-
-            if (_plc != null)
+            try
             {
-                _plcConfig = await Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProjAsync(_context.Solution, _plc, _twinpackServer);
-            }
+                _isInstalledPackagesFetching = true;
 
-            if (_plcConfig != null)
-            {
-                _installedPackages.Clear();
-                foreach (var item in _plcConfig.Packages)
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                _plc = null;
+                if (_context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
+                    _plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
+
+                if (_plc != null)
                 {
-                    Models.CatalogItem catalogItem = new Models.CatalogItem(item);
-                    var packageVersion = await _twinpackServer.GetPackageVersionAsync(item.Repository, item.Name, item.Version, item.Configuration, item.Branch, item.Target);
-
-                    // todo: check for updates here
-                    //if (packageVersion.PackageVersionId != null)
-                    //    packageVersion = await _twinpackServer.ResolvePackageVersionAsync()
-
-                    _installedPackages.Add(catalogItem);
+                    _plcConfig = await Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProjAsync(_context.Solution, _plc, _twinpackServer);
                 }
-            }
 
-            IsPackageVersionPanelEnabled = _plcConfig != null;
+                if (_plcConfig != null)
+                {
+                    _installedPackages.Clear();
+                    foreach (var item in _plcConfig.Packages)
+                    {
+                        Models.CatalogItem catalogItem = new Models.CatalogItem(item);
+                        var packageVersion = await _twinpackServer.GetPackageVersionAsync(item.Repository, item.Name, null, item.Configuration, item.Branch, item.Target);
+
+                        // todo: check for updates here
+                        if (packageVersion.PackageVersionId != null)
+                        {
+                            catalogItem = new Models.CatalogItem(packageVersion);
+                            //packageVersion = await _twinpackServer.ResolvePackageVersionAsync()
+                        }
+
+                        _installedPackages.Add(catalogItem);
+                    }
+                }
+
+                IsPackageVersionPanelEnabled = _plcConfig != null;
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+            }
+            finally
+            {
+                _isInstalledPackagesFetching = false;
+            }
         }
 
         private async void PackageVersions_ScrollChanged(object sender, ScrollChangedEventArgs e)
