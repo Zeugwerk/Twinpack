@@ -22,6 +22,8 @@ namespace Twinpack
         public static string DefaultUsername = "public";
         public static string DefaultPassword = "public";
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        
+        private HttpClient _client = new HttpClient();
 
         public string Username { get; set; }
         public string Password { get; set; }
@@ -106,15 +108,14 @@ namespace Twinpack
             var requestBodyJson = JsonSerializer.Serialize(requestBody);
             _logger.Debug($"Pushing {plc.Name}: {requestBodyJson}");
 
-            using (HttpClient client = new HttpClient())
-            {
+            
                 var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
                 request.Headers.Add("zgwk-username", Username);
                 request.Headers.Add("zgwk-password", Password);
                 request.Content = new StreamContent(
                     new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
@@ -130,8 +131,6 @@ namespace Twinpack
                     else
                         throw ex;
                 }
-
-            }
         }
 
         public async Task<IEnumerable<T>> QueryWithPagination<T>(string endpoint, int page = 1, int perPage = 5)
@@ -140,8 +139,8 @@ namespace Twinpack
             var query = $"/{endpoint}";
             var uri = new Uri(TwinpackUrl + query + $"&page={page}&per_page={perPage}");
 
-            using (HttpClient client = new HttpClient())
-            {
+            
+            
                 var hasNextPage = true;
                 while (hasNextPage)
                 {
@@ -149,7 +148,7 @@ namespace Twinpack
                     request.Headers.Add("zgwk-username", Username);
                     request.Headers.Add("zgwk-password", Password);
 
-                    var response = await client.SendAsync(request);
+                    var response = await _client.SendAsync(request);
                     response.EnsureSuccessStatusCode();
 
                     var data = await response.Content.ReadAsStringAsync();
@@ -184,7 +183,6 @@ namespace Twinpack
                             }
                         }
                     }
-                }
             }
 
             return results;
@@ -215,15 +213,14 @@ namespace Twinpack
         public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library)
         {
             _logger.Info($"Resolving package from Twinpack Server");
-            using (HttpClient client = new HttpClient())
-            {
+            
                 var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-resolve" +
                     $"&distributor_name={library.DistributorName}&name={library.Name}&version={library.Version}"));
 
                 request.Headers.Add("zgwk-username", Username);
                 request.Headers.Add("zgwk-password", Password);
 
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
@@ -244,21 +241,19 @@ namespace Twinpack
                         throw ex;
                     }
                 }
-            }
         }
 
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(int packageVersionId, bool includeBinary, string cachePath = null)
         {
             _logger.Info($"Retrieving package version from Twinpack Server");
-            using (HttpClient client = new HttpClient())
-            {
+            
                 var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
                     $"&id={packageVersionId}&include-binary={(includeBinary ? 1 : 0)}"));
 
                 request.Headers.Add("zgwk-username", Username);
                 request.Headers.Add("zgwk-password", Password);
 
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
@@ -288,14 +283,12 @@ namespace Twinpack
                         throw ex;
                     }
                 }
-            }
         }
 
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string repository, string name, string version, string configuration, string branch, string target, bool includeBinary=false, string cachePath=null)
         {
             _logger.Info($"Retrieving package version from Twinpack Server");
-            using (HttpClient client = new HttpClient())
-            {
+            
                 var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
                     $"&repository={HttpUtility.UrlEncode(repository)}" +
                     $"&name={HttpUtility.UrlEncode(name)}" +
@@ -307,7 +300,7 @@ namespace Twinpack
 
                 request.Headers.Add("zgwk-username", Username);
                 request.Headers.Add("zgwk-password", Password);
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
@@ -332,7 +325,6 @@ namespace Twinpack
                         throw new PostException(message.ToString());
                     }
                 }
-            }
 
             return null;
         }
@@ -340,8 +332,7 @@ namespace Twinpack
         public async Task<PackageGetResponse> GetPackageAsync(string repository, string packageName)
         {
             _logger.Info($"Retrieving package from Twinpack Server");
-            using (HttpClient client = new HttpClient())
-            {
+            
                 var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package" +
                     $"&repository={HttpUtility.UrlEncode(repository)}" +
                     $"&name={HttpUtility.UrlEncode(packageName)}"));
@@ -349,7 +340,7 @@ namespace Twinpack
                 request.Headers.Add("zgwk-username", Username);
                 request.Headers.Add("zgwk-password", Password);
 
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
@@ -365,19 +356,17 @@ namespace Twinpack
                     else
                         throw ex;
                 }
-            }
         }
 
         public async Task<PackageGetResponse> GetPackageAsync(int packageId)
         {
             _logger.Info($"Retrieving package from Twinpack Server");
-            using (HttpClient client = new HttpClient())
-            {
+            
                 var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package&id={packageId}"));
                 request.Headers.Add("zgwk-username", Username);
                 request.Headers.Add("zgwk-password", Password);
 
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
@@ -393,22 +382,19 @@ namespace Twinpack
                     else
                         throw ex;
                 }
-            }
         }
 
         public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package)
         {
             var requestBodyJson = JsonSerializer.Serialize(package);
 
-            using (HttpClient client = new HttpClient())
-            {
                 var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
                 request.Headers.Add("zgwk-username", Username);
                 request.Headers.Add("zgwk-password", Password);
                 request.Content = new StreamContent(
                     new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
@@ -424,7 +410,6 @@ namespace Twinpack
                     else
                         throw ex;
                 }
-            }
 
             return null;
         }
@@ -433,15 +418,13 @@ namespace Twinpack
         {
             var requestBodyJson = JsonSerializer.Serialize(package);
 
-            using (HttpClient client = new HttpClient())
-            {
                 var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package"));
                 request.Headers.Add("zgwk-username", Username);
                 request.Headers.Add("zgwk-password", Password);
                 request.Content = new StreamContent(
                     new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
@@ -457,20 +440,17 @@ namespace Twinpack
                     else
                         throw ex;
                 }
-            }
         }
 
         public async Task<LoginPostResponse> LoginAsync(string username=null, string password=null)
         {
             var credentials = CredentialManager.ReadCredential("TwinpackServer");
 
-            using (HttpClient client = new HttpClient())
-            {
                 var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=login"));
                 request.Headers.Add("zgwk-username", username ?? credentials?.UserName);
                 request.Headers.Add("zgwk-password", password ?? credentials?.Password);
 
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 try
@@ -494,7 +474,6 @@ namespace Twinpack
                     else
                         throw ex;
                 }
-            }
         }
 
         public void Logout()
