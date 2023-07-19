@@ -49,6 +49,8 @@ namespace Twinpack.Models
         public string Modified { get; set; }
         [JsonPropertyName("entitlement")]
         public string Entitlement { get; set; }
+        [JsonPropertyName("branches")]
+        public List<string> Branches { get; set; }        
     }
 
     public class PackageVersionsItemGetResponse
