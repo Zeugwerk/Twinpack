@@ -16,8 +16,6 @@ namespace Twinpack.Commands
     /// </summary>
     internal sealed class CatalogCommand : Command, ICommand
     {
-        private static readonly NLog.Logger _logger = LogManager.GetCurrentClassLogger();
-
         /// <summary>
         /// Command ID.
         /// </summary>
