@@ -23,12 +23,18 @@ namespace Twinpack.Dialogs
 
         private List<Models.CatalogItem> _availablePackages = new List<Models.CatalogItem>();
         private List<Models.CatalogItem> _installedPackages = new List<Models.CatalogItem>();
-        private ObservableCollection<Models.CatalogItem> _catalog = new ObservableCollection<Models.CatalogItem>();
 
-        private ObservableCollection<Models.PackageVersionsItemGetResponse> _packageVersions = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
+        private List<Models.PackageVersionsItemGetResponse> _packageVersions;
+
+        public ObservableCollection<Models.CatalogItem> Catalog { get; set; }
+        public ObservableCollection<Models.PackageVersionsItemGetResponse> Targets { get; set; }
+        public ObservableCollection<Models.PackageVersionsItemGetResponse> Configurations { get; set; }
+        public ObservableCollection<Models.PackageVersionsItemGetResponse> Branches { get; set; }
+        public ObservableCollection<Models.PackageVersionsItemGetResponse> Versions { get; set; }
+
         private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Twinpack.Models.PackageVersionGetResponse();
-        
+
         private int _currentCatalogPage = 1;
         private int _currentPackageVersionsPage = 1;
         private int _itemsPerPage = 20;
@@ -64,19 +70,19 @@ namespace Twinpack.Dialogs
                 skpPackage.DataContext = _package;
             }
         }
-        
+
         public Models.PackageVersionGetResponse PackageVersion
         {
             get { return _packageVersion; }
             set
             {
                 _packageVersion = value;
-                skpPackageVersion.DataContext = _packageVersion;            
+                skpPackageVersion.DataContext = _packageVersion;
             }
         }
 
-        
-       public bool FilterByInstalledSettings
+
+        public bool FilterByInstalledSettings
         {
             get { return _filterByInstalledSettings; }
             set
@@ -146,21 +152,17 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public ObservableCollection<Models.CatalogItem> Catalog
-        {
-            get { return _catalog; }
-            set
-            {
-                _catalog = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Catalog)));
-            }
-        }
-
         public CatalogWindow(PackageContext context)
         {
             _auth = new Authentication(_twinpackServer);
             _context = context;
             _isBrowsingCatalog = true;
+
+            Catalog = new ObservableCollection<Models.CatalogItem>();
+            Targets = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
+            Configurations = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
+            Branches = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
+            Versions = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
             DataContext = this;
 
             InitializeComponent();
@@ -175,8 +177,7 @@ namespace Twinpack.Dialogs
             };
 
             FilterByInstalledSettings = true;
-            PackageVersionsView.ItemsSource = _packageVersions;
-            PackageVersionsView.SelectionChanged += PackageVersions_SelectionChanged;
+            //PackageVersionsView.SelectionChanged += PackageVersions_SelectionChanged;
             //PackageVersionsView.Loaded += (s, e) => {
             //    var sv = FindVisualChild<ScrollViewer>(PackageVersionsView)
             //    if (sv != null)
@@ -221,7 +222,7 @@ namespace Twinpack.Dialogs
             if (packageId == null)
                 return;
 
-            var packageVersionId = (PackageVersionsView.SelectedItem as Models.PackageVersionsItemGetResponse)?.PackageVersionId;
+            var packageVersionId = (VersionsView.SelectedItem as Models.PackageVersionsItemGetResponse)?.PackageVersionId;
             var packagePublish = new PublishWindow(_context, _plc, packageId, packageVersionId);
             packagePublish.ShowDialog();
         }
@@ -269,7 +270,7 @@ namespace Twinpack.Dialogs
             _isBrowsingInstalledPackages = false;
 
             Catalog.Clear();
-            foreach(var p in _availablePackages)
+            foreach (var p in _availablePackages)
             {
                 Catalog.Add(p);
             }
@@ -405,21 +406,24 @@ namespace Twinpack.Dialogs
                 return;
 
             _isPackageVersionsFetching = true;
+            _packageVersions = new List<Models.PackageVersionsItemGetResponse>();
 
             try
             {
                 if (reset)
                     _currentPackageVersionsPage = 1;
 
-                var results = await _twinpackServer.GetPackageVersionsAsync(packageId, _currentPackageVersionsPage, _itemsPerPage);
+                _packageVersions.AddRange(await _twinpackServer.GetPackageVersionsAsync(packageId, _currentPackageVersionsPage, _itemsPerPage));
 
                 if (reset)
-                    _packageVersions.Clear();
-                foreach (var item in results)
-                    _packageVersions.Add(item);
+                {
+                    Targets.Clear();
+                    Configurations.Clear();
+                    Branches.Clear();
+                    Versions.Clear();
+                }
 
                 _currentPackageVersionsPage++;
-
             }
             catch (Exception ex)
             {
@@ -429,6 +433,20 @@ namespace Twinpack.Dialogs
             {
                 _isPackageVersionsFetching = false;
             }
+
+            foreach (var item in _packageVersions.GroupBy(x => x.Branch).Select(x => x.FirstOrDefault()).Distinct())
+                Branches.Add(item);
+
+            foreach (var item in _packageVersions.GroupBy(x => x.Target).Select(x => x.FirstOrDefault()).Distinct())
+                Targets.Add(item);
+
+            foreach (var item in _packageVersions.GroupBy(x => x.Configuration).Select(x => x.FirstOrDefault()).Distinct())
+                Configurations.Add(item);
+
+            foreach (var item in _packageVersions.Where(x => x.Branch == Branches.FirstOrDefault().Branch &&
+                                                        x.Configuration == Branches.FirstOrDefault().Configuration &&
+                                                        x.Target == Branches.FirstOrDefault().Target))
+                Versions.Add(item);
 
             _isPackageVersionsFetching = false;
         }
@@ -521,7 +539,7 @@ namespace Twinpack.Dialogs
                             catalogItem.UpdateVersion = packageVersion.Version;
                         }
 
-                        if(_isBrowsingInstalledPackages)
+                        if (_isBrowsingInstalledPackages)
                             Catalog.Add(catalogItem);
                         else if (_isBrowsingUpdatablePackages && catalogItem.InstalledVersion != catalogItem.UpdateVersion)
                             Catalog.Add(catalogItem);
@@ -532,7 +550,7 @@ namespace Twinpack.Dialogs
 
                 IsPackageVersionPanelEnabled = _plcConfig != null;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Trace(ex);
             }
@@ -578,7 +596,6 @@ namespace Twinpack.Dialogs
                 var item = (sender as ListView).SelectedItem as Twinpack.Models.CatalogItemGetResponse;
                 if (item == null)
                 {
-                    PackageVersionsView.IsEnabled = false;
                     btnEditPackage.Visibility = Visibility.Hidden;
                     return;
                 }
@@ -588,7 +605,6 @@ namespace Twinpack.Dialogs
                 CatalogView.IsEnabled = false;
                 await LoadFirstPackageVersionsPageAsync(packageId);
 
-                PackageVersionsView.IsEnabled = _packageVersions.Any();
                 PackageVersionView.Visibility = Visibility.Hidden;
 
                 // check if the plc already contains the selected package
@@ -616,8 +632,16 @@ namespace Twinpack.Dialogs
                     index = _packageVersions.IndexOf(_packageVersions.FirstOrDefault(x => x.PackageVersionId == PackageVersion.PackageVersionId));
                 }
 
-                if (_packageVersions.Any())
-                    PackageVersionsView.SelectedIndex = index >= 0 ? index : 0;
+
+                VersionsView.SelectedIndex = 0;
+
+                BranchesView.Visibility = Branches.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
+                TargetsView.Visibility = Targets.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
+                ConfigurationsView.Visibility = Configurations.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
+
+                BranchesView.SelectedIndex = 0;
+                TargetsView.SelectedIndex = 0;
+                ConfigurationsView.SelectedIndex = 0;
 
                 btnEditPackage.Visibility = _availablePackages.Any() && item.Repository == _twinpackServer.Username ? Visibility.Visible : Visibility.Hidden;
                 PackageVersionView.Visibility = _availablePackages.Any() ? Visibility.Visible : Visibility.Hidden;
@@ -654,7 +678,7 @@ namespace Twinpack.Dialogs
                 else if (_isBrowsingCatalog)
                     await LoadFirstCatalogPageAsync(text);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Trace(ex);
 
@@ -663,7 +687,7 @@ namespace Twinpack.Dialogs
 
         public async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if(_isBrowsingCatalog)
+            if (_isBrowsingCatalog)
             {
                 var text = ((TextBox)sender).Text;
                 _searchText = text;

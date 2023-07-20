@@ -18,9 +18,6 @@ namespace Twinpack.Commands
     /// </summary>
     internal sealed class PublishCommand : Command, ICommand
     {
-        //    private static readonly NLog.Logger _logger = LogManager.GetLogger("Commands.Library");
-        private static readonly NLog.Logger _logger = LogManager.GetCurrentClassLogger();
-
         /// <summary>
         /// Command ID.
         /// </summary>
