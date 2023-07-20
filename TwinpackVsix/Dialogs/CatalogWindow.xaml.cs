@@ -49,6 +49,10 @@ namespace Twinpack.Dialogs
         private bool _isPackageVersionPanelEnabled;
         private string _installedPackageVersion;
 
+        private bool _installReinstalls;
+        private bool _uninstallDeletes;
+        private bool _filterByInstalledSettings;
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         public Models.PackageGetResponse Package
@@ -68,6 +72,37 @@ namespace Twinpack.Dialogs
             {
                 _packageVersion = value;
                 skpPackageVersion.DataContext = _packageVersion;            
+            }
+        }
+
+        
+       public bool FilterByInstalledSettings
+        {
+            get { return _filterByInstalledSettings; }
+            set
+            {
+                _filterByInstalledSettings = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FilterByInstalledSettings)));
+            }
+        }
+
+        public bool InstallReinstalls
+        {
+            get { return _installReinstalls; }
+            set
+            {
+                _installReinstalls = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(InstallReinstalls)));
+            }
+        }
+
+        public bool UninstallDeletes
+        {
+            get { return _uninstallDeletes; }
+            set
+            {
+                _uninstallDeletes = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UninstallDeletes)));
             }
         }
 
@@ -139,8 +174,7 @@ namespace Twinpack.Dialogs
                     sv.ScrollChanged += Catalog_ScrollChanged;
             };
 
-            FilterByInstalledSettingsCheck.IsEnabled = false;
-            FilterByInstalledSettingsCheck.IsChecked = true;
+            FilterByInstalledSettings = true;
             PackageVersionsView.ItemsSource = _packageVersions;
             PackageVersionsView.SelectionChanged += PackageVersions_SelectionChanged;
             //PackageVersionsView.Loaded += (s, e) => {
@@ -484,7 +518,7 @@ namespace Twinpack.Dialogs
                         {
                             catalogItem = new Models.CatalogItem(packageVersion);
                             catalogItem.InstalledVersion = item.Version;
-                            //packageVersion = await _twinpackServer.ResolvePackageVersionAsync()
+                            catalogItem.UpdateVersion = packageVersion.Version;
                         }
 
                         if(_isBrowsingInstalledPackages)
