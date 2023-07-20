@@ -52,5 +52,6 @@ namespace Twinpack.Models
         public string InstalledBranch { get; set; }
         public string InstalledTarget { get; set; }
         public string InstalledConfiguration { get; set; }
+        public bool IsUpdateable { get { return InstalledVersion != null && UpdateVersion != null && new Version(InstalledVersion) < new Version(UpdateVersion); } }
     }
 }

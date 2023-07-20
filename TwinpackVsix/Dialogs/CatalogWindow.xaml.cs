@@ -59,7 +59,30 @@ namespace Twinpack.Dialogs
         private bool _uninstallDeletes;
         private bool _filterByInstalledSettings;
 
+        private int _installedPackagesCount;
+        private int _updateablePackagesCount;
+
         public event PropertyChangedEventHandler PropertyChanged;
+
+        public int InstalledPackagesCount
+        {
+            get { return _installedPackagesCount; }
+            set
+            {
+                _installedPackagesCount = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(InstalledPackagesCount)));
+            }
+        }
+
+        public int UpdateablePackagesCount
+        {
+            get { return _updateablePackagesCount; }
+            set
+            {
+                _updateablePackagesCount = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UpdateablePackagesCount)));
+            }
+        }
 
         public Models.PackageGetResponse Package
         {
@@ -158,6 +181,8 @@ namespace Twinpack.Dialogs
             _context = context;
             _isBrowsingCatalog = true;
 
+            InstalledPackagesCount = 0;
+            UpdateablePackagesCount = 0;
             Catalog = new ObservableCollection<Models.CatalogItem>();
             Targets = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
             Configurations = new ObservableCollection<Models.PackageVersionsItemGetResponse>();
@@ -177,7 +202,11 @@ namespace Twinpack.Dialogs
             };
 
             FilterByInstalledSettings = true;
-            //PackageVersionsView.SelectionChanged += PackageVersions_SelectionChanged;
+            VersionsView.SelectionChanged += PackageVersions_SelectionChanged;
+            BranchesView.SelectionChanged += PackageVersions_SelectionChanged;
+            ConfigurationsView.SelectionChanged += PackageVersions_SelectionChanged;
+            TargetsView.SelectionChanged += PackageVersions_SelectionChanged;
+
             //PackageVersionsView.Loaded += (s, e) => {
             //    var sv = FindVisualChild<ScrollViewer>(PackageVersionsView)
             //    if (sv != null)
@@ -260,7 +289,6 @@ namespace Twinpack.Dialogs
             {
                 Catalog.Add(p);
             }
-
         }
 
         public void ShowCatalog_Click(object sender, RoutedEventArgs e)
@@ -443,14 +471,8 @@ namespace Twinpack.Dialogs
             foreach (var item in _packageVersions.GroupBy(x => x.Configuration).Select(x => x.FirstOrDefault()).Distinct())
                 Configurations.Add(item);
 
-            foreach (var item in _packageVersions.Where(x => x.Branch == Branches.FirstOrDefault().Branch &&
-                                                        x.Configuration == Branches.FirstOrDefault().Configuration &&
-                                                        x.Target == Branches.FirstOrDefault().Target))
-                Versions.Add(item);
-
             _isPackageVersionsFetching = false;
         }
-
 
         private async Task LoadFirstCatalogPageAsync(string text = "")
         {
@@ -473,9 +495,6 @@ namespace Twinpack.Dialogs
 
                 if (reset)
                 {
-                    if (_isBrowsingCatalog)
-                        Catalog.Clear();
-
                     _availablePackages.Clear();
                 }
                 foreach (var item in results)
@@ -510,8 +529,6 @@ namespace Twinpack.Dialogs
             try
             {
                 IsCatalogFetching = true;
-                Catalog.Clear();
-
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
                 _plc = null;
@@ -531,7 +548,6 @@ namespace Twinpack.Dialogs
                         Models.CatalogItem catalogItem = new Models.CatalogItem(item);
                         var packageVersion = await _twinpackServer.GetPackageVersionAsync(item.Repository, item.Name, null, item.Configuration, item.Branch, item.Target);
 
-                        // todo: check for updates here
                         if (packageVersion.PackageVersionId != null)
                         {
                             catalogItem = new Models.CatalogItem(packageVersion);
@@ -541,7 +557,7 @@ namespace Twinpack.Dialogs
 
                         if (_isBrowsingInstalledPackages)
                             Catalog.Add(catalogItem);
-                        else if (_isBrowsingUpdatablePackages && catalogItem.InstalledVersion != catalogItem.UpdateVersion)
+                        else if (_isBrowsingUpdatablePackages && catalogItem.IsUpdateable)
                             Catalog.Add(catalogItem);
 
                         _installedPackages.Add(catalogItem);
@@ -549,6 +565,8 @@ namespace Twinpack.Dialogs
                 }
 
                 IsPackageVersionPanelEnabled = _plcConfig != null;
+                InstalledPackagesCount = _installedPackages.Count();
+                UpdateablePackagesCount = _installedPackages.Where(x => x.IsUpdateable).Count();
             }
             catch (Exception ex)
             {
@@ -625,15 +643,16 @@ namespace Twinpack.Dialogs
 
 
                 var index = 0;
-                IsNewReference = PackageVersion.PackageVersionId == null;
+                IsNewReference = PackageVersion.PackageVersionId == null && _packageConfig == null;
                 if (PackageVersion.PackageVersionId != null)
                 {
                     InstalledPackageVersion = PackageVersion.Version ?? "n/a";
                     index = _packageVersions.IndexOf(_packageVersions.FirstOrDefault(x => x.PackageVersionId == PackageVersion.PackageVersionId));
                 }
-
-
-                VersionsView.SelectedIndex = 0;
+                else if(_packageConfig != null)
+                {
+                    InstalledPackageVersion = _packageConfig.Version ?? "n/a";
+                }
 
                 BranchesView.Visibility = Branches.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
                 TargetsView.Visibility = Targets.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
@@ -654,15 +673,36 @@ namespace Twinpack.Dialogs
 
         }
 
-        private async void PackageVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void FilterPackageVersions()
         {
-            var item = (sender as ComboBox).SelectedItem as Twinpack.Models.PackageVersionsItemGetResponse;
-            if (item == null)
+            Versions.Clear();
+            if (BranchesView.SelectedItem == null || ConfigurationsView.SelectedItem == null || TargetsView.SelectedItem == null)
                 return;
 
-            PackageVersion = await _twinpackServer.GetPackageVersionAsync(item.Repository,
-                item.Name, item.Version, item.Configuration, item.Branch, item.Target,
-                includeBinary: false, cachePath: null);
+            foreach (var item in _packageVersions.Where(x => x.Branch == (BranchesView.SelectedItem as Models.PackageVersionsItemGetResponse).Branch &&
+                                                        x.Configuration == (ConfigurationsView.SelectedItem as Models.PackageVersionsItemGetResponse).Configuration &&
+                                                        x.Target == (TargetsView.SelectedItem as Models.PackageVersionsItemGetResponse).Target))
+                Versions.Add(item);
+        }
+
+        private async void PackageVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender as ComboBox != VersionsView)
+            {
+                FilterPackageVersions();
+                VersionsView.SelectedIndex = 0;
+            }
+            else
+            {
+                var item = (sender as ComboBox).SelectedItem as Models.PackageVersionsItemGetResponse;
+
+                if (item != null)
+                {
+                    PackageVersion = await _twinpackServer.GetPackageVersionAsync(item.Repository,
+                        item.Name, item.Version, item.Configuration, item.Branch, item.Target,
+                        includeBinary: false, cachePath: null);
+                }
+            }
         }
 
         public async void ReloadButton_Click(object sender, RoutedEventArgs e)
