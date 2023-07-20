@@ -264,8 +264,8 @@ namespace Twinpack
                     {
                         var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
                         Directory.CreateDirectory(filePath);
-                        var extension = packageVersion.Compiled == 1 ? ".compiled-library" : ".library";
-                        File.WriteAllBytes($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.library", Convert.FromBase64String(packageVersion.Binary));
+                        var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
+                        File.WriteAllBytes($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Convert.FromBase64String(packageVersion.Binary));
                     }
 
                     return packageVersion;
@@ -310,8 +310,8 @@ namespace Twinpack
                     if (includeBinary)
                     {
                         var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}";
-                        var extension = packageVersion.Compiled == 1 ? ".compiled-library" : ".library";
-                        File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.library", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
+                        var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
+                        File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
                     }
 
                     return packageVersion;

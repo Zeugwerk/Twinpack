@@ -38,8 +38,16 @@
         </Grid>
         <StackPanel IsEnabled="{Binding IsCatalogFetching, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Row="1" Orientation="Horizontal">
             <Button Click="ShowCatalog_Click" Padding="15 5 15 5" Margin="50 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">Browse</Button>
-            <Button Click="ShowInstalledPackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">Installed</Button>
-            <Button Click="ShowUpdateablePackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">Updates</Button>
+            <Button Click="ShowInstalledPackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">
+                <TextBlock>
+                    <Run>Installed (</Run><Run Text="{Binding InstalledPackagesCount}"></Run><Run>)</Run>
+                </TextBlock>
+            </Button>
+            <Button Click="ShowUpdateablePackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">
+                <TextBlock>
+                    <Run>Updates (</Run><Run Text="{Binding UpdateablePackagesCount}"></Run><Run>)</Run>
+                </TextBlock>
+            </Button>
         </StackPanel>
         <Grid HorizontalAlignment="Stretch"  Grid.Row="2" Margin="5 0 5 0">
             <Grid.ColumnDefinitions>
@@ -75,8 +83,6 @@
                 <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
 
-
-
             <ListView Grid.Column="0" x:Name="CatalogView" VerticalContentAlignment="Stretch" HorizontalAlignment="Stretch"
                       ItemsSource="{Binding Catalog}"
                       BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
@@ -109,21 +115,27 @@
                                 <TextBlock Margin="8 0 0 0" Text="{Binding Description}"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                <TextBlock HorizontalAlignment="Right" >
-                                    <Run FontWeight="SemiBold" Text="{Binding InstalledVersion}"></Run>
-                                </TextBlock>
-                                <TextBlock HorizontalAlignment="Right" >
-                                    <Run FontWeight="SemiBold" Text="{Binding UpdateVersion}"></Run>
-                                </TextBlock>
-                            </StackPanel>
+                            <Grid Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch" Visibility="{Binding IsUpdateable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="*"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="auto"></RowDefinition>
+                                    <RowDefinition Height="auto"></RowDefinition>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Column="0" Grid.Row="0" Text="Installed:" Margin="0 0 10 0"></TextBlock>
+                                <TextBlock Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" FontWeight="SemiBold" Text="{Binding InstalledVersion}"></TextBlock>
+                                <TextBlock Grid.Column="0" Grid.Row="1" Text="Available:" Margin="0 0 10 0"></TextBlock>
+                                <TextBlock Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" FontWeight="SemiBold" Text="{Binding UpdateVersion}"></TextBlock>
+                            </Grid>
 
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
 
-            <Expander FontSize="10" Grid.Column="0" Background="#FFcad0de" IsExpanded="True" Header="Disclaimer" VerticalAlignment="Bottom" ExpandDirection="Up">
+            <Expander Grid.Column="0" Background="#FFcad0de" IsExpanded="True" Header="Disclaimer" VerticalAlignment="Bottom" ExpandDirection="Up">
                 <TextBlock Margin="5" TextWrapping="Wrap">
                     Twinpack is a user-driven platform. Zeugwerk or contributors, as developers of the package manager, 
                     do not assume responsibility for any packages distributed by users.
@@ -135,18 +147,13 @@
             <ScrollViewer x:Name="PackageVersionView" Margin="10,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Vertical" IsEnabled="{Binding IsPlcConfigAvailable}">
                     <Grid x:Name="skpPackage">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"></ColumnDefinition>
-                            <ColumnDefinition Width="auto"></ColumnDefinition>
-                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto"></RowDefinition>
                             <RowDefinition Height="30"></RowDefinition>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="{Binding DisplayName}" FontSize="20" FontWeight="SemiBold"></TextBlock>
-                        <Button Grid.Column="1" x:Name="btnEditPackage" Width="80" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">Edit Package</Button>
-
-                        <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10"><Run Language="de-at" Text="distributed"/><Run Text=" by"/><Run Text=" "/><Run FontSize="14"/></TextBlock>
+                        <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" FontSize="20" FontWeight="SemiBold"></TextBlock>
+                        <Button x:Name="btnEditPackage" Width="80" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">Edit Package</Button>
+                        <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10"><Run Text="distributed by"/><Run Text="{Binding DistributorName}"/><Run FontSize="14"/></TextBlock>
                     </Grid>
 
 

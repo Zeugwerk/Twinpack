@@ -137,6 +137,8 @@ namespace Twinpack.Dialogs
                         Entitlement = _package.Entitlement;
                         ProjectUrl = _package.ProjectUrl;
                         DistributorName = _package.DistributorName;
+                        Authors = _package.Authors;
+                        License = _package.License;
                         IconFile = _plcConfig?.IconFile;
                         IconImage = TwinpackUtils.IconImage(_package.IconUrl);
                     }
@@ -194,12 +196,9 @@ namespace Twinpack.Dialogs
                 { 
                     try
                     {
-                        var packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false);
-    
-                        Authors = packageVersion.Authors;
-                        License = packageVersion.License;
-                        Notes = packageVersion.Notes;
-                        Version = packageVersion.Version;
+                        _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false);
+                        Notes = _packageVersion.Notes;
+                        Version = _packageVersion.Version;
                     }
                     catch (Exceptions.GetException ex)
                     {
@@ -212,10 +211,10 @@ namespace Twinpack.Dialogs
                 }
     
                 IsNewPackage = _package.PackageId == null;
-                IsEditPackageVisible = !IsNewPackage;
+                IsEditPackageVisible = !IsNewPackage && _plcConfig != null;
                 IsApplyApplicable = false;
                 IsVersionDataReadOnly = false;
-                IsGeneralDataReadOnly = !IsNewPackage;
+                IsGeneralDataReadOnly = !IsNewPackage && _plcConfig != null;
                 IsEnabled = true;
              }
             catch(Exception ex)
@@ -469,8 +468,8 @@ namespace Twinpack.Dialogs
                 ProjectUrl = ProjectUrl,
                 Authors = Authors,
                 License = License,
-                IconFilename = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : System.IO.Path.GetFileName(IconFile),
-                IconBinary = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? null : Convert.ToBase64String(File.ReadAllBytes(IconFile))
+                IconFilename = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
+                IconBinary = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Convert.ToBase64String(File.ReadAllBytes(IconFile)) : null
             };
 
             try
