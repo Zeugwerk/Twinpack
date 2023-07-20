@@ -75,6 +75,8 @@
                 <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
 
+
+
             <ListView Grid.Column="0" x:Name="CatalogView" VerticalContentAlignment="Stretch" HorizontalAlignment="Stretch"
                       ItemsSource="{Binding Catalog}"
                       BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
@@ -121,6 +123,15 @@
                 </ListView.ItemTemplate>
             </ListView>
 
+            <Expander FontSize="10" Grid.Column="0" Background="#FFcad0de" IsExpanded="True" Header="Disclaimer" VerticalAlignment="Bottom" ExpandDirection="Up">
+                <TextBlock Margin="5" TextWrapping="Wrap">
+                    Twinpack is a user-driven platform. Zeugwerk or contributors, as developers of the package manager, 
+                    do not assume responsibility for any packages distributed by users.
+                    Users are advised to use packages at their own discretion and risk.
+                </TextBlock>
+                
+            </Expander>
+            
             <ScrollViewer x:Name="PackageVersionView" Margin="10,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Vertical" IsEnabled="{Binding IsPlcConfigAvailable}">
                     <Grid x:Name="skpPackage">
@@ -140,7 +151,7 @@
 
 
                     <StackPanel Orientation="Vertical" Margin="0,20,0,0">
-                        <Grid>
+                        <Grid HorizontalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
                                 <ColumnDefinition Width="*"></ColumnDefinition>
@@ -152,8 +163,16 @@
                                 <RowDefinition Height="auto"></RowDefinition>
                                 <RowDefinition Height="auto"></RowDefinition>
                                 <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
                             </Grid.RowDefinitions>
-                            <ComboBox x:Name="PackageVersionsView" d:ItemsSource="{d:SampleData ItemCount=3}" IsEnabled="False" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="0" Margin="5,0,5,5">
+                            <TextBlock Text="Installed" Grid.Column="0" Grid.Row="0" Margin="5,0,5,5"></TextBlock>
+                            <TextBox Text="{Binding InstalledPackageVersion}" Padding="3,0,0,0" IsReadOnly="True" IsEnabled="False" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="0" Margin="5,0,5,5"/>
+
+                            <TextBlock Text="Branch" Grid.Column="0" Grid.Row="1" Margin="5,0,5,5"></TextBlock>
+                            <ComboBox x:Name="BranchesView" d:ItemsSource="{d:SampleData ItemCount=3}" IsEnabled="False" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="1" Margin="5,0,5,5">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Vertical">
@@ -162,23 +181,75 @@
                                             </TextBlock>
 
                                             <TextBlock HorizontalAlignment="Stretch">
-                                                <Run Text="branch:"></Run>                                                                                                                                                                                                
-                                                <Run Text="{Binding Branch}"></Run>
-                                                <LineBreak></LineBreak>                                                                                                                                            
                                                 <Run Text="{Binding Configuration}"/><Run Text=" ("/><Run Text="{Binding Target}"/><Run Text=")"/>
                                             </TextBlock>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
-                            </ComboBox>                              
-                            <TextBlock Text="Installed" Grid.Column="0" Grid.Row="0" Margin="5,0,5,5"></TextBlock>
-                            <TextBlock Text="Available" Grid.Column="0" Grid.Row="1" Margin="5,0,5,5"></TextBlock>
-                            <TextBox Text="{Binding InstalledPackageVersion}" Padding="3,0,0,0" IsReadOnly="True" IsEnabled="False" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="1" Margin="5,0,5,5"/>
-                            <Button Grid.Column="2" Grid.Row="0" Margin="0,0,5,5">Uninstall</Button>
-                            <Button Grid.Column="2" Grid.Row="1" Click="AddPackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Add as Reference</Button>
-                            <Button Grid.Column="2" Grid.Row="1" Click="UpdatePackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Update Reference</Button>
-                            <CheckBox x:Name="FilterByInstalledSettingsCheck" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">Filter by used package settings</CheckBox>
+                            </ComboBox>
 
+                            <TextBlock Text="Target" Grid.Column="0" Grid.Row="2" Margin="5,0,5,5"></TextBlock>
+                            <ComboBox x:Name="TargetsView" d:ItemsSource="{d:SampleData ItemCount=3}" IsEnabled="False" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="2" Margin="5,0,5,5">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock HorizontalAlignment="Stretch" Text="">
+                                                <Run Text="{Binding Version}"></Run>
+                                            </TextBlock>
+
+                                            <TextBlock HorizontalAlignment="Stretch">
+                                                <Run Text="{Binding Configuration}"/><Run Text=" ("/><Run Text="{Binding Target}"/><Run Text=")"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <TextBlock Text="Configuration" Grid.Column="0" Grid.Row="3" Margin="5,0,5,5"></TextBlock>
+                            <ComboBox x:Name="ConfigurationsView" d:ItemsSource="{d:SampleData ItemCount=3}" IsEnabled="False" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="3" Margin="5,0,5,5">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock HorizontalAlignment="Stretch" Text="">
+                                                <Run Text="{Binding Version}"></Run>
+                                            </TextBlock>
+
+                                            <TextBlock HorizontalAlignment="Stretch">
+                                                <Run Text="{Binding Configuration}"/><Run Text=" ("/><Run Text="{Binding Target}"/><Run Text=")"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <TextBlock Text="Available" Grid.Column="0" Grid.Row="4" Margin="5,0,5,5"></TextBlock>
+                            <ComboBox x:Name="PackageVersionsView" d:ItemsSource="{d:SampleData ItemCount=3}" IsEnabled="False" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="4" Margin="5,0,5,5">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock HorizontalAlignment="Stretch">
+                                                <Run Text="{Binding Version}"></Run>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <Button IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">Uninstall</Button>
+                            <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="AddPackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Install</Button>
+                            <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="UpdatePackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Update</Button>
+                            <CheckBox IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding FilterByInstalledSettings}" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2">Filter by used package settings</CheckBox>
+
+                            <Expander Grid.Row="6" Grid.ColumnSpan="3" Margin="0 10 5 10" Header="Options">
+                                <StackPanel Margin="10 5 0 0" Width="200" >
+                                    <CheckBox IsChecked="{Binding InstallReinstalls}">
+                                        <TextBlock TextWrapping="Wrap">Install/Update reinstalls</TextBlock>
+                                    </CheckBox>
+                                    <CheckBox IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding UninstallDeletes}" Margin="0 5 0 0">
+                                        <TextBlock>Uninstall deletes from system</TextBlock>
+                                    </CheckBox>
+                                </StackPanel>
+                            </Expander>
                        </Grid>
 
                         <StackPanel x:Name="skpPackageVersion" Orientation="Vertical">
