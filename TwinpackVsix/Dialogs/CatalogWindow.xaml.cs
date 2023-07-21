@@ -249,7 +249,6 @@ namespace Twinpack.Dialogs
 
             try
             {
-                _twinpackServer.InvalidateCache();
                 _isBrowsingAvailablePackages = true;
                 IsCatalogLoading = _isBrowsingAvailablePackages;
                 await LoadFirstCatalogPageAsync();
@@ -417,6 +416,7 @@ namespace Twinpack.Dialogs
 
             try
             {
+                _twinpackServer.InvalidateCache();
                 IsCatalogLoading = _isBrowsingAvailablePackages;
                 await LoadFirstCatalogPageAsync();
 
