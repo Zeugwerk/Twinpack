@@ -12,6 +12,7 @@
         <local:UrlToImageConverter x:Key="UrlToImageConverter"/>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
+        <local:IntToVisibilityConverter x:Key="IntToVisibilityConverter"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -30,13 +31,20 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="80"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="2" Visibility="{Binding IsConfigured, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
+                <Button Click="CreateConfig_Click" Margin="0 0 15 0" VerticalAlignment="Center">Create</Button>
+                <TextBlock TextWrapping="Wrap" Width="300">
+                    To install packages your solution needs a Twinpack configuration file. Create it by clicking the button</TextBlock>
+            </StackPanel>
+            
             <Image Grid.Column="0" Height="50" Source="Images/Twinpack.png" HorizontalAlignment="Center" VerticalAlignment="Center"></Image>
             <TextBlock Grid.Column="1" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontFamily="Menrope" FontWeight="DemiBold" Foreground="#FF2A334B">
         <Run Text="Twinpack Catalog"/>
             </TextBlock>
         </Grid>
-        <StackPanel IsEnabled="{Binding IsCatalogFetching, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Row="1" Orientation="Horizontal">
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
             <Button Click="ShowCatalog_Click" Padding="15 5 15 5" Margin="50 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">Browse</Button>
             <Button Click="ShowInstalledPackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="SemiBold" Foreground="#2a334b">
                 <TextBlock>
@@ -61,30 +69,30 @@
             <TextBlock VerticalAlignment="Center"  Grid.Column="0" Text="Search: "></TextBlock>
             <TextBox Grid.Column="1" x:Name="SearchTextBox" TextChanged="SearchTextBox_TextChanged" Width="200" Margin="5,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Left">
             </TextBox>
-            <Button Grid.Column="2" Click="ReloadButton_Click" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left">
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="Transparent">
-                            <Grid>
-                                <Path Fill="#FF000000" Data="M12,5.25V1L7,6L12,11V7.75C15.07,7.75 17.5,10.18 17.5,13.25C17.5,16.32 15.07,18.75 12,18.75C8.93,18.75 6.5,16.32 6.5,13.25H5C5,17.52 8.48,21 12.75,21C17.02,21 20.5,17.52 20.5,13.25C20.5,8.98 17.02,5.5 12.75,5.5H12V5.25Z" />
-                            </Grid>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
-            <ComboBox Grid.Column="4" Width="150" Margin="0,5,0,5">
+            <Button  Grid.Column="2" Content="Refresh" Click="ReloadButton_Click" VerticalAlignment="Center">
+                </Button>
+
+                <ComboBox Grid.Column="4" Width="150" Margin="0,5,0,5">
                 <ComboBoxItem IsSelected="True" IsEnabled="False" Content="https://twinpack.dev"/>
             </ComboBox>
-            <Button x:Name="btnLogin" Grid.Column="5" Width="80" Margin="5 5 0 5" Click="LoginButton_Click">Login</Button>
+            <Button x:Name="btnLogin" Grid.Column="5" Margin="5 5 0 5" Click="LoginButton_Click">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Margin="0 0 0 0">Login</TextBlock>
+                </StackPanel>
+            </Button>
         </Grid>
         <Grid Grid.Row="3" Margin="5 0 5 0" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="350"/>
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="auto"></RowDefinition>
+            </Grid.RowDefinitions>
 
-            <ListView Grid.Column="0" x:Name="CatalogView" VerticalContentAlignment="Stretch" HorizontalAlignment="Stretch"
-                      ItemsSource="{Binding Catalog}"
+            <ListView Grid.Column="0" Grid.Row="0" x:Name="CatalogView"
+                      ItemsSource="{Binding Catalog}" BorderBrush="#FFcad0de"
                       BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
                       ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <ListBox.ItemContainerStyle>
@@ -106,9 +114,12 @@
                                     <TextBlock Margin="8 0 0 0">
                                     <Run Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="16"/>
                                     <Run Text="distributed by"/>
-                                    <Run Text="{Binding DistributorName}"/><Run Text=","/>
-                                    <Run Text="{Binding Downloads}" FontWeight="SemiBold"/>
-                                    <Run Text="downloads"/>
+                                    <Run Text="{Binding DistributorName}"/>
+                                    </TextBlock>
+                                    <TextBlock Margin="0 0 0 0" Visibility="{Binding Downloads, Converter={StaticResource IntToVisibilityConverter}, ConverterParameter='0'}">                                    
+                                        <Run Text=","/>
+                                        <Run Text="{Binding Downloads}" FontWeight="SemiBold"/>
+                                        <Run Text="downloads"/>
                                     </TextBlock>
                                 </StackPanel>
                                 <TextBlock Margin="8 0 0 0" Text="{Binding Name}" FontWeight="SemiBold"/>
@@ -135,29 +146,39 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <Expander Grid.Column="0" Background="#FFcad0de" IsExpanded="True" Header="Disclaimer" VerticalAlignment="Bottom" ExpandDirection="Up">
+            <Expander Grid.Column="0" Grid.Row="1" Background="#FFcad0de" IsExpanded="True" Header="Disclaimer" VerticalAlignment="Bottom" ExpandDirection="Up">
                 <TextBlock Margin="5" TextWrapping="Wrap">
                     Twinpack is a user-driven platform. Zeugwerk or contributors, as developers of the package manager, 
                     do not assume responsibility for any packages distributed by users.
                     Users are advised to use packages at their own discretion and risk.
                 </TextBlock>
-                
             </Expander>
-            
-            <ScrollViewer x:Name="PackageVersionView" Margin="10,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                <StackPanel Orientation="Vertical" IsEnabled="{Binding IsPlcConfigAvailable}">
-                    <Grid x:Name="skpPackage">
+
+            <StackPanel Grid.Row="0" Visibility="{Binding IsCatalogLoading, Converter={StaticResource BooleanToVisibilityConverter}}" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="Loading ..."></TextBlock>
+            </StackPanel>
+
+            <ScrollViewer Grid.RowSpan="3" x:Name="PackageVersionView" Visibility="{Binding PackageVersion, Converter={StaticResource NullToVisibilityConverter}}" Margin="10,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"></RowDefinition>
+                        <RowDefinition Height="*"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Grid DataContext="{Binding Package}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto"></RowDefinition>
                             <RowDefinition Height="30"></RowDefinition>
                         </Grid.RowDefinitions>
                         <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" FontSize="20" FontWeight="SemiBold"></TextBlock>
-                        <Button x:Name="btnEditPackage" Width="80" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">Edit Package</Button>
+                        <Button x:Name="btnEditPackage" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Margin="10 0 0 0">Edit Package</TextBlock>
+                            </StackPanel>
+                        </Button>
                         <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10"><Run Text="distributed by"/><Run Text="{Binding DistributorName}"/><Run FontSize="14"/></TextBlock>
                     </Grid>
 
-
-                    <StackPanel Orientation="Vertical" Margin="0,20,0,0">
+                    <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,20,0,0">
                         <Grid HorizontalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -214,10 +235,21 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
 
-                            <Button IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">Uninstall</Button>
-                            <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="AddPackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Install</Button>
-                            <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="UpdatePackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">Update</Button>
-                            <CheckBox IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding FilterByInstalledSettings}" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2">Filter by used package settings</CheckBox>
+                            <Button IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Margin="0 0 0 0">Uninstall</TextBlock>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="AddPackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Margin="0 0 0 0">Update</TextBlock>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="UpdatePackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Margin="0 0 0 0">Update</TextBlock>
+                                </StackPanel>
+                            </Button>
 
                             <Expander Grid.Row="6" Grid.ColumnSpan="3" Margin="0 10 5 10" Header="Options">
                                 <StackPanel Margin="10 5 0 0" Width="200" >
@@ -229,9 +261,9 @@
                                     </CheckBox>
                                 </StackPanel>
                             </Expander>
-                       </Grid>
+                        </Grid>
 
-                        <StackPanel x:Name="skpPackageVersion" Orientation="Vertical">
+                        <StackPanel DataContext="{Binding PackageVersion}" Orientation="Vertical">
                             <TextBlock Text="Notes: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
                             <TextBlock Text="{Binding Notes}" TextWrapping="Wrap" Margin="15,0,0,0"></TextBlock>
 
@@ -276,8 +308,12 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
             </ScrollViewer>
+
+            <StackPanel Grid.Column="2" Grid.RowSpan="3" Visibility="{Binding IsPackageLoading, Converter={StaticResource BooleanToVisibilityConverter}}" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="Loading ..."></TextBlock>
+            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>

@@ -22,8 +22,8 @@ namespace Twinpack
         public static string DefaultUsername = "public";
         public static string DefaultPassword = "public";
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-        
-        private HttpClient _client = new HttpClient();
+
+        private CachedHttpClient _client = new CachedHttpClient();
 
         public string Username { get; set; }
         public string Password { get; set; }
@@ -108,29 +108,29 @@ namespace Twinpack
             var requestBodyJson = JsonSerializer.Serialize(requestBody);
             _logger.Debug($"Pushing {plc.Name}: {requestBodyJson}");
 
-            
-                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
-                request.Headers.Add("zgwk-username", Username);
-                request.Headers.Add("zgwk-password", Password);
-                request.Content = new StreamContent(
-                    new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-                var response = await _client.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
+            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
+            request.Headers.Add("zgwk-username", Username);
+            request.Headers.Add("zgwk-password", Password);
+            request.Content = new StreamContent(
+                new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-                try
-                {
-                    return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-                }
-                catch (Exception ex)
-                {
-                    JsonElement packageVersion = JsonSerializer.Deserialize<dynamic>(responseBody);
-                    JsonElement message = new JsonElement();
-                    if (packageVersion.TryGetProperty("message", out message))
-                        throw new PostException(message.ToString());
-                    else
-                        throw ex;
-                }
+            var response = await _client.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            try
+            {
+                return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            }
+            catch (Exception ex)
+            {
+                JsonElement packageVersion = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (packageVersion.TryGetProperty("message", out message))
+                    throw new PostException(message.ToString());
+                else
+                    throw ex;
+            }
         }
 
         public async Task<IEnumerable<T>> QueryWithPagination<T>(string endpoint, int page = 1, int perPage = 5)
@@ -139,50 +139,48 @@ namespace Twinpack
             var query = $"/{endpoint}";
             var uri = new Uri(TwinpackUrl + query + $"&page={page}&per_page={perPage}");
 
-            
-            
-                var hasNextPage = true;
-                while (hasNextPage)
+            var hasNextPage = true;
+            while (hasNextPage)
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                request.Headers.Add("zgwk-username", Username);
+                request.Headers.Add("zgwk-password", Password);
+
+                var response = await _client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                var data = await response.Content.ReadAsStringAsync();
+                results.AddRange(JsonSerializer.Deserialize<List<T>>(data));
+
+                if (results.Count() >= perPage)
+                    return results.Take(perPage);
+
+                var linkHeader = response.Headers.GetValues("Link");
+                if (linkHeader.Any())
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                    request.Headers.Add("zgwk-username", Username);
-                    request.Headers.Add("zgwk-password", Password);
+                    var h = Regex.Unescape(linkHeader.First());
 
-                    var response = await _client.SendAsync(request);
-                    response.EnsureSuccessStatusCode();
-
-                    var data = await response.Content.ReadAsStringAsync();
-                    results.AddRange(JsonSerializer.Deserialize<List<T>>(data));
-
-                    if (results.Count() >= perPage)
-                        return results.Take(perPage);
-
-                    var linkHeader = response.Headers.GetValues("Link");
-                    if (linkHeader.Any())
+                    try
                     {
-                        var h = Regex.Unescape(linkHeader.First());
-
-                        try
+                        var pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
+                        if (pagination.Next == null)
                         {
-                            var pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
-                            if (pagination.Next == null)
-                            {
-                                hasNextPage = false;
-                                break;
-                            }
-
-                            uri = new Uri(pagination.Next);
+                            hasNextPage = false;
+                            break;
                         }
-                        catch (Exception)
+
+                        uri = new Uri(pagination.Next);
+                    }
+                    catch (Exception)
+                    {
+                        JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(data);
+                        JsonElement message = new JsonElement();
+                        if (responseBody.TryGetProperty("message", out message))
                         {
-                            JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(data);
-                            JsonElement message = new JsonElement();
-                            if (responseBody.TryGetProperty("message", out message))
-                            {
-                                throw new QueryException(query, message.ToString());
-                            }
+                            throw new QueryException(query, message.ToString());
                         }
                     }
+                }
             }
 
             return results;
@@ -213,203 +211,205 @@ namespace Twinpack
         public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library)
         {
             _logger.Info($"Resolving package from Twinpack Server");
-            
-                var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-resolve" +
-                    $"&distributor_name={library.DistributorName}&name={library.Name}&version={library.Version}"));
 
-                request.Headers.Add("zgwk-username", Username);
-                request.Headers.Add("zgwk-password", Password);
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-resolve" +
+                $"&distributor_name={library.DistributorName}&name={library.Name}&version={library.Version}"));
 
-                var response = await _client.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
+            request.Headers.Add("zgwk-username", Username);
+            request.Headers.Add("zgwk-password", Password);
 
-                try
+            var response = await _client.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            try
+            {
+                var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                return packageVersion;
+            }
+            catch (Exception ex)
+            {
+                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (responseJsonBody.TryGetProperty("message", out message))
                 {
-                    var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-                    return packageVersion;
+                    throw new GetException(message.ToString());
                 }
-                catch (Exception ex)
+                else
                 {
-                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                    JsonElement message = new JsonElement();
-                    if (responseJsonBody.TryGetProperty("message", out message))
-                    {
-                        throw new GetException(message.ToString());
-                    }
-                    else
-                    {
-                        throw ex;
-                    }
+                    throw ex;
                 }
+            }
         }
 
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(int packageVersionId, bool includeBinary, string cachePath = null)
         {
             _logger.Info($"Retrieving package version from Twinpack Server");
-            
-                var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
-                    $"&id={packageVersionId}&include-binary={(includeBinary ? 1 : 0)}"));
 
-                request.Headers.Add("zgwk-username", Username);
-                request.Headers.Add("zgwk-password", Password);
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
+                $"&id={packageVersionId}&include-binary={(includeBinary ? 1 : 0)}"));
 
-                var response = await _client.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
+            request.Headers.Add("zgwk-username", Username);
+            request.Headers.Add("zgwk-password", Password);
 
-                try
+            var response = await _client.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            try
+            {
+                var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+
+                if (includeBinary)
                 {
-                    var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-
-                    if (includeBinary)
-                    {
-                        var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
-                        Directory.CreateDirectory(filePath);
-                        var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                        File.WriteAllBytes($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Convert.FromBase64String(packageVersion.Binary));
-                    }
-
-                    return packageVersion;
+                    var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
+                    Directory.CreateDirectory(filePath);
+                    var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
+                    File.WriteAllBytes($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Convert.FromBase64String(packageVersion.Binary));
                 }
-                catch (Exception ex)
+
+                return packageVersion;
+            }
+            catch (Exception ex)
+            {
+                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (responseJsonBody.TryGetProperty("message", out message))
                 {
-                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                    JsonElement message = new JsonElement();
-                    if (responseJsonBody.TryGetProperty("message", out message))
-                    {
-                        throw new GetException(message.ToString());
-                    }
-                    else
-                    {
-                        throw ex;
-                    }
+                    throw new GetException(message.ToString());
                 }
+                else
+                {
+                    throw ex;
+                }
+            }
         }
 
-        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string repository, string name, string version, string configuration, string branch, string target, bool includeBinary=false, string cachePath=null)
+        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string repository, string name, string version, string configuration, string branch, string target, bool includeBinary = false, string cachePath = null)
         {
             _logger.Info($"Retrieving package version from Twinpack Server");
-            
-                var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
-                    $"&repository={HttpUtility.UrlEncode(repository)}" +
-                    $"&name={HttpUtility.UrlEncode(name)}" +
-                    $"&version={HttpUtility.UrlEncode(version)}" +
-                    $"&configuration={HttpUtility.UrlEncode(configuration)}" +
-                    $"&branch={HttpUtility.UrlEncode(branch)}" +
-                    $"&target={HttpUtility.UrlEncode(target)}" +
-                    $"&include-binary={(includeBinary ? 1 : 0)}"));
 
-                request.Headers.Add("zgwk-username", Username);
-                request.Headers.Add("zgwk-password", Password);
-                var response = await _client.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
+                $"&repository={HttpUtility.UrlEncode(repository)}" +
+                $"&name={HttpUtility.UrlEncode(name)}" +
+                $"&version={HttpUtility.UrlEncode(version)}" +
+                $"&configuration={HttpUtility.UrlEncode(configuration)}" +
+                $"&branch={HttpUtility.UrlEncode(branch)}" +
+                $"&target={HttpUtility.UrlEncode(target)}" +
+                $"&include-binary={(includeBinary ? 1 : 0)}"));
 
-                try
+            request.Headers.Add("zgwk-username", Username);
+            request.Headers.Add("zgwk-password", Password);
+            var response = await _client.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            try
+            {
+                var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+
+                if (includeBinary)
                 {
-                    var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-
-                    if (includeBinary)
-                    {
-                        var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}";
-                        var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                        File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
-                    }
-
-                    return packageVersion;
+                    var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}";
+                    var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
+                    File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
                 }
-                catch (Exception)
+
+                return packageVersion;
+
+            }
+            catch (Exception)
+            {
+                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (responseJsonBody.TryGetProperty("message", out message))
                 {
-                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                    JsonElement message = new JsonElement();
-                    if (responseJsonBody.TryGetProperty("message", out message))
-                    {
-                        throw new PostException(message.ToString());
-                    }
+                    throw new PostException(message.ToString());
                 }
+            }
 
             return null;
         }
 
         public async Task<PackageGetResponse> GetPackageAsync(string repository, string packageName)
         {
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package" +
+                $"&repository={HttpUtility.UrlEncode(repository)}" +
+                $"&name={HttpUtility.UrlEncode(packageName)}"));
+
             _logger.Info($"Retrieving package from Twinpack Server");
-            
-                var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package" +
-                    $"&repository={HttpUtility.UrlEncode(repository)}" +
-                    $"&name={HttpUtility.UrlEncode(packageName)}"));
 
-                request.Headers.Add("zgwk-username", Username);
-                request.Headers.Add("zgwk-password", Password);
+            request.Headers.Add("zgwk-username", Username);
+            request.Headers.Add("zgwk-password", Password);
 
-                var response = await _client.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
+            var response = await _client.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
 
-                try
-                {
-                    return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
-                }
-                catch (Exception ex)
-                {
-                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                    JsonElement message = new JsonElement();
-                    if (responseJsonBody.TryGetProperty("message", out message))
-                        throw new GetException(message.ToString());
-                    else
-                        throw ex;
-                }
+            try
+            {
+                return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            }
+            catch (Exception ex)
+            {
+                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (responseJsonBody.TryGetProperty("message", out message))
+                    throw new GetException(message.ToString());
+                else
+                    throw ex;
+            }
         }
 
         public async Task<PackageGetResponse> GetPackageAsync(int packageId)
         {
             _logger.Info($"Retrieving package from Twinpack Server");
-            
-                var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package&id={packageId}"));
-                request.Headers.Add("zgwk-username", Username);
-                request.Headers.Add("zgwk-password", Password);
 
-                var response = await _client.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package&id={packageId}"));
 
-                try
-                {
-                    return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
-                }
-                catch (Exception ex)
-                {
-                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                    JsonElement message = new JsonElement();
-                    if (responseJsonBody.TryGetProperty("message", out message))
-                        throw new GetException(message.ToString());
-                    else
-                        throw ex;
-                }
+            request.Headers.Add("zgwk-username", Username);
+            request.Headers.Add("zgwk-password", Password);
+
+            var response = await _client.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            try
+            {
+                return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            }
+            catch (Exception ex)
+            {
+                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (responseJsonBody.TryGetProperty("message", out message))
+                    throw new GetException(message.ToString());
+                else
+                    throw ex;
+            }
         }
 
         public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package)
         {
             var requestBodyJson = JsonSerializer.Serialize(package);
 
-                var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
-                request.Headers.Add("zgwk-username", Username);
-                request.Headers.Add("zgwk-password", Password);
-                request.Content = new StreamContent(
-                    new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
+            var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
+            request.Headers.Add("zgwk-username", Username);
+            request.Headers.Add("zgwk-password", Password);
+            request.Content = new StreamContent(
+                new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-                var response = await _client.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
+            var response = await _client.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
 
-                try
-                {
-                    return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-                }
-                catch (Exception ex)
-                {
-                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                    JsonElement message = new JsonElement();
-                    if (responseJsonBody.TryGetProperty("message", out message))
-                        throw new PutException(message.ToString());
-                    else
-                        throw ex;
-                }
+            try
+            {
+                return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            }
+            catch (Exception ex)
+            {
+                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (responseJsonBody.TryGetProperty("message", out message))
+                    throw new PutException(message.ToString());
+                else
+                    throw ex;
+            }
 
             return null;
         }
@@ -418,70 +418,82 @@ namespace Twinpack
         {
             var requestBodyJson = JsonSerializer.Serialize(package);
 
-                var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package"));
-                request.Headers.Add("zgwk-username", Username);
-                request.Headers.Add("zgwk-password", Password);
-                request.Content = new StreamContent(
-                    new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
+            var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package"));
+            request.Headers.Add("zgwk-username", Username);
+            request.Headers.Add("zgwk-password", Password);
+            request.Content = new StreamContent(
+                new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-                var response = await _client.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
+            var response = await _client.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
 
-                try
-                {
-                    return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
-                }
-                catch (Exception ex)
-                {
-                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                    JsonElement message = new JsonElement();
-                    if (responseJsonBody.TryGetProperty("message", out message))
-                        throw new PutException(message.ToString());
-                    else
-                        throw ex;
-                }
+            try
+            {
+                return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            }
+            catch (Exception ex)
+            {
+                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (responseJsonBody.TryGetProperty("message", out message))
+                    throw new PutException(message.ToString());
+                else
+                    throw ex;
+            }
         }
 
-        public async Task<LoginPostResponse> LoginAsync(string username=null, string password=null)
+        public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null)
         {
             var credentials = CredentialManager.ReadCredential("TwinpackServer");
 
-                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=login"));
-                request.Headers.Add("zgwk-username", username ?? credentials?.UserName);
-                request.Headers.Add("zgwk-password", password ?? credentials?.Password);
+            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=login"));
+            request.Headers.Add("zgwk-username", username ?? credentials?.UserName);
+            request.Headers.Add("zgwk-password", password ?? credentials?.Password);
 
-                var response = await _client.SendAsync(request);
-                var responseBody = await response.Content.ReadAsStringAsync();
+            var response = await _client.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
 
-                try
-                {
-                    UserInfo = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
-                    Username = username ?? credentials?.UserName;
-                    Password = password ?? credentials?.Password;
-                    CredentialManager.WriteCredential("TwinpackServer", Username, Password, CredentialPersistence.LocalMachine);
-                    return UserInfo;
-                }
-                catch (Exception ex)
-                {
-                    CredentialManager.DeleteCredential("TwinpackServer");
-                    UserInfo = new LoginPostResponse();
-                    Username = "";
-                    Password = "";
-                    JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                    JsonElement message = new JsonElement();
-                    if (responseJsonBody.TryGetProperty("message", out message))
-                        throw new LoginException(message.ToString());
-                    else
-                        throw ex;
-                }
+            try
+            {
+                UserInfo = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
+                Username = username ?? credentials?.UserName;
+                Password = password ?? credentials?.Password;
+                CredentialManager.WriteCredential("TwinpackServer", Username, Password, CredentialPersistence.LocalMachine);
+                return UserInfo;
+            }
+            catch (Exception ex)
+            {
+                UserInfo = new LoginPostResponse();
+                Username = "";
+                Password = "";
+                CredentialManager.DeleteCredential("TwinpackServer");
+
+                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (responseJsonBody.TryGetProperty("message", out message))
+                    throw new LoginException(message.ToString());
+                else
+                    throw ex;
+            }
         }
 
         public void Logout()
         {
-            CredentialManager.DeleteCredential("Twinpack");
-
+            UserInfo = new LoginPostResponse();
             Username = "";
             Password = "";
+            CredentialManager.DeleteCredential("TwinpackServer");
+
+            try
+            {
+                CredentialManager.DeleteCredential("Twinpack");
+            }
+            catch (Exception) { }
+        }
+
+        public void InvalidateCache()
+        {
+            _client.Invalidate();
         }
     }
 }

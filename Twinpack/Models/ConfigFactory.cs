@@ -157,6 +157,22 @@ namespace Twinpack.Models
     {
         static public XNamespace TcNs = "http://schemas.microsoft.com/developer/msbuild/2003";
 
+        static public ConfigPlcProject MapPlcConfigToPlcProj(Config config, EnvDTE.Solution solution, EnvDTE.Project prj)
+        {
+            ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
+            var project = new ConfigProject { Name = prj.Name };
+            var xml = (prj as ITcSmTreeItem9).ProduceXml();
+
+            if (xml != null)
+            {
+                string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
+                var plcName = System.IO.Path.GetFileNameWithoutExtension(projectPath);
+                return config.Projects.FirstOrDefault(x => x.Name == prj.Name)?.Plcs?.FirstOrDefault(x => x.Name == plcName);
+            }
+
+            return null;
+        }
+
         static public async Task<ConfigPlcProject> MapPlcConfigToPlcProjAsync(EnvDTE.Solution solution, EnvDTE.Project prj, TwinpackServer twinpackServer)
         {
             ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
