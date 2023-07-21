@@ -13,6 +13,9 @@ namespace Twinpack.Dialogs
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            if (value == null)
+                return Visibility.Collapsed;
+
             try
             {
                 return (int)value != 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -21,7 +24,24 @@ namespace Twinpack.Dialogs
             {
 
             }
-            return value != null ? Visibility.Visible : Visibility.Collapsed;
+            try
+            {
+                return (value as Models.PackageVersionGetResponse).PackageVersionId != null ? Visibility.Visible : Visibility.Collapsed;
+            }
+            catch
+            {
+
+            }
+            try
+            {
+                return (value as Models.PackageGetResponse).PackageId != null ? Visibility.Visible : Visibility.Collapsed;
+            }
+            catch
+            {
+
+            }
+
+            return Visibility.Visible;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
