@@ -133,7 +133,7 @@ namespace Twinpack.Models
             return config;
         }
 
-        public void Save(Config config)
+        public static void Save(Config config)
         {
             if (config.FilePath == null)
                 return;
@@ -143,7 +143,7 @@ namespace Twinpack.Models
                 WriteIndented = true
             };
 
-            String json = JsonSerializer.Serialize(this, options);
+            string json = JsonSerializer.Serialize(config, options);
 
             if (!Directory.Exists(Path.GetDirectoryName(config.FilePath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(config.FilePath));

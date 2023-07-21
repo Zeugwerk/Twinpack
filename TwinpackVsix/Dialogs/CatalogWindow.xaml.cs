@@ -594,7 +594,7 @@ namespace Twinpack.Dialogs
                 }
                 else
                 {
-                    IsConfigured = true; // we don't want to see a message in this case
+                    IsConfigured = false;
                 }
 
                 if (_plcConfig != null)
@@ -803,10 +803,12 @@ namespace Twinpack.Dialogs
                 var config = await Models.ConfigFactory.CreateFromSolutionAsync(_context.Solution);
                 if (config == null)
                 {
-                    throw new Exception("Generating the configuration file automatically failed, please create the configuration file manually!");
+                    throw new Exception("Generating the configuration file failed, please create the configuration file manually!");
                 }
                 else
                 {
+                    Models.ConfigFactory.Save(config);
+
                     if (MessageBoxResult.Yes == MessageBox.Show($"The configuration file was successfully created " +
                         $"in {config.FilePath} for your TwinCAT solution, do you want to " +
                         $"review and/or edit it?", "Configuration", MessageBoxButton.YesNo))
@@ -815,7 +817,8 @@ namespace Twinpack.Dialogs
                         {
                             StartInfo = new ProcessStartInfo
                             {
-                                FileName = config.FilePath,
+                                FileName = "notepad.exe",
+                                Arguments = config.FilePath,
                                 UseShellExecute = true
                             }
                         };
@@ -829,7 +832,6 @@ namespace Twinpack.Dialogs
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Configuration failed", MessageBoxButton.OK, MessageBoxImage.Error);
-
             }
         }
 
