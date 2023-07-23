@@ -148,7 +148,7 @@ namespace Twinpack.Models
             if (!Directory.Exists(Path.GetDirectoryName(config.FilePath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(config.FilePath));
 
-            File.WriteAllText(config.FilePath, json);
+            File.WriteAllText(Path.Combine(config.WorkingDirectory, ".Zeugwerk", "config.json"), json);
         }
     }
 
@@ -157,9 +157,8 @@ namespace Twinpack.Models
     {
         static public XNamespace TcNs = "http://schemas.microsoft.com/developer/msbuild/2003";
 
-        static public ConfigPlcProject MapPlcConfigToPlcProj(Config config, EnvDTE.Solution solution, EnvDTE.Project prj)
+        static public ConfigPlcProject MapPlcConfigToPlcProj(Config config, EnvDTE.Project prj)
         {
-            ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
             var project = new ConfigProject { Name = prj.Name };
             var xml = (prj as ITcSmTreeItem9).ProduceXml();
 
@@ -173,7 +172,7 @@ namespace Twinpack.Models
             return null;
         }
 
-        static public async Task<ConfigPlcProject> MapPlcConfigToPlcProjAsync(EnvDTE.Solution solution, EnvDTE.Project prj, TwinpackServer twinpackServer)
+        static public async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, TwinpackServer twinpackServer)
         {
             ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
             var project = new ConfigProject();
@@ -312,17 +311,14 @@ namespace Twinpack.Models
                 }
 
 
-                if (!isTwinpackPackage)
+                if (r.DistributorName.Contains("Zeugwerk GmbH")) // needed for backwards compability for now (devkit release/1.2)
                 {
-                    if (r.DistributorName.Contains("Zeugwerk GmbH"))
-                    {
-                        plc.Frameworks.Zeugwerk.References.Add(r.Name);
-                        plc.Frameworks.Zeugwerk.Version = r.Version;
-                    }
-                    else if(!isTwinpackPackage)
-                    {
-                        sysref.Add(r);
-                    }
+                    plc.Frameworks.Zeugwerk.References.Add(r.Name);
+                    plc.Frameworks.Zeugwerk.Version = r.Version;
+                }
+                else if(!isTwinpackPackage)
+                {
+                    sysref.Add(r);
                 }
             }
 

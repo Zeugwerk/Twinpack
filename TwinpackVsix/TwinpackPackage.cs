@@ -3,6 +3,7 @@ using EnvDTE80;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -29,6 +30,19 @@ namespace Twinpack
                 VsixManifest manifest = VsixManifest.GetManifest();
                 return manifest.Version;
             }
+        }
+
+        public IVsStatusbar Statusbar { get; set; }
+
+        public async Task WriteStatusAsync(string message)
+        {
+            if (Statusbar == null)
+                return;
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            VisualStudioOutput.Activate();
+            Statusbar?.SetText(message);
         }
     }
 
@@ -75,7 +89,9 @@ namespace Twinpack
             // any Visual Studio service because at this point the package object is created but
             // not sited yet inside Visual Studio environment. The place to do all the other
             // initialization is the Initialize method.
-            NLog.LogManager.Setup();
+            NLog.LogManager.Setup().SetupExtensions(s =>
+               s.RegisterTarget<VisualStudioOutput>("VisualStudioOutput")
+            );
 
             _logger.Debug("Twinpack constructed");
         }
@@ -98,13 +114,12 @@ namespace Twinpack
             _commands.Add(Commands.CatalogCommand.Instance);
             _commands.Add(Commands.CatalogCommand.Instance);
 
-
-            // all context information, which is needed in all classes in the extension
-            Context = new PackageContext();
-
             // When initialized asynchronously, the current thread may be a background thread at this point.
             // Do any initialization that requires the UI thread after switching to the UI thread.
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+            // all context information, which is needed in all classes in the extension
+            Context = new PackageContext { Statusbar = (IVsStatusbar)GetGlobalService(typeof(SVsStatusbar)) };
 
             if (await GetServiceAsync(typeof(SVsSolution)) is IVsSolution vssolution_)
                 vssolution_.AdviseSolutionEvents(this, out _solutionEventsCookie);
@@ -114,10 +129,10 @@ namespace Twinpack
 
         private void InitPackage()
         {
-            // Initialisierung bereits durchgeführt?
             if (IsInitialized == true)
                 return;
-            _logger.Error("InitPackage");
+
+            _logger.Info("Initializing Twinpack");
             ThreadHelper.ThrowIfNotOnUIThread();
 
             if (Context == null)
@@ -125,23 +140,17 @@ namespace Twinpack
 
             try
             {
-                _logger.Error("Getting DTE");
-
                 if (Context.Dte == null)
                     Context.Dte = GetService(typeof(DTE)) as DTE2;
 
                 if (Context.Dte == null)
                 {
-                    _logger.Error("DTE Service konnte nicht geladen werden.");
+                    _logger.Error("Twinpack initialization failed, couldn't locate DTE");
                     return;
                 }
 
-                _logger.Error("Getting Solution");
-
                 Context.Solution = Context.Dte.Solution;
                 var projects = Context.Solution.Projects;
-
-                _logger.Error("Projects");
 
                 if (projects.Count == 0)
                     return;
@@ -151,8 +160,6 @@ namespace Twinpack
                 {
                     try
                     {
-                        _logger.Error("Found System Manager");
-
                         sysManager = (ITcSysManager)prj.Object;
                         break;
                     }
@@ -161,14 +168,18 @@ namespace Twinpack
 
                 // TcSysManager konnte nicht initialisiert werden, da kein TwinCAT Projekt geladen ist
                 if (sysManager == null)
+                {
+                    _logger.Error("Twinpack initialization failed, this is not a TwinCAT project, no systemmanager detected");
                     return;
+                }
 
                 IsInitialized = true;
                 ActivateCommands();
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex);
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
 
         }
@@ -184,7 +195,8 @@ namespace Twinpack
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"Exception {cmd}: {ex.Message}");
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
                 }
             }
         }
