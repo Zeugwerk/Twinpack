@@ -113,7 +113,7 @@ namespace Twinpack.Dialogs
     
                 if(_plc != null)
                 {
-                    _plcConfig = await Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProjAsync(_context.Solution, _plc, _twinpackServer);
+                    _plcConfig = await Models.ConfigPlcProjectFactory.CreateAsync(_context.Solution, _plc, _twinpackServer);
                     if (_package.PackageId == null && _plcConfig != null)
                     {
                         _package = await _twinpackServer.GetPackageAsync(_twinpackServer.Username, _plcConfig.Name);

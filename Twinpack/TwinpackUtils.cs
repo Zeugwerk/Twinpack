@@ -25,149 +25,64 @@ namespace Twinpack
 {
     public class TwinpackUtils
     {
-        public class RetrieveVersionResult
-        {
-            public RetrieveVersionResult()
-            {
-                Success = false;
-            }
-
-            public bool Success { get; set; }
-            public string ActualVersion { get; set; }
-        }
-
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
-        public static string DefaultUsername = "public";
-        public static string DefaultPassword = "public";
-        public static bool UseMainBranch = true;
-        public static HashSet<PlcLibrary> InstalledLibraries { get; set; } = new HashSet<PlcLibrary>();
 
-        private static bool Informed = false;
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        static public ITcSysManager SystemManager(Solution solution, Models.ConfigProject plc)
+        static public ITcSysManager SystemManager(Solution solution, ConfigPlcProject plcConfig)
         {
+            foreach (Project prj in solution.Projects)
+            {
+                ITcSysManager2 systemManager = prj.Object as ITcSysManager2;
+                var project = new ConfigProject();
+                project.Name = prj.Name;
+
+                ITcSmTreeItem plcs = systemManager.LookupTreeItem("TIPC");
+                foreach (ITcSmTreeItem9 plc in plcs)
+                {
+                    if (plc is ITcProjectRoot)
+                    {
+                        string xml = plc.ProduceXml();
+                        string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
+                        if (Path.GetFileNameWithoutExtension(projectPath) == plcConfig.Name && prj.Name == plcConfig.ProjectName)
+                            return systemManager;
+                        
+                    }
+                }
+            }
 
             return null;
         }
 
-        static public HttpRequestMessage CreateHttpRequest(Uri uri, HttpMethod method, bool authorize = true)
+        public static Project ActivePlc(DTE2 dte)
         {
-            // Set Credentials for download
-            String username = Environment.GetEnvironmentVariable("ZGWK_USERNAME") ?? DefaultUsername;
-            String password = Environment.GetEnvironmentVariable("ZGWK_PASSWORD") ?? DefaultPassword;
-            if (!Informed)
+            if (dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
             {
-                if (username == DefaultUsername && password == DefaultPassword)
-                {
-                    Informed = true;
-                    _logger.Debug(" Using public credentials, access is limited to public areas. " +
-                                      "Set ZGWK_USERNAME and ZGWK_PASSWORD environment variables to access restricted areas!");
-                }
-                else
-                {
-                    Informed = true;
-                    _logger.Debug($"Using {username}/*** credentials");
-                }
-            }
-
-            string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(username + ":" + password));
-
-            // create Request
-            HttpRequestMessage request = new HttpRequestMessage(method, uri);
-            if (authorize)
-                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-            return request;
-        }
-
-        static public async Task<bool> IsUriAvailableAsync(Uri uri, bool authorize = true)
-        {
-            using (HttpClient client = new HttpClient())
-            {
+                var prj = activeSolutionProjects.GetValue(0) as Project;
                 try
                 {
-                    var request = CreateHttpRequest(uri, HttpMethod.Head, authorize);
-                    var response = await client.SendAsync(request);
-                    var headers = response.Content.Headers;
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK && (headers.ContentType == null || headers.ContentType.MediaType != "text/html"))
-                    {
-                        _logger.Trace($"Uri IS     available ({uri})");
-                        return true;
-                    }
-
-                    _logger.Trace($"Uri IS NOT available ({uri})");
+                    ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
+                    if(systemManager != null)
+                    return prj;
                 }
-                catch
-                {
-                    _logger.Trace($"Uri IS NOT available ({uri})");
-                }
-
-                return false;
-            }
-        }
-
-        public static string FindTwincatSubfolder(string used_tcversion, string targetPath, List<string> supported_tcversions = null)
-        {
-            var used = used_tcversion.Split('.');
-            if (supported_tcversions != null)
-                while (used.Length > 0 && !supported_tcversions.Exists(x => string.Join(".", used).ToLower() == x.ToLower()))
-                    Array.Resize(ref used, used.Length - 1);
-            else
-                while (used.Length > 0 && !Directory.Exists($@"{targetPath}\{string.Join(".", used).ToLower()}"))
-                    Array.Resize(ref used, used.Length - 1);
-
-            if (used.Length == 0)
-                return null;
-
-            return string.Join(".", used);
-        }
-
-        public static string FindLibraryFilePathWithoutExtension(string tcversion, string referencename, string referenceversion, string targetPath)
-        {
-            targetPath = targetPath ?? TwinpackUtils.DefaultLibraryCachePath;
-
-            if (referenceversion.Split('.').Length == 4)
-                return string.Join("\\", new string[] { targetPath, $"{TwinpackUtils.FindTwincatSubfolder(tcversion, targetPath)}", $"{referencename}_{referenceversion}." });
-
-            return Directory.GetFiles(string.Join("\\", new string[] { targetPath, $"{TwinpackUtils.FindTwincatSubfolder(tcversion, targetPath)}" }), $"{referencename}_*library", SearchOption.TopDirectoryOnly)
-                .Select(x => new FileInfo(x))
-                .OrderBy(x => x.CreationTime)
-                .Select(x => Path.ChangeExtension(x.FullName, ""))
-                .FirstOrDefault();
-        }
-
-        static public bool IsCached(string used_tcversion, List<string> references, string version, string cachePath)
-        {
-            List<string> paths = new List<string>();
-            if (version == null)
-                paths = references.Select(x => $@"{used_tcversion}\{x.Split('=').First()}_{x.Split('=').Last()}").ToList();
-            else
-                paths = references.Select(x => $@"{used_tcversion}\{x}_{version}").ToList();
-
-            foreach (var filename in paths)
-            {
-                if (!File.Exists($@"{cachePath}\{filename}.compiled-library") &&
-                    !File.Exists($@"{cachePath}\{filename}.library"))
-                {
-                    _logger.Info($"One or more references for TwinCAT {used_tcversion} not found in cache!");
-                    return false;
-                }
+                catch {}
             }
 
-            return true;
+            return null;
         }
 
-        static public int BuildErrorCount(EnvDTE80.DTE2 dte)
+        static public int BuildErrorCount(DTE2 dte)
         {
             int errorCount = 0;
-            EnvDTE80.ErrorItems errors = dte.ToolWindows.ErrorList.ErrorItems;
+            ErrorItems errors = dte.ToolWindows.ErrorList.ErrorItems;
+
             for (int i = 1; i <= errors.Count; i++)
             {
                 var item = errors.Item(i);
 
                 switch (item.ErrorLevel)
                 {
-                    case EnvDTE80.vsBuildErrorLevel.vsBuildErrorLevelHigh:
+                    case vsBuildErrorLevel.vsBuildErrorLevelHigh:
                         errorCount++;
                         break;
                     default:
@@ -183,6 +98,7 @@ namespace Twinpack
             StringWriter stringWriter = new StringWriter();
             using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
             {
+                _logger.Info($"Updating plcproj file with Version={plcConfig.Version}, Company={plcConfig.DistributorName}");
                 writer.WriteStartElement("TreeItem");
                 writer.WriteStartElement("IECProjectDef");
                 writer.WriteStartElement("ProjectInfo");
@@ -195,67 +111,112 @@ namespace Twinpack
             (plc as ITcSmTreeItem).ConsumeXml(stringWriter.ToString());
         }
 
-        static public void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string vendor, bool addAsPlaceholder = true)
+        static public void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion)
         {
-            // try to find the vendor
-            if(vendor == null)
+            libManager.UninstallLibrary("System", packageVersion.Name, packageVersion.Version, packageVersion.DistributorName);
+        }
+            
+        static public async Task InstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null)
+        {
+            // check if we find the package on the system
+            bool referenceFound = false;
+            if(!forceDownload)
             {
-                _logger.Warn($"Trying to add a reference {libraryName}={version} without an explicit vendor");
                 foreach (ITcPlcLibrary r in libManager.ScanLibraries())
                 {
-                    if (r.Name == libraryName && (r.Version == version || version == "*"))
+                    if (r.Name == packageVersion.Name && r.Version == packageVersion.Version && r.Distributor == packageVersion.DistributorName)
                     {
-                        vendor = r.Distributor;
+                        referenceFound = true;
                         break;
                     }
                 }
-                _logger.Warn($"Guessed vendor of {libraryName}={version} with {vendor}");
+
+                if (referenceFound)
+                {
+                    _logger.Info($"The package {packageVersion.Name}  (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}) already exists on the system");
+                }
             }
 
+
+            if (!referenceFound || forceDownload)
+            {
+                _logger.Info($"Downloading {packageVersion.Name}  (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName})");
+
+                packageVersion = await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId,
+                                    includeBinary: true, cachePath: cachePath);
+
+                _logger.Info($"Installing {packageVersion.Name}, {packageVersion.Version}, {packageVersion.DistributorName}");
+                var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
+                libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true);
+            }
+        }
+
+        public static string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
+        {
+            // try to find the vendor
+            foreach (ITcPlcLibrary r in libManager.ScanLibraries())
+            {
+                if (r.Name == libraryName && (r.Version == version || version == "*"))
+                {
+                    return r.Distributor;
+                }
+            }
+
+            return null;
+        }
+
+        public static void RemoveReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName)
+        {
+            distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
 
             // Try to remove the already existing reference
             foreach (ITcPlcLibRef item in libManager.References)
             {
-                string libName;
                 string itemPlaceholderName;
-                string distributor;
-                string displayName;
+                string itemDistributorName;
 
                 try
                 {
-                    ITcPlcPlaceholderRef2 plcPlaceholder;
+                    ITcPlcPlaceholderRef2 plcPlaceholder; // this will through if the library is currently not installed
                     ITcPlcLibrary plcLibrary;
                     plcPlaceholder = (ITcPlcPlaceholderRef2)item;
 
                     itemPlaceholderName = plcPlaceholder.PlaceholderName;
 
                     if (plcPlaceholder.EffectiveResolution != null)
-                        plcLibrary = (ITcPlcLibrary)plcPlaceholder.EffectiveResolution;
+                        plcLibrary = plcPlaceholder.EffectiveResolution;
                     else
-                        plcLibrary = (ITcPlcLibrary)plcPlaceholder.DefaultResolution;
+                        plcLibrary = plcPlaceholder.DefaultResolution;
 
-                    libName = plcLibrary.Name.Split(',')[0];
-                    distributor = plcLibrary.Distributor;
-                    displayName = plcLibrary.DisplayName;
+                    itemDistributorName = plcLibrary.Distributor;
                 }
                 catch
                 {
                     ITcPlcLibrary plcLibrary;
                     plcLibrary = (ITcPlcLibrary)item;
-                    libName = plcLibrary.Name.Split(',')[0];
-                    distributor = plcLibrary.Distributor;
-                    displayName = plcLibrary.DisplayName;
-                    itemPlaceholderName = libName;
+                    itemPlaceholderName = plcLibrary.Name.Split(',')[0];
+                    itemDistributorName = plcLibrary.Distributor;
                 }
 
-                if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase))
+                if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase) &&
+                    string.Equals(itemDistributorName, distributorName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    _logger.Info("Remove reference to {placeholderName} from PLC");
                     libManager.RemoveReference(placeholderName);
+                }
             }
+        }
 
+        public static void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName, bool addAsPlaceholder = true)
+        {
+            distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
+            RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
+
+            _logger.Info("Adding reference to {placeholderName}  (version: {version}, distributor: {distributorName}) to PLC");
             if (addAsPlaceholder)
-                libManager.AddPlaceholder(placeholderName, libraryName, version, vendor);
+                libManager.AddPlaceholder(placeholderName, libraryName, version, distributorName);
             else
-                libManager.AddLibrary(libraryName, version, vendor);
+                libManager.AddLibrary(libraryName, version, distributorName);
         }
 
         static public BitmapImage IconImage(string iconUrl)

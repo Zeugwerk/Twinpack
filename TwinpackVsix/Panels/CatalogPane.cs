@@ -23,14 +23,14 @@ namespace Twinpack.Dialogs
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var catalogWindow = new CatalogWindow(context);
-            Content = catalogWindow;
+            var plc = TwinpackUtils.ActivePlc(context.Dte);
 
-            EnvDTE.Project plc = null;
-            if (context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
-                plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
-
-            Caption = $"Twinpack Catalog {(plc != null ? " - " + plc.Name : "")}";
+            if(plc != null)
+            {
+                var catalogWindow = new CatalogWindow(context, plc);
+                Content = catalogWindow;
+                Caption = $"Twinpack: {plc.Name}";
+            }
         }
     }
 }

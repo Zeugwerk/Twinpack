@@ -34,12 +34,6 @@
                 <ColumnDefinition Width="*"></ColumnDefinition>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="2" Visibility="{Binding IsConfigured, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
-                <Button Click="CreateConfig_Click" Margin="0 0 15 0" VerticalAlignment="Center">Create</Button>
-                <TextBlock TextWrapping="Wrap" Width="300">
-                    To install packages your solution needs a Twinpack configuration file. Create it by clicking the button</TextBlock>
-            </StackPanel>
-            
             <Image Grid.Column="0" Height="50" Source="Images/Twinpack.png" HorizontalAlignment="Center" VerticalAlignment="Center"></Image>
             <TextBlock Grid.Column="1" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontFamily="Menrope" FontWeight="DemiBold" Foreground="#FF2A334B">
         <Run Text="Twinpack Catalog"/>
@@ -97,8 +91,10 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"></RowDefinition>
                 <RowDefinition Height="auto"></RowDefinition>
+                <RowDefinition Height="auto"></RowDefinition>
+                <RowDefinition Height="auto"></RowDefinition>
             </Grid.RowDefinitions>
-
+            
             <ListView Grid.Column="0" Grid.Row="0" x:Name="CatalogView"
                       ItemsSource="{Binding Catalog}" BorderBrush="#FFcad0de"
                       BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
@@ -154,7 +150,28 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <Expander Grid.Column="0" Grid.Row="1" Background="#FFcad0de" IsExpanded="True" Header="Disclaimer" VerticalAlignment="Bottom" ExpandDirection="Up">
+            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="1" Background="#FFcad0de" Visibility="{Binding IsUpdateAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBlock Margin="5" TextWrapping="Wrap">
+                    Update all packages to their latest version.</TextBlock>
+                <Button  Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="UpdateAllPackageButton_Click" VerticalAlignment="Center">Update all</Button>
+            </Grid>
+
+            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="2" Background="#FFcad0de" Visibility="{Binding IsCreateConfigVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBlock Margin="5" TextWrapping="Wrap">
+                    Create a package configuration for your solution to improve the startup behavior of Twinpack. Click the "Create" button to 
+                    generate an initial configuration and then adapt it manually for your needs.</TextBlock>
+                <Button  Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="CreateConfig_Click" VerticalAlignment="Center">Create</Button>
+            </Grid>
+
+            <Expander Margin="0 3 0 0" Grid.Column="0" Grid.Row="3" Background="#FFcad0de" IsExpanded="True" Header="Disclaimer" VerticalAlignment="Bottom" ExpandDirection="Up">
                 <TextBlock Margin="5" TextWrapping="Wrap">
                     Twinpack is a user-driven platform. Zeugwerk or contributors, as developers of the package manager, 
                     do not assume responsibility for any packages distributed by users.
@@ -166,7 +183,7 @@
                 <TextBlock Text="Loading ..."></TextBlock>
             </StackPanel>
 
-            <ScrollViewer Grid.RowSpan="3" x:Name="PackageVersionView" Visibility="{Binding PackageVersion, Converter={StaticResource NullToVisibilityConverter}}" Margin="10,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.RowSpan="4" x:Name="PackageVersionView" Visibility="{Binding PackageVersion, Converter={StaticResource NullToVisibilityConverter}}" Margin="10,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto"></RowDefinition>
@@ -243,7 +260,7 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
 
-                            <Button IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">
+                            <Button  Click="UninstallPackageButton_Click" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Margin="0 0 0 0">Uninstall</TextBlock>
                                 </StackPanel>
@@ -260,14 +277,18 @@
                             </Button>
 
                             <Expander Grid.Row="6" Grid.ColumnSpan="3" Margin="0 10 5 10" Header="Options">
-                                <StackPanel Margin="10 5 0 0" Width="200" >
-                                    <CheckBox IsChecked="{Binding InstallReinstalls}">
-                                        <TextBlock TextWrapping="Wrap">Install/Update reinstalls</TextBlock>
+                                <Grid Margin="5 5 0 0" >
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="auto"></RowDefinition>
+                                        <RowDefinition Height="auto"></RowDefinition>
+                                    </Grid.RowDefinitions>
+                                    <CheckBox IsChecked="{Binding ForcePackageVersionDownload}">
+                                        <TextBlock TextWrapping="Wrap">Force package download on unstall and update</TextBlock>
                                     </CheckBox>
-                                    <CheckBox IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding UninstallDeletes}" Margin="0 5 0 0">
-                                        <TextBlock>Uninstall deletes from system</TextBlock>
+                                    <CheckBox Grid.Row="1" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding UninstallDeletes}" Margin="0 5 0 0">
+                                        <TextBlock>Uninstall deletes library from system</TextBlock>
                                     </CheckBox>
-                                </StackPanel>
+                                </Grid>
                             </Expander>
                         </Grid>
 
