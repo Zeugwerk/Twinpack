@@ -114,6 +114,10 @@ namespace Twinpack
         static public void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion)
         {
             libManager.UninstallLibrary("System", packageVersion.Name, packageVersion.Version, packageVersion.DistributorName);
+            foreach(var dependency in packageVersion.Dependencies))
+            {
+                libManager.UninstallLibrary("System", dependency.Name, dependency.Version, dependency.DistributorName);
+            }
         }
             
         static public async Task InstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null)
@@ -149,6 +153,11 @@ namespace Twinpack
                 var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
                 libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true);
             }
+
+            foreach(var dependency in packageVersion.Dependencies))
+            {
+                libManager.InstallReferenceAsync(libManager, dependency, server, forceDownload, cachePath);
+            }            
         }
 
         public static string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
