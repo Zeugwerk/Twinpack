@@ -304,12 +304,17 @@ namespace Twinpack
             try
             {
                 var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-
+                var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}";
+                
                 if (includeBinary)
                 {
-                    var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}";
                     var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
                     File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
+                }
+
+                if (packageVersion.LicenseBinary != null)
+                {
+                    File.WriteAllText($@"{filePath}\LICENSE_{packageVersion.Name}.txt", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.LicenseBinary)));
                 }
 
                 return packageVersion;
