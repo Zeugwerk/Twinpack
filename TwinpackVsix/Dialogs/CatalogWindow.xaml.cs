@@ -522,13 +522,6 @@ namespace Twinpack.Dialogs
 
             await _context.WriteStatusAsync($"Installing package {pv.Name} ...");
             await TwinpackUtils.InstallReferenceAsync(libManager, pv, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
-
-            foreach(var dependency as pv.Dependencies)
-            {
-                await _context.WriteStatusAsync($"Installing package {d.Name} ...");
-                await TwinpackUtils.InstallReferenceAsync(libManager, dependency, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
-            }
-
             await _context.WriteStatusAsync($"Adding package {pv.Name} to references ...");
             TwinpackUtils.AddReference(libManager, pv.Name, pv.Name, pv.Version, pv.DistributorName);
             IsNewReference = false;
