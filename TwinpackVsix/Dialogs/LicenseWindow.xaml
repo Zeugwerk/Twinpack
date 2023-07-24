@@ -5,6 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Twinpack.Dialogs"
              mc:Ignorable="d" 
+             ResizeMode="NoResize"
+             WindowStartupLocation="CenterScreen"
              Title="License Agreement" Height="400" Width="600">
     <Window.Resources>
         <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
@@ -20,10 +22,8 @@
             <TextBlock TextWrapping="Wrap" >
             <Run FontStyle="Italic" Text="{Binding DisplayName}" FontWeight="SemiBold"></Run>
             <Run Text="(distributed by"></Run><Run FontStyle="Italic" Text="{Binding DistributorName}"></Run><Run Text=") comes with the following license agreement."></Run>
-            <LineBreak> </LineBreak>
-            <LineBreak> </LineBreak>
             </TextBlock>
-            <TextBlock Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" >
+            <TextBlock Margin="15 10 0 0"  Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" >
             <Run Text="Please read the License Agreement carefully, if you accept the terms of the license agreement and want to continue with the installation process click 'Accept', otherwise click 'Decline' to abort the installation."></Run>
             </TextBlock>
         </StackPanel>
