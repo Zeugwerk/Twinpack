@@ -154,7 +154,9 @@ namespace Twinpack.Models
         public string Notes { get; set; }
         [JsonPropertyName("binary")]
         public string Binary { get; set; }
-
+        [JsonPropertyName("dependencies")]
+        public IEnumerable<PackageVersionGetResponse> Dependencies { get; set; }
+        
         public static bool operator ==(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
         {
             return lhs.Name == rhs.Name && lhs.Version == rhs.Version && lhs.Target == rhs.Target && lhs.Configuration == rhs.Configuration && lhs.Branch == rhs.Branch;
