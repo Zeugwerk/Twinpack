@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace Twinpack.Models
@@ -142,10 +143,7 @@ namespace Twinpack.Models
         public bool HasLicenseBinary { get { return !string.IsNullOrEmpty(LicenseBinary); } }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public bool HasProjectUrl { get { return !string.IsNullOrEmpty(ProjectUrl);
-    }
-}
-
+        public bool HasProjectUrl { get { return !string.IsNullOrEmpty(ProjectUrl); } }
     }
 
     public class PackageVersionGetResponse : PackageGetResponse
@@ -168,7 +166,9 @@ namespace Twinpack.Models
         public string Binary { get; set; }
         [JsonPropertyName("dependencies")]
         public IEnumerable<PackageVersionGetResponse> Dependencies { get; set; }
-        
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool HasDependencies { get { return Dependencies?.Any() == true; } }
+
         public static bool operator ==(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
         {
             return lhs.Name == rhs.Name && lhs.Version == rhs.Version && lhs.Target == rhs.Target && lhs.Configuration == rhs.Configuration && lhs.Branch == rhs.Branch;
