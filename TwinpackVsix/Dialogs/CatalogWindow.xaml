@@ -335,6 +335,32 @@
                                 <TextBlock Text="Project URL: " FontWeight="SemiBold"></TextBlock>
                                 <TextBlock Text="{Binding ProjectUrl}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
+
+                            <Expander Grid.ColumnSpan="3" Margin="10,5,0,0" Header="Dependencies">
+                                <Grid Margin="5 5 0 0" >
+                                  <ListView Grid.Column="0" Grid.Row="0"
+                                        ItemsSource="{Binding Dependencies}" Backround="Transparent"
+                                        BorderThickness="0" d:ItemsSource="{d:SampleData ItemCount=3}"
+                                        ScrollViewer.CanContentScroll="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                      <ListBox.ItemContainerStyle>
+                                          <Style TargetType="ListViewItem">
+                                              <Setter Property="Focusable" Value="false"/>
+                                          </Style>
+                                      </ListBox.ItemContainerStyle>
+                                      <ListView.ItemTemplate>
+                                          <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                              <TextBlock Margin="8 0 0 0">
+                                                <Run Text="{Binding Name}" FontWeight="DemiBold">
+                                                <"Run Text="v"><Run Text="{Binding Version}"><"Run Text=",">
+                                                <Run Text="{Binding DistributorName}">
+                                              </TextBlock>
+                                            </StackPanel>
+                                          </DataTemplate>
+                                      </ListView.ItemTemplate>
+                                  </ListView>
+                                </Grid>
+                            </Expander>
                         </StackPanel>
                     </StackPanel>
                 </Grid>
