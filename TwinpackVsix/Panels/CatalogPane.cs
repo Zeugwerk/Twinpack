@@ -19,17 +19,24 @@ namespace Twinpack.Dialogs
     [Guid("41e9fc85-6fd5-4cfb-86cc-808fb1ebdbf9")]
     public class CatalogPane : ToolWindowPane
     {
+        private PackageContext _context;
         public CatalogPane(PackageContext context) : base(null)
+        {
+            _context = context;
+            Update();
+        }
+
+        public void Update()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var plc = TwinpackUtils.ActivePlc(context.Dte);
+            var plc = TwinpackUtils.ActivePlc(_context.Dte);
 
-            if(plc != null)
+            //if(plc != null)
             {
-                var catalogWindow = new CatalogWindow(context, plc);
+                var catalogWindow = new CatalogWindow(_context);
                 Content = catalogWindow;
-                Caption = $"Twinpack: {plc.Name}";
+                Caption = $"Twinpack: {plc?.Name ?? "No Context"}";
             }
         }
     }

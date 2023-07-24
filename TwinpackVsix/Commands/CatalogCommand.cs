@@ -84,6 +84,7 @@ namespace Twinpack.Commands
                 throw new NotSupportedException("Cannot create tool window");
             }
 
+            (window as Dialogs.CatalogPane).Update();
             IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
             Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
         }

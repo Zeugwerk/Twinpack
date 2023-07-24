@@ -312,11 +312,6 @@ namespace Twinpack
                     File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
                 }
 
-                if (packageVersion.LicenseBinary != null)
-                {
-                    File.WriteAllText($@"{filePath}\LICENSE_{packageVersion.Name}.txt", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.LicenseBinary)));
-                }
-
                 return packageVersion;
 
             }

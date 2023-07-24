@@ -17,6 +17,7 @@ namespace Twinpack.Dialogs
     public partial class CatalogWindow : UserControl, INotifyPropertyChanged
     {
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+        public event PropertyChangedEventHandler PropertyChanged;
 
         private PackageContext _context;
         private EnvDTE.Project _plc;
@@ -72,8 +73,6 @@ namespace Twinpack.Dialogs
         private int _installedPackagesCount;
         private int _updateablePackagesCount;
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
         public bool IsFetchingAvailablePackages
         {
             get { return _isFetchingAvailablePackages; }
@@ -82,7 +81,7 @@ namespace Twinpack.Dialogs
                 _isFetchingAvailablePackages = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFetchingAvailablePackages)));
 
-                if (_isBrowsingAvailablePackages)
+                if (_isBrowsingAvailablePackages || _isBrowsingUpdatablePackages)
                 {
                     if (_isFetchingAvailablePackages)
                         IsCatalogLoading = true;
@@ -261,11 +260,10 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public CatalogWindow(PackageContext context, EnvDTE.Project plc)
+        public CatalogWindow(PackageContext context)
         {
             _auth = new Authentication(_twinpackServer);
             _context = context;
-            _plc = plc;
 
             _isBrowsingAvailablePackages = true;
 
@@ -305,6 +303,7 @@ namespace Twinpack.Dialogs
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            _plc = TwinpackUtils.ActivePlc(_context.Dte);
 
             try
             {
@@ -333,7 +332,7 @@ namespace Twinpack.Dialogs
         }
 
 
-        public void EditPackageButton_Click(object sender, RoutedEventArgs e)
+        public async void EditPackageButton_Click(object sender, RoutedEventArgs e)
         {
             var packageId = (CatalogView.SelectedItem as Models.CatalogItemGetResponse)?.PackageId;
             if (packageId == null)
@@ -342,6 +341,8 @@ namespace Twinpack.Dialogs
             var packageVersionId = (VersionsView.SelectedItem as Models.PackageVersionsItemGetResponse)?.PackageVersionId;
             var packagePublish = new PublishWindow(_context, _plc, packageId, packageVersionId);
             packagePublish.ShowDialog();
+
+            await ReloadAsync();
         }
 
         public async void UninstallPackageButton_Click(object sender, RoutedEventArgs e)
@@ -349,14 +350,14 @@ namespace Twinpack.Dialogs
             await UninstallPackageAsync();
         }
 
-        public async void AddPackageButton_Click(object sender, RoutedEventArgs e, bool showLicenseDialog=true)
+        public async void AddPackageButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 IsPackageVersionPanelEnabled = false;
-                await AddOrUpdatePackageAsync(PackageVersion, showLicenseDialog=showLicenseDialog);
+                await AddOrUpdatePackageAsync(PackageVersion);
                 InstalledPackageVersion = PackageVersion.Version;
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -365,7 +366,7 @@ namespace Twinpack.Dialogs
                 _installedPackages = _installedPackages.Where(x => x.PackageId != PackageVersion.PackageId).Append(new Models.CatalogItem(PackageVersion)).ToList();
 
                 await ReloadAsync(SearchTextBox.Text);
-
+                await _context.WriteStatusAsync($"Successfully added {PackageVersion.Name} to {_plc.Name} references");
             }
             catch (Exception ex)
             {
@@ -379,7 +380,7 @@ namespace Twinpack.Dialogs
 
         public async void UpdatePackageButton_Click(object sender, RoutedEventArgs e)
         {
-            AddPackageButton_Click(sender, e, false);
+            AddPackageButton_Click(sender, e);
         }
 
         public async void UpdateAllPackageButton_Click(object sender, RoutedEventArgs e)
@@ -390,7 +391,8 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 IsPackageVersionPanelEnabled = false;
                 IsUpdateAllEnabled = false;
-                foreach (var item in _installedPackages.Where(x => x.IsUpdateable))
+                var items = _installedPackages.Where(x => x.IsUpdateable);
+                foreach (var item in items)
                     await AddOrUpdatePackageAsync(item.Update, showLicenseDialog: false);
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -398,6 +400,7 @@ namespace Twinpack.Dialogs
 
                 _installedPackages = _installedPackages.Select(x => new Models.CatalogItem(x.Update)).ToList();
                 await ReloadAsync(SearchTextBox.Text);
+                await _context.WriteStatusAsync($"Successfully updated {items.Count()} references to their latest version");
             }
             catch (Exception ex)
             {
@@ -508,7 +511,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async Task AddOrUpdatePackageAsync(Models.PackageVersionGetResponse pv, bool showLicenseDialog)
+        public async Task AddOrUpdatePackageAsync(Models.PackageVersionGetResponse pv, bool showLicenseDialog=true)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -522,15 +525,21 @@ namespace Twinpack.Dialogs
 
             if(showLicenseDialog) 
             {
-                var licenseDialog = new LicenseDialog(pv);
-                if(licenseWindow.ShowDialog() == false))
-                   return;
-
+                var licenseDialog = new LicenseWindow(libManager, pv);
+                if(licenseDialog.ShowLicense() == false)
+                {
+                    _logger.Info($"License for {pv.Name} was declined");
+                    return;
+                }
+                  
                 foreach(var d in pv.Dependencies)
                 {
-                    var licenseDialog = new LicenseDialog(d);
-                    if(licenseWindow.ShowDialog() == false))
-                       return;
+                    var licenseWindow= new LicenseWindow(libManager, d);
+                    if(licenseWindow.ShowLicense() == false)
+                    {
+                        _logger.Info($"License for {pv.Name} was declined");
+                        return;
+                    }
                 }
             }
 
@@ -552,7 +561,6 @@ namespace Twinpack.Dialogs
                                                             Version = pv.Version,
                                                             DistributorName = pv.DistributorName
                                                         });
-            await _context.WriteStatusAsync($"Successfully added {pv.Name} to {_plc.Name} references");
         }
 
         public void WritePlcConfigToConfig()
@@ -583,6 +591,20 @@ namespace Twinpack.Dialogs
             {
                 _logger.Warn($"The solution doesn't have a package configuration");
             }
+        }
+
+        public async void ShowLicenseButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var licenseDialog = new LicenseWindow(null, PackageVersion);
+                licenseDialog.ShowLicense();
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+            }
+
         }
 
         public async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -1038,6 +1060,28 @@ namespace Twinpack.Dialogs
                 MessageBox.Show(ex.Message, "Configuration failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        public async void ShowProjectUrl_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = PackageVersion.ProjectUrl,
+                        UseShellExecute = true
+                    }
+                };
+
+                process.Start();
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+            }
+        }
+            
 
         public async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {

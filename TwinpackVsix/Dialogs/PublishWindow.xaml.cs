@@ -28,9 +28,8 @@ namespace Twinpack.Dialogs
         private EnvDTE.Project _plc;
         private Models.ConfigPlcProject _plcConfig;
 
-        private bool _isVersionDataReadOnly;
+        private bool _isConfigured;
         private bool _isGeneralDataReadOnly;
-        private bool _isEditPackageVisible;
         private bool _isVersionEditable;
         private bool _isNewUser;
         private bool _isNewPackage;
@@ -38,7 +37,6 @@ namespace Twinpack.Dialogs
         private string _version;
         private string _iconFile;
         private BitmapImage _iconImage;
-        private bool _isApplyEnabled;
 
         private TwinpackServer _twinpackServer = new TwinpackServer();
         private Authentication _auth;
@@ -56,7 +54,6 @@ namespace Twinpack.Dialogs
             DataContext = this;
 
             IsNewPackage = packageId == null;
-            IsVersionDataReadOnly = false;
             IsGeneralDataReadOnly = false;
 
             _package.PackageId = packageId;
@@ -108,7 +105,6 @@ namespace Twinpack.Dialogs
                 }
 
                 IsNewUser = _twinpackServer.UserInfo.DistributorName == null;
-                IsVersionDataReadOnly = false;
                 IsGeneralDataReadOnly = false;
     
                 if(_plc != null)
@@ -125,6 +121,7 @@ namespace Twinpack.Dialogs
                     _plcConfig = null;
                 }
 
+
                 if (_package.PackageId != null)
                 {
                     try
@@ -139,6 +136,7 @@ namespace Twinpack.Dialogs
                         DistributorName = _package.DistributorName;
                         Authors = _package.Authors;
                         License = _package.License;
+                        LicenseFile = _plcConfig?.LicenseFile;
                         IconFile = _plcConfig?.IconFile;
                         IconImage = TwinpackUtils.IconImage(_package.IconUrl);
                     }
@@ -189,7 +187,7 @@ namespace Twinpack.Dialogs
                     Authors = _plcConfig.Authors;
                     Entitlement = _plcConfig.Entitlement;
                     License = _plcConfig.License;
-                    //LicenseFile = mappedPlc.LicenseFile;
+                    LicenseFile = _plcConfig.LicenseFile;
                 }
     
                 if (_packageVersion.PackageVersionId != null)
@@ -209,12 +207,10 @@ namespace Twinpack.Dialogs
                         _logger.Error(ex.Message);
                     }
                 }
-    
+
+                IsConfigured = _plcConfig != null && _plcConfig.Name == _package.Name && _plcConfig.DistributorName == _package.DistributorName && _package.Repository == _twinpackServer.Username;
                 IsNewPackage = _package.PackageId == null;
-                IsEditPackageVisible = !IsNewPackage && _plcConfig != null;
-                IsApplyApplicable = false;
-                IsVersionDataReadOnly = false;
-                IsGeneralDataReadOnly = !IsNewPackage && _plcConfig != null;
+                IsGeneralDataReadOnly = _package.Repository != _twinpackServer.Username;
                 IsEnabled = true;
              }
             catch(Exception ex)
@@ -226,6 +222,16 @@ namespace Twinpack.Dialogs
         public async Task LoadPackageAsync(int? packageId)
         {
 
+        }
+
+        public bool IsConfigured
+        {
+            get { return _isConfigured; }
+            set
+            {
+                _isConfigured = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsConfigured)));
+            }
         }
 
         public bool IsNewUser
@@ -267,27 +273,6 @@ namespace Twinpack.Dialogs
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsVersionEditable)));
             }
         }
-
-        public bool IsEditPackageVisible
-        {
-            get { return _isEditPackageVisible; }
-            set
-            {
-                _isEditPackageVisible = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEditPackageVisible)));
-            }
-        }
-
-        public bool IsVersionDataReadOnly
-        {
-            get { return _isVersionDataReadOnly; }
-            set
-            {
-                _isVersionDataReadOnly = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsVersionDataReadOnly)));
-            }
-        }
-
         public bool IsGeneralDataReadOnly
         {
             get { return _isGeneralDataReadOnly; }
@@ -295,16 +280,6 @@ namespace Twinpack.Dialogs
             {
                 _isGeneralDataReadOnly = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsGeneralDataReadOnly)));
-            }
-        }
-
-        public bool IsApplyApplicable
-        {
-            get { return _isApplyEnabled; }
-            set
-            {
-                _isApplyEnabled = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsApplyApplicable)));
             }
         }
 
@@ -364,6 +339,8 @@ namespace Twinpack.Dialogs
             set
             {
                 _iconFile = value;
+                 if(_plcConfig != null && !string.IsNullOrEmpty(_iconFile))
+                    _plcConfig.IconFile = Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _iconFile);
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconFile)));
             }
         }
@@ -418,6 +395,27 @@ namespace Twinpack.Dialogs
             }
         }
 
+        public string LicenseFile
+        {
+            get { return _plcConfig?.LicenseFile; }
+            set
+            {
+                try
+                {
+                    if (_plcConfig != null)
+                    {
+                        _plcConfig.LicenseFile = Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
+                        _packageVersion.LicenseBinary = Convert.ToBase64String(File.ReadAllBytes(Path.Combine(_plcConfig.RootPath, _plcConfig.LicenseFile)));
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseFile)));
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _logger.Trace(ex);
+                }
+            }
+        }
+
         public string Authors
         {
             get { return _packageVersion.Authors; }
@@ -428,13 +426,27 @@ namespace Twinpack.Dialogs
             }
         }
 
-        private void EditPackage_Click(object sender, RoutedEventArgs e)
+        private async void ChangeLicense_Click(object sender, RoutedEventArgs e)
         {
-            IsGeneralDataReadOnly = false;
-            IsEditPackageVisible = false;
-            IsApplyApplicable = true;
-
+            try
+            {
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Multiselect = false;
+                openFileDialog.Filter = "Text files (*.txt;*.md)|*.txt;*.md";
+                openFileDialog.InitialDirectory = _plcConfig?.RootPath ?? Environment.CurrentDirectory;
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    LicenseFile = openFileDialog.FileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "License", MessageBoxButton.OK, MessageBoxImage.Error);
+                _logger.Trace(ex.Message);
+            }
         }
+
+
         private async void ChangeIcon_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -442,10 +454,10 @@ namespace Twinpack.Dialogs
                 OpenFileDialog openFileDialog = new OpenFileDialog();
                 openFileDialog.Multiselect = false;
                 openFileDialog.Filter = "Image files (*.png;*.jpeg,*.jpg)|*.png;*.jpeg;*.jpg";
-                openFileDialog.InitialDirectory = _plcConfig.RootPath;
-			    if(openFileDialog.ShowDialog() == true)
+                openFileDialog.InitialDirectory = _plcConfig?.RootPath ??  Environment.CurrentDirectory;
+                if (openFileDialog.ShowDialog() == true)
                 {
-                    IconFile = Path.Combine(_plcConfig.RootPath, Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, openFileDialog.FileName));
+                    IconFile = openFileDialog.FileName;
                     IconImage = TwinpackUtils.IconImage(openFileDialog.FileName);            
                 }
             }
@@ -468,8 +480,9 @@ namespace Twinpack.Dialogs
                 ProjectUrl = ProjectUrl,
                 Authors = Authors,
                 License = License,
-                IconFilename = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
-                IconBinary = string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Convert.ToBase64String(File.ReadAllBytes(IconFile)) : null
+                LicenseBinary = _plcConfig != null && !string.IsNullOrEmpty(LicenseFile) && File.Exists(Path.Combine(_plcConfig.RootPath, LicenseFile)) ? Convert.ToBase64String(File.ReadAllBytes(Path.Combine(_plcConfig.RootPath, LicenseFile))) : null,
+                IconFilename = _plcConfig != null && !string.IsNullOrEmpty(IconFile) && File.Exists(Path.Combine(_plcConfig.RootPath, IconFile)) ? IconFile : null,
+                IconBinary = _plcConfig != null && !string.IsNullOrEmpty(IconFile) && File.Exists(Path.Combine(_plcConfig.RootPath, IconFile)) ? Convert.ToBase64String(File.ReadAllBytes(Path.Combine(_plcConfig.RootPath, IconFile))) : null
             };
 
             try
@@ -482,7 +495,6 @@ namespace Twinpack.Dialogs
                 ProjectUrl = packageResult.ProjectUrl;
                 Authors = packageResult.Authors;
                 License = packageResult.License;
-
                 IconImage = TwinpackUtils.IconImage(packageResult.IconUrl);
             }
             catch (Exceptions.GetException ex)
@@ -496,7 +508,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
-                _logger.Error(ex.Message);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
             return true;
@@ -533,7 +545,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
-                _logger.Error(ex.Message);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
             return true;
@@ -571,9 +583,6 @@ namespace Twinpack.Dialogs
 
                     IsNewPackage = false;
                     IsNewPackageVersion = false;
-                    IsEditPackageVisible = true;
-                    IsApplyApplicable = false;
-                    IsVersionDataReadOnly = false;
                     IsGeneralDataReadOnly = true;
                 }
                 catch (Exceptions.LoginException ex)
@@ -600,23 +609,6 @@ namespace Twinpack.Dialogs
             }
         }
 
-        private void CancelPackage_Click(object sender, RoutedEventArgs e)
-        {
-            IsGeneralDataReadOnly = true;
-            IsApplyApplicable = false;
-            IsEditPackageVisible = true;
-        }
-
-        private async void ApplyPackage_Click(object sender, RoutedEventArgs e)
-        {
-            IsEnabled = false;
-            await PatchPackageAsync();
-            IsGeneralDataReadOnly = true;
-            IsApplyApplicable = false;
-            IsEditPackageVisible = true;
-            IsEnabled = true;
-        }
-
         private async void Close_Click(object sender, RoutedEventArgs e)
         {
             Close();
@@ -629,6 +621,8 @@ namespace Twinpack.Dialogs
                 IsEnabled = false;
                 if (await PatchPackageAsync())
                     await PatchPackageVersionAsync();
+
+                Close();
             }
             catch(Exception ex)
             {
@@ -637,7 +631,6 @@ namespace Twinpack.Dialogs
             finally
             {
                 IsEnabled = true;
-
             }
         }
 

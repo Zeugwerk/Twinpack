@@ -14,6 +14,9 @@ public class CachedHttpClient : HttpClient
 
     public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, TimeSpan? cacheDuration=null)
     {
+        if(request.Method != HttpMethod.Get || request.Method != HttpMethod.Head)
+            return await base.SendAsync(request);
+
         cacheDuration = cacheDuration ?? TimeSpan.FromHours(12);
 
         var url = request.RequestUri.ToString(); 
