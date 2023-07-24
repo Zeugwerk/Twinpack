@@ -349,14 +349,14 @@ namespace Twinpack.Dialogs
             await UninstallPackageAsync();
         }
 
-        public async void AddPackageButton_Click(object sender, RoutedEventArgs e)
+        public async void AddPackageButton_Click(object sender, RoutedEventArgs e, bool showLicenseDialog=true)
         {
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 IsPackageVersionPanelEnabled = false;
-                await AddOrUpdatePackageAsync(PackageVersion);
+                await AddOrUpdatePackageAsync(PackageVersion, showLicenseDialog=showLicenseDialog);
                 InstalledPackageVersion = PackageVersion.Version;
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -379,7 +379,7 @@ namespace Twinpack.Dialogs
 
         public async void UpdatePackageButton_Click(object sender, RoutedEventArgs e)
         {
-            AddPackageButton_Click(sender, e);
+            AddPackageButton_Click(sender, e, false);
         }
 
         public async void UpdateAllPackageButton_Click(object sender, RoutedEventArgs e)
@@ -391,7 +391,7 @@ namespace Twinpack.Dialogs
                 IsPackageVersionPanelEnabled = false;
                 IsUpdateAllEnabled = false;
                 foreach (var item in _installedPackages.Where(x => x.IsUpdateable))
-                    await AddOrUpdatePackageAsync(item.Update);
+                    await AddOrUpdatePackageAsync(item.Update, showLicenseDialog: false);
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 WritePlcConfigToConfig();
@@ -508,7 +508,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async Task AddOrUpdatePackageAsync(Models.PackageVersionGetResponse pv)
+        public async Task AddOrUpdatePackageAsync(Models.PackageVersionGetResponse pv, bool showLicenseDialog)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -519,6 +519,20 @@ namespace Twinpack.Dialogs
             var plc = _plc.Object as dynamic;
             var sysManager = plc.SystemManager as ITcSysManager2;
             var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
+
+            if(showLicenseDialog) 
+            {
+                var licenseDialog = new LicenseDialog(pv);
+                if(licenseWindow.ShowDialog() == false))
+                   return;
+
+                foreach(var d in pv.Dependencies)
+                {
+                    var licenseDialog = new LicenseDialog(d);
+                    if(licenseWindow.ShowDialog() == false))
+                       return;
+                }
+            }
 
             await _context.WriteStatusAsync($"Installing package {pv.Name} ...");
             await TwinpackUtils.InstallReferenceAsync(libManager, pv, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
