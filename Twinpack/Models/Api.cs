@@ -133,7 +133,19 @@ namespace Twinpack.Models
         [JsonPropertyName("license")]
         public string License { get; set; }
         [JsonPropertyName("license-binary")]
-        public string LicenseBinary { get; set; }        
+        public string LicenseBinary { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool HasLicense { get { return !string.IsNullOrEmpty(License); } }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool HasLicenseBinary { get { return !string.IsNullOrEmpty(LicenseBinary); } }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool HasProjectUrl { get { return !string.IsNullOrEmpty(ProjectUrl);
+    }
+}
+
     }
 
     public class PackageVersionGetResponse : PackageGetResponse

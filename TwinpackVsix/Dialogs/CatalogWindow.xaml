@@ -7,7 +7,7 @@
              xmlns:local="clr-namespace:Twinpack.Dialogs"
              xmlns:models="clr-namespace:Twinpack.Models"
              mc:Ignorable="d"
-             d:DesignHeight="400" d:DesignWidth="700">
+             d:DesignHeight="800" d:DesignWidth="700">
     <UserControl.Resources>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <local:UrlToImageConverter x:Key="UrlToImageConverter"/>
@@ -328,32 +328,57 @@
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="License: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock Text="{Binding License}" TextWrapping="Wrap"></TextBlock>
+                                <Button Click="ShowLicenseButton_Click" Margin="0 -1 0 0" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
+                                        Content="{Binding License}" VerticalAlignment="Top"
+                                        IsEnabled="{Binding HasLicenseBinary}"
+                                        Visibility="{Binding HasLicense, Converter={StaticResource BooleanToVisibilityConverter}}"  />
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Project URL: " FontWeight="SemiBold"></TextBlock>
                                 <TextBlock Text="{Binding ProjectUrl}" TextWrapping="Wrap"></TextBlock>
+                                <Button Click="ShowProjectUrl_Click" Margin="0 -1 0 0" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
+                                        Content="{Binding ProjectUrl}" VerticalAlignment="Top"
+                                        Visibility="{Binding HasProjectUrl, Converter={StaticResource BooleanToVisibilityConverter}}"  />                                
                             </StackPanel>
 
-                            <Expander Grid.ColumnSpan="3" Margin="10,5,0,0" Header="Dependencies">
+                            <Expander Grid.ColumnSpan="3" Margin="0,10,0,0" Header="Dependencies">
                                 <Grid Margin="5 5 0 0" >
-                                  <ListView Grid.Column="0" Grid.Row="0"
-                                        ItemsSource="{Binding Dependencies}" Backround="Transparent"
+                                  <ListView Grid.Column="0" Grid.Row="0" Background="Transparent"
+                                        ItemsSource="{Binding Dependencies}"
                                         BorderThickness="0" d:ItemsSource="{d:SampleData ItemCount=3}"
                                         ScrollViewer.CanContentScroll="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
                                       <ListBox.ItemContainerStyle>
                                           <Style TargetType="ListViewItem">
                                               <Setter Property="Focusable" Value="false"/>
-                                          </Style>
+                                                <Setter Property="Background" Value="Transparent" />
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                                            <Grid Background="{TemplateBinding Background}">
+                                                                <Border Name="Selection" Visibility="Collapsed" />
+                                                                <!-- This is used when GridView is put inside the ListView -->
+                                                                <GridViewRowPresenter Grid.RowSpan="2"
+                                                                    Margin="{TemplateBinding Padding}"
+                                                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                                            </Grid>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+
+                                            </Style>
                                       </ListBox.ItemContainerStyle>
                                       <ListView.ItemTemplate>
                                           <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
                                               <TextBlock Margin="8 0 0 0">
-                                                <Run Text="{Binding Name}" FontWeight="DemiBold">
-                                                <"Run Text="v"><Run Text="{Binding Version}"><"Run Text=",">
-                                                <Run Text="{Binding DistributorName}">
+                                                <Run Text="{Binding Name}" FontWeight="DemiBold"/>
+                                                <Run Text="(v"/><Run Text="{Binding Version}"/><Run Text="),"/>
+                                                <Run Text="{Binding DistributorName}"/>
                                               </TextBlock>
                                             </StackPanel>
                                           </DataTemplate>

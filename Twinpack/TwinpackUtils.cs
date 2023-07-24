@@ -56,14 +56,14 @@ namespace Twinpack
 
         public static Project ActivePlc(DTE2 dte)
         {
-            if (dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
+            if (dte?.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects?.Length > 0)
             {
-                var prj = activeSolutionProjects.GetValue(0) as Project;
+                var prj = activeSolutionProjects?.GetValue(0) as Project;
                 try
                 {
                     ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
                     if(systemManager != null)
-                    return prj;
+                        return prj;
                 }
                 catch {}
             }
@@ -114,10 +114,23 @@ namespace Twinpack
         static public void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion)
         {
             libManager.UninstallLibrary("System", packageVersion.Name, packageVersion.Version, packageVersion.DistributorName);
-            foreach(var dependency in packageVersion.Dependencies))
+            foreach(var dependency in packageVersion.Dependencies)
             {
                 libManager.UninstallLibrary("System", dependency.Name, dependency.Version, dependency.DistributorName);
             }
+        }
+
+        public static bool IsPackageInstalled(ITcPlcLibraryManager libManager, PackageGetResponse package)
+        {
+            foreach (ITcPlcLibrary r in libManager.ScanLibraries())
+            {
+                if (r.Name == package.Name && r.Distributor == package.DistributorName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
             
         static public async Task InstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null)
@@ -154,9 +167,9 @@ namespace Twinpack
                 libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true);
             }
 
-            foreach(var dependency in packageVersion.Dependencies))
+            foreach(var dependency in packageVersion.Dependencies)
             {
-                libManager.InstallReferenceAsync(libManager, dependency, server, forceDownload, cachePath);
+                await InstallReferenceAsync(libManager, dependency, server, forceDownload, cachePath);
             }            
         }
 

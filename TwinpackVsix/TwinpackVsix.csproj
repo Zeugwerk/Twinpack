@@ -65,6 +65,9 @@
     <Compile Include="Dialogs\CatalogWindow.xaml.cs">
       <DependentUpon>CatalogWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Dialogs\LicenseWindow.xaml.cs">
+      <DependentUpon>LicenseWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Dialogs\PublishWindow.xaml.cs">
       <DependentUpon>PublishWindow.xaml</DependentUpon>
     </Compile>
@@ -171,6 +174,10 @@
     <Page Include="Dialogs\CatalogWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Dialogs\LicenseWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Dialogs\PublishWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

@@ -48,11 +48,11 @@ namespace Twinpack.Models
             DisplayName = Name;
         }
         public string InstalledVersion { get; set; }
-        public string UpdateVersion { get; set; }
         public string InstalledBranch { get; set; }
         public string InstalledTarget { get; set; }
         public string InstalledConfiguration { get; set; }
         public PackageVersionGetResponse Update { get; set; }
         public bool IsUpdateable { get { return InstalledVersion != null && Update?.Version != null && new Version(InstalledVersion) < new Version(Update?.Version); } }
+        public string UpdateVersion { get { return Update?.Version; } }
     }
 }
