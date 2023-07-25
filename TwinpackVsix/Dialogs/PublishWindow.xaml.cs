@@ -199,7 +199,7 @@ namespace Twinpack.Dialogs
                         _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false);
                         Notes = _packageVersion.Notes;
                         Version = _packageVersion.Version;
-                        Dependencies = _package.Dependencies;                                                
+                        Dependencies = _packageVersion.Dependencies;                                                
                     }
                     catch (Exceptions.GetException ex)
                     {
