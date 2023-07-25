@@ -213,13 +213,13 @@ namespace Twinpack.Dialogs
                 else if(_plcConfig != null)
                 {
                     Dependencies =  _plcConfig.Packages.Select(x => new Models.PackageVersionGetResponse {
-                        Repository = Repository,
-                        Name = Name,
-                        Branch = Branch,
-                        Target = Target,
-                        Configuration = Configuration,
-                        Version = Version,
-                        DistributorName = DistributorName
+                        Repository = x.Repository,
+                        DistributorName = x.DistributorName,                        
+                        Name = x.Name,
+                        Branch = x.Branch,
+                        Target = x.Target,
+                        Configuration = x.Configuration,
+                        Version = x.Version
                     });
                 }
 
