@@ -102,12 +102,20 @@ namespace Twinpack
                 IconFilename = Path.GetFileName(plc.IconFile),
                 IconBinary = iconBinary,
                 LicenseBinary = licenseBinary,
-                Binary = binary
-            };
+                Binary = binary,
+                Dependencies = plc.Packages?.Select(x => new PackageVersionDependencyPostRequest {
+                    Repository = x.Repository,
+                    DistributorName = x.DistributorName,
+                    Name = x.Name,
+                    Version = x.Version,
+                    Branch = x.Branch,
+                    Target = x.Target,
+                    Configuration = x.Configuration
+                })
+            };      
 
             var requestBodyJson = JsonSerializer.Serialize(requestBody);
-            _logger.Debug($"Pushing {plc.Name}: {requestBodyJson}");
-
+            _logger.Debug($"Pushing {plc.Name}");
 
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
             request.Headers.Add("zgwk-username", Username);
@@ -213,7 +221,7 @@ namespace Twinpack
             _logger.Info($"Resolving package from Twinpack Server");
 
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-resolve" +
-                $"&distributor_name={library.DistributorName}&name={library.Name}&version={library.Version}"));
+                $"&distributor-name={library.DistributorName}&name={library.Name}&version={library.Version}"));
 
             request.Headers.Add("zgwk-username", Username);
             request.Headers.Add("zgwk-password", Password);
