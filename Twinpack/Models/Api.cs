@@ -219,6 +219,24 @@ namespace Twinpack.Models
         public string Notes { get; set; }
     }
 
+    public class PackageVersionDependencyPostRequest
+    {
+        [JsonPropertyName("repository")]
+        public string Repository { get; set; }
+        [JsonPropertyName("distributor-name")]
+        public string DistributorName { get; set; }
+        [JsonPropertyName("name")]
+        public string Name { get; set; }     
+        [JsonPropertyName("version")]
+        public string Version { get; set; }
+        [JsonPropertyName("branch")]
+        public string Branch { get; set; }
+        [JsonPropertyName("target")]
+        public string Target { get; set; }
+        [JsonPropertyName("configuration")]
+        public string Configuration { get; set; }
+    }
+
     public class PackageVersionPostRequest
     {
         [JsonPropertyName("name")]
@@ -257,6 +275,8 @@ namespace Twinpack.Models
         public string IconBinary { get; set; }
         [JsonPropertyName("binary")]
         public string Binary { get; set; }
+        [JsonPropertyName("dependencies")]
+        public List<PackageVersionPostRequest> Dependencies { get; set; }
     }
 
     public class LoginPostResponse
