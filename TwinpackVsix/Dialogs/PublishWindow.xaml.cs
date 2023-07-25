@@ -41,6 +41,7 @@ namespace Twinpack.Dialogs
         private TwinpackServer _twinpackServer = new TwinpackServer();
         private Authentication _auth;
 
+        private IEnumerable<PackageVersionGetResponse> _dependencies;
         private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Models.PackageVersionGetResponse();
 
@@ -136,6 +137,7 @@ namespace Twinpack.Dialogs
                         DistributorName = _package.DistributorName;
                         Authors = _package.Authors;
                         License = _package.License;
+                        Dependencies = _package.Dependencies;                        
                         LicenseFile = _plcConfig?.LicenseFile;
                         IconFile = _plcConfig?.IconFile;
                         IconImage = TwinpackUtils.IconImage(_package.IconUrl);
@@ -161,9 +163,20 @@ namespace Twinpack.Dialogs
                     IconFile = _plcConfig.IconFile;
                     DistributorName = _plcConfig.DistributorName;
 
+                    Dependencies =  _plcConfig.Packages.Select(x => new Models.PackageVersionGetResponse {
+                        Repository = Repository,
+                        Name = Name,
+                        Branch = Branch,
+                        Target = Target,
+                        Configuration = Configuration,
+                        Version = Version,
+                        DistributorName = DistributorName
+                    });
+                    
                     if (!string.IsNullOrEmpty(_plcConfig.IconFile))
                         IconImage = TwinpackUtils.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
                 }
+
     
                 if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
                 {
@@ -425,6 +438,16 @@ namespace Twinpack.Dialogs
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Authors)));
             }
         }
+
+        public IEnumerable<PackageVersionGetResponse> Dependencies
+        {
+            get { return _dependencies; }
+            set
+            {
+                _dependencies = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Dependencies)));
+            }
+        }        
 
         private async void ChangeLicense_Click(object sender, RoutedEventArgs e)
         {
