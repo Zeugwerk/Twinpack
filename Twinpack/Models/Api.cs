@@ -276,7 +276,7 @@ namespace Twinpack.Models
         [JsonPropertyName("binary")]
         public string Binary { get; set; }
         [JsonPropertyName("dependencies")]
-        public IEnumerable<PackageVersionPostRequest> Dependencies { get; set; }
+        public IEnumerable<PackageVersionDependencyPostRequest> Dependencies { get; set; }
     }
 
     public class LoginPostResponse
