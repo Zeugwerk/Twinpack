@@ -107,6 +107,50 @@
             </StackPanel>
         </Grid>
 
+        <Expander Grid.Row="4" HorizontalAlignment="Right" VerticalAlignment="Top" ExpandDirection="Left" Grid.ColumnSpan="3" Margin="0,150,0,0" Header="Dependencies" IsExpanded="False">
+            <Grid Margin="5 5 0 0" >
+              <ListView Grid.Column="0" Grid.Row="0" Background="Transparent"
+                    ItemsSource="{Binding Dependencies}"
+                    BorderThickness="0" d:ItemsSource="{d:SampleData ItemCount=3}"
+                    ScrollViewer.CanContentScroll="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                  <ListBox.ItemContainerStyle>
+                      <Style TargetType="ListViewItem">
+                          <Setter Property="Focusable" Value="false"/>
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                        <Grid Background="{TemplateBinding Background}">
+                                            <Border Name="Selection" Visibility="Collapsed" />
+                                            <!-- This is used when GridView is put inside the ListView -->
+                                            <GridViewRowPresenter Grid.RowSpan="2"
+                                                Margin="{TemplateBinding Padding}"
+                                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                  </ListBox.ItemContainerStyle>
+                  <ListView.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                          <TextBlock Margin="8 0 0 0">
+                            <Run Text="{Binding Name}" FontWeight="DemiBold"/>
+                            <Run Text="(v"/><Run Text="{Binding Version}"/><Run Text="),"/>
+                            <Run Text="{Binding DistributorName}"/>
+                          </TextBlock>
+                        </StackPanel>
+                      </DataTemplate>
+                  </ListView.ItemTemplate>
+              </ListView>
+            </Grid>
+        </Expander>
+
         <!-- Publish Button -->
         <StackPanel Grid.Row="4" Grid.ColumnSpan="4" HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Bottom">
             <Button HorizontalAlignment="Right" Content="Publish" Width="80" Margin="5" Click="Publish_Click" IsEnabled="{Binding IsNewPackageVersion}" Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
