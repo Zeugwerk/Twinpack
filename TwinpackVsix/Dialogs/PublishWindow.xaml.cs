@@ -137,7 +137,6 @@ namespace Twinpack.Dialogs
                         DistributorName = _package.DistributorName;
                         Authors = _package.Authors;
                         License = _package.License;
-                        Dependencies = _package.Dependencies;                        
                         LicenseFile = _plcConfig?.LicenseFile;
                         IconFile = _plcConfig?.IconFile;
                         IconImage = TwinpackUtils.IconImage(_package.IconUrl);
@@ -162,16 +161,6 @@ namespace Twinpack.Dialogs
                     ProjectUrl = _plcConfig.ProjectUrl;
                     IconFile = _plcConfig.IconFile;
                     DistributorName = _plcConfig.DistributorName;
-
-                    Dependencies =  _plcConfig.Packages.Select(x => new Models.PackageVersionGetResponse {
-                        Repository = Repository,
-                        Name = Name,
-                        Branch = Branch,
-                        Target = Target,
-                        Configuration = Configuration,
-                        Version = Version,
-                        DistributorName = DistributorName
-                    });
                     
                     if (!string.IsNullOrEmpty(_plcConfig.IconFile))
                         IconImage = TwinpackUtils.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
@@ -210,6 +199,7 @@ namespace Twinpack.Dialogs
                         _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false);
                         Notes = _packageVersion.Notes;
                         Version = _packageVersion.Version;
+                        Dependencies = _package.Dependencies;                                                
                     }
                     catch (Exceptions.GetException ex)
                     {
@@ -219,6 +209,18 @@ namespace Twinpack.Dialogs
                     {
                         _logger.Error(ex.Message);
                     }
+                }
+                else if(_plcConfig != null)
+                {
+                    Dependencies =  _plcConfig.Packages.Select(x => new Models.PackageVersionGetResponse {
+                        Repository = Repository,
+                        Name = Name,
+                        Branch = Branch,
+                        Target = Target,
+                        Configuration = Configuration,
+                        Version = Version,
+                        DistributorName = DistributorName
+                    });
                 }
 
                 IsConfigured = _plcConfig != null && _plcConfig.Name == _package.Name && _plcConfig.DistributorName == _package.DistributorName && _package.Repository == _twinpackServer.Username;
