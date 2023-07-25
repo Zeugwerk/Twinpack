@@ -41,7 +41,7 @@ namespace Twinpack.Dialogs
         private TwinpackServer _twinpackServer = new TwinpackServer();
         private Authentication _auth;
 
-        private IEnumerable<PackageVersionGetResponse> _dependencies;
+        private IEnumerable<Models.PackageVersionGetResponse> _dependencies;
         private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Models.PackageVersionGetResponse();
 
@@ -439,7 +439,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public IEnumerable<PackageVersionGetResponse> Dependencies
+        public IEnumerable<Models.PackageVersionGetResponse> Dependencies
         {
             get { return _dependencies; }
             set
