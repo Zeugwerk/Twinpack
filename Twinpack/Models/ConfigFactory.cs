@@ -353,7 +353,7 @@ namespace Twinpack.Models
         public static String GuessFilePath(ConfigPlcProject plc)
         {
             // todo: parse sln, ts(p)proj and xti to get the path of the PLC instead of guessing
-            if (plc.FilePath != null)
+            if (!string.IsNullOrEmpty(plc.FilePath))
                 return plc.FilePath;
 
             String plcproj_path = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}.plcproj";
