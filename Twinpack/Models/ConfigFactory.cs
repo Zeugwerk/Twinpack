@@ -410,16 +410,8 @@ namespace Twinpack.Models
 
         public static string Namespace(ConfigPlcProject plc)
         {
-            if (plc.Namespace != null)
-                return plc.Namespace;
-
-            XDocument xdoc = XDocument.Load(GuessFilePath(plc));
-            plc.Namespace = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "DefaultNamespace").FirstOrDefault()?.Value;
-
-            if(plc.Namespace == null)
-                plc.Namespace = plc.Name;
-
-            return plc.Namespace;
+            XDocument xdoc = XDoc(plc);
+            return xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "DefaultNamespace").FirstOrDefault()?.Value;
         }
 
         public static XDocument XDoc(ConfigPlcProject plc)
