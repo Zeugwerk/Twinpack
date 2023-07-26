@@ -39,13 +39,19 @@ namespace Twinpack.Models
                     config.WorkingDirectory = path;
                     config.FilePath = $@"{path}\{p}config.json";
 
+                    int projectIndex = 0;
                     foreach (var project in config.Projects)
                     {
+                        int plcIndex = 0;
                         foreach (var plc in project.Plcs)
                         {
-                            plc.RootPath = config.WorkingDirectory;
-                            plc.ProjectName = project.Name;
+                            config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).RootPath = config.WorkingDirectory;
+                            config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).ProjectName = project.Name;
+
+                            plcIndex++;
                         }
+
+                        projectIndex++;
                     }
 
                     return config;
