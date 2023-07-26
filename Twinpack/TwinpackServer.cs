@@ -461,6 +461,11 @@ namespace Twinpack
 
             try
             {
+                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
+                JsonElement message = new JsonElement();
+                if (responseJsonBody.TryGetProperty("message", out message))
+                    throw new LoginException(message.ToString());
+                
                 UserInfo = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
                 Username = username ?? credentials?.UserName;
                 Password = password ?? credentials?.Password;
@@ -473,13 +478,7 @@ namespace Twinpack
                 Username = "";
                 Password = "";
                 CredentialManager.DeleteCredential("TwinpackServer");
-
-                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (responseJsonBody.TryGetProperty("message", out message))
-                    throw new LoginException(message.ToString());
-                else
-                    throw ex;
+                throw ex;
             }
         }
 
