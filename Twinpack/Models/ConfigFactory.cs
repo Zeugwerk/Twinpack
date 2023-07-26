@@ -74,7 +74,7 @@ namespace Twinpack.Models
 
             config.Fileversion = 1;
             config.Solution = solution.FileName;
-            config.FilePath = Path.GetDirectoryName(solution.FullName);
+            config.FilePath = Path.GetDirectoryName(solution.FullName) + @"\.Zeugwerk\config.json";
             config.WorkingDirectory = Path.GetDirectoryName(solution.FullName);
             config.Projects = new List<ConfigProject>();
 
