@@ -115,7 +115,7 @@ namespace Twinpack
             };      
 
             var requestBodyJson = JsonSerializer.Serialize(requestBody);
-            _logger.Debug($"Pushing {plc.Name} (branch: {plc.Branch}, target: {plc.Target}, configuration: {plc.Configuration}, version: {plc.Version}, dependencies: {plc.Dependencies.Count()})");
+            _logger.Debug($"Pushing {requestBody.Name} (branch: {requestBody.Branch}, target: {requestBody.Target}, configuration: {requestBody.Configuration}, version: {requestBody.Version}, dependencies: {requestBody.Dependencies.Count()})");
 
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
             request.Headers.Add("zgwk-username", Username);
