@@ -158,10 +158,7 @@ namespace Twinpack.Models
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public String FilePath { get; set; }
-
-        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public String Namespace { get; set; }                
-
+        
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public PlcProjectType PlcType {
             get
