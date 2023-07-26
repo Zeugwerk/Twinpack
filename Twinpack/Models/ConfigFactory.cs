@@ -101,6 +101,7 @@ namespace Twinpack.Models
                         var plcConfig = await ConfigPlcProjectFactory.CreateAsync(projectPath);
                         plcConfig.ProjectName = project.Name;
                         plcConfig.RootPath = config.WorkingDirectory;
+                        plcConfig.FilePath = ConfigPlcProjectFactory.GuessFilePath(plcConfig);                        
                         project.Plcs.Add(plcConfig);
                     }
                 }
@@ -202,6 +203,7 @@ namespace Twinpack.Models
                 var plcConfig = await CreateAsync(projectPath, twinpackServer);
                 plcConfig.ProjectName = prj.Name;
                 plcConfig.RootPath = System.IO.Path.GetDirectoryName(solution.FullName);
+                plcConfig.FilePath = ConfigPlcProjectFactory.GuessFilePath(plcConfig);                  
                 return plcConfig;
             }
 
