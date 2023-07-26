@@ -47,6 +47,7 @@ namespace Twinpack.Models
                         {
                             config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).RootPath = config.WorkingDirectory;
                             config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).ProjectName = project.Name;
+                            config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).FilePath = ConfigPlcProjectFactory.GuessFilePath(config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex));
 
                             plcIndex++;
                         }
