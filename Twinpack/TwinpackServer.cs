@@ -126,19 +126,17 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            try
-            {
-                return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-            }
-            catch (Exception ex)
-            {
-                JsonElement packageVersion = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (packageVersion.TryGetProperty("message", out message))
-                    throw new PostException(message.ToString());
-                else
-                    throw ex;
-            }
+            JsonElement packageVersion = JsonSerializer.Deserialize<dynamic>(responseBody);
+            JsonElement message = new JsonElement();
+            if (packageVersion.TryGetProperty("message", out message))
+                throw new PostException(message.ToString());
+            
+            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+
+            if(result.PackageVersionId == null)
+                throw new PostException("Error occured while pushing to the Twinpack server");
+
+            return result;
         }
 
         public async Task<IEnumerable<T>> QueryWithPagination<T>(string endpoint, int page = 1, int perPage = 5)
