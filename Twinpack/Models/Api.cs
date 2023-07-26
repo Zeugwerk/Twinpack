@@ -20,7 +20,14 @@ namespace Twinpack.Models
         [JsonPropertyName("search")]
         public string Search { get; set; }
     }
-    public class CatalogItemGetResponse
+
+    public class Response
+    {
+        [JsonPropertyName("message")]
+        public string Message { get; set; }
+    }
+    
+    public class CatalogItemGetResponse : Response
     {
         public CatalogItemGetResponse()
         {
@@ -77,7 +84,7 @@ namespace Twinpack.Models
         public List<string> Branches { get; set; }        
     }
 
-    public class PackageVersionsItemGetResponse
+    public class PackageVersionsItemGetResponse : Response
     {
         [JsonPropertyName("package-version-id")]
         public int? PackageVersionId { get; set; }
@@ -109,7 +116,7 @@ namespace Twinpack.Models
         public string Notes { get; set; }
     }
 
-    public class PackageGetResponse
+    public class PackageGetResponse : Response
     {
         [JsonPropertyName("package-id")]
         public int? PackageId { get; set; }
@@ -279,7 +286,7 @@ namespace Twinpack.Models
         public IEnumerable<PackageVersionDependencyPostRequest> Dependencies { get; set; }
     }
 
-    public class LoginPostResponse
+    public class LoginPostResponse : Response
     {
         public class Configuration
         {
