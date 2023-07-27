@@ -72,27 +72,40 @@ namespace Twinpack.Dialogs
 
         private async Task LoginAsync()
         {
-            try
-            { 
-                if (!_twinpackServer.LoggedIn)
+            while (!_twinpackServer.LoggedIn)
+            {
+                var message = "";
+                try
                 {
                     await _auth.LoginAsync();
-                    if(!_twinpackServer.LoggedIn)
-                        throw new Exceptions.LoginException("Login was not successful! Go to https://twinpack.dev/wp-login.php to register");
+                    if (!_twinpackServer.LoggedIn)
+                        throw new Exceptions.LoginException("Login was not successful!");
+                }
+                catch (Exceptions.LoginException ex)
+                {
+                    message = ex.Message;
+                    _logger.Error(ex.Message);
+                }
+                catch (Exception)
+                {
+                    message = "You have to login to the Twinpack server to publish packages.";
+                }
+
+                if(!_twinpackServer.LoggedIn)
+                {
+                    if (MessageBox.Show($@"{message}\n\n Do you want to register or reset your password=", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                    {
+                        Process.Start("https://twinpack.dev/wp-login.php");
+                    }
+                    else
+                    {
+                        Close();
+                        return;
+                    }
                 }
             }
-            catch(Exceptions.LoginException ex)
-            {
-                MessageBox.Show(ex.Message, "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
-            }          
-            catch (Exception ex)
-            {
-                _logger.Error(ex.Message);
-            }
-            finally
-            {
-                IsNewUser = _twinpackServer.UserInfo.DistributorName == null;
-            }
+
+            IsNewUser = _twinpackServer.UserInfo.DistributorName == null;
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -104,13 +117,7 @@ namespace Twinpack.Dialogs
                 IsEnabled = false;
                 IsLoading = true;
                 LoadingText = "Loading ...";
-
-                await _twinpackServer.LoginAsync();
-                if(!_twinpackServer.LoggedIn)
-                {
-                    _twinpackServer.Logout();
-                    await LoginAsync();
-                }
+                await LoginAsync();
 
                 IsNewUser = _twinpackServer.UserInfo.DistributorName == null;
                 IsGeneralDataReadOnly = false;

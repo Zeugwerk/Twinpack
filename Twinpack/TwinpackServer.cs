@@ -384,7 +384,10 @@ namespace Twinpack
                 UserInfo = result;
                 Username = username ?? credentials?.UserName;
                 Password = password ?? credentials?.Password;
-                CredentialManager.WriteCredential("TwinpackServer", Username, Password, CredentialPersistence.LocalMachine);
+
+                if(!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                    CredentialManager.WriteCredential("TwinpackServer", Username, Password, CredentialPersistence.LocalMachine);
+
                 return UserInfo;
             }
             catch (Exception ex)
