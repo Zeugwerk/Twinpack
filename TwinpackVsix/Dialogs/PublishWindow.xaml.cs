@@ -17,6 +17,7 @@ using Meziantou.Framework.Win32;
 using Microsoft.VisualStudio.Threading;
 using TCatSysManagerLib;
 using Microsoft.Win32;
+using System.Text.RegularExpressions;
 
 namespace Twinpack.Dialogs
 {
@@ -29,12 +30,14 @@ namespace Twinpack.Dialogs
         private Models.ConfigPlcProject _plcConfig;
 
         private bool _isConfigured;
+        private bool _isLoading;
+        private string _loadingText;
+
         private bool _isGeneralDataReadOnly;
-        private bool _isVersionEditable;
+        private bool _isVersionWrongFormat;
         private bool _isNewUser;
         private bool _isNewPackage;
         private bool _isNewPackageVersion;
-        private string _version;
         private string _iconFile;
         private BitmapImage _iconImage;
 
@@ -44,6 +47,7 @@ namespace Twinpack.Dialogs
         private IEnumerable<Models.PackageVersionGetResponse> _dependencies;
         private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Models.PackageVersionGetResponse();
+        private Models.PackageVersionGetResponse _packageVersionLatest = new Models.PackageVersionGetResponse();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -93,11 +97,14 @@ namespace Twinpack.Dialogs
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            IsEnabled = false;
-
             try
             {
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                IsEnabled = false;
+                IsLoading = true;
+                LoadingText = "Loading ...";
+
                 await _twinpackServer.LoginAsync();
                 if(!_twinpackServer.LoggedIn)
                 {
@@ -107,71 +114,52 @@ namespace Twinpack.Dialogs
 
                 IsNewUser = _twinpackServer.UserInfo.DistributorName == null;
                 IsGeneralDataReadOnly = false;
-    
-                if(_plc != null)
+
+                try
                 {
-                    _plcConfig = await Models.ConfigPlcProjectFactory.CreateAsync(_context.Solution, _plc, _twinpackServer);
-                    if (_package.PackageId == null && _plcConfig != null)
+                    if (_plc != null)
                     {
-                        _package = await _twinpackServer.GetPackageAsync(_twinpackServer.Username, _plcConfig.Name);
-                        _plcConfig.DistributorName = _twinpackServer.UserInfo.DistributorName ?? _plcConfig.DistributorName;
+                        var config = Models.ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
+                        if (config != null)
+                        {
+                            LoadingText = "Loading package configuration ...";
+                            _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, _plc);
+                        }
+                        else
+                        {
+                            LoadingText = "Creating temporary package configuration ...";
+                            _plcConfig = await Models.ConfigPlcProjectFactory.CreateAsync(_context.Solution, _plc, _twinpackServer);
+                        }
+
+                        IsConfigured = _plcConfig != null;
                     }
                 }
-                else
+                catch (Exception ex)
                 {
+                    IsConfigured = false;
                     _plcConfig = null;
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
                 }
 
 
-                if (_package.PackageId != null)
+                LoadingText = "Retrieving package ...";
+                if (_plcConfig != null)
                 {
-                    try
-                    {
-                        _package = await _twinpackServer.GetPackageAsync((int)_package.PackageId);
-    
-                        PackageName = _package.Name;
-                        DisplayName = _package.DisplayName;
-                        Description = _package.Description;
-                        Entitlement = _package.Entitlement;
-                        ProjectUrl = _package.ProjectUrl;
-                        DistributorName = _package.DistributorName;
-                        Authors = _package.Authors;
-                        License = _package.License;
-                        LicenseFile = _plcConfig?.LicenseFile;
-                        IconFile = _plcConfig?.IconFile;
-                        IconImage = TwinpackUtils.IconImage(_package.IconUrl);
-                    }
-                    catch (Exceptions.GetException ex)
-                    {
-                        MessageBox.Show(ex.Message, "Retrieving Package failed", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex.Message);
-                    }
-                }
-                else if(_plcConfig != null)
-                {
-                    IsVersionEditable = true;
-    
-                    PackageName = _plcConfig.Name;
-                    DisplayName = _plcConfig.DisplayName;
-                    Description = _plcConfig.Description;
-                    Entitlement = _plcConfig.Entitlement;
-                    ProjectUrl = _plcConfig.ProjectUrl;
-                    IconFile = _plcConfig.IconFile;
-                    DistributorName = _plcConfig.DistributorName;
-                    
-                    if (!string.IsNullOrEmpty(_plcConfig.IconFile))
-                        IconImage = TwinpackUtils.IconImage(Path.Combine(_plcConfig.RootPath, _plcConfig.IconFile));
+                    _package = await _twinpackServer.GetPackageAsync(_twinpackServer.Username, _plcConfig.Name);
+                    _plcConfig.DistributorName = _twinpackServer.UserInfo.DistributorName ?? _plcConfig.DistributorName;
                 }
 
-    
+                if(_plcConfig == null && _package.PackageId != null)
+                    _package = await _twinpackServer.GetPackageAsync((int)_package.PackageId);
+
+                LoadingText = "Retrieving package version ...";
                 if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
                 {
                     // try to get the specific version
                     IsNewPackageVersion = false;
                     _packageVersion = await _twinpackServer.GetPackageVersionAsync(_package.Repository, _package.Name, _packageVersion.Version, "Release", "main", "TC3.1", false, null);
+
                     // fallback to the latest available version
                     if(_packageVersion.PackageVersionId == null)
                     {
@@ -182,23 +170,14 @@ namespace Twinpack.Dialogs
                 else if(_plcConfig != null)
                 {
                     IsNewPackageVersion = true;
-                    //Configuration = "Release";
-                    //Target = "TC3.1";
-                    //Branch = "main";
-                    Version = _plcConfig.Version;
-                    Authors = _plcConfig.Authors;
-                    Entitlement = _plcConfig.Entitlement;
-                    License = _plcConfig.License;
-                    LicenseFile = _plcConfig.LicenseFile;
                 }
-    
+
                 if (_packageVersion.PackageVersionId != null)
                 { 
                     try
                     {
                         _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false);
-                        Notes = _packageVersion.Notes;
-                        Version = _packageVersion.Version;
+                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(_packageVersion.Repository, _packageVersion.Name, null, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target); 
                         Dependencies = _packageVersion.Dependencies;                                                
                     }
                     catch (Exceptions.GetException ex)
@@ -210,35 +189,75 @@ namespace Twinpack.Dialogs
                         _logger.Error(ex.Message);
                     }
                 }
-                else if(_plcConfig != null)
+
+                PackageName = _package?.Name ?? _plcConfig.Name;
+                DisplayName = _package?.DisplayName ?? _plcConfig.DisplayName;
+                Description = _package?.Description ?? _plcConfig.Description;
+                Entitlement = _package?.Entitlement ?? _plcConfig.Entitlement;
+                ProjectUrl = _package?.ProjectUrl ?? _plcConfig.ProjectUrl;
+                DistributorName = _package?.DistributorName ?? _plcConfig.DistributorName;
+                License = _package?.License ?? _plcConfig.License;
+                LicenseFile = _plcConfig?.LicenseFile;
+                Version = _packageVersion?.Version ?? _plcConfig?.Version;
+                Authors = _packageVersion?.Authors ?? _plcConfig?.Authors;
+                Entitlement = _packageVersion?.Entitlement ?? _plcConfig?.Entitlement;
+                License = _packageVersion?.License ?? _plcConfig?.License;
+                LicenseFile = _plcConfig?.LicenseFile;
+                IconFile = _plcConfig?.IconFile;
+                IconImage = TwinpackUtils.IconImage(_package?.IconUrl);
+                //Configuration = "Release";
+                //Target = "TC3.1";
+                //Branch = "main";
+                Notes = _packageVersion?.Notes;
+                Version = _packageVersion?.Version;
+                LatestVersion = _packageVersionLatest?.Version;
+                Dependencies = _plcConfig?.Packages?.Select(x => new Models.PackageVersionGetResponse
                 {
-                    Dependencies =  _plcConfig.Packages.Select(x => new Models.PackageVersionGetResponse {
-                        Repository = x.Repository,
-                        DistributorName = x.DistributorName,                        
-                        Name = x.Name,
-                        Branch = x.Branch,
-                        Target = x.Target,
-                        Configuration = x.Configuration,
-                        Version = x.Version
-                    });
-                }
+                    Repository = x.Repository,
+                    DistributorName = x.DistributorName,
+                    Name = x.Name,
+                    Branch = x.Branch,
+                    Target = x.Target,
+                    Configuration = x.Configuration,
+                    Version = x.Version
+                }) ?? new List<Models.PackageVersionGetResponse>();
 
                 IsConfigured = _plcConfig != null && _plcConfig.Name == _package.Name && _plcConfig.DistributorName == _package.DistributorName && _package.Repository == _twinpackServer.Username;
                 IsNewPackage = _package.PackageId == null;
                 IsGeneralDataReadOnly = _package.Repository != _twinpackServer.Username;
-                IsEnabled = true;
              }
             catch(Exception ex)
             {
                 _logger.Trace(ex);
             }
+            finally
+            {
+                IsEnabled = true;
+                IsLoading = false;
+            }
         }
 
-        public async Task LoadPackageAsync(int? packageId)
+        public string LoadingText
         {
-
+            get { return _loadingText; }
+            set
+            {
+                _loadingText = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LoadingText)));
+            }
         }
 
+        public bool IsLoading
+        {
+            get { return _isLoading; }
+            set
+            {
+                _isLoading = value;
+                if (_isLoading)
+                    LoadingText = "Loading ...";
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsLoading)));
+            }
+        }
         public bool IsConfigured
         {
             get { return _isConfigured; }
@@ -279,15 +298,6 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public bool IsVersionEditable
-        {
-            get { return _isVersionEditable; }
-            set
-            {
-                _isVersionEditable = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsVersionEditable)));
-            }
-        }
         public bool IsGeneralDataReadOnly
         {
             get { return _isGeneralDataReadOnly; }
@@ -304,6 +314,8 @@ namespace Twinpack.Dialogs
             set
             {
                 _package.Name = value;
+                if (_plcConfig != null)
+                    _plcConfig.Name = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageName)));
             }
         }
@@ -314,6 +326,8 @@ namespace Twinpack.Dialogs
             set
             {
                 _package.DisplayName = value;
+                if (_plcConfig != null)
+                    _plcConfig.DisplayName = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayName)));
             }
         }
@@ -324,6 +338,8 @@ namespace Twinpack.Dialogs
             set
             {
                 _package.Entitlement = value;
+                if (_plcConfig != null)
+                    _plcConfig.Entitlement = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Entitlement)));
             }
         }
@@ -334,6 +350,8 @@ namespace Twinpack.Dialogs
             set
             {
                 _package.Description = value;
+                if (_plcConfig != null)
+                    _plcConfig.Description = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Description)));
             }
         }
@@ -344,6 +362,8 @@ namespace Twinpack.Dialogs
             set
             {
                 _package.ProjectUrl = value;
+                if (_plcConfig != null)
+                    _plcConfig.ProjectUrl = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProjectUrl)));
             }
         }
@@ -375,10 +395,16 @@ namespace Twinpack.Dialogs
             get { return _packageVersion.Version; }
             set
             {
+                IsVersionWrongFormat = !Regex.Match(value, @"^\d+\.\d+\.\d+\.\d+$").Success;
                 _packageVersion.Version = value;
+
+                if (_plcConfig != null)
+                    _plcConfig.Version = value;
+
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Version)));
             }
         }
+
 
         public string DistributorName
         {
@@ -386,6 +412,8 @@ namespace Twinpack.Dialogs
             set
             {
                 _packageVersion.DistributorName = value;
+                if (_plcConfig != null)
+                    _plcConfig.DistributorName = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DistributorName)));
             }
         }
@@ -406,10 +434,44 @@ namespace Twinpack.Dialogs
             set
             {
                 _packageVersion.License = value;
+                if (_plcConfig != null)
+                    _plcConfig.License = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(License)));
             }
         }
 
+        public string Authors
+        {
+            get { return _packageVersion.Authors; }
+            set
+            {
+                _packageVersion.Authors = value;
+                if (_plcConfig != null)
+                    _plcConfig.Authors = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Authors)));
+            }
+        }
+
+        public string LatestVersion
+        {
+            get { return _packageVersionLatest.Version; }
+            set
+            {
+                _packageVersionLatest.Version = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LatestVersion)));
+            }
+        }
+
+        public bool IsVersionWrongFormat
+        {
+            get { return _isVersionWrongFormat; }
+            set
+            {
+                _isVersionWrongFormat = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsVersionWrongFormat)));
+            }
+        }
+        
         public string LicenseFile
         {
             get { return _plcConfig?.LicenseFile; }
@@ -431,16 +493,6 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public string Authors
-        {
-            get { return _packageVersion.Authors; }
-            set
-            {
-                _packageVersion.Authors = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Authors)));
-            }
-        }
-
         public IEnumerable<Models.PackageVersionGetResponse> Dependencies
         {
             get { return _dependencies; }
@@ -448,10 +500,22 @@ namespace Twinpack.Dialogs
             {
                 _dependencies = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Dependencies)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasDependencies)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DependencyCount)));
             }
-        }        
+        }
 
-        private async void ChangeLicense_Click(object sender, RoutedEventArgs e)
+        public bool HasDependencies
+        {
+            get { return _dependencies?.Any() == true; }
+        }
+
+        public int DependencyCount
+        {
+            get { return _dependencies != null ? _dependencies.Count() : 0; }
+        }
+
+        private void ChangeLicense_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -472,7 +536,7 @@ namespace Twinpack.Dialogs
         }
 
 
-        private async void ChangeIcon_Click(object sender, RoutedEventArgs e)
+        private void ChangeIcon_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -578,37 +642,46 @@ namespace Twinpack.Dialogs
 
         private async void Publish_Click(object sender, RoutedEventArgs e)
         {
-            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
             try
             {
-                IsEnabled = false;
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
-                var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
-                TwinpackUtils.SyncPlcProj(iec, _plcConfig);
-                _logger.Info($"Checking all objects of PLC {_plcConfig.Name}");
-                if (!iec.CheckAllObjects())
-                {
-                    if (TwinpackUtils.BuildErrorCount(_context.Dte) > 0)
-                        _logger.Error($"{_plcConfig.Name} does not compile!");
-                }
+                IsEnabled = false;
+                IsLoading = true;
+                LoadingText = "Checking all objects ...";
 
                 var path = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\{(_packageVersion.Target ?? "TC3.1")}\{_plcConfig.Name}_{_plcConfig.Version}.library";
-                _logger.Info($"Saving and installing to {path}");
+                var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
+                var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
 
-                iec.SaveAsLibrary(path, false);
+                await Task.Run(() =>
+                {
+                    TwinpackUtils.SyncPlcProj(iec, _plcConfig);
+                    _logger.Info($"Checking all objects of PLC {_plcConfig.Name}");
+                    if (!iec.CheckAllObjects())
+                    {
+                        if (TwinpackUtils.BuildErrorCount(_context.Dte) > 0)
+                            _logger.Error($"{_plcConfig.Name} does not compile!");
+                    }
+
+                    _logger.Info($"Saving and installing to {path}");
+                    LoadingText = "Saving as library ...";
+                    iec.SaveAsLibrary(path, false);
+                });
 
                 try
                 {
                     await LoginAsync();
+
+                    LoadingText = "Uploading to Twinpack ...";
                     _packageVersion = await _twinpackServer.PostPackageVersionAsync(_plcConfig, "Release", "main", "TC3.1", Notes,
                         false, cachePath: $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries");
-                    _package = await _twinpackServer.GetPackageAsync((int)_packageVersion.PackageId);
+                    _package = _packageVersion;
+                    _packageVersionLatest.Version = _packageVersion.Version;
 
                     IsNewPackage = false;
                     IsNewPackageVersion = false;
-                    IsGeneralDataReadOnly = true;
+                    LatestVersion = _packageVersion.Version;
                 }
                 catch (Exceptions.LoginException ex)
                 {
@@ -631,10 +704,11 @@ namespace Twinpack.Dialogs
             finally
             {
                 IsEnabled = true;
+                IsLoading = false;
             }
         }
 
-        private async void Close_Click(object sender, RoutedEventArgs e)
+        private void Close_Click(object sender, RoutedEventArgs e)
         {
             Close();
         }
@@ -646,8 +720,6 @@ namespace Twinpack.Dialogs
                 IsEnabled = false;
                 if (await PatchPackageAsync())
                     await PatchPackageVersionAsync();
-
-                Close();
             }
             catch(Exception ex)
             {
@@ -661,26 +733,29 @@ namespace Twinpack.Dialogs
 
         public async void VersionTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (_packageVersion.PackageVersionId == null || _package.PackageId == null)
-                return;
-
             var text = ((TextBox)sender).Text;
-            _version = text;
+            Version = text;
             await Task.Delay(100);
+
+            if(Version != text || _packageVersion.PackageVersionId == null || _package.PackageId == null)
+            {
+                IsNewPackageVersion = false;
+                return;
+            }
 
             try
             {
-                if (_version == text)
-                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_packageVersion.Repository, _packageVersion.Name, _version, "Release", "main", "TC3.1", includeBinary: false, cachePath: null);
+                var version = new Version(text);
+                var latestVersion = new Version(LatestVersion);
+
+                IsVersionWrongFormat = !Regex.Match(text, @"^\d+\.\d+\.\d+\.\d+$").Success;
+                IsNewPackageVersion = version > latestVersion;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger.Trace(ex.Message);
+                IsVersionWrongFormat = true;
+                IsNewPackageVersion = false;
             }
-
-            IsNewPackageVersion = _packageVersion.PackageVersionId == null;
         }
-
-
     }
 }

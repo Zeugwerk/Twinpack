@@ -75,7 +75,7 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution)
+        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, TwinpackServer twinpackServer)
         {
             Config config = new Config();
 
@@ -98,7 +98,7 @@ namespace Twinpack.Models
                     {
                         string xml = plc.ProduceXml();
                         string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
-                        var plcConfig = await ConfigPlcProjectFactory.CreateAsync(projectPath);
+                        var plcConfig = await ConfigPlcProjectFactory.CreateAsync(projectPath, twinpackServer);
                         plcConfig.ProjectName = project.Name;
                         plcConfig.RootPath = config.WorkingDirectory;
                         plcConfig.FilePath = ConfigPlcProjectFactory.GuessFilePath(plcConfig);                        
@@ -141,10 +141,10 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static void Save(Config config)
+        public static string Save(Config config)
         {
             if (config.FilePath == null)
-                return;
+                return null;
 
             var options = new JsonSerializerOptions
             {
@@ -156,7 +156,10 @@ namespace Twinpack.Models
             if (!Directory.Exists(Path.GetDirectoryName(config.FilePath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(config.FilePath));
 
-            File.WriteAllText(Path.Combine(config.WorkingDirectory, ".Zeugwerk", "config.json"), json);
+            var path = Path.Combine(config.WorkingDirectory, ".Zeugwerk", "config.json");
+            File.WriteAllText(path, json);
+
+            return path;
         }
     }
 
@@ -167,8 +170,17 @@ namespace Twinpack.Models
 
         static public ConfigPlcProject MapPlcConfigToPlcProj(Config config, EnvDTE.Project prj)
         {
-            var project = new ConfigProject { Name = prj.Name };
-            var xml = (prj as ITcSmTreeItem9).ProduceXml();
+            string xml = null;
+            ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
+            ITcSmTreeItem plcs = systemManager.LookupTreeItem("TIPC");
+            foreach (ITcSmTreeItem9 plc in plcs)
+            {
+                if (plc is ITcProjectRoot && plc.Name == prj.Name)
+                {
+                    xml = plc.ProduceXml();
+                    break;
+                }
+            }
 
             if (xml != null)
             {

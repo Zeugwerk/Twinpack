@@ -167,7 +167,7 @@ namespace Twinpack
                 libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true);
             }
 
-            foreach(var dependency in packageVersion.Dependencies)
+            foreach(var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
             {
                 await InstallReferenceAsync(libManager, dependency, server, forceDownload, cachePath);
             }            

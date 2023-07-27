@@ -79,10 +79,7 @@
     <Compile Include="VsixManifest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Dialogs\Images\Twinpack.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
+    <Resource Include="Dialogs\Images\Twinpack.png" />
     <Content Include="Logger\NLog.dll.nlog">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>

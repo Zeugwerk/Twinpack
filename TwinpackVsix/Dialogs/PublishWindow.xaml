@@ -16,6 +16,7 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="50"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
@@ -28,7 +29,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Grid.ColumnSpan="4">
+        <Grid Grid.Row="0" Grid.ColumnSpan="6">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"></RowDefinition>
             </Grid.RowDefinitions>
@@ -45,7 +46,7 @@
         </Grid>
 
         <!-- General Data -->
-        <StackPanel Grid.Row="1" Grid.Column="1" Margin="50 15 0 0" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
+        <StackPanel Grid.Row="1" Grid.Column="2" Margin="50 15 50 0"  IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
             <TextBlock Text="{Binding PackageName}" HorizontalAlignment="Center" Margin="0" FontSize="18" FontWeight="SemiBold" />
 
             <Image Source="{Binding IconImage}" Width="128" Height="128" Margin="0,10,0,10"/>
@@ -55,21 +56,21 @@
                     HorizontalAlignment="Center" Content="Change Icon" VerticalAlignment="Top" Width="80"
                     Visibility="{Binding IsConfigured, Converter={StaticResource BooleanToVisibilityConverter}}"  />
 
-            <TextBlock Text="{Binding DistributorName}"  FontWeight="SemiBold"  HorizontalAlignment="Center" 
+            <TextBlock Text="{Binding DistributorName}"  FontWeight="SemiBold"  HorizontalAlignment="Center" Margin="0 0 0 15"
                        Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
             <Label Content="Distributor name:" HorizontalAlignment="Left" Margin="0" Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             <TextBox Text="{Binding DistributorName}" Margin="0" Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-        </StackPanel>
-
-        <StackPanel Grid.Row="1" Grid.Column="2" Margin="50 15 50 0"  Orientation="Vertical" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
 
             <StackPanel Orientation="Vertical">
                 <Label Content="Display Name:" HorizontalAlignment="Left" Margin="0"/>
                 <TextBox Text="{Binding DisplayName}" Width="200" Margin="0"/>
             </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Grid.Column="3" Margin="50 15 50 0"  Orientation="Vertical" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
 
             <Label Content="Description:" HorizontalAlignment="Left" Margin="0"/>
-            <TextBox Text="{Binding Description}" Width="200" Margin="0"/>
+            <TextBox Text="{Binding Description}" Width="200"  Height="50"  Margin="0"/>
 
             <Label Content="Project URL:" HorizontalAlignment="Left" Margin="0"/>
             <TextBox Text="{Binding ProjectUrl}" Width="200" Margin="0"/>
@@ -86,60 +87,65 @@
             </StackPanel>
 
             <Label Content="Authors:" HorizontalAlignment="Left" Margin="0"/>
-            <TextBox Text="{Binding Authors}" Width="200" Height="50" Margin="0"/>
+            <TextBox Text="{Binding Authors}" Width="200" Margin="0"/>
         </StackPanel>
 
         <!-- Version Data -->
-        <Grid Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="10 15 10 5" IsEnabled="{Binding IsConfigured}">
+        <Grid Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Margin="10 15 10 35" IsEnabled="{Binding IsConfigured}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Vertical" Width="100">
+            <StackPanel Orientation="Vertical" Width="150" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
                 <Label Content="Version:" HorizontalAlignment="Left" Margin="0"/>
-                <TextBox Text="{Binding Version}" Margin="0" VerticalAlignment="Top"  TextChanged="VersionTextBox_TextChanged" Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                <TextBlock Text="{Binding Version}" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16" FontWeight="SemiBold"  Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
+                <TextBox Text="{Binding Version}" Margin="0" VerticalAlignment="Top" TextChanged="VersionTextBox_TextChanged"/>
+
+                <TextBlock Margin="0" VerticalAlignment="Top" TextWrapping="Wrap" Visibility="{Binding IsVersionWrongFormat, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Run FontWeight="DemiBold" Foreground="#da776d" Text="Expecting a valid version format (i.e. 1.0.0.0)."></Run>
+                </TextBlock>
+
+                <TextBlock Margin="0" VerticalAlignment="Top" TextWrapping="Wrap" Visibility="{Binding IsVersionWrongFormat, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
+                    <Run Text="The latest version of this package is"></Run>
+                    <Run Text="{Binding LatestVersion}" FontWeight="DemiBold"></Run>
+                    <LineBreak></LineBreak>
+                    <Run Text="You can edit general information of the package and publish new versions."></Run>
+                </TextBlock>
             </StackPanel>
 
-            <StackPanel Margin="25 0 0 0" Orientation="Vertical" HorizontalAlignment="Stretch" Grid.Column="1">
+            <StackPanel Margin="25 0 0 0" Orientation="Vertical" HorizontalAlignment="Stretch" Grid.Column="1" VerticalAlignment="Top"  IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
                 <Label Content="Notes:" HorizontalAlignment="Left"/>
                 <TextBox Text="{Binding Notes}" HorizontalAlignment="Stretch" Height="100" Margin="0"/>
             </StackPanel>
         </Grid>
 
-        <Expander Grid.Row="4" HorizontalAlignment="Right" VerticalAlignment="Top" ExpandDirection="Left" Grid.ColumnSpan="3" Margin="0,150,0,0" Header="Dependencies" IsExpanded="False">
-            <Grid Margin="5 5 0 0" >
-              <ListView Grid.Column="0" Grid.Row="0" Background="Transparent"
+        <Expander Background="#FFcad0de" Margin="0 80 0 0" Padding="5" Grid.RowSpan="5" HorizontalAlignment="Right" VerticalAlignment="Top" IsEnabled="{Binding HasDependencies, Mode=OneWay}" ExpandDirection="Left" Grid.ColumnSpan="4" IsExpanded="False">
+            <Expander.Header>
+                <TextBlock>
+                    <TextBlock.LayoutTransform>
+                        <RotateTransform Angle="90"></RotateTransform>
+                    </TextBlock.LayoutTransform>
+                    <Run Text="Dependencies"></Run>
+                    <Run Text="("></Run><Run Text="{Binding DependencyCount, Mode=OneWay}"></Run><Run Text=")"></Run>
+                </TextBlock>
+            </Expander.Header>
+            <Grid Margin="5 5 0 0" Width="200">
+                <ListView Grid.Column="0" Grid.Row="0" Background="#FFcad0de"
                     ItemsSource="{Binding Dependencies}"
                     BorderThickness="0" d:ItemsSource="{d:SampleData ItemCount=3}"
-                    ScrollViewer.CanContentScroll="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                  <ListBox.ItemContainerStyle>
-                      <Style TargetType="ListViewItem">
-                          <Setter Property="Focusable" Value="false"/>
+                    HorizontalAlignment="Stretch"
+                    ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Focusable" Value="false"/>
                             <Setter Property="Background" Value="Transparent" />
                             <Setter Property="BorderBrush" Value="Transparent"/>
                             <Setter Property="VerticalContentAlignment" Value="Center"/>
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="{x:Type ListViewItem}">
-                                        <Grid Background="{TemplateBinding Background}">
-                                            <Border Name="Selection" Visibility="Collapsed" />
-                                            <!-- This is used when GridView is put inside the ListView -->
-                                            <GridViewRowPresenter Grid.RowSpan="2"
-                                                Margin="{TemplateBinding Padding}"
-                                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                                        </Grid>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
                         </Style>
-                  </ListBox.ItemContainerStyle>
-                  <ListView.ItemTemplate>
+                    </ListBox.ItemContainerStyle>
+                    <ListView.ItemTemplate>
                       <DataTemplate>
                         <StackPanel Orientation="Horizontal">
-                          <TextBlock Margin="8 0 0 0">
+                                <TextBlock Margin="8 0 0 0">
                             <Run Text="{Binding Name}" FontWeight="DemiBold"/>
                             <Run Text="(v"/><Run Text="{Binding Version}"/><Run Text="),"/>
                             <Run Text="{Binding DistributorName}"/>
@@ -153,15 +159,24 @@
 
         <!-- Publish Button -->
         <StackPanel Grid.Row="4" Grid.ColumnSpan="4" HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Bottom">
-            <Button HorizontalAlignment="Right" Content="Publish" Width="80" Margin="5" Click="Publish_Click" IsEnabled="{Binding IsNewPackageVersion}" Visibility="{Binding IsVersionEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <Button HorizontalAlignment="Right" Content="Apply" Width="80" Margin="5" Click="Apply_Click" 
-                    IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}"
-                    Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
+            <Button HorizontalAlignment="Right" Content="Publish new version" Margin="5" Click="Publish_Click" 
+                    IsEnabled="{Binding IsNewPackageVersion}"
+                    Visibility="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
+            <Button HorizontalAlignment="Right" Content="Edit Package" Margin="5" Click="Apply_Click" 
+                    IsEnabled="{Binding IsNewPackageVersion, Converter={StaticResource BooleanToInverseBooleanConverter}}"
+                    Visibility="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
             <Button HorizontalAlignment="Right" Content="Close" Width="80" Margin="5" Click="Close_Click"/>
         </StackPanel>
 
+        <Grid Grid.Column="1" Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="4" Background="White" 
+                     Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" 
+                     d:Visibility="Hidden"
+                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TextBlock Text="{Binding LoadingText}" HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+        </Grid>
+
         <!--Information -->
-        <StackPanel Background="#FFcad0de" Grid.Row="1" Grid.RowSpan="4" Grid.Column="0" Margin="0" HorizontalAlignment="Stretch" Orientation="Vertical">
+        <StackPanel Background="#FFcad0de" Grid.Row="1" Grid.RowSpan="4" HorizontalAlignment="Left" Grid.Column="0" Margin="0" Orientation="Vertical">
 
             <StackPanel VerticalAlignment="Center" Margin="15 60 15 0">
 

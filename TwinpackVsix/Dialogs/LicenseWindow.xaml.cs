@@ -37,7 +37,8 @@ namespace Twinpack.Dialogs
                 _packageVersion = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
 
-                LicenseText = Encoding.ASCII.GetString(Convert.FromBase64String(_packageVersion?.LicenseBinary));
+                if(_packageVersion?.LicenseBinary != null)
+                    LicenseText = Encoding.ASCII.GetString(Convert.FromBase64String(_packageVersion?.LicenseBinary));
             }
         }
 

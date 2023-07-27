@@ -13,7 +13,6 @@ namespace Twinpack.Models
     // This class is used for deserializing a json config file
     public class Config
     {
-
         public Config()
         {
             Fileversion = 1;
@@ -24,7 +23,7 @@ namespace Twinpack.Models
         public String WorkingDirectory { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public String FilePath { get; set; }
+        public string FilePath { get; set; }
 
         [JsonPropertyName("fileversion")]
         public int Fileversion { get; set; }
