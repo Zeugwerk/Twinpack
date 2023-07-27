@@ -67,8 +67,11 @@
             </StackPanel>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Grid.Column="3" Margin="50 15 50 0"  Orientation="Vertical" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
+        <StackPanel Width="200" Grid.Row="1" Grid.Column="3" Margin="50 15 50 0"  Orientation="Vertical" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
 
+            <Label Content="Authors:" HorizontalAlignment="Left" Margin="0"/>
+            <TextBox Text="{Binding Authors}" Width="200" Margin="0"/>
+            
             <Label Content="Description:" HorizontalAlignment="Left" Margin="0"/>
             <TextBox Text="{Binding Description}" Width="200"  Height="50"  Margin="0"/>
 
@@ -77,17 +80,25 @@
             
             <Label Content="License:" HorizontalAlignment="Left" Margin="0"/>
             <StackPanel Orientation="Horizontal">
-                <TextBox Text="{Binding License}" Width="200" Margin="0"/>
+                <ComboBox x:Name="cmbLicense" Width="200" IsEditable="True" Text="{Binding License}" TextBoxBase.TextChanged="License_TextChanged">
+                    <ComboBoxItem>Apache license 2.0</ComboBoxItem>
+                    <ComboBoxItem>GNU General Public License v3.0</ComboBoxItem>
+                    <ComboBoxItem>MIT License</ComboBoxItem>
+                    <ComboBoxItem>BSD 2-Clause License</ComboBoxItem>
+                    <ComboBoxItem>Mozilla Public License 2.0</ComboBoxItem>
+                    <ComboBoxItem>The unlicense</ComboBoxItem>
+                </ComboBox>
             </StackPanel>
+
+            <TextBlock Margin="0" VerticalAlignment="Top" Width="200" TextWrapping="Wrap" Visibility="{Binding ShowLicenseInfo, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
+                <Run Foreground="#2a334b" Text="Select a predefined license or use your own license. For the latter, you may select a license file."></Run>
+            </TextBlock>
             
-            <Label Content="License File:" HorizontalAlignment="Left" Margin="0"/>
-            <StackPanel Orientation="Horizontal" IsEnabled="{Binding IsConfigured}">
+            <Label Content="License File:" HorizontalAlignment="Left" Margin="0" Visibility="{Binding IsLicenseFileSelectable, Converter={StaticResource BooleanToInverseBooleanConverter}}"/>
+            <StackPanel Orientation="Horizontal" Visibility="{Binding IsLicenseFileSelectable, Converter={StaticResource BooleanToInverseBooleanConverter}}">
                 <TextBox Text="{Binding LicenseFile}" Width="176" Margin="0"/>
                 <Button Click="ChangeLicense_Click" Content="..." Width="25" Margin="-1 0 0 0" HorizontalAlignment="Center"/>
             </StackPanel>
-
-            <Label Content="Authors:" HorizontalAlignment="Left" Margin="0"/>
-            <TextBox Text="{Binding Authors}" Width="200" Margin="0"/>
         </StackPanel>
 
         <!-- Version Data -->

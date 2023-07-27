@@ -33,6 +33,7 @@ namespace Twinpack.Dialogs
         private bool _isLoading;
         private string _loadingText;
 
+        private bool _isLicenseFileSelectable;
         private bool _isGeneralDataReadOnly;
         private bool _isVersionWrongFormat;
         private bool _isNewUser;
@@ -72,6 +73,16 @@ namespace Twinpack.Dialogs
 
         private async Task LoginAsync()
         {
+            // first do a silent login
+            try
+            {
+                if(!_twinpackServer.LoggedIn)
+                    await _twinpackServer.LoginAsync();
+            }
+            catch(Exception)
+            { }
+
+            // then login with prompting if it didn't work
             while (!_twinpackServer.LoggedIn)
             {
                 var message = "";
@@ -93,9 +104,9 @@ namespace Twinpack.Dialogs
 
                 if(!_twinpackServer.LoggedIn)
                 {
-                    if (MessageBox.Show($@"{message}\n\n Do you want to register or reset your password=", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                    if (MessageBox.Show($@"{message} Do you want to register or reset your password?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                     {
-                        Process.Start("https://twinpack.dev/wp-login.php");
+                        Process.Start(_twinpackServer.RegisterUrl);
                     }
                     else
                     {
@@ -119,7 +130,6 @@ namespace Twinpack.Dialogs
                 LoadingText = "Loading ...";
                 await LoginAsync();
 
-                IsNewUser = _twinpackServer.UserInfo.DistributorName == null;
                 IsGeneralDataReadOnly = false;
 
                 try
@@ -231,6 +241,8 @@ namespace Twinpack.Dialogs
 
                 IsConfigured = _plcConfig != null && _plcConfig.Name == _package.Name && _plcConfig.DistributorName == _package.DistributorName && _package.Repository == _twinpackServer.Username;
                 IsNewPackage = _package.PackageId == null;
+                if (IsNewPackage)
+                    License = (cmbLicense.Items[2] as ComboBoxItem).Content.ToString();
                 IsGeneralDataReadOnly = _package.Repository != _twinpackServer.Username;
              }
             catch(Exception ex)
@@ -271,6 +283,10 @@ namespace Twinpack.Dialogs
             set
             {
                 _isConfigured = value;
+
+                if (!_isConfigured)
+                    IsLicenseFileSelectable = false;
+
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsConfigured)));
             }
         }
@@ -312,6 +328,21 @@ namespace Twinpack.Dialogs
             {
                 _isGeneralDataReadOnly = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsGeneralDataReadOnly)));
+            }
+        }
+
+        public bool ShowLicenseInfo { get; set; }
+
+        public bool IsLicenseFileSelectable
+        {
+            get { return _isLicenseFileSelectable; }
+            set
+            {
+                _isLicenseFileSelectable = value;
+                ShowLicenseInfo = (!_isLicenseFileSelectable && _isNewPackage) || string.IsNullOrEmpty(License);
+
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsLicenseFileSelectable)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowLicenseInfo)));
             }
         }
 
@@ -488,8 +519,8 @@ namespace Twinpack.Dialogs
                 {
                     if (_plcConfig != null)
                     {
-                        _plcConfig.LicenseFile = Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
-                        _packageVersion.LicenseBinary = Convert.ToBase64String(File.ReadAllBytes(Path.Combine(_plcConfig.RootPath, _plcConfig.LicenseFile)));
+                        _plcConfig.LicenseFile = value == null ? null : Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
+                        _packageVersion.LicenseBinary = _plcConfig.LicenseFile == null ? null : Convert.ToBase64String(File.ReadAllBytes(Path.Combine(_plcConfig.RootPath, _plcConfig.LicenseFile)));
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseFile)));
                     }
                 }
@@ -764,5 +795,23 @@ namespace Twinpack.Dialogs
                 IsNewPackageVersion = false;
             }
         }
+
+        private void License_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var comboBox = (sender as ComboBox);
+            IsLicenseFileSelectable = true;
+            foreach (var item in comboBox.Items)
+            {
+                if((item as ComboBoxItem).Content.ToString().Equals(comboBox.Text))
+                {
+                    IsLicenseFileSelectable = false;
+                    break;
+                }
+            }
+
+            if(!IsLicenseFileSelectable)
+                LicenseFile = null;
+        }
+
     }
 }
