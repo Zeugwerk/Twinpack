@@ -73,15 +73,22 @@ namespace Twinpack.Commands
         /// <param name="e">The event args.</param>
         private async void Execute(object sender, EventArgs e)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            try
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
 
-            EnvDTE.Project plc = null;
-            if (_package.Context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
-                plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
+                EnvDTE.Project plc = null;
+                if (_package.Context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
+                    plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
 
-            _logger.Debug("Execute Command");
-            var publishWindow = new Dialogs.PublishWindow(_package.Context, plc);
-            publishWindow.ShowDialog();
+                _logger.Debug("Execute Command");
+                var publishWindow = new Dialogs.PublishWindow(_package.Context, plc);
+                publishWindow.ShowDialog();
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+            }
         }
     }
 }

@@ -39,7 +39,7 @@
         <Run Text="Twinpack Catalog"/>
             </TextBlock>
         </Grid>
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Margin="5 0 5 5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -179,9 +179,9 @@
                 </TextBlock>
             </Expander>
 
-            <StackPanel Grid.Row="0" Visibility="{Binding IsCatalogLoading, Converter={StaticResource BooleanToVisibilityConverter}}" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="Loading ..."></TextBlock>
-            </StackPanel>
+            <Grid Grid.Row="0" Visibility="{Binding IsCatalogLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Background="White" Text="Loading ..."></TextBlock>
+            </Grid>
 
             <ScrollViewer Grid.RowSpan="4" x:Name="PackageVersionView" Visibility="{Binding PackageVersion, Converter={StaticResource NullToVisibilityConverter}}" Margin="10,0,0,0" Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <Grid>
@@ -195,12 +195,14 @@
                             <RowDefinition Height="30"></RowDefinition>
                         </Grid.RowDefinitions>
                         <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" FontSize="20" FontWeight="SemiBold"></TextBlock>
-                        <Button x:Name="btnEditPackage" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">
+                        <!--<Button x:Name="btnEditPackage" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Margin="10 0 0 0">Edit Package</TextBlock>
                             </StackPanel>
-                        </Button>
-                        <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10"><Run Text="distributed by"/><Run Text="{Binding DistributorName}"/><Run FontSize="14"/></TextBlock>
+                        </Button>-->
+                        <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10">
+                            <Run Text="distributed by"/>
+                            <Run Text="{Binding DistributorName}"/><Run FontSize="14"/></TextBlock>
                     </Grid>
 
                     <StackPanel IsEnabled="{Binding IsConfigured, ElementName=This}" Grid.Row="1" Orientation="Vertical" Margin="0,20,0,0">
@@ -260,17 +262,17 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
 
-                            <Button  Click="UninstallPackageButton_Click" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">
+                            <Button  Click="UninstallPackageButton_Click" IsEnabled="{Binding IsNewReference, Converter={StaticResource BooleanToInverseBooleanConverter}}" Width="60" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Margin="0 0 0 0">Uninstall</TextBlock>
                                 </StackPanel>
                             </Button>
-                            <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="AddPackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
+                            <Button Grid.Column="2" Grid.Row="4" Width="60" VerticalAlignment="Top" Click="AddPackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Margin="0 0 0 0">Update</TextBlock>
+                                    <TextBlock Margin="0 0 0 0">Install</TextBlock>
                                 </StackPanel>
                             </Button>
-                            <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="UpdatePackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
+                            <Button Grid.Column="2" Grid.Row="4" Width="60" VerticalAlignment="Top" Click="UpdatePackageButton_Click" Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  Margin="0,0,5,5" IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Margin="0 0 0 0">Update</TextBlock>
                                 </StackPanel>
@@ -341,8 +343,8 @@
                                         Visibility="{Binding HasProjectUrl, Converter={StaticResource BooleanToVisibilityConverter}}"  />                                
                             </StackPanel>
 
-                            <Expander Grid.ColumnSpan="3" Margin="0,10,0,0" Header="Dependencies" IsExpanded="{Binding HasDependencies}">
-                                <Grid Margin="5 5 0 0" >
+                            <Expander Grid.ColumnSpan="3" Margin="0,10,0,0" Header="Dependencies" IsExpanded="{Binding HasDependencies, Mode=OneWay}">
+                                <Grid Margin="5 5 0 0">
                                   <ListView Grid.Column="0" Grid.Row="0" Background="Transparent"
                                         ItemsSource="{Binding Dependencies}"
                                         BorderThickness="0" d:ItemsSource="{d:SampleData ItemCount=3}"
@@ -353,22 +355,6 @@
                                                 <Setter Property="Background" Value="Transparent" />
                                                 <Setter Property="BorderBrush" Value="Transparent"/>
                                                 <Setter Property="VerticalContentAlignment" Value="Center"/>
-                                                <Setter Property="Template">
-                                                    <Setter.Value>
-                                                        <ControlTemplate TargetType="{x:Type ListViewItem}">
-                                                            <Grid Background="{TemplateBinding Background}">
-                                                                <Border Name="Selection" Visibility="Collapsed" />
-                                                                <!-- This is used when GridView is put inside the ListView -->
-                                                                <GridViewRowPresenter Grid.RowSpan="2"
-                                                                    Margin="{TemplateBinding Padding}"
-                                                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                                                            </Grid>
-                                                        </ControlTemplate>
-                                                    </Setter.Value>
-                                                </Setter>
-
                                             </Style>
                                       </ListBox.ItemContainerStyle>
                                       <ListView.ItemTemplate>
@@ -390,9 +376,9 @@
                 </Grid>
             </ScrollViewer>
 
-            <StackPanel Grid.Column="2" Grid.RowSpan="3" Visibility="{Binding IsPackageLoading, Converter={StaticResource BooleanToVisibilityConverter}}" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="Loading ..."></TextBlock>
-            </StackPanel>
+            <Grid Grid.Column="2" Grid.RowSpan="3" Background="White" d:Visibility="Hidden" Visibility="{Binding IsPackageLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <TextBlock Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

@@ -71,22 +71,29 @@ namespace Twinpack.Commands
         /// <param name="e">The event args.</param>
         private async void Execute(object sender, EventArgs e)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
-
-            _logger.Debug("Execute Command");
-
-            // Get the instance number 0 of this tool window. This window is single instance so this instance
-            // is actually the only one.
-            // The last flag is set to true so that if the tool window does not exists it will be created.
-            ToolWindowPane window = _package.FindToolWindow(typeof(Dialogs.CatalogPane), 0, true);
-            if ((null == window) || (null == window.Frame))
+            try
             {
-                throw new NotSupportedException("Cannot create tool window");
-            }
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
 
-            (window as Dialogs.CatalogPane).Update();
-            IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
-            Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
+                _logger.Debug("Execute Command");
+
+                // Get the instance number 0 of this tool window. This window is single instance so this instance
+                // is actually the only one.
+                // The last flag is set to true so that if the tool window does not exists it will be created.
+                ToolWindowPane window = _package.FindToolWindow(typeof(Dialogs.CatalogPane), 0, true);
+                if ((null == window) || (null == window.Frame))
+                {
+                    throw new NotSupportedException("Cannot create tool window");
+                }
+
+                (window as Dialogs.CatalogPane).Update();
+                IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
+                Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+            }
         }
     }
 }
