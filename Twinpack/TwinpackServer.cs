@@ -126,12 +126,10 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            JsonElement packageVersion = JsonSerializer.Deserialize<dynamic>(responseBody);
-            JsonElement message = new JsonElement();
-            if (packageVersion.TryGetProperty("message", out message))
-                throw new PostException(message.ToString());
             
             var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            if(result.Meta?.Message != null)
+                throw new PostException(result.Meta.Message.ToString());
 
             if(result.PackageVersionId == null)
                 throw new PostException("Error occured while pushing to the Twinpack server");
@@ -166,26 +164,14 @@ namespace Twinpack
                 {
                     var h = Regex.Unescape(linkHeader.First());
 
-                    try
+                    var pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
+                    if (pagination.Next == null)
                     {
-                        var pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
-                        if (pagination.Next == null)
-                        {
-                            hasNextPage = false;
-                            break;
-                        }
+                         hasNextPage = false;
+                         break;
+                    }
 
-                        uri = new Uri(pagination.Next);
-                    }
-                    catch (Exception)
-                    {
-                        JsonElement responseBody = JsonSerializer.Deserialize<dynamic>(data);
-                        JsonElement message = new JsonElement();
-                        if (responseBody.TryGetProperty("message", out message))
-                        {
-                            throw new QueryException(query, message.ToString());
-                        }
-                    }
+                    uri = new Uri(pagination.Next);
                 }
             }
 
@@ -227,24 +213,12 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            try
-            {
-                var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-                return packageVersion;
-            }
-            catch (Exception ex)
-            {
-                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (responseJsonBody.TryGetProperty("message", out message))
-                {
-                    throw new GetException(message.ToString());
-                }
-                else
-                {
-                    throw ex;
-                }
-            }
+            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+
+            if (result.Meta?.Message != null)
+                throw new GetException(result.Meta.Message.ToString());
+
+            return result;
         }
 
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(int packageVersionId, bool includeBinary, string cachePath = null)
@@ -260,33 +234,20 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            try
-            {
-                var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
 
-                if (includeBinary)
-                {
-                    var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
-                    Directory.CreateDirectory(filePath);
-                    var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                    File.WriteAllBytes($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Convert.FromBase64String(packageVersion.Binary));
-                }
+            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            if (result.Meta?.Message != null)
+                throw new GetException(result.Meta.Message.ToString());
 
-                return packageVersion;
-            }
-            catch (Exception ex)
+            if (includeBinary)
             {
-                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (responseJsonBody.TryGetProperty("message", out message))
-                {
-                    throw new GetException(message.ToString());
-                }
-                else
-                {
-                    throw ex;
-                }
+                var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{result.Target}";
+                Directory.CreateDirectory(filePath);
+                var extension = result.Compiled == 1 ? "compiled-library" : "library";
+                File.WriteAllBytes($@"{filePath}\{result.Name}_{result.Version}.{extension}", Convert.FromBase64String(result.Binary));
             }
+            
+            return result;
         }
 
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string repository, string name, string version, string configuration, string branch, string target, bool includeBinary = false, string cachePath = null)
@@ -307,31 +268,20 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            try
-            {
-                var packageVersion = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-                var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}";
+ 
+            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            if (result.Meta?.Message != null)
+                throw new GetException(result.Meta.Message.ToString());
+
+            var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}";
                 
-                if (includeBinary)
-                {
-                    var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                    File.WriteAllText($@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}", Encoding.ASCII.GetString(Convert.FromBase64String(packageVersion.Binary)));
-                }
-
-                return packageVersion;
-
-            }
-            catch (Exception)
+            if (includeBinary)
             {
-                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (responseJsonBody.TryGetProperty("message", out message))
-                {
-                    throw new PostException(message.ToString());
-                }
+                var extension = result.Compiled == 1 ? "compiled-library" : "library";
+                File.WriteAllText($@"{filePath}\{result.Name}_{result.Version}.{extension}", Encoding.ASCII.GetString(Convert.FromBase64String(result.Binary)));
             }
 
-            return null;
+            return result;
         }
 
         public async Task<PackageGetResponse> GetPackageAsync(string repository, string packageName)
@@ -348,19 +298,11 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            try
-            {
-                return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
-            }
-            catch (Exception ex)
-            {
-                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (responseJsonBody.TryGetProperty("message", out message))
-                    throw new GetException(message.ToString());
-                else
-                    throw ex;
-            }
+            var result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            if (result.Meta?.Message != null)
+                throw new GetException(result.Meta.Message.ToString());
+
+            return result;
         }
 
         public async Task<PackageGetResponse> GetPackageAsync(int packageId)
@@ -375,19 +317,11 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            try
-            {
-                return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
-            }
-            catch (Exception ex)
-            {
-                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (responseJsonBody.TryGetProperty("message", out message))
-                    throw new GetException(message.ToString());
-                else
-                    throw ex;
-            }
+            var result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            if (result.Meta?.Message != null)
+                throw new GetException(result.Meta.Message.ToString());
+
+            return result;
         }
 
         public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package)
@@ -403,21 +337,11 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            try
-            {
-                return JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
-            }
-            catch (Exception ex)
-            {
-                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (responseJsonBody.TryGetProperty("message", out message))
-                    throw new PutException(message.ToString());
-                else
-                    throw ex;
-            }
+            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            if (result.Meta?.Message != null)
+                throw new PutException(result.Meta.Message.ToString());
 
-            return null;
+            return result;
         }
 
         public async Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package)
@@ -433,19 +357,11 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            try
-            {
-                return JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
-            }
-            catch (Exception ex)
-            {
-                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (responseJsonBody.TryGetProperty("message", out message))
-                    throw new PutException(message.ToString());
-                else
-                    throw ex;
-            }
+            var result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            if (result.Meta?.Message != null)
+                throw new PutException(result.Meta.Message.ToString());
+
+            return result;
         }
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null)
@@ -461,12 +377,11 @@ namespace Twinpack
 
             try
             {
-                JsonElement responseJsonBody = JsonSerializer.Deserialize<dynamic>(responseBody);
-                JsonElement message = new JsonElement();
-                if (responseJsonBody.TryGetProperty("message", out message))
-                    throw new LoginException(message.ToString());
-                
-                UserInfo = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
+                var result = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
+                if (result.Meta?.Message != null)
+                    throw new LoginException(result.Meta.Message.ToString());
+
+                UserInfo = result;
                 Username = username ?? credentials?.UserName;
                 Password = password ?? credentials?.Password;
                 CredentialManager.WriteCredential("TwinpackServer", Username, Password, CredentialPersistence.LocalMachine);

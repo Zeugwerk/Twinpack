@@ -23,8 +23,14 @@ namespace Twinpack.Models
 
     public class Response
     {
-        [JsonPropertyName("message")]
-        public string Message { get; set; }
+        public class ResponseMeta
+        {
+            [JsonPropertyName("message")]
+            public string Message { get; set; }
+        }
+
+        [JsonPropertyName("_meta")]
+        public ResponseMeta Meta { get; set; }
     }
     
     public class CatalogItemGetResponse : Response
