@@ -314,7 +314,7 @@ namespace Twinpack.Dialogs
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            _plc = TwinpackUtils.ActivePlc(_context.Dte);
+
 
             try
             {
@@ -331,6 +331,10 @@ namespace Twinpack.Dialogs
 
             try
             {
+                _plc = TwinpackUtils.ActivePlc(_context.Dte);
+
+                cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrl);
+                cmbTwinpackServer.SelectedIndex = 0;
                 _isBrowsingAvailablePackages = true;
 
                 await LoadPlcConfigAsync();

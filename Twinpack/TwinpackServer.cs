@@ -17,13 +17,13 @@ namespace Twinpack
 {
     public class TwinpackServer
     {
-        public static string TwinpackUrl = "https://zeugwerk.dev";
-        public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
-        public static string DefaultUsername = "public";
-        public static string DefaultPassword = "public";
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
         private CachedHttpClient _client = new CachedHttpClient();
+
+        public string TwinpackUrl = "https://twinpack.dev";
+        public string RegisterUrl = "https://twinpack.dev/wp-login.php";
 
         public string Username { get; set; }
         public string Password { get; set; }
