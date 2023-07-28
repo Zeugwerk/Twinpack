@@ -18,15 +18,15 @@ using Task = System.Threading.Tasks.Task;
 
 namespace Twinpack
 {
-    [Target("VisualStudioOutput")]
-    public class VisualStudioOutput : AsyncTaskTarget
+    [Target("VsOutputWindowTarget")]
+    public class VsOutputWindowTarget : AsyncTaskTarget
     {
         private static Guid OutputPaneGuid = new Guid("E12CEAA1-6466-4841-8A69-9D4E96638CD8");
         private static IVsOutputWindowPane _outputPane;
 
-        public static void Activate()
+        public async Task ActivateAsync()
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             _outputPane?.Activate();
         }
 
@@ -40,7 +40,7 @@ namespace Twinpack
                 if (outputWindow != null)
                 {
                     // Create the custom output pane (if it doesn't exist) and get the pane object.
-                    int result = outputWindow.CreatePane(OutputPaneGuid, "Twinpack", 1, 1);
+                    int result = outputWindow.CreatePane(OutputPaneGuid, "Twinpack Package Manager", 1, 1);
                     if (result == VSConstants.S_OK)
                     {
                         outputWindow.GetPane(ref OutputPaneGuid, out _outputPane);
