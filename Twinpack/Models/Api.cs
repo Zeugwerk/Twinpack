@@ -323,6 +323,16 @@ namespace Twinpack.Models
         [JsonPropertyName("entitlements")]
         public List<string> Entitlements { get; set; }
         [JsonPropertyName("flags")]
-        public List<string> Flags { get; set; }       
-    }    
+        public List<string> Flags { get; set; }
+        [JsonPropertyName("update-version")]
+        public string UpdateVersion { get; set; }
+        [JsonPropertyName("update-url")]
+        public string UpdateUrl { get; set; }
+    }
+
+    public class NotificationsGetResponse : Response
+    {
+        [JsonPropertyName("latest-version")]
+        public string LatestVersion { get; set; }
+    }
 }
