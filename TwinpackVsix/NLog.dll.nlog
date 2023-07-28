@@ -25,7 +25,7 @@
 				  archiveNumbering="Rolling"/>
 		</target>
 
-		<target xsi:type="VsOutputWindowTarget" name="VsOutputWindowTarget" layout="${uppercase:${level:padding=6:fixedLength=true}} | ${date}| ${message}" />
+		<target xsi:type="VsOutputWindowTarget" name="VsOutputWindowTarget" layout="${uppercase:${level:padding=6:fixedLength=true}} | ${date} | ${message}" />
 	</targets>
 
 	<rules>

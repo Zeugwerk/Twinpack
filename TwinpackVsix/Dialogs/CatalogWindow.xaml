@@ -361,7 +361,7 @@
                                             <StackPanel Orientation="Horizontal">
                                               <TextBlock Margin="8 0 0 0">
                                                 <Run Text="{Binding Name}" FontWeight="DemiBold"/>
-                                                <Run Text="(v"/><Run Text="{Binding Version}"/><Run Text="),"/>
+                                                <Run Text="v"/><Run Text="{Binding Version}"/><Run Text=","/>
                                                 <Run Text="{Binding DistributorName}"/>
                                               </TextBlock>
                                             </StackPanel>

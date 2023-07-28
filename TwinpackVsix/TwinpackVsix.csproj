@@ -52,6 +52,7 @@
     <Compile Include="Commands\Command.cs" />
     <Compile Include="Commands\ICommand.cs" />
     <Compile Include="Commands\CatalogCommand.cs" />
+    <Compile Include="Commands\ModifyCommand.cs" />
     <Compile Include="Commands\PublishCommand.cs" />
     <Compile Include="Dialogs\Authentication.cs" />
     <Compile Include="Dialogs\Converters\BooleanToInverseBooleanConverter.cs" />
@@ -68,8 +69,8 @@
     <Compile Include="Dialogs\LicenseWindow.xaml.cs">
       <DependentUpon>LicenseWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Dialogs\PublishWindow.xaml.cs">
-      <DependentUpon>PublishWindow.xaml</DependentUpon>
+    <Compile Include="Dialogs\PackageVersionWindow.xaml.cs">
+      <DependentUpon>PackageVersionWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Logger\VsOutputWindowTarget.cs" />
     <Compile Include="Panels\CatalogPane.cs" />
@@ -185,7 +186,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Dialogs\PublishWindow.xaml">
+    <Page Include="Dialogs\PackageVersionWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
