@@ -184,7 +184,7 @@ namespace Twinpack.Models
 
         public static bool operator ==(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
         {
-            return lhs.Name == rhs.Name && lhs.Version == rhs.Version && lhs.Target == rhs.Target && lhs.Configuration == rhs.Configuration && lhs.Branch == rhs.Branch;
+            return lhs?.Name == rhs?.Name && lhs?.Version == rhs?.Version && lhs?.Target == rhs?.Target && lhs?.Configuration == rhs?.Configuration && lhs?.Branch == rhs?.Branch;
         }
 
         public static bool operator !=(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)

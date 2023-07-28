@@ -95,11 +95,14 @@ namespace Twinpack.Dialogs
                 catch (Exceptions.LoginException ex)
                 {
                     message = ex.Message;
+                    _logger.Trace(ex);
                     _logger.Error(ex.Message);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     message = "You have to login to the Twinpack server to publish packages.";
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
                 }
 
                 if(!_twinpackServer.LoggedIn)
@@ -203,6 +206,7 @@ namespace Twinpack.Dialogs
                     }
                     catch (Exception ex)
                     {
+                        _logger.Trace(ex);
                         _logger.Error(ex.Message);
                     }
                 }
@@ -248,6 +252,7 @@ namespace Twinpack.Dialogs
             catch(Exception ex)
             {
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
             finally
             {
@@ -527,6 +532,7 @@ namespace Twinpack.Dialogs
                 catch(Exception ex)
                 {
                     _logger.Trace(ex);
+                    _logger.Error(ex.Message);
                 }
             }
         }
@@ -568,8 +574,9 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
                 MessageBox.Show(ex.Message, "License", MessageBoxButton.OK, MessageBoxImage.Error);
-                _logger.Trace(ex.Message);
             }
         }
 
@@ -590,7 +597,8 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
-                _logger.Trace(ex.Message);
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
 
@@ -702,7 +710,7 @@ namespace Twinpack.Dialogs
                             _logger.Error($"{_plcConfig.Name} does not compile!");
                     }
 
-                    _logger.Info($"Saving and installing to {path}");
+                    _logger.Info($"Saving and installing library to {path}");
                     LoadingText = "Saving as library ...";
                     iec.SaveAsLibrary(path, false);
                 });
@@ -731,6 +739,7 @@ namespace Twinpack.Dialogs
                 }
                 catch (Exception ex)
                 {
+                    _logger.Trace(ex);
                     _logger.Error(ex.Message);
                 }
 

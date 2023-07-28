@@ -4,6 +4,7 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using NLog;
+using NLog.Config;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -33,6 +34,7 @@ namespace Twinpack
         }
 
         public IVsStatusbar Statusbar { get; set; }
+        public VsOutputWindowTarget Logger { get; set; }
 
         public async Task WriteStatusAsync(string message)
         {
@@ -40,8 +42,6 @@ namespace Twinpack
                 return;
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            VisualStudioOutput.Activate();
             Statusbar?.SetText(message);
         }
     }
@@ -72,7 +72,7 @@ namespace Twinpack
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class TwinpackPackage : AsyncPackage, IVsSolutionEvents
     {
-        private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+        private static Logger _logger;
 
         /// <summary>
         /// TwinpackPackage GUID string.
@@ -85,15 +85,8 @@ namespace Twinpack
 
         public TwinpackPackage() : base()
         {
-            // Inside this method you can place any initialization code that does not require
-            // any Visual Studio service because at this point the package object is created but
-            // not sited yet inside Visual Studio environment. The place to do all the other
-            // initialization is the Initialize method.
-            NLog.LogManager.Setup().SetupExtensions(s =>
-               s.RegisterTarget<VisualStudioOutput>("VisualStudioOutput")
-            );
-
-            _logger.Debug("Twinpack constructed");
+            LogManager.Setup().SetupExtensions(ext => ext.RegisterTarget<VsOutputWindowTarget>("VsOutputWindowTarget"));
+            _logger = LogManager.GetCurrentClassLogger();
         }
 
         /// <summary>
@@ -119,12 +112,18 @@ namespace Twinpack
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             // all context information, which is needed in all classes in the extension
-            Context = new PackageContext { Statusbar = (IVsStatusbar)GetGlobalService(typeof(SVsStatusbar)) };
+            Context = new PackageContext
+            {
+                Statusbar = (IVsStatusbar)GetGlobalService(typeof(SVsStatusbar)),
+                Logger = LogManager.Configuration.FindTargetByName<VsOutputWindowTarget>("VsOutputWindowTarget")
+            };
 
             if (await GetServiceAsync(typeof(SVsSolution)) is IVsSolution vssolution_)
                 vssolution_.AdviseSolutionEvents(this, out _solutionEventsCookie);
 
             InitPackage();
+
+            _logger.Info("Initialized Twinpack Package Manager");
         }
 
         private void InitPackage()
@@ -132,7 +131,6 @@ namespace Twinpack
             if (IsInitialized == true)
                 return;
 
-            _logger.Info("Initializing Twinpack");
             ThreadHelper.ThrowIfNotOnUIThread();
 
             if (Context == null)

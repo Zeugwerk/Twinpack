@@ -81,13 +81,13 @@ namespace Twinpack.Commands
                 if (_package.Context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
                     plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
 
-                _logger.Debug("Execute Command");
                 var publishWindow = new Dialogs.PublishWindow(_package.Context, plc);
                 publishWindow.ShowDialog();
             }
             catch(Exception ex)
             {
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
     }

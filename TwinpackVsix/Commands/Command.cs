@@ -48,14 +48,12 @@ namespace Twinpack.Commands
             {
                 _menuCommand.Visible = true;
                 _menuCommand.Enabled = true;
-                _logger.Trace("Command Item enabled");
             }
         }
         public void PackageReset()
         {
             _menuCommand.Visible = false;
             _menuCommand.Enabled = false;
-            _logger.Trace("Command Item disabled");
         }
     }
 }

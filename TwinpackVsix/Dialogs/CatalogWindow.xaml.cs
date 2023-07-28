@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -10,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
+using NLog;
 using TCatSysManagerLib;
 
 namespace Twinpack.Dialogs
@@ -322,6 +324,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
             finally
@@ -335,6 +338,7 @@ namespace Twinpack.Dialogs
 
                 cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrl);
                 cmbTwinpackServer.SelectedIndex = 0;
+
                 _isBrowsingAvailablePackages = true;
 
                 await LoadPlcConfigAsync();
@@ -343,6 +347,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
         }
@@ -404,6 +409,8 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = false;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _context?.Logger?.ActivateAsync();
+
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
                 await UninstallPackageAsync();
@@ -420,6 +427,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
             finally
@@ -434,6 +442,8 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = false;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _context?.Logger?.ActivateAsync();
+
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 await AddOrUpdatePackageAsync(PackageVersion);
                 Package = PackageVersion;
@@ -448,6 +458,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
             finally
@@ -467,6 +478,8 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = false;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _context?.Logger?.ActivateAsync();
+
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 IsUpdateAllEnabled = false;
                 var items = _installedPackages.Where(x => x.IsUpdateable);
@@ -490,6 +503,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
             finally
@@ -547,6 +561,7 @@ namespace Twinpack.Dialogs
         public async Task UninstallPackageAsync()
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await _context?.Logger?.ActivateAsync();
 
             IsPackageVersionPanelEnabled = false;
 
@@ -591,7 +606,7 @@ namespace Twinpack.Dialogs
                     var licenseDialog = new LicenseWindow(libManager, pv);
                     if (licenseDialog.ShowLicense() == false)
                     {
-                        _logger.Info($"License for {pv.Name} was declined");
+                        _logger.Warn($"License for {pv.Name} was declined");
                         return;
                     }
                 }
@@ -604,7 +619,7 @@ namespace Twinpack.Dialogs
                         var licenseWindow = new LicenseWindow(libManager, d);
                         if (licenseWindow.ShowLicense() == false)
                         {
-                            _logger.Info($"License for {pv.Name} was declined");
+                            _logger.Warn($"License for {pv.Name} was declined");
                             return;
                         }
                     }
@@ -612,7 +627,9 @@ namespace Twinpack.Dialogs
             }
 
             await _context.WriteStatusAsync($"Installing package {pv.Name} ...");
-            await TwinpackUtils.InstallReferenceAsync(libManager, pv, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
+
+            var downloadPackageVersion = await TwinpackUtils.DownloadPackageVersionAndDependenciesAsync(libManager, pv, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
+            await TwinpackUtils.InstallPackageVersionsAsync(libManager, downloadPackageVersion, cachePath: cachePath);
             await _context.WriteStatusAsync($"Adding package {pv.Name} to references ...");
             TwinpackUtils.AddReference(libManager, pv.Name, pv.Name, pv.Version, pv.DistributorName);
             IsNewReference = false;
@@ -638,7 +655,7 @@ namespace Twinpack.Dialogs
 
             if (config != null)
             {
-                _logger.Info($"Updating package configuration {config.FilePath}");
+                _logger.Info($"Updating package configuration {Path.GetFullPath(config.FilePath)}");
 
                 var projectIndex = config.Projects.FindIndex(x => x.Name == plcConfig.ProjectName);
                 if (projectIndex < 0)
@@ -675,6 +692,7 @@ namespace Twinpack.Dialogs
             catch (Exception ex)
             {
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
 
@@ -682,6 +700,9 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _context?.Logger?.ActivateAsync();
+
                 if (!_twinpackServer.LoggedIn)
                 {
                     await _auth.LoginAsync();
@@ -699,6 +720,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
             finally
@@ -713,7 +735,8 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
-                _logger.Error(ex);
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
 
@@ -736,6 +759,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
             finally
@@ -792,6 +816,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
             finally
@@ -881,6 +906,7 @@ namespace Twinpack.Dialogs
             catch (Exception ex)
             {
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
             finally
             {
@@ -965,7 +991,8 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
-                _logger.Trace(ex.Message);
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
             finally
             {
@@ -989,7 +1016,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                IsPackageLoading = PackageVersion == null;
+                IsPackageLoading = true;
 
                 if (sender as ComboBox != VersionsView)
                 {
@@ -1011,6 +1038,7 @@ namespace Twinpack.Dialogs
             catch (Exception ex)
             {
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
             finally
             {
@@ -1022,6 +1050,11 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _context.Logger = LogManager.Configuration.FindTargetByName<VsOutputWindowTarget>("VsOutputWindowTarget");
+
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _context?.Logger?.ActivateAsync();
+
                 IsPackageLoading = false;
                 Package = new Models.PackageGetResponse();
                 PackageVersion = new Models.PackageVersionGetResponse();
@@ -1035,6 +1068,7 @@ namespace Twinpack.Dialogs
             catch (Exception ex)
             {
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
 
@@ -1042,6 +1076,9 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _context?.Logger?.ActivateAsync();
+
                 var config = await Models.ConfigFactory.CreateFromSolutionAsync(_context.Solution, _twinpackServer);
                 if (config == null)
                 {
@@ -1096,6 +1133,7 @@ namespace Twinpack.Dialogs
             catch (Exception ex)
             {
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
 

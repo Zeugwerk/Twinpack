@@ -98,7 +98,7 @@ namespace Twinpack
             StringWriter stringWriter = new StringWriter();
             using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
             {
-                _logger.Info($"Updating plcproj file with Version={plcConfig.Version}, Company={plcConfig.DistributorName}");
+                _logger.Info($"Updating plcproj, setting Version={plcConfig.Version}, Company={plcConfig.DistributorName}");
                 writer.WriteStartElement("TreeItem");
                 writer.WriteStartElement("IECProjectDef");
                 writer.WriteStartElement("ProjectInfo");
@@ -132,12 +132,14 @@ namespace Twinpack
 
             return false;
         }
-            
-        static public async Task InstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null)
+
+        static public async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null)
         {
+            var downloadedPackageVersions = new List<PackageVersionGetResponse> { };
+
             // check if we find the package on the system
             bool referenceFound = false;
-            if(!forceDownload)
+            if (!forceDownload)
             {
                 foreach (ITcPlcLibrary r in libManager.ScanLibraries())
                 {
@@ -154,23 +156,30 @@ namespace Twinpack
                 }
             }
 
-
             if (!referenceFound || forceDownload)
             {
                 _logger.Info($"Downloading {packageVersion.Name}  (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName})");
 
-                packageVersion = await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId,
-                                    includeBinary: true, cachePath: cachePath);
-
-                _logger.Info($"Installing {packageVersion.Name}, {packageVersion.Version}, {packageVersion.DistributorName}");
-                var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true);
+                downloadedPackageVersions.Add(await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId,
+                                    includeBinary: true, cachePath: cachePath));
             }
 
-            foreach(var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
+            foreach (var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
             {
-                await InstallReferenceAsync(libManager, dependency, server, forceDownload, cachePath);
-            }            
+                downloadedPackageVersions.AddRange(await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, server, forceDownload, cachePath));
+            }
+
+            return downloadedPackageVersions;
+        }
+
+        static public async Task InstallPackageVersionsAsync(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null)
+        {
+            foreach(var packageVersion in packageVersions)
+            {
+                var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
+
+                await Task.Run( () => { libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true);  });
+            }
         }
 
         public static string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
@@ -223,7 +232,7 @@ namespace Twinpack
                 if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase) &&
                     string.Equals(itemDistributorName, distributorName, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    _logger.Info("Remove reference to {placeholderName} from PLC");
+                    _logger.Info($"Remove reference to {placeholderName} from PLC");
                     libManager.RemoveReference(placeholderName);
                 }
             }
@@ -234,7 +243,7 @@ namespace Twinpack
             distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
             RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
 
-            _logger.Info("Adding reference to {placeholderName}  (version: {version}, distributor: {distributorName}) to PLC");
+            _logger.Info($"Adding reference to {placeholderName}  (version: {version}, distributor: {distributorName}) to PLC");
             if (addAsPlaceholder)
                 libManager.AddPlaceholder(placeholderName, libraryName, version, distributorName);
             else

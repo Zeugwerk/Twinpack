@@ -34,14 +34,13 @@ namespace Twinpack
         {
             var config = ConfigFactory.Load();
 
-            _logger.Info($"Pulling packages required by {config.Solution} from Twinpack Server");
+            _logger.Info($"Pulling from Twinpack Server");
             var plcs = config.Projects.SelectMany(x => x.Plcs);
 
             foreach (var plc in plcs)
             {
                 foreach (var package in plc.Packages ?? new List<ConfigPlcPackage>())
                 {
-                    _logger.Info($"Downloading {package.Name} (version: {package.Version}, configuration: {configuration}, branch: {package.Branch}, target: {target})");
                     await GetPackageVersionAsync(package.Repository, package.Name, package.Version, configuration, branch, target, true, cachePath: cachePath);
                 }
             }
@@ -51,7 +50,8 @@ namespace Twinpack
         {
             var config = ConfigFactory.Load();
 
-            _logger.Info($"Pushing packages of {config.Solution} to Twinpack Server");
+            _logger.Info($"Pushing to Twinpack Server");
+
             var suffix = compiled ? "compiled-library" : "library";
             var plcs = config.Projects.SelectMany(x => x.Plcs)
                                          .Where(x => x.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary ||
@@ -78,6 +78,8 @@ namespace Twinpack
 
         public async Task<PackageVersionGetResponse> PostPackageVersionAsync(ConfigPlcProject plc, string configuration, string branch, string target, string notes, bool compiled, string cachePath = null)
         {
+            _logger.Info($"Uploading Package '{plc.Name}' (branch: {branch}, target: {target}, configuration: {configuration}, version: {plc.Version}");
+
             var suffix = compiled ? "compiled-library" : "library";
             string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
             string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
@@ -115,9 +117,8 @@ namespace Twinpack
             };      
 
             var requestBodyJson = JsonSerializer.Serialize(requestBody);
-            _logger.Debug($"Pushing {requestBody.Name} (branch: {requestBody.Branch}, target: {requestBody.Target}, configuration: {requestBody.Configuration}, version: {requestBody.Version}, dependencies: {requestBody.Dependencies.Count()})");
-
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
             request.Headers.Add("zgwk-username", Username);
             request.Headers.Add("zgwk-password", Password);
             request.Content = new StreamContent(
@@ -147,6 +148,7 @@ namespace Twinpack
             while (hasNextPage)
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
                 request.Headers.Add("zgwk-username", Username);
                 request.Headers.Add("zgwk-password", Password);
 
@@ -180,21 +182,18 @@ namespace Twinpack
 
         public async Task<IEnumerable<CatalogItemGetResponse>> GetCatalogAsync(string search, int page = 1, int perPage = 5)
         {
-            _logger.Info($"Retrieving package catalog of Twinpack Server");
             return await QueryWithPagination<CatalogItemGetResponse>($"twinpack.php?controller=catalog" +
                                                 $"&search={search}", page, perPage);
         }
 
         public async Task<IEnumerable<PackageVersionsItemGetResponse>> GetPackageVersionsAsync(int packageId, int page = 1, int perPage = 5)
         {
-            _logger.Info($"Retrieving package catalog of Twinpack Server");
             return await QueryWithPagination<PackageVersionsItemGetResponse>($"twinpack.php?controller=package-versions" +
                                             $"&id={packageId}", page, perPage);
         }
 
         public async Task<IEnumerable<PackageVersionsItemGetResponse>> GetPackageVersionsAsync(string repository, string name, int page = 1, int perPage = 5)
         {
-            _logger.Info($"Retrieving package catalog of Twinpack Server");
             return await QueryWithPagination<PackageVersionsItemGetResponse>($"twinpack.php?controller=package-versions" +
                                                         $"&repository={HttpUtility.UrlEncode(repository)}" +
                                                         $"&name={HttpUtility.UrlEncode(name)}", page, perPage);
@@ -202,10 +201,10 @@ namespace Twinpack
 
         public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library)
         {
-            _logger.Info($"Resolving package from Twinpack Server");
-
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-resolve" +
                 $"&distributor-name={library.DistributorName}&name={library.Name}&version={library.Version}"));
+
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             request.Headers.Add("zgwk-username", Username);
             request.Headers.Add("zgwk-password", Password);
@@ -223,10 +222,10 @@ namespace Twinpack
 
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(int packageVersionId, bool includeBinary, string cachePath = null)
         {
-            _logger.Info($"Retrieving package version from Twinpack Server");
-
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
                 $"&id={packageVersionId}&include-binary={(includeBinary ? 1 : 0)}"));
+
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             request.Headers.Add("zgwk-username", Username);
             request.Headers.Add("zgwk-password", Password);
@@ -252,7 +251,8 @@ namespace Twinpack
 
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string repository, string name, string version, string configuration, string branch, string target, bool includeBinary = false, string cachePath = null)
         {
-            _logger.Info($"Retrieving package version from Twinpack Server");
+            if(includeBinary)
+                _logger.Info($"Downloading Package '{name}' (version: {version}, configuration: {configuration}, branch: {branch}, target: {target})");
 
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
                 $"&repository={HttpUtility.UrlEncode(repository)}" +
@@ -262,6 +262,8 @@ namespace Twinpack
                 $"&branch={HttpUtility.UrlEncode(branch)}" +
                 $"&target={HttpUtility.UrlEncode(target)}" +
                 $"&include-binary={(includeBinary ? 1 : 0)}"));
+
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             request.Headers.Add("zgwk-username", Username);
             request.Headers.Add("zgwk-password", Password);
@@ -290,7 +292,7 @@ namespace Twinpack
                 $"&repository={HttpUtility.UrlEncode(repository)}" +
                 $"&name={HttpUtility.UrlEncode(packageName)}"));
 
-            _logger.Info($"Retrieving package from Twinpack Server");
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             request.Headers.Add("zgwk-username", Username);
             request.Headers.Add("zgwk-password", Password);
@@ -307,9 +309,9 @@ namespace Twinpack
 
         public async Task<PackageGetResponse> GetPackageAsync(int packageId)
         {
-            _logger.Info($"Retrieving package from Twinpack Server");
-
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package&id={packageId}"));
+
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             request.Headers.Add("zgwk-username", Username);
             request.Headers.Add("zgwk-password", Password);
@@ -326,9 +328,11 @@ namespace Twinpack
 
         public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package)
         {
+            _logger.Info("Updating package version");
             var requestBodyJson = JsonSerializer.Serialize(package);
 
             var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
             request.Headers.Add("zgwk-username", Username);
             request.Headers.Add("zgwk-password", Password);
             request.Content = new StreamContent(
@@ -346,9 +350,12 @@ namespace Twinpack
 
         public async Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package)
         {
+            _logger.Info("Updating general package");
             var requestBodyJson = JsonSerializer.Serialize(package);
 
             var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package"));
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
+
             request.Headers.Add("zgwk-username", Username);
             request.Headers.Add("zgwk-password", Password);
             request.Content = new StreamContent(
@@ -369,6 +376,8 @@ namespace Twinpack
             var credentials = CredentialManager.ReadCredential("TwinpackServer");
 
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=login"));
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
+
             request.Headers.Add("zgwk-username", username ?? credentials?.UserName);
             request.Headers.Add("zgwk-password", password ?? credentials?.Password);
 
@@ -388,10 +397,13 @@ namespace Twinpack
                 if(!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
                     CredentialManager.WriteCredential("TwinpackServer", Username, Password, CredentialPersistence.LocalMachine);
 
+                _logger.Info("Log in to Twinpack Server successful");
                 return UserInfo;
             }
             catch (Exception ex)
             {
+                _logger.Info("Log in to Twinpack Server failed");
+                _logger.Error(ex.Message);
                 UserInfo = new LoginPostResponse();
                 Username = "";
                 Password = "";
@@ -402,6 +414,8 @@ namespace Twinpack
 
         public void Logout()
         {
+            _logger.Info("Log out from Twinpack Server");
+
             UserInfo = new LoginPostResponse();
             Username = "";
             Password = "";
@@ -416,6 +430,7 @@ namespace Twinpack
 
         public void InvalidateCache()
         {
+            _logger.Info("Resetting cache");
             _client.Invalidate();
         }
     }
