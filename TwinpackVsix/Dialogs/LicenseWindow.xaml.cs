@@ -27,6 +27,7 @@ namespace Twinpack.Dialogs
         private Models.PackageVersionGetResponse _packageVersion;
         private ITcPlcLibraryManager _libraryManager;
         private string _licenseText;
+        private string _licenseTmcText;
         private Boolean _isInstalling;
 
         public Models.PackageVersionGetResponse PackageVersion
@@ -39,6 +40,9 @@ namespace Twinpack.Dialogs
 
                 if(_packageVersion?.LicenseBinary != null)
                     LicenseText = Encoding.ASCII.GetString(Convert.FromBase64String(_packageVersion?.LicenseBinary));
+
+                if (_packageVersion?.LicenseTmcBinary != null)
+                    LicenseTmcText = Encoding.ASCII.GetString(Convert.FromBase64String(_packageVersion?.LicenseTmcBinary));
             }
         }
 
@@ -52,6 +56,16 @@ namespace Twinpack.Dialogs
             }
         }
 
+        public bool HasLicenseText
+        {
+            get { return string.IsNullOrEmpty(_licenseText); }
+        }
+
+        public bool HasLicenseTmcText
+        {
+            get { return string.IsNullOrEmpty(_licenseText); }
+        }
+
         public string LicenseText
         {
             get { return _licenseText; }
@@ -59,6 +73,18 @@ namespace Twinpack.Dialogs
             {
                 _licenseText = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseText)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasLicenseText)));
+            }
+        }
+
+        public string LicenseTmcText
+        {
+            get { return _licenseTmcText; }
+            set
+            {
+                _licenseTmcText = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseTmcText)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasLicenseTmcText)));
             }
         }
 
@@ -74,10 +100,7 @@ namespace Twinpack.Dialogs
 
         public bool? ShowLicense()
         {
-            if (string.IsNullOrEmpty(_packageVersion?.LicenseBinary))
-                return true;
-
-            if (_libraryManager != null && TwinpackUtils.IsPackageInstalled(_libraryManager, _packageVersion))
+            if (string.IsNullOrEmpty(_packageVersion?.LicenseBinary) && string.IsNullOrEmpty(_packageVersion?.LicenseTmcBinary))
                 return true;
 
             return base.ShowDialog();
@@ -94,7 +117,6 @@ namespace Twinpack.Dialogs
             DialogResult = false;
             Close();
         }
-
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;

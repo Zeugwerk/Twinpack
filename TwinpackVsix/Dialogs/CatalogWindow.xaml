@@ -124,6 +124,7 @@
                                         <Run Text="{Binding Downloads}" FontWeight="SemiBold"/>
                                         <Run Text="downloads"/>
                                     </TextBlock>
+                                    <TextBlock Visibility="{Binding HasRuntimeLicense, Converter={StaticResource BooleanToVisibilityConverter}}">Runtime license</TextBlock>
                                 </StackPanel>
                                 <TextBlock Margin="8 0 0 0" Text="{Binding Name}" FontWeight="SemiBold"/>
                                 <TextBlock Margin="8 0 0 0" Text="{Binding Description}"/>
@@ -332,6 +333,14 @@
                                 <Button Click="ShowLicenseButton_Click" Margin="0 -1 0 0" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
                                         Content="{Binding License}" VerticalAlignment="Top"
                                         IsEnabled="{Binding HasLicenseBinary}"
+                                        Visibility="{Binding HasLicense, Converter={StaticResource BooleanToVisibilityConverter}}"  />
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                                <TextBlock Text="Runtime License: " FontWeight="SemiBold"></TextBlock>
+                                <Button Click="ShowLicenseTmcButton_Click" Margin="0 -1 0 0" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
+                                        Content="Show " VerticalAlignment="Top"
+                                        IsEnabled="{Binding HasLicenseTmcBinary}"
                                         Visibility="{Binding HasLicense, Converter={StaticResource BooleanToVisibilityConverter}}"  />
                             </StackPanel>
 

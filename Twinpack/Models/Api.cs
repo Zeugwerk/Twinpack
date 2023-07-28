@@ -71,7 +71,7 @@ namespace Twinpack.Models
         [JsonPropertyName("icon-url")]
         public string IconUrl { get; set; }
         [JsonPropertyName("runtime-license")]
-        public bool RuntimeLicense { get; set; }
+        public int RuntimeLicense { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
         [JsonPropertyName("versions")]
@@ -89,7 +89,10 @@ namespace Twinpack.Models
         [JsonPropertyName("entitlement")]
         public string Entitlement { get; set; }
         [JsonPropertyName("branches")]
-        public List<string> Branches { get; set; }        
+        public List<string> Branches { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool HasRuntimeLicense { get { return RuntimeLicense > 0; } }
     }
 
     public class PackageVersionsItemGetResponse : Response
@@ -155,6 +158,8 @@ namespace Twinpack.Models
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasLicense { get { return !string.IsNullOrEmpty(License); } }
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool HasLicenseTmcBinary { get { return !string.IsNullOrEmpty(LicenseTmcBinary); } }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasLicenseBinary { get { return !string.IsNullOrEmpty(LicenseBinary); } }

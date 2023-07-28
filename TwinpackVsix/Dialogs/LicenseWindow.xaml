@@ -28,7 +28,14 @@
             </TextBlock>
         </StackPanel>
         <ScrollViewer Grid.Row="1">
-            <TextBox IsReadOnly="True" Text="{Binding LicenseText}" TextWrapping="Wrap" FontSize="12"/>
+            <Grid VerticalAlignment="Stretch">
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <TextBox Grid.Row="1" IsReadOnly="True" Text="{Binding LicenseText}" Visibility="{Binding HasLicenseText, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" FontSize="12"/>
+                <TextBox Grid.Row="1" IsReadOnly="True" Text="{Binding LicenseTmcText}" Visibility="{Binding HasLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" FontSize="12"/>
+            </Grid>
         </ScrollViewer>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button Content="Accept" Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="DeclineButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,10" />
