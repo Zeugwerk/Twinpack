@@ -1,9 +1,9 @@
-﻿<Window x:Class="Twinpack.Dialogs.PublishWindow"
+﻿<Window x:Class="Twinpack.Dialogs.PackageVersionWindow"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:Twinpack.Dialogs" d:DataContext="{d:DesignInstance Type=local:PublishWindow}"
+             xmlns:local="clr-namespace:Twinpack.Dialogs" d:DataContext="{d:DesignInstance Type=local:PackageVersionWindow}"
              mc:Ignorable="d"
              ResizeMode="NoResize"
              WindowStartupLocation="CenterScreen"
@@ -109,7 +109,9 @@
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Vertical" Width="150" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
                 <Label Content="Version:" HorizontalAlignment="Left" Margin="0"/>
-                <TextBox Text="{Binding Version}" Margin="0" VerticalAlignment="Top" TextChanged="VersionTextBox_TextChanged"/>
+                <TextBox Text="{Binding Version}" Margin="0" VerticalAlignment="Top" 
+                         IsReadOnly="{Binding IsPublishMode, Converter={StaticResource BooleanToInverseBooleanConverter}}"
+                         TextChanged="VersionTextBox_TextChanged"/>
 
                 <TextBlock Margin="0" VerticalAlignment="Top" TextWrapping="Wrap" Visibility="{Binding IsVersionWrongFormat, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Run FontWeight="DemiBold" Foreground="#da776d" Text="Expecting a valid version format (i.e. 1.0.0.0)."></Run>
@@ -158,7 +160,7 @@
                         <StackPanel Orientation="Horizontal">
                                 <TextBlock Margin="8 0 0 0">
                             <Run Text="{Binding Name}" FontWeight="DemiBold"/>
-                            <Run Text="(v"/><Run Text="{Binding Version}"/><Run Text="),"/>
+                            <Run Text="v"/><Run Text="{Binding Version}"/><Run Text=","/>
                             <Run Text="{Binding DistributorName}"/>
                           </TextBlock>
                         </StackPanel>
@@ -170,12 +172,14 @@
 
         <!-- Publish Button -->
         <StackPanel Grid.Row="4" Grid.ColumnSpan="4" HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Bottom">
-            <Button HorizontalAlignment="Right" Content="Publish new version" Margin="5" Click="Publish_Click" 
+            <Button HorizontalAlignment="Right" Content="Publish" Margin="5" Click="Publish_Click" 
+                    Width="80"
                     IsEnabled="{Binding IsNewPackageVersion}"
-                    Visibility="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
-            <Button HorizontalAlignment="Right" Content="Edit Package" Margin="5" Click="Apply_Click" 
+                    Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <Button HorizontalAlignment="Right" Content="Modify" Margin="5" Click="Apply_Click" 
+                    Width="80"
                     IsEnabled="{Binding IsNewPackageVersion, Converter={StaticResource BooleanToInverseBooleanConverter}}"
-                    Visibility="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
+                    Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
             <Button HorizontalAlignment="Right" Content="Close" Width="80" Margin="5" Click="Close_Click"/>
         </StackPanel>
 

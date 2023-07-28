@@ -21,7 +21,7 @@ using System.Text.RegularExpressions;
 
 namespace Twinpack.Dialogs
 {
-    public partial class PublishWindow : Window, INotifyPropertyChanged
+    public partial class PackageVersionWindow : Window, INotifyPropertyChanged
     {
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -33,6 +33,7 @@ namespace Twinpack.Dialogs
         private bool _isLoading;
         private string _loadingText;
 
+        private bool _isPublishMode;
         private bool _isLicenseFileSelectable;
         private bool _isGeneralDataReadOnly;
         private bool _isVersionWrongFormat;
@@ -52,13 +53,14 @@ namespace Twinpack.Dialogs
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public PublishWindow(PackageContext context, EnvDTE.Project plc = null, int? packageId = null, int? packageVersionId = null, string username = "", string password = "")
+        public PackageVersionWindow(bool publishMode, PackageContext context, EnvDTE.Project plc = null, int? packageId = null, int? packageVersionId = null, string username = "", string password = "")
         {
             _auth = new Authentication(_twinpackServer);
             _context = context;
             _plc = plc;
             DataContext = this;
 
+            IsPublishMode = publishMode;
             IsNewPackage = packageId == null;
             IsGeneralDataReadOnly = false;
 
@@ -243,6 +245,13 @@ namespace Twinpack.Dialogs
                     Version = x.Version
                 }) ?? new List<Models.PackageVersionGetResponse>();
 
+                // increment the version number right away
+                if(!IsNewPackage && IsPublishMode)
+                {
+                    var v = new Version(Version);
+                    Version = new Version(v.Major, v.Minor, v.Build, v.Revision+1).ToString();
+                }
+
                 IsConfigured = _plcConfig != null && _plcConfig.Name == _package.Name && _plcConfig.DistributorName == _package.DistributorName && _package.Repository == _twinpackServer.Username;
                 IsNewPackage = _package.PackageId == null;
                 if (IsNewPackage)
@@ -258,6 +267,16 @@ namespace Twinpack.Dialogs
             {
                 IsEnabled = true;
                 IsLoading = false;
+            }
+        }
+
+        public bool IsPublishMode
+        {
+            get { return _isPublishMode; }
+            set
+            {
+                _isPublishMode = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPublishMode)));
             }
         }
 
@@ -727,7 +746,10 @@ namespace Twinpack.Dialogs
 
                     IsNewPackage = false;
                     IsNewPackageVersion = false;
+                    IsPublishMode = false;
                     LatestVersion = _packageVersion.Version;
+
+                    _twinpackServer.InvalidateCache();
                 }
                 catch (Exceptions.LoginException ex)
                 {

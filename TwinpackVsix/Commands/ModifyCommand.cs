@@ -16,12 +16,12 @@ namespace Twinpack.Commands
     /// <summary>
     /// Command handler
     /// </summary>
-    internal sealed class PublishCommand : Command, ICommand
+    internal sealed class ModifyCommand : Command, ICommand
     {
         /// <summary>
         /// Command ID.
         /// </summary>
-        public const int CommandId = 261;
+        public const int CommandId = 262;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BackuppanelCommand"/> class.
@@ -29,7 +29,7 @@ namespace Twinpack.Commands
         /// </summary>
         /// <param name="package">Owner package, not null.</param>
         /// <param name="commandService">Command service to add command to, not null.</param>
-        private PublishCommand(TwinpackPackage package, OleMenuCommandService commandService)
+        private ModifyCommand(TwinpackPackage package, OleMenuCommandService commandService)
           : base(package)
         {
             var menuCommandID = new CommandID(CommandSet, CommandId);
@@ -46,7 +46,7 @@ namespace Twinpack.Commands
         /// <summary>
         /// Gets the instance of the command.
         /// </summary>
-        public static PublishCommand Instance
+        public static ModifyCommand Instance
         {
             get;
             private set;
@@ -63,7 +63,7 @@ namespace Twinpack.Commands
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
 
             OleMenuCommandService commandService = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
-            Instance = new PublishCommand(package, commandService);
+            Instance = new ModifyCommand(package, commandService);
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace Twinpack.Commands
                 if (_package.Context.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
                     plc = activeSolutionProjects.GetValue(0) as EnvDTE.Project;
 
-                var publishWindow = new Dialogs.PackageVersionWindow(true, _package.Context, plc);
+                var publishWindow = new Dialogs.PackageVersionWindow(false, _package.Context, plc);
                 publishWindow.ShowDialog();
             }
             catch(Exception ex)

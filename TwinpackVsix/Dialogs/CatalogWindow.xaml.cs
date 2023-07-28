@@ -394,7 +394,7 @@ namespace Twinpack.Dialogs
                 return;
 
             var packageVersionId = (VersionsView.SelectedItem as Models.PackageVersionsItemGetResponse)?.PackageVersionId;
-            var packagePublish = new PublishWindow(_context, _plc, packageId, packageVersionId);
+            var packagePublish = new PackageVersionWindow(false, _context, _plc, packageId, packageVersionId);
             packagePublish.ShowDialog();
 
             _twinpackServer.InvalidateCache();
@@ -424,9 +424,13 @@ namespace Twinpack.Dialogs
                 await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 await LoadInstalledPackagesAsync();
                 await _context.WriteStatusAsync($"Successfully removed {PackageVersion.Name} from {_plc.Name} references");
+                _logger.Info("Finished\n");
+
             }
             catch (Exception ex)
             {
+                _logger.Info("Failed\n");
+
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
@@ -455,9 +459,13 @@ namespace Twinpack.Dialogs
                 await LoadInstalledPackagesAsync();
                 await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 await _context.WriteStatusAsync($"Successfully added {PackageVersion.Name} to {_plc.Name} references");
+                _logger.Info("Finished\n");
+
             }
             catch (Exception ex)
             {
+                _logger.Info("Failed\n");
+
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
@@ -500,11 +508,14 @@ namespace Twinpack.Dialogs
                 await LoadInstalledPackagesAsync();
                 await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 await _context.WriteStatusAsync($"Successfully updated {items.Count()} references to their latest version");
+
+                _logger.Info("Finished\n");
             }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
+                _logger.Info("Failed\n");
             }
             finally
             {

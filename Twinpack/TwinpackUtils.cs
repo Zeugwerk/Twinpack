@@ -152,13 +152,13 @@ namespace Twinpack
 
                 if (referenceFound)
                 {
-                    _logger.Info($"The package {packageVersion.Name}  (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}) already exists on the system");
+                    _logger.Info($"Skipping download for {packageVersion.Name} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}), it already exists on the system");
                 }
             }
 
             if (!referenceFound || forceDownload)
             {
-                _logger.Info($"Downloading {packageVersion.Name}  (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName})");
+                _logger.Info($"Downloading {packageVersion.Name} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName})");
 
                 downloadedPackageVersions.Add(await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId,
                                     includeBinary: true, cachePath: cachePath));
@@ -205,6 +205,7 @@ namespace Twinpack
             {
                 string itemPlaceholderName;
                 string itemDistributorName;
+                string itemVersion;
 
                 try
                 {
@@ -219,12 +220,14 @@ namespace Twinpack
                     else
                         plcLibrary = plcPlaceholder.DefaultResolution;
 
+                    itemVersion = plcLibrary.Version;
                     itemDistributorName = plcLibrary.Distributor;
                 }
                 catch
                 {
                     ITcPlcLibrary plcLibrary;
                     plcLibrary = (ITcPlcLibrary)item;
+                    itemVersion = "Unknown";
                     itemPlaceholderName = plcLibrary.Name.Split(',')[0];
                     itemDistributorName = plcLibrary.Distributor;
                 }
@@ -232,7 +235,7 @@ namespace Twinpack
                 if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase) &&
                     string.Equals(itemDistributorName, distributorName, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    _logger.Info($"Remove reference to {placeholderName} from PLC");
+                    _logger.Info($"Remove reference to {placeholderName} (version: {itemVersion}, distributor: {itemDistributorName})");
                     libManager.RemoveReference(placeholderName);
                 }
             }
@@ -243,7 +246,7 @@ namespace Twinpack
             distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
             RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
 
-            _logger.Info($"Adding reference to {placeholderName}  (version: {version}, distributor: {distributorName}) to PLC");
+            _logger.Info($"Adding reference to {placeholderName} (version: {version}, distributor: {distributorName})");
             if (addAsPlaceholder)
                 libManager.AddPlaceholder(placeholderName, libraryName, version, distributorName);
             else

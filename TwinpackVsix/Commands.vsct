@@ -23,7 +23,7 @@
 				<CommandFlag>DefaultInvisible</CommandFlag>
 				<CommandFlag>DynamicVisibility</CommandFlag>
 				<Strings>
-					<CommandName>UploadCommand</CommandName>
+					<CommandName>CatalogCommand</CommandName>
 					<ButtonText>Twinpack Catalog...</ButtonText>
 				</Strings>
 			</Button>
@@ -35,10 +35,22 @@
 				<CommandFlag>DefaultInvisible</CommandFlag>
 				<CommandFlag>DynamicVisibility</CommandFlag>
 				<Strings>
-					<CommandName>UploadCommand</CommandName>
+					<CommandName>PublishCommand</CommandName>
 					<ButtonText>Publish with Twinpack...</ButtonText>
 				</Strings>
 			</Button>
+
+			<Button guid="guidTwinpackCmdSet" id="cmdidModify" priority="0x0102" type="Button">
+				<Parent guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectMenu" />
+				<Icon guid="ImageCatalogGuid" id="UpdateDatabase" />
+				<CommandFlag>IconIsMoniker</CommandFlag>
+				<CommandFlag>DefaultInvisible</CommandFlag>
+				<CommandFlag>DynamicVisibility</CommandFlag>
+				<Strings>
+					<CommandName>ModifyCommand</CommandName>
+					<ButtonText>Modify with Twinpack...</ButtonText>
+				</Strings>
+			</Button>			
 		</Buttons>
 	</Commands>
 
@@ -50,6 +62,7 @@
 			
 			<IDSymbol value="260" name="cmdidCatalog" />
 			<IDSymbol value="261" name="cmdidPublish" />
+			<IDSymbol value="262" name="cmdidModify" />
 		</GuidSymbol>
 
 		<!-- Guids from TwinCAT extensions -->

@@ -443,7 +443,7 @@ namespace Twinpack
 
         public void InvalidateCache()
         {
-            _logger.Info("Resetting cache");
+            _logger.Info("Resetting Twinpack Cache");
             _client.Invalidate();
         }
     }
