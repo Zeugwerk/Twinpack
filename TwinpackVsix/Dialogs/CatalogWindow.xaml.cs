@@ -707,6 +707,20 @@ namespace Twinpack.Dialogs
             }
         }
 
+        public void ShowLicenseTmcButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var licenseDialog = new LicenseWindow(null, PackageVersion);
+                licenseDialog.ShowLicense();
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
+        }
+
         public async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             try

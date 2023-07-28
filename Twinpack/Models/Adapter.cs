@@ -33,6 +33,7 @@ namespace Twinpack.Models
             Name = packageVersion.Name;
             DisplayName = packageVersion.DisplayName;
             DistributorName = packageVersion.DistributorName;
+            RuntimeLicense = packageVersion.LicenseTmcBinary != null ? 1 : 0;
         }
 
         public CatalogItem(ConfigPlcPackage package)
