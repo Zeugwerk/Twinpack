@@ -110,18 +110,19 @@
             <StackPanel Orientation="Vertical" Width="150" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
                 <Label Content="Version:" HorizontalAlignment="Left" Margin="0"/>
                 <TextBox Text="{Binding Version}" Margin="0" VerticalAlignment="Top" 
-                         IsReadOnly="{Binding IsPublishMode, Converter={StaticResource BooleanToInverseBooleanConverter}}"
+                         Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}}"
                          TextChanged="VersionTextBox_TextChanged"/>
+
+                <TextBlock Text="{Binding Version}" Margin="0" VerticalAlignment="Top" 
+                         Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
 
                 <TextBlock Margin="0" VerticalAlignment="Top" TextWrapping="Wrap" Visibility="{Binding IsVersionWrongFormat, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Run FontWeight="DemiBold" Foreground="#da776d" Text="Expecting a valid version format (i.e. 1.0.0.0)."></Run>
                 </TextBlock>
 
                 <TextBlock Margin="0" VerticalAlignment="Top" TextWrapping="Wrap" Visibility="{Binding IsVersionWrongFormat, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
-                    <Run Text="The latest version of this package is"></Run>
+                    <Run Text="The latest release of this package is"></Run>
                     <Run Text="{Binding LatestVersion}" FontWeight="DemiBold"></Run>
-                    <LineBreak></LineBreak>
-                    <Run Text="You can edit general information of the package and publish new versions."></Run>
                 </TextBlock>
             </StackPanel>
 

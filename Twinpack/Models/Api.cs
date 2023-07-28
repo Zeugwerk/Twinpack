@@ -69,7 +69,9 @@ namespace Twinpack.Models
         [JsonPropertyName("description")]
         public string Description { get; set; }
         [JsonPropertyName("icon-url")]
-        public string IconUrl { get; set; }    
+        public string IconUrl { get; set; }
+        [JsonPropertyName("runtime-license")]
+        public bool RuntimeLicense { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
         [JsonPropertyName("versions")]
@@ -146,6 +148,8 @@ namespace Twinpack.Models
         public string Authors { get; set; }
         [JsonPropertyName("license")]
         public string License { get; set; }
+        [JsonPropertyName("license-tmc-binary")]
+        public string LicenseTmcBinary { get; set; }
         [JsonPropertyName("license-binary")]
         public string LicenseBinary { get; set; }
 
@@ -218,6 +222,8 @@ namespace Twinpack.Models
         public string Authors { get; set; }        
         [JsonPropertyName("license")]
         public string License { get; set; }
+        [JsonPropertyName("license-tmc-binary")]
+        public string LicenseTmcBinary { get; set; }
         [JsonPropertyName("license-binary")]
         public string LicenseBinary { get; set; }
     }
@@ -281,7 +287,9 @@ namespace Twinpack.Models
         [JsonPropertyName("distributor-name")]
         public string DistributorName { get; set; }
         [JsonPropertyName("icon-filename")]
-        public string IconFilename { get; set; }        
+        public string IconFilename { get; set; }
+        [JsonPropertyName("license-tmc-binary")]
+        public string LicenseTmcBinary { get; set; }
         [JsonPropertyName("license-binary")]
         public string LicenseBinary { get; set; }
         [JsonPropertyName("icon-binary")]
