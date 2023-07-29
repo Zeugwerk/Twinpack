@@ -19,19 +19,21 @@
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="auto"></RowDefinition>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Vertical" Margin="5" DataContext="{Binding PackageVersion}">
-            <StackPanel Orientation="Horizontal">
-                <fa:ImageAwesome Margin="0 0 0 0" Icon="IdCard" Height="16" />
-                <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" d:Text="Zeugwerk Core" FontSize="20" Margin="5 0 0 0" FontWeight="SemiBold"></TextBlock>
-            </StackPanel>
-            <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10">
+        <StackPanel Orientation="Vertical" Margin="5">
+            <StackPanel DataContext="{Binding PackageVersion}">
+                <StackPanel Orientation="Horizontal">
+                    <fa:ImageAwesome Margin="0 0 0 0" Icon="IdCard" Height="16" />
+                    <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" d:Text="Zeugwerk Core" FontSize="20" Margin="5 0 0 0" FontWeight="SemiBold"></TextBlock>
+                </StackPanel>
+                <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10">
                             <Run Text="distributed by"/>
                             <Run Text="{Binding DistributorName}" d:Text="Zeugwerk GmbH"/>
-            </TextBlock>
+                </TextBlock>
+            </StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
                 <Button  Grid.Column="2" Click="LicenseAgreementButton_Click" VerticalAlignment="Center" 
-                         Visibility="{Binding HasLicenseText, Converter={StaticResource BooleanToVisibilityConverter}}"
+                         IsEnabled="{Binding HasLicenseText}"
                          Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8">
                     <StackPanel Orientation="Horizontal">
                         <fa:FontAwesome Margin="2 0 0 0" Icon="File" Height="12"/>
@@ -39,7 +41,7 @@
                     </StackPanel>
                 </Button>
                 <Button Margin="10 0 0 0" Grid.Column="2" Click="RuntimeLicenseButton_Click" VerticalAlignment="Center"
-                        Visibility="{Binding HasLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        IsEnabled="{Binding HasLicenseTmcText}"
                         Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8">
                     <StackPanel Orientation="Horizontal">
                         <fa:FontAwesome Margin="2 0 0 0" Icon="DriversLicense" Height="12"/>
@@ -47,7 +49,6 @@
                     </StackPanel>
                 </Button>                
             </StackPanel>
-            
         </StackPanel>
 
         <Grid Grid.Row="1" VerticalAlignment="Stretch">
