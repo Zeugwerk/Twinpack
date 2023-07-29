@@ -53,6 +53,8 @@ namespace Twinpack.Models
         public string InstalledTarget { get; set; }
         public string InstalledConfiguration { get; set; }
         public PackageVersionGetResponse Update { get; set; }
+        public PackageVersionGetResponse Installed { get; set; }
+
         public bool IsUpdateable { get { return InstalledVersion != null && Update?.Version != null && new Version(InstalledVersion) < new Version(Update?.Version); } }
         public string UpdateVersion { get { return Update?.Version; } }
     }

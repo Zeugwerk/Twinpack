@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,6 +33,7 @@ namespace Twinpack.Dialogs
         private IEnumerable<Models.CatalogItem> _catalog = new List<Models.CatalogItem>();
         private List<Models.CatalogItem> _availablePackages = new List<Models.CatalogItem>();
         private List<Models.CatalogItem> _installedPackages = new List<Models.CatalogItem>();
+        private SemaphoreSlim _semaphorePackages = new SemaphoreSlim(1, 1);
         private List<Models.PackageVersionsItemGetResponse> _packageVersions;
 
         public ObservableCollection<Models.PackageVersionsItemGetResponse> Targets { get; set; }
@@ -68,7 +70,9 @@ namespace Twinpack.Dialogs
         private bool _isConfigured;
         private bool _isCreateConfigVisible;
         private bool _isUpdateAllVisible;
+        private bool _isRestoreAllVisible;
         private bool _isUpdateAllEnabled;
+        private bool _isRestoreAllEnabled;
 
         private bool _isPackageVersionPanelEnabled;
         private string _installedPackageVersion;
@@ -216,6 +220,16 @@ namespace Twinpack.Dialogs
             }
         }
 
+        public bool IsRestoreAllVisible
+        {
+            get { return _isRestoreAllVisible; }
+            set
+            {
+                _isRestoreAllVisible = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRestoreAllVisible)));
+            }
+        }
+
         public bool IsUpdateAllEnabled
         {
             get { return _isUpdateAllEnabled; }
@@ -223,6 +237,16 @@ namespace Twinpack.Dialogs
             {
                 _isUpdateAllEnabled = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsUpdateAllEnabled)));
+            }
+        }
+
+        public bool IsRestoreAllEnabled
+        {
+            get { return _isRestoreAllEnabled; }
+            set
+            {
+                _isRestoreAllEnabled = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRestoreAllEnabled)));
             }
         }
 
@@ -424,8 +448,8 @@ namespace Twinpack.Dialogs
                 // update config
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 var config = await WritePlcConfigToConfigAsync(_plcConfig);
-                await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 await LoadInstalledPackagesAsync();
+                await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 await _context.WriteStatusAsync($"Successfully removed {PackageVersion.Name} from {_plc.Name} references");
                 _logger.Info("Finished\n");
 
@@ -483,17 +507,80 @@ namespace Twinpack.Dialogs
             AddPackageButton_Click(sender, e);
         }
 
-        public async void UpdateAllPackageButton_Click(object sender, RoutedEventArgs e)
+        public async void RestoreAllPackageButton_Click(object sender, RoutedEventArgs e)
         {
+            IEnumerable<Models.CatalogItem> items = new List<Models.CatalogItem>();
             try
             {
+                IsRestoreAllEnabled = false;
                 IsPackageVersionPanelEnabled = false;
+
+                await _semaphorePackages.WaitAsync();
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 await _context?.Logger?.ActivateAsync();
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
+                items = _installedPackages;
+                foreach (var item in items)
+                {
+                    await AddOrUpdatePackageAsync(item.Installed, showLicenseDialog: false);
+                    if (item.PackageId == PackageVersion.PackageId)
+                    {
+                        Package = item.Installed;
+                        PackageVersion = item.Installed;
+                        InstalledPackageVersion = PackageVersion.Version;
+                    }
+                }
+
+                _context.Dte.ExecuteCommand("File.SaveAll");
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                _logger.Info("Failed\n");
+            }
+            finally
+            {
+                _semaphorePackages.Release();
+            }
+
+            try
+            {
+                var config = await WritePlcConfigToConfigAsync(_plcConfig);
+                await LoadInstalledPackagesAsync();
+                await LoadAvailablePackagesAsync(SearchTextBox.Text);
+                await _context.WriteStatusAsync($"Successfully restored {items?.Count()} references");
+
+                _logger.Info("Finished\n");
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                _logger.Info("Failed\n");
+            }
+            finally
+            {
+                IsPackageVersionPanelEnabled = true;
+                IsRestoreAllEnabled = true;
+            }
+        }
+
+        public async void UpdateAllPackageButton_Click(object sender, RoutedEventArgs e)
+        {
+            IEnumerable<Models.CatalogItem> items = new List<Models.CatalogItem>();
+            try
+            {
+                IsPackageVersionPanelEnabled = false;
                 IsUpdateAllEnabled = false;
-                var items = _installedPackages.Where(x => x.IsUpdateable);
+
+                await _semaphorePackages.WaitAsync();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _context?.Logger?.ActivateAsync();
+
+                _context.Dte.ExecuteCommand("File.SaveAll");
+                items = _installedPackages.Where(x => x.IsUpdateable);
                 foreach (var item in items)
                 {
                     await AddOrUpdatePackageAsync(item.Update, showLicenseDialog: false);
@@ -506,11 +593,24 @@ namespace Twinpack.Dialogs
                 }
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                _logger.Info("Failed\n");
+            }
+            finally
+            {
+                _semaphorePackages.Release();
+            }
 
+            try
+            { 
                 var config = await WritePlcConfigToConfigAsync(_plcConfig);
                 await LoadInstalledPackagesAsync();
                 await LoadAvailablePackagesAsync(SearchTextBox.Text);
-                await _context.WriteStatusAsync($"Successfully updated {items.Count()} references to their latest version");
+                await _context.WriteStatusAsync($"Successfully updated {items?.Count()} references to their latest version");
 
                 _logger.Info("Finished\n");
             }
@@ -570,6 +670,8 @@ namespace Twinpack.Dialogs
             }
 
             IsUpdateAllVisible = _isBrowsingUpdatablePackages && Catalog.Any();
+            IsRestoreAllVisible = _isBrowsingInstalledPackages && Catalog.Any();
+
         }
 
         public async Task UninstallPackageAsync()
@@ -865,6 +967,7 @@ namespace Twinpack.Dialogs
 
             try
             {
+                await _semaphorePackages.WaitAsync();
                 IsFetchingAvailablePackages = true;
 
                 if (reset)
@@ -878,13 +981,16 @@ namespace Twinpack.Dialogs
                 }
                 foreach (var item in results)
                 {
-                    
-                    var installedPackage = _installedPackages.FirstOrDefault(x => x.PackageId == item.PackageId);
-                    var catalogItem = installedPackage == null ? new Models.CatalogItem(item) : new Models.CatalogItem(installedPackage.Update);
 
-                    if (installedPackage != null) {
+                    var installedPackage = _installedPackages.FirstOrDefault(x => x.PackageId == item.PackageId);
+                    var catalogItem = installedPackage == null ? new Models.CatalogItem(item) : new Models.CatalogItem(installedPackage.Installed);
+
+                    if (installedPackage != null)
+                    {
                         catalogItem.InstalledVersion = installedPackage.InstalledVersion;
                         catalogItem.Update = installedPackage.Update;
+                        catalogItem.Installed = installedPackage.Installed;
+
                     }
 
                     _availablePackages.Add(catalogItem);
@@ -900,6 +1006,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
+                _semaphorePackages.Release();
                 IsFetchingAvailablePackages = false;
             }
 
@@ -914,6 +1021,7 @@ namespace Twinpack.Dialogs
             {
                 IsFetchingInstalledPackages = true;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _semaphorePackages.WaitAsync();
 
                 if (_plcConfig != null)
                 {
@@ -928,6 +1036,8 @@ namespace Twinpack.Dialogs
                             catalogItem = new Models.CatalogItem(packageVersion);
                             catalogItem.InstalledVersion = item.Version;
                             catalogItem.Update = packageVersion;
+                            catalogItem.Installed = new Models.PackageVersionGetResponse(packageVersion);
+                            catalogItem.Installed.Version = item.Version;
                         }
 
                         var availablePackage = _availablePackages.FirstOrDefault(x => x.PackageId == packageVersion.PackageId);
@@ -953,6 +1063,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
+                _semaphorePackages.Release();
                 IsFetchingInstalledPackages = false;
             }
         }
@@ -989,6 +1100,8 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                await _semaphorePackages.WaitAsync();
+
                 var item = (sender as ListView).SelectedItem as Models.CatalogItemGetResponse;
                 if (item == null)
                     return;
@@ -1043,6 +1156,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
+                _semaphorePackages.Release();
                 IsPackageLoading = false;
             }
         }
@@ -1063,7 +1177,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                IsPackageLoading = true;
+                IsPackageLoading = Package.PackageId != PackageVersion.PackageId;
 
                 if (sender as ComboBox != VersionsView)
                 {
