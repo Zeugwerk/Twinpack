@@ -307,6 +307,8 @@ namespace Twinpack.Dialogs
 
             _isBrowsingAvailablePackages = true;
 
+            IsUpdateAllEnabled = true;
+            IsRestoreAllEnabled = true;
             InstalledPackagesCount = 0;
             UpdateablePackagesCount = 0;
             Catalog = new List<Models.CatalogItem>();
