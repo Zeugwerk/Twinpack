@@ -878,7 +878,15 @@ namespace Twinpack.Dialogs
                 }
                 foreach (var item in results)
                 {
-                    var catalogItem = new Models.CatalogItem(item);
+                    
+                    var installedPackage = _installedPackages.FirstOrDefault(x => x.PackageId == item.PackageId);
+                    var catalogItem = installedPackage == null ? new Models.CatalogItem(item) : new Models.CatalogItem(installedPackage.Update);
+
+                    if (installedPackage != null) {
+                        catalogItem.InstalledVersion = installedPackage.InstalledVersion;
+                        catalogItem.Update = installedPackage.Update;
+                    }
+
                     _availablePackages.Add(catalogItem);
                 }
 
@@ -920,6 +928,13 @@ namespace Twinpack.Dialogs
                             catalogItem = new Models.CatalogItem(packageVersion);
                             catalogItem.InstalledVersion = item.Version;
                             catalogItem.Update = packageVersion;
+                        }
+
+                        var availablePackage = _availablePackages.FirstOrDefault(x => x.PackageId == packageVersion.PackageId);
+                        if (availablePackage != null)
+                        {
+                            availablePackage.InstalledVersion = item.Version;
+                            availablePackage.Update = packageVersion;
                         }
 
                         _installedPackages.Add(catalogItem);
@@ -998,15 +1013,19 @@ namespace Twinpack.Dialogs
                 Package = package;
 
                 var index = 0;
-                IsNewReference = PackageVersion.PackageVersionId == null || !_installedPackages.Any(x => x.PackageId == PackageVersion.PackageId);
-                if (PackageVersion.PackageVersionId != null)
+                IsNewReference = PackageVersion.PackageVersionId == null || !_installedPackages.Any(x => x.PackageId == Package.PackageId);
+                if (PackageVersion.PackageVersionId != null && PackageVersion.PackageId == Package.PackageId)
                 {
-                    InstalledPackageVersion = PackageVersion.Version ?? "n/a";
+                    InstalledPackageVersion = PackageVersion.Version ?? "";
                     index = _packageVersions.IndexOf(_packageVersions.FirstOrDefault(x => x.PackageVersionId == PackageVersion.PackageVersionId));
                 }
                 else if (_packageConfig != null)
                 {
-                    InstalledPackageVersion = _packageConfig.Version ?? "n/a";
+                    InstalledPackageVersion = _packageConfig.Version ?? "";
+                }
+                else
+                {
+                    InstalledPackageVersion = "";
                 }
 
                 BranchesView.Visibility = Branches.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;

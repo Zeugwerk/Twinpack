@@ -121,8 +121,8 @@
                             <StackPanel Grid.Column="1" Orientation="Vertical">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Margin="8 0 0 0">
+                                    <fa:ImageAwesome Margin="0 0 0 0" Icon="IdCard" Height="14" Visibility="{Binding HasRuntimeLicense, Converter={StaticResource BooleanToVisibilityConverter}}"/>                                                                                
                                     <Run Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="16"/>
-                                    <fa:ImageAwesome Margin="2 0 0 0" Icon="IdCard" Height="16" Visibility="{Binding HasRuntimeLicense, Converter={StaticResource BooleanToVisibilityConverter}}"/>                                        
                                     <Run Text="distributed by"/>
                                     <Run Text="{Binding DistributorName}"/>
                                     </TextBlock>
@@ -135,19 +135,11 @@
                                 <TextBlock Margin="8 0 0 0" Text="{Binding Description}"/>
                             </StackPanel>
 
-                            <Grid Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch" Visibility="{Binding IsUpdateable, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="auto"></ColumnDefinition>
-                                    <ColumnDefinition Width="*"></ColumnDefinition>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="auto"></RowDefinition>
-                                    <RowDefinition Height="auto"></RowDefinition>
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.Column="0" Grid.Row="0" Text="Installed:" Margin="0 0 10 0"></TextBlock>
-                                <TextBlock Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" FontWeight="SemiBold" Text="{Binding InstalledVersion}"></TextBlock>
-                                <TextBlock Grid.Column="0" Grid.Row="1" Text="Available:" Margin="0 0 10 0"></TextBlock>
-                                <TextBlock Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" FontWeight="SemiBold" Text="{Binding UpdateVersion}"></TextBlock>
+                            <Grid Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                                <TextBlock Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" FontWeight="SemiBold">
+                                    <fa:ImageAwesome Icon="Bolt" Height="12" Visibility="{Binding IsUpdateable, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
+                                    <Run Text="{Binding InstalledVersion}"></Run>
+                                </TextBlock>
                             </Grid>
 
                         </Grid>
@@ -214,8 +206,8 @@
                             <RowDefinition Height="30"></RowDefinition>
                         </Grid.RowDefinitions>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" d:Text="Zeugwerk Core" FontSize="20" FontWeight="SemiBold"></TextBlock>
-                            <fa:ImageAwesome Margin="5 0 0 0" Icon="IdCard" Height="20" Visibility="{Binding HasRuntimeLicense, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <fa:ImageAwesome Margin="0 0 0 0" Icon="IdCard" Height="15" VerticalAlignment="Center" Visibility="{Binding HasLicenseTmcBinary, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <TextBlock Grid.ColumnSpan="2" Margin="5 0 0 0" Text="{Binding DisplayName}" d:Text="Zeugwerk Core" FontSize="20" FontWeight="SemiBold"></TextBlock>
                         </StackPanel>
                         <!--<Button x:Name="btnEditPackage" Margin="5" HorizontalAlignment="Right" Click="EditPackageButton_Click">
                             <StackPanel Orientation="Horizontal">

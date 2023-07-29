@@ -21,8 +21,8 @@
         </Grid.RowDefinitions>
         <StackPanel Orientation="Vertical" Margin="5" DataContext="{Binding PackageVersion}">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" d:Text="Zeugwerk Core" FontSize="20" FontWeight="SemiBold"></TextBlock>
-                <fa:ImageAwesome Margin="5 0 0 0" Icon="IdCard" Height="20" />
+                <fa:ImageAwesome Margin="0 0 0 0" Icon="IdCard" Height="16" />
+                <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" d:Text="Zeugwerk Core" FontSize="20" Margin="5 0 0 0" FontWeight="SemiBold"></TextBlock>
             </StackPanel>
             <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10">
                             <Run Text="distributed by"/>

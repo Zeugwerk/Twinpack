@@ -78,12 +78,12 @@ namespace Twinpack.Dialogs
         }
         public bool HasLicenseText
         {
-            get { return string.IsNullOrEmpty(_licenseText); }
+            get { return !string.IsNullOrEmpty(_licenseText); }
         }
 
         public bool HasLicenseTmcText
         {
-            get { return string.IsNullOrEmpty(_licenseText); }
+            get { return !string.IsNullOrEmpty(_licenseTmcText); }
         }
 
         public string LicenseText
@@ -111,7 +111,6 @@ namespace Twinpack.Dialogs
         public LicenseWindow(ITcPlcLibraryManager libraryManager, Models.PackageVersionGetResponse packageVersion)
         {
             _libraryManager = libraryManager;
-            DataContext = this;
             PackageVersion = packageVersion;
 
             if (!string.IsNullOrEmpty(PackageVersion?.LicenseBinary))
@@ -128,6 +127,7 @@ namespace Twinpack.Dialogs
 
             IsInstalling = _libraryManager != null;
 
+            DataContext = this;
             InitializeComponent();
         }
 
