@@ -28,7 +28,10 @@ namespace Twinpack.Dialogs
         private ITcPlcLibraryManager _libraryManager;
         private string _licenseText;
         private string _licenseTmcText;
-        private Boolean _isInstalling;
+        private bool _isInstalling;
+        private bool _showLicenseText;
+        private bool _showLicenseTmcText;
+
 
         public Models.PackageVersionGetResponse PackageVersion
         {
@@ -37,12 +40,6 @@ namespace Twinpack.Dialogs
             {
                 _packageVersion = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
-
-                if(_packageVersion?.LicenseBinary != null)
-                    LicenseText = Encoding.ASCII.GetString(Convert.FromBase64String(_packageVersion?.LicenseBinary));
-
-                if (_packageVersion?.LicenseTmcBinary != null)
-                    LicenseTmcText = Encoding.ASCII.GetString(Convert.FromBase64String(_packageVersion?.LicenseTmcBinary));
             }
         }
 
@@ -55,7 +52,30 @@ namespace Twinpack.Dialogs
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsInstalling)));
             }
         }
+        public bool ShowLicenseText
+        {
+            get { return _showLicenseText; }
+            set
+            {
+                _showLicenseText = value;
+                if (_showLicenseText)
+                    ShowLicenseTmcText = false;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowLicenseText)));
+            }
+        }
 
+        public bool ShowLicenseTmcText
+        {
+            get { return _showLicenseTmcText; }
+            set
+            {
+                _showLicenseTmcText = value;
+
+                if (_showLicenseTmcText)
+                    ShowLicenseText = false;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowLicenseTmcText)));
+            }
+        }
         public bool HasLicenseText
         {
             get { return string.IsNullOrEmpty(_licenseText); }
@@ -93,6 +113,19 @@ namespace Twinpack.Dialogs
             _libraryManager = libraryManager;
             DataContext = this;
             PackageVersion = packageVersion;
+
+            if (!string.IsNullOrEmpty(PackageVersion?.LicenseBinary))
+                LicenseText = Encoding.ASCII.GetString(Convert.FromBase64String(_packageVersion?.LicenseBinary));
+
+            if (!string.IsNullOrEmpty(PackageVersion?.LicenseTmcBinary))
+                LicenseTmcText = Encoding.ASCII.GetString(Convert.FromBase64String(_packageVersion?.LicenseTmcBinary));
+
+            if (HasLicenseTmcText)
+                ShowLicenseTmcText = true;
+
+            if (HasLicenseText)
+                ShowLicenseText = true;
+
             IsInstalling = _libraryManager != null;
 
             InitializeComponent();
@@ -121,6 +154,16 @@ namespace Twinpack.Dialogs
         {
             DialogResult = false;
             Close();
+        }
+
+        public void LicenseAgreementButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowLicenseText = true;
+        }
+
+        public void RuntimeLicenseButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowLicenseTmcText = true;
         }
     }
 }

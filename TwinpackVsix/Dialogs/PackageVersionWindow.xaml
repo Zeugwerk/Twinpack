@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:fa="http://schemas.fontawesome.io/icons/"                
              xmlns:local="clr-namespace:Twinpack.Dialogs" d:DataContext="{d:DesignInstance Type=local:PackageVersionWindow}"
              mc:Ignorable="d"
              ResizeMode="NoResize"
@@ -15,7 +16,7 @@
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="250"/>
             <ColumnDefinition Width="50"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto"/>
@@ -53,8 +54,13 @@
 
             <Button Click="ChangeIcon_Click" Margin="0 -45 0 0" Background="#f5f1ee" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
                     IsEnabled="{Binding IsConfigured}"
-                    HorizontalAlignment="Center" Content="Change Icon" VerticalAlignment="Top" Width="80"
-                    Visibility="{Binding IsConfigured, Converter={StaticResource BooleanToVisibilityConverter}}"  />
+                    HorizontalAlignment="Center" VerticalAlignment="Top"
+                    Visibility="{Binding IsConfigured, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal">
+                    <fa:ImageAwesome Margin="2 0 0 0" Icon="File" Height="12"/>
+                    <TextBlock Margin="5 0 0 0">Change Icon</TextBlock>
+                </StackPanel>
+            </Button>
 
             <TextBlock Text="{Binding DistributorName}"  FontWeight="SemiBold"  HorizontalAlignment="Center" Margin="0 0 0 15"
                        Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
@@ -70,10 +76,10 @@
         <StackPanel Width="200" Grid.Row="1" Grid.Column="3" Margin="50 15 50 0"  Orientation="Vertical" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
 
             <Label Content="Authors:" HorizontalAlignment="Left" Margin="0"/>
-            <TextBox Text="{Binding Authors}" Width="200" Margin="0"/>
+            <TextBox Text="{Binding Authors}" Width="200" Margin="0" TextWrapping="Wrap"  Height="50"/>
             
             <Label Content="Description:" HorizontalAlignment="Left" Margin="0"/>
-            <TextBox Text="{Binding Description}" Width="200"  Height="50"  Margin="0"/>
+            <TextBox Text="{Binding Description}" Width="200"  Height="80" TextWrapping="Wrap" Margin="0"/>
 
             <Label Content="Project URL:" HorizontalAlignment="Left" Margin="0"/>
             <TextBox Text="{Binding ProjectUrl}" Width="200" Margin="0"/>
@@ -90,14 +96,18 @@
                 </ComboBox>
             </StackPanel>
 
-            <TextBlock Margin="0" VerticalAlignment="Top" Width="200" TextWrapping="Wrap" Visibility="{Binding ShowLicenseInfo, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
-                <Run Foreground="#2a334b" Text="Select a predefined license or use your own license. For the latter, you may select a license file."></Run>
-            </TextBlock>
-            
             <Label Content="License File:" HorizontalAlignment="Left" Margin="0" Visibility="{Binding IsLicenseFileSelectable, Converter={StaticResource BooleanToInverseBooleanConverter}}"/>
             <StackPanel Orientation="Horizontal" Visibility="{Binding IsLicenseFileSelectable, Converter={StaticResource BooleanToInverseBooleanConverter}}">
-                <TextBox Text="{Binding LicenseFile}" Width="176" Margin="0"/>
-                <Button Click="ChangeLicense_Click" Content="..." Width="25" Margin="-1 0 0 0" HorizontalAlignment="Center"/>
+                <StackPanel Orientation="Vertical" Margin="5,0,5,5">
+                    <TextBox Text="{Binding LicenseFile}" Width="165" Margin="0"/>
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding HasLicenseBinary, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <fa:ImageAwesome Margin="2 0 0 0" Icon="CheckSquare" Height="12"/>
+                        <TextBlock Margin="5 0 0 0">File Uploaded</TextBlock>
+                        <Button Click="ShowLicenseButton_Click" Margin="5 -1 0 0" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
+                                        Content="Show" VerticalAlignment="Top"/>
+                    </StackPanel>
+                </StackPanel>
+                <Button Click="ChangeLicense_Click" Content="..." Width="25" HorizontalAlignment="Center" VerticalAlignment="Top"/>
             </StackPanel>
         </StackPanel>
 
@@ -121,8 +131,8 @@
                 </TextBlock>
 
                 <TextBlock Margin="0" VerticalAlignment="Top" TextWrapping="Wrap" Visibility="{Binding IsVersionWrongFormat, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
-                    <Run Text="The latest release of this package is"></Run>
-                    <Run Text="{Binding LatestVersion}" FontWeight="DemiBold"></Run>
+                    <Run Text="Latest release:"></Run>
+                    <Run Text="{Binding LatestVersion}" d:Text="1.0.0.0" FontWeight="DemiBold"></Run>
                 </TextBlock>
             </StackPanel>
 
@@ -171,24 +181,112 @@
             </Grid>
         </Expander>
 
+
+        <Expander Background="#FFcad0de" Margin="0 250 0 0" Padding="5" Grid.RowSpan="5" HorizontalAlignment="Right" VerticalAlignment="Top" ExpandDirection="Left" Grid.ColumnSpan="4" IsExpanded="False">
+            <Expander.Header>
+                <TextBlock>
+                    <TextBlock.LayoutTransform>
+                        <RotateTransform Angle="90"></RotateTransform>
+                    </TextBlock.LayoutTransform>
+                    <Run Text="Advanced"></Run>
+                    <Run Text="("></Run><Run Text="{Binding DependencyCount, Mode=OneWay}"></Run><Run Text=")"></Run>
+                </TextBlock>
+            </Expander.Header>
+            <StackPanel Orientation="Vertical">
+                <TextBlock Visibility="{Binding Visibility, ElementName=BranchesView}" Text="Branch" Margin="5,0,5,5"></TextBlock>
+                <ComboBox x:Name="BranchesView" ItemsSource="{Binding Branches}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Branch}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Visibility="{Binding Visibility, ElementName=TargetsView}" Text="Target" Margin="5,0,5,5"></TextBlock>
+                <ComboBox x:Name="TargetsView" ItemsSource="{Binding Targets}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Target}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Visibility="{Binding Visibility, ElementName=ConfigurationsView}" Text="Configuration" Margin="5,0,5,5"></TextBlock>
+                <ComboBox x:Name="ConfigurationsView" ItemsSource="{Binding Configurations}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Configuration}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Visibility="{Binding Visibility, ElementName=EntitlementView}" Text="Entitlement" Margin="5,0,5,5"></TextBlock>
+                <ComboBox x:Name="EntitlementView" ItemsSource="{Binding Entitlements}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Configuration}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Visibility="{Binding Visibility, ElementName=FileTypeView}" Text="Filetype" Margin="5,0,5,5"></TextBlock>
+                <ComboBox x:Name="FileTypeView" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
+                    <ComboBoxItem>.library</ComboBoxItem>
+                    <ComboBoxItem>.compiled-library</ComboBoxItem>
+                </ComboBox>
+
+                <Label Content="OEM License:" HorizontalAlignment="Left" Margin="0" Visibility="{Binding IsLicenseFileSelectable, Converter={StaticResource BooleanToInverseBooleanConverter}}"/>
+                <StackPanel Orientation="Horizontal" Visibility="{Binding IsLicenseFileSelectable, Converter={StaticResource BooleanToInverseBooleanConverter}}">
+                    <StackPanel Orientation="Vertical" Margin="5,0,5,5">
+                        <TextBox x:Name="txbLicenseFile" Text="{Binding LicenseFile}" Width="176" Margin="0"/>
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding HasLicenseTmcBinary, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <fa:ImageAwesome Margin="2 0 0 0" Icon="CheckSquare" Height="12"/>
+                            <TextBlock Margin="5 0 0 0">File Uploaded</TextBlock>
+                            <Button Click="ShowLicenseTmcButton_Click" Margin="5 -1 0 0" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
+                                        Content="Show" VerticalAlignment="Top"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Button Click="ChangeLicense_Click" Content="..." Width="25" Margin="0 0 5 0" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                </StackPanel>
+            </StackPanel>
+        </Expander>
+
         <!-- Publish Button -->
         <StackPanel Grid.Row="4" Grid.ColumnSpan="4" HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Bottom">
-            <Button HorizontalAlignment="Right" Content="Publish" Margin="5" Click="Publish_Click" 
+            <Button HorizontalAlignment="Right" Margin="5" Click="Publish_Click" 
                     Width="80"
                     IsEnabled="{Binding IsNewPackageVersion}"
-                    Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <Button HorizontalAlignment="Right" Content="Modify" Margin="5" Click="Apply_Click" 
+                    Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal">
+                    <fa:ImageAwesome Margin="2 0 0 0" Icon="Upload" Height="12"/>
+                    <TextBlock Margin="5 0 0 0">Publish</TextBlock>
+                </StackPanel>                
+            </Button>
+            <Button HorizontalAlignment="Right" Margin="5" Click="Apply_Click" 
                     Width="80"
                     IsEnabled="{Binding IsNewPackageVersion, Converter={StaticResource BooleanToInverseBooleanConverter}}"
-                    Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
-            <Button HorizontalAlignment="Right" Content="Close" Width="80" Margin="5" Click="Close_Click"/>
+                    Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
+                <StackPanel Orientation="Horizontal">
+                    <fa:ImageAwesome Margin="2 0 0 0" Icon="Edit" Height="12"/>
+                    <TextBlock Margin="5 0 0 0">Modify</TextBlock>
+                </StackPanel>
+            </Button>
+            <Button HorizontalAlignment="Right" Width="80" Margin="5" Click="Close_Click">
+                <StackPanel Orientation="Horizontal">
+                    <fa:ImageAwesome Margin="2 0 0 0" Icon="Close" Height="12"/>
+                    <TextBlock Margin="5 0 0 0">Close</TextBlock>
+                </StackPanel>                
+            </Button>
         </StackPanel>
 
         <Grid Grid.Column="1" Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="4" Background="White" 
                      Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" 
                      d:Visibility="Hidden"
                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <TextBlock Text="{Binding LoadingText}" HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <fa:ImageAwesome Margin="2 0 0 0" Icon="Spinner" Spin="True" Height="12"/>
+                <TextBlock Text="{Binding LoadingText}" d:Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+            </StackPanel>
         </Grid>
 
         <!--Information -->

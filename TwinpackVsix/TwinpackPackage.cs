@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using TCatSysManagerLib;
 using Task = System.Threading.Tasks.Task;
+using FontAwesome.WPF;
 
 namespace Twinpack
 {
@@ -85,6 +86,8 @@ namespace Twinpack
 
         public TwinpackPackage() : base()
         {
+            var xy = FontAwesome.WPF.FontAwesomeIcon.FolderOpen;
+
             LogManager.Setup().SetupExtensions(ext => ext.RegisterTarget<VsOutputWindowTarget>("VsOutputWindowTarget"));
             _logger = LogManager.GetCurrentClassLogger();
         }

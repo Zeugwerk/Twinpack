@@ -47,6 +47,7 @@ namespace Twinpack.Models
             DistributorName = obj.DistributorName;
             Description = obj.Description;
             IconUrl = obj.IconUrl;
+            RuntimeLicense = obj.RuntimeLicense;
             DisplayName = obj.DisplayName;
             Versions = obj.Versions;
             Configurations = obj.Configurations;
