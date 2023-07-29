@@ -86,6 +86,7 @@ namespace Twinpack
 
         public TwinpackPackage() : base()
         {
+            // This is needed to vsix is loading the assembly for FontAwesome.WPF
             var xy = FontAwesome.WPF.FontAwesomeIcon.FolderOpen;
 
             LogManager.Setup().SetupExtensions(ext => ext.RegisterTarget<VsOutputWindowTarget>("VsOutputWindowTarget"));
