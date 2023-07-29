@@ -9,10 +9,13 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using NLog;
 using TCatSysManagerLib;
+
+
+
+
 
 namespace Twinpack.Dialogs
 {
@@ -329,7 +332,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                btnLogin.Content = _twinpackServer.LoggedIn ? "Logout" : "Login";
+                btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
             }
 
             try
@@ -750,7 +753,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                btnLogin.Content = _twinpackServer.LoggedIn ? "Logout" : "Login";
+                btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
             }
 
             try

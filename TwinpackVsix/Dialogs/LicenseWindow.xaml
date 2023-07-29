@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:fa="http://schemas.fontawesome.io/icons/"        
              xmlns:local="clr-namespace:Twinpack.Dialogs"
              mc:Ignorable="d" 
              ResizeMode="NoResize"
@@ -12,35 +13,98 @@
         <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
-    <Grid VerticalAlignment="Stretch" Margin="0 5 0 0">
+    <Grid VerticalAlignment="Stretch" Margin="5">
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto"></RowDefinition>            
+            <RowDefinition Height="auto"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="auto"></RowDefinition>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Vertical" Margin="5" DataContext="{Binding PackageVersion}">
-            <TextBlock TextWrapping="Wrap" >
-            <Run FontStyle="Italic" Text="{Binding DisplayName}" FontWeight="SemiBold"></Run>
-            <Run Text="(distributed by"></Run><Run FontStyle="Italic" Text="{Binding DistributorName}"></Run><Run Text=") comes with the following license agreement."></Run>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" d:Text="Zeugwerk Core" FontSize="20" FontWeight="SemiBold"></TextBlock>
+                <fa:ImageAwesome Margin="5 0 0 0" Icon="IdCard" Height="20" />
+            </StackPanel>
+            <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10">
+                            <Run Text="distributed by"/>
+                            <Run Text="{Binding DistributorName}" d:Text="Zeugwerk GmbH"/>
             </TextBlock>
-            <TextBlock Margin="15 10 0 0"  Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" >
-            <Run Text="Please read the License Agreement carefully, if you accept the terms of the license agreement and want to continue with the installation process click 'Accept', otherwise click 'Decline' to abort the installation."></Run>
-            </TextBlock>
+
+            <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
+                <Button  Grid.Column="2" Click="LicenseAgreementButton_Click" VerticalAlignment="Center" 
+                         Visibility="{Binding HasLicenseText, Converter={StaticResource BooleanToVisibilityConverter}}"
+                         Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8">
+                    <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Margin="2 0 0 0" Icon="File" Height="12"/>
+                        <TextBlock Margin="5 0 0 0">License Agreement</TextBlock>
+                    </StackPanel>
+                </Button>
+                <Button Margin="10 0 0 0" Grid.Column="2" Click="RuntimeLicenseButton_Click" VerticalAlignment="Center"
+                        Visibility="{Binding HasLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8">
+                    <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Margin="2 0 0 0" Icon="DriversLicense" Height="12"/>
+                        <TextBlock Margin="5 0 0 0">Runtime License</TextBlock>
+                    </StackPanel>
+                </Button>                
+            </StackPanel>
+            
         </StackPanel>
-        <ScrollViewer Grid.Row="1">
-            <Grid VerticalAlignment="Stretch">
+
+        <Grid Grid.Row="1" VerticalAlignment="Stretch">
+            <Grid Margin="0 10 0 0" Visibility="{Binding ShowLicenseText, Converter={StaticResource BooleanToVisibilityConverter}}" >
                 <Grid.RowDefinitions>
-                    <RowDefinition></RowDefinition>
-                    <RowDefinition></RowDefinition>
+                    <RowDefinition Height="auto"></RowDefinition>
+                    <RowDefinition Height="auto"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
-                <TextBox Grid.Row="1" IsReadOnly="True" Text="{Binding LicenseText}" Visibility="{Binding HasLicenseText, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" FontSize="12"/>
-                <TextBox Grid.Row="1" IsReadOnly="True" Text="{Binding LicenseTmcText}" Visibility="{Binding HasLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" FontSize="12"/>
+                <TextBlock FontWeight="DemiBold" Text="License Agreement"></TextBlock>
+                <TextBlock Grid.Row="1" Margin="5 0 5 0" TextWrapping="Wrap" >
+                    <Run Text="The package comes with the following license agreement."></Run>                
+                    <Run Text="Please read the License Agreement carefully, if you accept the terms of the license agreement and want to install the package you have to accept the agreement"></Run>
+                </TextBlock>
+                <ScrollViewer Grid.Row="2">
+                    <TextBox Margin="5" IsReadOnly="True" d:Text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+                             Text="{Binding LicenseText}" TextWrapping="Wrap" FontSize="12"/>
+                </ScrollViewer>
             </Grid>
-        </ScrollViewer>
+
+            <Grid Margin="0 10 0 0" d:Visibility="Hidden" Visibility="{Binding ShowLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"></RowDefinition>
+                    <RowDefinition Height="auto"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>                
+                <TextBlock FontWeight="DemiBold" Text="Runtime License"></TextBlock>
+                <TextBlock Grid.Row="1"  Margin="5 0 5 0"  Visibility="{Binding HasLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" >
+                    <Run Text="The package is protected against unauthorized use of software functions with an OEM license."></Run><LineBreak/>
+                    <Run Text="Twinpack will try to copy the following content as a tmc file into your local TwinCAT custom config folder."></Run>
+                </TextBlock>
+                <ScrollViewer Grid.Row="2">
+                    <TextBox Margin="5" IsReadOnly="True" d:Text=""
+                             Text="{Binding LicenseTmcText}"  TextWrapping="Wrap" FontSize="12"/>
+                </ScrollViewer>
+            </Grid>                
+        </Grid>
+
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Content="Accept" Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="DeclineButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,10" />
-            <Button Content="Decline" Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="AcceptButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10,10" />
-            <Button Content="Close" Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" Click="CloseButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10,10" />
+            <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="DeclineButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,10">
+                <StackPanel Orientation="Horizontal">
+                    <fa:ImageAwesome Margin="2 0 0 0" Icon="Check" Height="12"/>
+                    <TextBlock Margin="5 0 0 0">Accept</TextBlock>
+                </StackPanel>
+            </Button>
+            <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="AcceptButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10,10">
+                <StackPanel Orientation="Horizontal">
+                    <fa:ImageAwesome Margin="2 0 0 0" Icon="ChainBroken" Height="12"/>
+                    <TextBlock Margin="5 0 0 0">Decline</TextBlock>
+                </StackPanel>
+            </Button>
+            <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" Click="CloseButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10,10">
+                <StackPanel Orientation="Horizontal">
+                    <fa:ImageAwesome Margin="2 0 0 0" Icon="Close" Height="12"/>
+                    <TextBlock Margin="5 0 0 0">Close</TextBlock>
+                </StackPanel>
+            </Button>
         </StackPanel>
     </Grid>
 </Window>

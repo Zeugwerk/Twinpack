@@ -844,5 +844,33 @@ namespace Twinpack.Dialogs
                 LicenseFile = null;
         }
 
+        public void ShowLicenseButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var licenseDialog = new LicenseWindow(null, _packageVersion);
+                licenseDialog.ShowLicense();
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
+        }
+
+        public void ShowLicenseTmcButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var licenseDialog = new LicenseWindow(null, _packageVersion);
+                licenseDialog.ShowLicense();
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
+        }
+
     }
 }

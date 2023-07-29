@@ -108,6 +108,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="FontAwesome.WPF">
+      <Version>4.7.0.9</Version>
+    </PackageReference>
     <PackageReference Include="Meziantou.Framework.Win32.CredentialManager">
       <Version>1.4.2</Version>
     </PackageReference>
