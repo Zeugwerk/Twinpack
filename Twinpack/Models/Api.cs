@@ -130,6 +130,25 @@ namespace Twinpack.Models
 
     public class PackageGetResponse : Response
     {
+        public PackageGetResponse() { }
+
+        public PackageGetResponse(PackageGetResponse package)
+        {
+            PackageId = package.PackageId;
+            Name = package.Name;
+            Repository = package.Repository;
+            DistributorName = package.DistributorName;
+            DisplayName = package.DisplayName;
+            Description = package.Description;
+            Entitlement = package.Entitlement;
+            ProjectUrl = package.ProjectUrl;
+            IconUrl = package.IconUrl;
+            Authors = package.Authors;
+            License = package.License;
+            LicenseTmcBinary = package.LicenseTmcBinary;
+            LicenseBinary = package.LicenseBinary;
+        }
+
         [JsonPropertyName("package-id")]
         public int? PackageId { get; set; }
         [JsonPropertyName("name")]
@@ -171,6 +190,24 @@ namespace Twinpack.Models
 
     public class PackageVersionGetResponse : PackageGetResponse
     {
+        public PackageVersionGetResponse()
+        {
+
+        }
+
+        public PackageVersionGetResponse(PackageVersionGetResponse packageVersion) : base(packageVersion)
+        {
+            PackageVersionId = packageVersion.PackageVersionId;
+            Version = packageVersion.Version;
+            Branch = packageVersion.Branch;
+            Target = packageVersion.Target;
+            Configuration = packageVersion.Configuration;
+            Compiled = packageVersion.Compiled;
+            Notes = packageVersion.Notes;
+            Binary = packageVersion.Binary;
+            Dependencies = new List<PackageVersionGetResponse>(packageVersion.Dependencies);
+        }
+
         [JsonPropertyName("package-version-id")]
         public int? PackageVersionId { get; set; }
         [JsonPropertyName("version")]
