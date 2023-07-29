@@ -22,7 +22,7 @@ namespace Twinpack
     public class VsOutputWindowTarget : AsyncTaskTarget
     {
         private static Guid OutputPaneGuid = new Guid("E12CEAA1-6466-4841-8A69-9D4E96638CD8");
-        private static IVsOutputWindowPane _outputPane;
+        private IVsOutputWindowPane _outputPane;
 
         public async Task ActivateAsync()
         {
@@ -39,11 +39,16 @@ namespace Twinpack
                 IVsOutputWindow outputWindow = Package.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;
                 if (outputWindow != null)
                 {
-                    // Create the custom output pane (if it doesn't exist) and get the pane object.
-                    int result = outputWindow.CreatePane(OutputPaneGuid, "Twinpack Package Manager", 1, 1);
-                    if (result == VSConstants.S_OK)
+                    outputWindow.GetPane(ref OutputPaneGuid, out _outputPane);
+
+                    if(_outputPane == null)
                     {
-                        outputWindow.GetPane(ref OutputPaneGuid, out _outputPane);
+                        // Create the custom output pane (if it doesn't exist) and get the pane object.
+                        int result = outputWindow.CreatePane(OutputPaneGuid, "Twinpack Package Manager", 1, 1);
+                        if (result == VSConstants.S_OK)
+                        {
+                            outputWindow.GetPane(ref OutputPaneGuid, out _outputPane);
+                        }
                     }
                 }
             }
