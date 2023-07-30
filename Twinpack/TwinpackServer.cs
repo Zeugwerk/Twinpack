@@ -221,7 +221,7 @@ namespace Twinpack
                 }
                 catch(JsonException ex)
                 {
-                    _logger.Trace($"Unparseable response: {responseBody}");
+                    _logger.Trace($"Unparseable response: {data}");
                     throw new GetException("Response could not be parsed");
                 }
 
@@ -232,7 +232,6 @@ namespace Twinpack
                 if (linkHeader.Any())
                 {
                     var h = Regex.Unescape(linkHeader.First());
-
                     PaginationHeader pagination = null;
 
                     try
@@ -241,7 +240,7 @@ namespace Twinpack
                     }
                     catch(JsonException ex)
                     {
-                        _logger.Trace($"Unparseable response: {responseBody}");
+                        _logger.Trace($"Unparseable response: {linkHeader.First()}");
                         throw new GetException("Response could not be parsed");
                     }
                     
