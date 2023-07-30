@@ -60,13 +60,26 @@ namespace Twinpack
             _logger.Info($"Pulling from Twinpack Server");
             var plcs = config.Projects.SelectMany(x => x.Plcs);
 
+            var exceptions = new List<Exception>();
             foreach (var plc in plcs)
             {
                 foreach (var package in plc.Packages ?? new List<ConfigPlcPackage>())
                 {
-                    await GetPackageVersionAsync(package.Repository, package.Name, package.Version, configuration, branch, target, true, cachePath: cachePath);
+                    try
+                    {
+                        await GetPackageVersionAsync(package.Repository, package.Name, package.Version, configuration, branch, target, true, cachePath: cachePath);
+                    }
+                    catch(Exception ex)
+                    {
+                        exceptions.Add(ex);
+                    }
                 }
             }
+
+            if(exceptions.Any())
+            {
+                throw new GetException($"Pulling for Twinpack Server failed for {exceptions.Count()} dependencies!");
+            }         
         }
 
         public async Task PushAsync(string configuration, string branch, string target, string notes, bool compiled, string cachePath = null)
@@ -93,9 +106,22 @@ namespace Twinpack
                 }
             }
 
+            var exceptions = new List<Exception>();
             foreach (var plc in plcs)
             {
-                await PostPackageVersionAsync(plc, configuration, branch, target, notes, compiled);
+                try
+                {
+                    await PostPackageVersionAsync(plc, configuration, branch, target, notes, compiled);
+                }
+                catch(Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+
+            if(exceptions.Any())
+            {
+                throw new PostException($"Pushing to Twinpack Server failed for {exceptions.Count()} packages!");
             }
         }
 
@@ -151,8 +177,17 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
+            PackageVersionGetResponse result = null;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            }
+            catch(JsonReaderException ex)
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new PostException("Response could not be parsed");
+            }
             
-            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             if(result.Meta?.Message != null)
                 throw new PostException(result.Meta.Message.ToString());
 
@@ -178,8 +213,17 @@ namespace Twinpack
                 var response = await _client.SendAsync(request);
                 response.EnsureSuccessStatusCode();
 
-                var data = await response.Content.ReadAsStringAsync();
-                results.AddRange(JsonSerializer.Deserialize<List<T>>(data));
+                var data = await response.Content.ReadAsStringAsync();            
+
+                try
+                {
+                    results.AddRange(JsonSerializer.Deserialize<List<T>>(data));
+                }
+                catch(JsonReaderException ex)
+                {
+                    _logger.Trace($"Unparseable response: {responseBody}");
+                    throw new GetException("Response could not be parsed");
+                }
 
                 if (results.Count() >= perPage)
                     return results.Take(perPage);
@@ -189,7 +233,18 @@ namespace Twinpack
                 {
                     var h = Regex.Unescape(linkHeader.First());
 
-                    var pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
+                    PaginationHeader pagination = null;
+
+                    try
+                    {
+                        pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
+                    }
+                    catch(JsonReaderException ex)
+                    {
+                        _logger.Trace($"Unparseable response: {responseBody}");
+                        throw new GetException("Response could not be parsed");
+                    }
+                    
                     if (pagination.Next == null)
                     {
                          hasNextPage = false;
@@ -233,7 +288,16 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            PackageVersionGetResponse result = null;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            }
+            catch(JsonReaderException ex)
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new GetException("Response could not be parsed");
+            }
 
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
@@ -252,8 +316,17 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-
-            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            PackageVersionGetResponse result = null;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            }
+            catch(JsonReaderException ex)
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new GetException("Response could not be parsed");
+            }
+            
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
 
@@ -289,7 +362,17 @@ namespace Twinpack
             var responseBody = await response.Content.ReadAsStringAsync();
 
  
-            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            PackageVersionGetResponse result = null;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            }
+            catch(JsonReaderException ex)
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new GetException("Response could not be parsed");
+            }
+            
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
 
@@ -316,7 +399,17 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            var result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            PackageGetResponse result = null;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            }
+            catch(JsonReaderException ex)
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new GetException("Response could not be parsed");
+            }
+            
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
 
@@ -333,7 +426,17 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            var result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            PackageGetResponse result = null;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            }
+            catch(JsonReaderException ex)
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new GetException("Response could not be parsed");
+            }
+            
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
 
@@ -354,7 +457,17 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            var result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            PackageVersionGetResponse result = null;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            }
+            catch(JsonReaderException ex)
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new PutException("Response could not be parsed");
+            }
+            
             if (result.Meta?.Message != null)
                 throw new PutException(result.Meta.Message.ToString());
 
@@ -376,7 +489,17 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            var result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            PackageGetResponse result = null;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+            }
+            catch(JsonReaderException ex)
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new PutException("Response could not be parsed");
+            }
+            
             if (result.Meta?.Message != null)
                 throw new PutException(result.Meta.Message.ToString());
 
@@ -396,7 +519,17 @@ namespace Twinpack
 
             try
             {
-                var result = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
+                LoginPostResponse result = null;
+                try
+                {
+                    result = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
+                }
+                catch(JsonReaderException ex)
+                {
+                    _logger.Trace($"Unparseable response: {responseBody}");
+                    throw new LoginException("Response could not be parsed");
+                }
+                
                 if (result.Meta?.Message != null)
                     throw new LoginException(result.Meta.Message.ToString());
 
