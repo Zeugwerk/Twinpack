@@ -18,8 +18,8 @@ namespace Twinpack.Models
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         public const string DefaultRepository = "https://framework.zeugwerk.dev/Distribution";
-        static public readonly string ZeugwerkVendorName = "Zeugwerk GmbH";
-        static public readonly List<String> DefaultLocations = new List<String> { $@".\", $@".\.Zeugwerk\" };
+        public static readonly string ZeugwerkVendorName = "Zeugwerk GmbH";
+        public static readonly List<String> DefaultLocations = new List<String> { $@".\", $@".\.Zeugwerk\" };
 
         public static Config Load(string path = ".")
         {
@@ -166,9 +166,9 @@ namespace Twinpack.Models
 
     public class ConfigPlcProjectFactory
     {
-        static public XNamespace TcNs = "http://schemas.microsoft.com/developer/msbuild/2003";
+        public static XNamespace TcNs = "http://schemas.microsoft.com/developer/msbuild/2003";
 
-        static public ConfigPlcProject MapPlcConfigToPlcProj(Config config, EnvDTE.Project prj)
+        public static ConfigPlcProject MapPlcConfigToPlcProj(Config config, EnvDTE.Project prj)
         {
             string xml = null;
             ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
@@ -192,7 +192,7 @@ namespace Twinpack.Models
             return null;
         }
 
-        static public async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, TwinpackServer twinpackServer)
+        public static async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, TwinpackServer twinpackServer)
         {
             ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
             var project = new ConfigProject();

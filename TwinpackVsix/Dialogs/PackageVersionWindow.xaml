@@ -236,10 +236,10 @@
                     <ComboBoxItem>.compiled-library</ComboBoxItem>
                 </ComboBox>
 
-                <Label Content="OEM License:" HorizontalAlignment="Left" Margin="0" Visibility="{Binding IsLicenseFileSelectable, Converter={StaticResource BooleanToInverseBooleanConverter}}"/>
-                <StackPanel Orientation="Horizontal" Visibility="{Binding IsLicenseFileSelectable, Converter={StaticResource BooleanToInverseBooleanConverter}}">
+                <Label Content="Runtime License:" HorizontalAlignment="Left" Margin="0"/>
+                <StackPanel Orientation="Horizontal">
                     <StackPanel Orientation="Vertical" Margin="5,0,5,5">
-                        <TextBox x:Name="txbLicenseFile" Text="{Binding LicenseFile}" Width="176" Margin="0"/>
+                        <TextBox x:Name="txbLicenseFile" Text="{Binding LicenseTmcFile}" Width="176" Margin="0"/>
                         <StackPanel Orientation="Horizontal" Visibility="{Binding HasLicenseTmcBinary, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <fa:ImageAwesome Margin="2 0 0 0" Icon="CheckSquare" Height="12"/>
                             <TextBlock Margin="5 0 0 0">File uploaded</TextBlock>

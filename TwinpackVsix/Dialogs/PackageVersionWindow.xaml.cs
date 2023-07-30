@@ -596,9 +596,9 @@ namespace Twinpack.Dialogs
                 openFileDialog.InitialDirectory = _plcConfig?.RootPath ?? Environment.CurrentDirectory;
                 if (openFileDialog.ShowDialog() == true)
                 {
-                    var content = File.ReadAllBytes(openFileDialog.FileName);
+                    var content = File.ReadAllText(openFileDialog.FileName);
                     if (TwinpackUtils.ParseLicenseId(content) == null)
-                        throw new InvalidDataException("The selected tmc file is not a valid license file!");
+                        throw new InvalidDataException("The tmc file is not a valid license file!");
 
                     LicenseTmcFile = openFileDialog.FileName;
                 }
