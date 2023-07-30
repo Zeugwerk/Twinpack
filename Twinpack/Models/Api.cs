@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 
 namespace Twinpack.Models
 {
@@ -228,6 +231,18 @@ namespace Twinpack.Models
         public IEnumerable<PackageVersionGetResponse> Dependencies { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasDependencies { get { return Dependencies?.Any() == true; } }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public string LicenseTmcText
+        {
+            get
+            {
+                if (!HasLicenseTmcBinary)
+                    return null;
+
+                return Encoding.ASCII.GetString(Convert.FromBase64String(LicenseTmcBinary));
+            }
+        }
 
         public static bool operator ==(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
         {

@@ -33,7 +33,7 @@
 
             <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
                 <Button  Grid.Column="2" Click="LicenseAgreementButton_Click" VerticalAlignment="Center" 
-                         IsEnabled="{Binding HasLicenseText}"
+                         Visibility="{Binding HasLicenseText, Converter={StaticResource BooleanToVisibilityConverter}}"
                          Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8">
                     <StackPanel Orientation="Horizontal">
                         <fa:FontAwesome Margin="2 0 0 0" Icon="File" Height="12"/>
@@ -41,7 +41,7 @@
                     </StackPanel>
                 </Button>
                 <Button Margin="10 0 0 0" Grid.Column="2" Click="RuntimeLicenseButton_Click" VerticalAlignment="Center"
-                        IsEnabled="{Binding HasLicenseTmcText}"
+                        Visibility="{Binding HasLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8">
                     <StackPanel Orientation="Horizontal">
                         <fa:FontAwesome Margin="2 0 0 0" Icon="DriversLicense" Height="12"/>
@@ -80,21 +80,21 @@
                     <Run Text="The package is protected against unauthorized use of software functions with an OEM license."></Run><LineBreak/>
                     <Run Text="Twinpack will try to copy the following content as a tmc file into your local TwinCAT custom config folder."></Run>
                 </TextBlock>
-                <ScrollViewer Grid.Row="2"  Margin="0 10 0 5">
+                <ScrollViewer Grid.Row="2"  Margin="0 10 0 5" CanContentScroll="True" VerticalScrollBarVisibility="Auto">
                     <TextBox Margin="5 0 0 0" IsReadOnly="True" d:Text=""
-                             Text="{Binding LicenseTmcText}"  TextWrapping="Wrap" FontSize="12"/>
+                             Text="{Binding LicenseTmcText}"  TextWrapping="NoWrap" FontSize="12"/>
                 </ScrollViewer>
             </Grid>                
         </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="DeclineButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,10">
+            <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="AcceptButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,10">
                 <StackPanel Orientation="Horizontal">
                     <fa:ImageAwesome Margin="2 0 0 0" Icon="Check" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Accept</TextBlock>
                 </StackPanel>
             </Button>
-            <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="AcceptButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10,10">
+            <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="DeclineButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10,10">
                 <StackPanel Orientation="Horizontal">
                     <fa:ImageAwesome Margin="2 0 0 0" Icon="ChainBroken" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Decline</TextBlock>

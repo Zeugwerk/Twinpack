@@ -141,19 +141,16 @@ namespace Twinpack.Dialogs
 
         private void AcceptButton_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = true;
-            Close();
+            this.DialogResult = true;
         }
 
         private void DeclineButton_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            Close();
+            this.DialogResult = false;
         }
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            Close();
+            this.DialogResult = false;
         }
 
         public void LicenseAgreementButton_Click(object sender, RoutedEventArgs e)
