@@ -565,7 +565,6 @@ namespace Twinpack
             UserInfo = new LoginPostResponse();
             Username = "";
             Password = "";
-            CredentialManager.DeleteCredential("TwinpackServer");
 
             try
             {
