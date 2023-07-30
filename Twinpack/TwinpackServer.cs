@@ -182,7 +182,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonReaderException ex)
+            catch(JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PostException("Response could not be parsed");
@@ -219,7 +219,7 @@ namespace Twinpack
                 {
                     results.AddRange(JsonSerializer.Deserialize<List<T>>(data));
                 }
-                catch(JsonReaderException ex)
+                catch(JsonException ex)
                 {
                     _logger.Trace($"Unparseable response: {responseBody}");
                     throw new GetException("Response could not be parsed");
@@ -239,7 +239,7 @@ namespace Twinpack
                     {
                         pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
                     }
-                    catch(JsonReaderException ex)
+                    catch(JsonException ex)
                     {
                         _logger.Trace($"Unparseable response: {responseBody}");
                         throw new GetException("Response could not be parsed");
@@ -293,7 +293,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonReaderException ex)
+            catch(JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -321,7 +321,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonReaderException ex)
+            catch(JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -367,7 +367,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonReaderException ex)
+            catch(JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -404,7 +404,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
             }
-            catch(JsonReaderException ex)
+            catch(JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -431,7 +431,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
             }
-            catch(JsonReaderException ex)
+            catch(JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -462,7 +462,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonReaderException ex)
+            catch(JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PutException("Response could not be parsed");
@@ -494,7 +494,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
             }
-            catch(JsonReaderException ex)
+            catch(JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PutException("Response could not be parsed");
@@ -524,7 +524,7 @@ namespace Twinpack
                 {
                     result = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
                 }
-                catch(JsonReaderException ex)
+                catch(JsonException ex)
                 {
                     _logger.Trace($"Unparseable response: {responseBody}");
                     throw new LoginException("Response could not be parsed");
