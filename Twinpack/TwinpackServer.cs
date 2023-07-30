@@ -509,11 +509,13 @@ namespace Twinpack
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null)
         {
-            var credentials = CredentialManager.ReadCredential("TwinpackServer");
+            var credentials = CredentialManager.ReadCredential(TwinpackUrl);
 
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=login"));
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
+            Username = username ?? credentials?.UserName;
+            Password = password ?? credentials?.Password;
             AddHeaders(request);
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -535,11 +537,9 @@ namespace Twinpack
                     throw new LoginException(result.Meta.Message.ToString());
 
                 UserInfo = result;
-                Username = username ?? credentials?.UserName;
-                Password = password ?? credentials?.Password;
 
                 if(!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
-                    CredentialManager.WriteCredential("TwinpackServer", Username, Password, CredentialPersistence.LocalMachine);
+                    CredentialManager.WriteCredential(TwinpackUrl, Username, Password, CredentialPersistence.LocalMachine);
 
                 if(UserInfo?.UpdateVersion != null && new Version(UserInfo?.UpdateVersion) > ClientVersion)
                     _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Download and install the lastest version at {UserInfo.UpdateUrl}");
@@ -554,7 +554,7 @@ namespace Twinpack
                 UserInfo = new LoginPostResponse();
                 Username = "";
                 Password = "";
-                CredentialManager.DeleteCredential("TwinpackServer");
+                CredentialManager.DeleteCredential(TwinpackUrl);
                 throw ex;
             }
         }
@@ -569,7 +569,7 @@ namespace Twinpack
 
             try
             {
-                CredentialManager.DeleteCredential("Twinpack");
+                CredentialManager.DeleteCredential(TwinpackUrl);
             }
             catch (Exception) { }
         }

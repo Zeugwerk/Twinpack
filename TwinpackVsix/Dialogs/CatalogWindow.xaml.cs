@@ -11,7 +11,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Threading;
-using NLog;
 using TCatSysManagerLib;
 
 
@@ -360,7 +359,7 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await _twinpackServer.LoginAsync();
+                await _auth.LoginAsync(onlyTry: true);
             }
             catch (Exception ex)
             {
@@ -370,6 +369,7 @@ namespace Twinpack.Dialogs
             finally
             {
                 btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
+                btnRegister.Visibility = _twinpackServer.LoggedIn ? Visibility.Collapsed : Visibility.Visible;
             }
 
             try
@@ -856,6 +856,10 @@ namespace Twinpack.Dialogs
                 _logger.Error(ex.Message);
             }
         }
+        public void RegisterButton_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(_twinpackServer.RegisterUrl);
+        }
 
         public async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
@@ -867,8 +871,6 @@ namespace Twinpack.Dialogs
                 if (!_twinpackServer.LoggedIn)
                 {
                     await _auth.LoginAsync();
-                    if (!_twinpackServer.LoggedIn)
-                        throw new Exceptions.LoginException("Login was not successful! Go to https://twinpack.dev/wp-login.php to register");
                 }
                 else
                 {
@@ -887,6 +889,7 @@ namespace Twinpack.Dialogs
             finally
             {
                 btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
+                btnRegister.Visibility = _twinpackServer.LoggedIn ? Visibility.Collapsed : Visibility.Visible;
             }
 
             try
@@ -1240,8 +1243,6 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                _context.Logger = LogManager.Configuration.FindTargetByName<VsOutputWindowTarget>("VsOutputWindowTarget");
-
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 await _context?.Logger?.ActivateAsync();
 

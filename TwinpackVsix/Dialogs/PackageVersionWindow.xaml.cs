@@ -34,13 +34,14 @@ namespace Twinpack.Dialogs
         private string _loadingText;
 
         private bool _isPublishMode;
-        private bool _isLicenseFileSelectable;
         private bool _isGeneralDataReadOnly;
         private bool _isVersionWrongFormat;
         private bool _isNewUser;
         private bool _isNewPackage;
         private bool _isNewPackageVersion;
         private string _iconFile;
+        private string _licenseFile;
+        private string _licenseTmcFile;
         private BitmapImage _iconImage;
 
         private TwinpackServer _twinpackServer = new TwinpackServer();
@@ -75,50 +76,11 @@ namespace Twinpack.Dialogs
 
         private async Task LoginAsync()
         {
-            // first do a silent login
-            try
+            await _auth.LoginAsync();
+            if (!_twinpackServer.LoggedIn)
             {
-                if(!_twinpackServer.LoggedIn)
-                    await _twinpackServer.LoginAsync();
-            }
-            catch(Exception)
-            { }
-
-            // then login with prompting if it didn't work
-            while (!_twinpackServer.LoggedIn)
-            {
-                var message = "";
-                try
-                {
-                    await _auth.LoginAsync();
-                    if (!_twinpackServer.LoggedIn)
-                        throw new Exceptions.LoginException("Login was not successful!");
-                }
-                catch (Exceptions.LoginException ex)
-                {
-                    message = ex.Message;
-                    _logger.Trace(ex);
-                    _logger.Error(ex.Message);
-                }
-                catch (Exception ex)
-                {
-                    message = "You have to login to the Twinpack server to publish packages.";
-                    _logger.Trace(ex);
-                    _logger.Error(ex.Message);
-                }
-
-                if(!_twinpackServer.LoggedIn)
-                {
-                    if (MessageBox.Show($@"{message} Do you want to register or reset your password?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-                    {
-                        Process.Start(_twinpackServer.RegisterUrl);
-                    }
-                    else
-                    {
-                        Close();
-                        return;
-                    }
-                }
+                Close();
+                return;
             }
 
             IsNewUser = _twinpackServer.UserInfo.DistributorName == null;
@@ -213,20 +175,20 @@ namespace Twinpack.Dialogs
                     }
                 }
 
-                PackageName = _package?.Name ?? _plcConfig.Name;
-                DisplayName = _package?.DisplayName ?? _plcConfig.DisplayName;
-                Description = _package?.Description ?? _plcConfig.Description;
-                Entitlement = _package?.Entitlement ?? _plcConfig.Entitlement;
-                ProjectUrl = _package?.ProjectUrl ?? _plcConfig.ProjectUrl;
-                DistributorName = _package?.DistributorName ?? _plcConfig.DistributorName;
-                License = _package?.License ?? _plcConfig.License;
-                LicenseFile = _plcConfig?.LicenseFile;
+                PackageName = _package?.Name ?? _plcConfig?.Name;
+                DisplayName = _package?.DisplayName ?? _plcConfig?.DisplayName;
+                Description = _package?.Description ?? _plcConfig?.Description;
+                Entitlement = _package?.Entitlement ?? _plcConfig?.Entitlement;
+                ProjectUrl = _package?.ProjectUrl ?? _plcConfig?.ProjectUrl;
+                DistributorName = _package?.DistributorName ?? _plcConfig?.DistributorName;
+                License = _package?.License ?? _plcConfig?.License;
+                LicenseFile = _plcConfig != null ? Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _plcConfig.LicenseFile) : null;
+                LicenseTmcFile = _plcConfig != null ? Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _plcConfig.LicenseTmcFile) : null;
+                IconFile = _plcConfig != null ? Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _plcConfig.IconFile) : null;
                 Version = _packageVersion?.Version ?? _plcConfig?.Version;
                 Authors = _packageVersion?.Authors ?? _plcConfig?.Authors;
                 Entitlement = _packageVersion?.Entitlement ?? _plcConfig?.Entitlement;
                 License = _packageVersion?.License ?? _plcConfig?.License;
-                LicenseFile = _plcConfig?.LicenseFile;
-                IconFile = _plcConfig?.IconFile;
                 IconImage = TwinpackUtils.IconImage(_package?.IconUrl);
                 //Configuration = "Release";
                 //Target = "TC3.1";
@@ -308,9 +270,6 @@ namespace Twinpack.Dialogs
             {
                 _isConfigured = value;
 
-                if (!_isConfigured)
-                    IsLicenseFileSelectable = false;
-
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsConfigured)));
             }
         }
@@ -356,19 +315,6 @@ namespace Twinpack.Dialogs
         }
 
         public bool ShowLicenseInfo { get; set; }
-
-        public bool IsLicenseFileSelectable
-        {
-            get { return _isLicenseFileSelectable; }
-            set
-            {
-                _isLicenseFileSelectable = value;
-                ShowLicenseInfo = (!_isLicenseFileSelectable && _isNewPackage) || string.IsNullOrEmpty(License);
-
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsLicenseFileSelectable)));
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowLicenseInfo)));
-            }
-        }
 
         public string PackageName
         {
@@ -499,7 +445,20 @@ namespace Twinpack.Dialogs
                 if (_plcConfig != null)
                     _plcConfig.License = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(License)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasLicenseBinary)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasLicenseTmcBinary)));
+
             }
+        }
+
+        public bool HasLicenseBinary
+        {
+            get { return _packageVersion.HasLicenseBinary; }
+        }
+
+        public bool HasLicenseTmcBinary
+        {
+            get { return _packageVersion.HasLicenseTmcBinary; }
         }
 
         public string Authors
@@ -536,19 +495,47 @@ namespace Twinpack.Dialogs
         
         public string LicenseFile
         {
-            get { return _plcConfig?.LicenseFile; }
+            get { return _licenseFile; }
             set
             {
                 try
                 {
+                    _licenseFile = value;
                     if (_plcConfig != null)
-                    {
                         _plcConfig.LicenseFile = value == null ? null : Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
-                        _packageVersion.LicenseBinary = _plcConfig.LicenseFile == null ? null : Convert.ToBase64String(File.ReadAllBytes(Path.Combine(_plcConfig.RootPath, _plcConfig.LicenseFile)));
-                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseFile)));
-                    }
+
+                    if(_packageVersion != null)
+                        _packageVersion.LicenseBinary = _licenseFile == null ? null : Convert.ToBase64String(File.ReadAllBytes(value));
+
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseFile)));
+
                 }
-                catch(Exception ex)
+                catch (Exception ex)
+                {
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
+                }
+            }
+        }
+
+        public string LicenseTmcFile
+        {
+            get { return _licenseTmcFile; }
+            set
+            {
+                try
+                {
+                    _licenseTmcFile = value;
+                    if (_plcConfig != null)
+                        _plcConfig.LicenseTmcFile = value == null ? null : Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
+
+                    if(_packageVersion != null)
+                        _packageVersion.LicenseTmcBinary = _licenseTmcFile == null ? null : Convert.ToBase64String(File.ReadAllBytes(value));
+
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseTmcFile)));
+
+                }
+                catch (Exception ex)
                 {
                     _logger.Trace(ex);
                     _logger.Error(ex.Message);
@@ -599,6 +586,31 @@ namespace Twinpack.Dialogs
             }
         }
 
+        private void ChangeLicenseTmc_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Multiselect = false;
+                openFileDialog.Filter = "tmc files (*.tmc)|*.tmc";
+                openFileDialog.InitialDirectory = _plcConfig?.RootPath ?? Environment.CurrentDirectory;
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    var content = File.ReadAllBytes(openFileDialog.FileName);
+                    if (TwinpackUtils.ParseLicenseId(content) == null)
+                        throw new InvalidDataException("The selected tmc file is not a valid license file!");
+
+                    LicenseTmcFile = openFileDialog.FileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                MessageBox.Show(ex.Message, "License", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
 
         private void ChangeIcon_Click(object sender, RoutedEventArgs e)
         {
@@ -634,9 +646,10 @@ namespace Twinpack.Dialogs
                 ProjectUrl = ProjectUrl,
                 Authors = Authors,
                 License = License,
-                LicenseBinary = _plcConfig != null && !string.IsNullOrEmpty(LicenseFile) && File.Exists(Path.Combine(_plcConfig.RootPath, LicenseFile)) ? Convert.ToBase64String(File.ReadAllBytes(Path.Combine(_plcConfig.RootPath, LicenseFile))) : null,
-                IconFilename = _plcConfig != null && !string.IsNullOrEmpty(IconFile) && File.Exists(Path.Combine(_plcConfig.RootPath, IconFile)) ? IconFile : null,
-                IconBinary = _plcConfig != null && !string.IsNullOrEmpty(IconFile) && File.Exists(Path.Combine(_plcConfig.RootPath, IconFile)) ? Convert.ToBase64String(File.ReadAllBytes(Path.Combine(_plcConfig.RootPath, IconFile))) : null
+                LicenseBinary = !string.IsNullOrEmpty(LicenseFile) && File.Exists(LicenseFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseFile)) : null,
+                LicenseTmcBinary = !string.IsNullOrEmpty(LicenseTmcFile) && File.Exists(LicenseTmcFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseTmcFile)) : null,
+                IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
+                IconBinary = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Convert.ToBase64String(File.ReadAllBytes(IconFile)) : null
             };
 
             try
@@ -825,23 +838,6 @@ namespace Twinpack.Dialogs
                 IsVersionWrongFormat = true;
                 IsNewPackageVersion = false;
             }
-        }
-
-        private void License_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            var comboBox = (sender as ComboBox);
-            IsLicenseFileSelectable = true;
-            foreach (var item in comboBox.Items)
-            {
-                if((item as ComboBoxItem).Content.ToString().Equals(comboBox.Text))
-                {
-                    IsLicenseFileSelectable = false;
-                    break;
-                }
-            }
-
-            if(!IsLicenseFileSelectable)
-                LicenseFile = null;
         }
 
         public void ShowLicenseButton_Click(object sender, RoutedEventArgs e)
