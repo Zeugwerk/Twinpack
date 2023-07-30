@@ -59,7 +59,7 @@ namespace Twinpack.Extensions
             }
         }
 
-        static public string RelativePath(string absPath, string relTo)
+        public static string RelativePath(string absPath, string relTo)
         { 
             string[] absDirs = absPath.Split('\\'); 
             string[] relDirs = relTo.Split('\\');        
