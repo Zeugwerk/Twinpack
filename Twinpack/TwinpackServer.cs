@@ -71,6 +71,7 @@ namespace Twinpack
                     }
                     catch(Exception ex)
                     {
+                        _logger.Warn($"{package.Name}: {ex.Message}");
                         exceptions.Add(ex);
                     }
                 }
@@ -115,6 +116,7 @@ namespace Twinpack
                 }
                 catch(Exception ex)
                 {
+                    _logger.Warn($"{plc.Name}: {ex.Message}");
                     exceptions.Add(ex);
                 }
             }
