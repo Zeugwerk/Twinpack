@@ -140,6 +140,7 @@ namespace Twinpack.Models
             Entitlement = "";
             License = "";
             LicenseFile = "";
+            LicenseTmcFile = "";
         }
 
         public enum PlcProjectType
@@ -232,6 +233,8 @@ namespace Twinpack.Models
 
         [JsonPropertyName("license-file")]
         public string LicenseFile { get; set; }
+        [JsonPropertyName("license-tmc-file")]
+        public string LicenseTmcFile { get; set; }
     }
 
     public class ConfigPatches

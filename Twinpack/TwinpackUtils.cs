@@ -32,7 +32,7 @@ namespace Twinpack
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        static public ITcSysManager SystemManager(Solution solution, ConfigPlcProject plcConfig)
+        public static ITcSysManager SystemManager(Solution solution, ConfigPlcProject plcConfig)
         {
             foreach (Project prj in solution.Projects)
             {
@@ -74,7 +74,7 @@ namespace Twinpack
             return null;
         }
 
-        static public int BuildErrorCount(DTE2 dte)
+        public static int BuildErrorCount(DTE2 dte)
         {
             int errorCount = 0;
             ErrorItems errors = dte.ToolWindows.ErrorList.ErrorItems;
@@ -96,7 +96,7 @@ namespace Twinpack
             return errorCount;
         }
 
-        static public void SyncPlcProj(ITcPlcIECProject2 plc, ConfigPlcProject plcConfig)
+        public static void SyncPlcProj(ITcPlcIECProject2 plc, ConfigPlcProject plcConfig)
         {
             StringWriter stringWriter = new StringWriter();
             using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
@@ -114,7 +114,7 @@ namespace Twinpack
             (plc as ITcSmTreeItem).ConsumeXml(stringWriter.ToString());
         }
 
-        static public void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion)
+        public static void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion)
         {
             libManager.UninstallLibrary("System", packageVersion.Name, packageVersion.Version, packageVersion.DistributorName);
             foreach(var dependency in packageVersion.Dependencies)
@@ -136,7 +136,7 @@ namespace Twinpack
             return false;
         }
 
-        static public async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null)
+        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null)
         {
             var downloadedPackageVersions = new List<PackageVersionGetResponse> { };
 
@@ -175,7 +175,7 @@ namespace Twinpack
             return downloadedPackageVersions;
         }
 
-        static public async Task InstallPackageVersionsAsync(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null)
+        public static async Task InstallPackageVersionsAsync(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null)
         {
             foreach(var packageVersion in packageVersions)
             {
@@ -256,7 +256,7 @@ namespace Twinpack
                 libManager.AddLibrary(libraryName, version, distributorName);
         }
 
-        static public BitmapImage IconImage(string iconUrl)
+        public static BitmapImage IconImage(string iconUrl)
         {
             if (iconUrl == null)
                 return null;
@@ -276,17 +276,33 @@ namespace Twinpack
             }
         }
 
-        static public void CopyLicenseTmcIfNeeded(PackageVersionGetResponse packageVersion, HashSet<string> knownLicenseIds)
+        public static string ParseLicenseId(string content)
+        {
+            try
+            {
+                var xdoc = XDocument.Parse(content);
+                var licenseId = xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+            }
+
+            return null;
+        }
+
+        public static void CopyLicenseTmcIfNeeded(PackageVersionGetResponse packageVersion, HashSet<string> knownLicenseIds)
         {
             if (!packageVersion.HasLicenseTmcBinary)
                 return;
 
             try
             {
-                var xdoc = XDocument.Parse(packageVersion.LicenseTmcText);
-                var licenseId = xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
+                var licenseId = ParseLicenseId(packageVersion.LicenseTmcText);
+                if(licenseId == null)
+                    throw new InvalidDataException("The tmc file is not a valid license file!");
 
-                if(knownLicenseIds.Contains(licenseId))
+                if (knownLicenseIds.Contains(licenseId))
                 {
                     _logger.Info($"LicenseId={licenseId} already known");
                     return;
@@ -325,14 +341,10 @@ namespace Twinpack
             {
                 try
                 {
-                    var xdoc = XDocument.Load(fileName);
-                    var licenseId = xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
+                    var licenseId = ParseLicenseId(File.ReadAllText(fileName));
 
                     if (licenseId == null)
-                    {
-                        _logger.Warn($"{fileName} does not contain a license id!");
-                        continue;
-                    }
+                        throw new InvalidDataException("The file {fileName} is not a valid license file!");
 
                     result.Add(licenseId);
                 }
