@@ -138,7 +138,7 @@
                             <Grid Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch">
                                 <TextBlock Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" FontWeight="SemiBold">
                                     <fa:ImageAwesome Icon="Bolt" Height="12" Visibility="{Binding IsUpdateable, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
-                                    <Run Text="{Binding InstalledVersion}"></Run>
+                                    <Run Text="{Binding InstalledVersion, Mode=OneWay}"></Run>
                                 </TextBlock>
                             </Grid>
 
@@ -255,7 +255,7 @@
                                 <RowDefinition Height="auto"></RowDefinition>
                             </Grid.RowDefinitions>
                             <TextBlock Text="Installed" Grid.Column="0" Grid.Row="0" Margin="5,0,5,5"></TextBlock>
-                            <TextBox Text="{Binding InstalledPackageVersion}" Padding="3,0,0,0" IsReadOnly="True" IsEnabled="False" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="0" Margin="5,0,5,5"/>
+                            <TextBox Text="{Binding InstalledPackageVersion, Mode=OneWay}" Padding="3,0,0,0" IsReadOnly="True" IsEnabled="False" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="0" Margin="5,0,5,5"/>
 
                             <TextBlock Visibility="{Binding Visibility, ElementName=BranchesView}" Text="Branch" Grid.Column="0" Grid.Row="1" Margin="5,0,5,5"></TextBlock>
                             <ComboBox x:Name="BranchesView" ItemsSource="{Binding Branches}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="1" Margin="5,0,5,5">
@@ -317,11 +317,15 @@
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="auto"></RowDefinition>
                                         <RowDefinition Height="auto"></RowDefinition>
+                                        <RowDefinition Height="auto"></RowDefinition>
                                     </Grid.RowDefinitions>
-                                    <CheckBox IsChecked="{Binding ForcePackageVersionDownload}">
-                                        <TextBlock TextWrapping="Wrap">Force package download on unstall and update</TextBlock>
+                                    <CheckBox Grid.Row="0" IsChecked="{Binding ForcePackageVersionDownload}">
+                                        <TextBlock TextWrapping="Wrap">Force package download on install and update</TextBlock>
                                     </CheckBox>
-                                    <CheckBox Grid.Row="1" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding UninstallDeletes}" Margin="0 5 0 0">
+                                    <CheckBox Grid.Row="1" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding ForceShowLicense}" Margin="0 5 0 0">
+                                        <TextBlock>Confirm license of already installed packages</TextBlock>
+                                    </CheckBox>                                    
+                                    <CheckBox Grid.Row="2" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding UninstallDeletes}" Margin="0 5 0 0">
                                         <TextBlock>Uninstall deletes library from system</TextBlock>
                                     </CheckBox>
                                 </Grid>

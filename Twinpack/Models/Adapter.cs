@@ -20,11 +20,6 @@ namespace Twinpack.Models
 
         public CatalogItem(PackageVersionGetResponse packageVersion)
         {
-            InstalledVersion = packageVersion.Version;
-            InstalledBranch = packageVersion.Branch;
-            InstalledTarget = packageVersion.Target;
-            InstalledConfiguration = packageVersion.Configuration;
-
             PackageId = packageVersion.PackageId;
             Repository = packageVersion.Repository;
             Description = packageVersion.Description;
@@ -38,20 +33,15 @@ namespace Twinpack.Models
 
         public CatalogItem(ConfigPlcPackage package)
         {
-            InstalledVersion = package.Version;
-            InstalledBranch = package.Branch;
-            InstalledTarget = package.Target;
-            InstalledConfiguration = package.Configuration;
-
             Name = package.Name;
             Repository = package.Version;
             DistributorName = package.DistributorName;
             DisplayName = Name;
         }
-        public string InstalledVersion { get; set; }
-        public string InstalledBranch { get; set; }
-        public string InstalledTarget { get; set; }
-        public string InstalledConfiguration { get; set; }
+        public string InstalledVersion { get { return Installed?.Version; } }
+        public string InstalledBranch { get { return Installed?.Branch; } }
+        public string InstalledTarget { get { return Installed?.Target; } }
+        public string InstalledConfiguration { get { return Installed?.Configuration; } }
         public PackageVersionGetResponse Update { get; set; }
         public PackageVersionGetResponse Installed { get; set; }
 

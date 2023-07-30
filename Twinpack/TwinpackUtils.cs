@@ -20,12 +20,15 @@ using Twinpack.Models;
 using Twinpack.Exceptions;
 using EnvDTE80;
 using System.Windows.Media.Imaging;
+using System.Security.Cryptography;
 
 namespace Twinpack
 {
     public class TwinpackUtils
     {
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
+
+        public static string LicensesPath = @"C:\TwinCAT\3.1\CustomConfig\Licenses";
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -271,6 +274,77 @@ namespace Twinpack
             {
                 return null;
             }
+        }
+
+        static public void CopyLicenseTmcIfNeeded(PackageVersionGetResponse packageVersion, HashSet<string> knownLicenseIds)
+        {
+            if (!packageVersion.HasLicenseTmcBinary)
+                return;
+
+            try
+            {
+                var xdoc = XDocument.Parse(packageVersion.LicenseTmcText);
+                var licenseId = xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
+
+                if(knownLicenseIds.Contains(licenseId))
+                {
+                    _logger.Info($"LicenseId={licenseId} already known");
+                    return;
+                }
+                else
+                {
+                    _logger.Info($"Copying license tmc with licenseId={licenseId} to {LicensesPath}");
+
+                    using(var md5 = MD5.Create())
+                    {
+                        if(!Directory.Exists(LicensesPath))
+                            Directory.CreateDirectory(LicensesPath);
+
+                        File.WriteAllText(Path.Combine(LicensesPath, BitConverter.ToString(md5.ComputeHash(Convert.FromBase64String($"{packageVersion.DistributorName}{packageVersion.Name}"))).Replace("-", "") + ".tmc"),
+                                          packageVersion.LicenseTmcText);
+
+                    }
+
+                    knownLicenseIds.Add(licenseId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.Message);
+                _logger.Trace(ex);
+            }
+        }
+
+        public static HashSet<string> KnownLicenseIds()
+        {
+            var result = new HashSet<string>();
+            if (!Directory.Exists(LicensesPath))
+                return result;
+
+            foreach (var fileName in Directory.GetFiles(LicensesPath, "*.tmc", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    var xdoc = XDocument.Load(fileName);
+                    var licenseId = xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
+
+                    if (licenseId == null)
+                    {
+                        _logger.Warn($"{fileName} does not contain a license id!");
+                        continue;
+                    }
+
+                    result.Add(licenseId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Trace(ex);
+                }
+
+
+            }
+
+            return result;
         }
     }
 }
