@@ -404,7 +404,7 @@ namespace Twinpack.Dialogs
             }
         }  
         
-        public List<string> Branches
+        public IEnumerable<string> Branches
         {
             get
             { 
