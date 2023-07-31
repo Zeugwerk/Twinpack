@@ -48,6 +48,7 @@ namespace Twinpack.Dialogs
         private TwinpackServer _twinpackServer = new TwinpackServer();
         private Authentication _auth;
 
+        private IEnumerable<string> _branches;
         private IEnumerable<Models.PackageVersionGetResponse> _dependencies;
         private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Models.PackageVersionGetResponse();
@@ -136,6 +137,8 @@ namespace Twinpack.Dialogs
                 if (_plcConfig == null && _package.PackageId != null)
                     _package = await _twinpackServer.GetPackageAsync((int)_package.PackageId);
 
+                Branches = _package.PackageId != null ? _package.Branches : new List<string> { "main" };
+
                 LoadingText = "Retrieving package version ...";
                 if (_packageVersion.PackageVersionId == null && _package.PackageId != null)
                 {
@@ -208,9 +211,8 @@ namespace Twinpack.Dialogs
                     Version = new Version(v.Major, v.Minor, v.Build, v.Revision + 1).ToString();
                 }
 
-                var branch = _package?.Branches.FirstOrDefault(x => x == _packageVersion?.Branch);
-                if (branch != null)
-                    BranchesView.SelectedIndex = _package.Branches.IndexOf(branch);
+                var branch = Branches.FirstOrDefault(x => x == _packageVersion?.Branch);
+                BranchesView.SelectedIndex = branch != null ? Branches.IndexOf(branch) : 0;
 
                 var entitlement = UserInfo?.Entitlements.FirstOrDefault(x => x == _package?.Entitlement);
                 if (entitlement != null)
@@ -404,7 +406,14 @@ namespace Twinpack.Dialogs
         
         public List<string> Branches
         {
-            get { return _package?.Branches; }
+            get
+            { 
+                return _branches;
+            }
+            set
+            {
+                _branches = value;
+            }
         }
 
         public string Version
