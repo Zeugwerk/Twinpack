@@ -214,13 +214,18 @@
                           SelectionChanged="ValidateVisibility_SelectionChanged">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock Margin="5 0 0 0" Text="{Binding Name}"></TextBlock>
-                                <TextBlock HorizontalAlignment="Right" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock HorizontalAlignment="Right" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </StackPanel>
+                            <Grid HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Columm="0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Columm="0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock Margin="5 0 0 0" Grid.Columm="1" Text="{Binding Name}"></TextBlock>
+                                <TextBlock HorizontalAlignment="Right" Grid.Columm="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock HorizontalAlignment="Right" Grid.Columm="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
@@ -231,13 +236,18 @@
                           HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock Margin="5 0 0 0" Text="{Binding Name}"></TextBlock>
-                                <TextBlock HorizontalAlignment="Right" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock HorizontalAlignment="Right" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </StackPanel>
+                            <Grid HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Columm="0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Columm="0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock Margin="5 0 0 0" Grid.Columm="1" Text="{Binding Name}"></TextBlock>
+                                <TextBlock HorizontalAlignment="Right" Grid.Columm="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock HorizontalAlignment="Right" Grid.Columm="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
@@ -254,13 +264,18 @@
                           SelectionChanged="ValidateVisibility_SelectionChanged">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock Margin="5 0 0 0" Text="{Binding Name}"></TextBlock>
-                                <TextBlock HorizontalAlignment="Right" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock HorizontalAlignment="Right" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </StackPanel>
+                            <Grid HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Columm="0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Columm="0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock Margin="5 0 0 0" Grid.Columm="1" Text="{Binding Name}"></TextBlock>
+                                <TextBlock HorizontalAlignment="Right" Grid.Columm="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock HorizontalAlignment="Right" Grid.Columm="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
