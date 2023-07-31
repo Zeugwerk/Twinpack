@@ -50,7 +50,8 @@
 
         <!-- General Data -->
         <StackPanel Grid.Row="1" Grid.Column="2" Margin="50 15 50 0"  IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
-            <TextBlock Text="{Binding PackageName}" HorizontalAlignment="Center" Margin="0" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding PackageName}" d:Text="Zeugwerk.Core"
+                       HorizontalAlignment="Center" Margin="0" FontSize="18" FontWeight="SemiBold"/>
 
             <Image Source="{Binding IconImage}" Width="128" Height="128" Margin="0,10,0,10"/>
 
@@ -66,9 +67,13 @@
 
             <TextBlock Text="{Binding DistributorName}"  FontWeight="SemiBold"  HorizontalAlignment="Center" Margin="0 0 0 15"
                        Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter},ConverterParameter='inverse'}"/>
-            <Label Content="Distributor name:" HorizontalAlignment="Left" Margin="0" Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <TextBox Text="{Binding DistributorName}" Margin="0" Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
+            <TextBlock HorizontalAlignment="Left" Margin="0" FontWeight="DemiBold"
+                   Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Run Text="Distributor name"></Run><Run Foreground="#da776d" Text="*"></Run><Run Text=":"></Run>
+            </TextBlock>
+            <TextBox Text="{Binding DistributorName}" Margin="0" 
+                     Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}"
+                     TextChanged="DistributorNameTextBox_TextChanged"/>
             <StackPanel Orientation="Vertical">
                 <Label Content="Display Name:" HorizontalAlignment="Left" Margin="0"/>
                 <TextBox Text="{Binding DisplayName}" Width="200" Margin="0"/>
@@ -120,7 +125,9 @@
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Vertical" Width="150" IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
-                <Label Content="Version:" HorizontalAlignment="Left" Margin="0"/>
+                <TextBlock HorizontalAlignment="Left" Margin="0" FontWeight="DemiBold">
+                <Run Text="Version"></Run><Run Foreground="#da776d" Text="*"></Run><Run Text=":"></Run>
+                </TextBlock>
                 <TextBox Text="{Binding Version}" Margin="0" VerticalAlignment="Top" 
                          Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}}"
                          TextChanged="VersionTextBox_TextChanged"/>
@@ -190,51 +197,72 @@
                     <TextBlock.LayoutTransform>
                         <RotateTransform Angle="90"></RotateTransform>
                     </TextBlock.LayoutTransform>
+                    <fa:ImageAwesome Height="12" Icon="Users" Margin="0 0 5 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
+                    <fa:ImageAwesome Height="12" Icon="UserSecret" Margin="0 0 5 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"></fa:ImageAwesome>
                     <Run Text="Advanced"></Run>
-                    <Run Text="("></Run><Run Text="{Binding DependencyCount, Mode=OneWay}"></Run><Run Text=")"></Run>
                 </TextBlock>
             </Expander.Header>
             <StackPanel Orientation="Vertical" DataContext="{Binding UserInfo}" IsEnabled="{Binding IsPublishMode, ElementName=wndParent}">
                 <TextBlock Visibility="{Binding Visibility, ElementName=BranchesView}" Text="Branch" Margin="5,0,5,5"></TextBlock>
-                <ComboBox x:Name="BranchesView" ItemsSource="{Binding Branches, ElementName=wndParent}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Branch}"/>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
+                <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="BranchesView" 
+                          d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5"
+                          SelectionChanged="ValidateVisibility_SelectionChanged">
                 </ComboBox>
 
                 <TextBlock Visibility="{Binding Visibility, ElementName=TargetsView}" Text="Target" Margin="5,0,5,5"></TextBlock>
-                <ComboBox x:Name="TargetsView" ItemsSource="{Binding Targets}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
+                <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="TargetsView" HorizontalContentAlignment="Stretch" Margin="5,0,5,5"
+                          SelectionChanged="ValidateVisibility_SelectionChanged">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Target}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock Margin="5 0 0 0" Text="{Binding Name}"></TextBlock>
+                                <TextBlock HorizontalAlignment="Right" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock HorizontalAlignment="Right" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </StackPanel>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
 
                 <TextBlock Visibility="{Binding Visibility, ElementName=ConfigurationsView}" Text="Configuration" Margin="5,0,5,5"></TextBlock>
-                <ComboBox x:Name="ConfigurationsView" ItemsSource="{Binding Configurations}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
+                <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="ConfigurationsView" d:ItemsSource="{d:SampleData ItemCount=3}" 
+                          SelectionChanged="ValidateVisibility_SelectionChanged"
+                          HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Configuration}"/>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-
-                <TextBlock Visibility="{Binding Visibility, ElementName=EntitlementView}" Text="Entitlement" Margin="5,0,5,5"></TextBlock>
-                <ComboBox x:Name="EntitlementView" ItemsSource="{Binding Entitlements}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Configuration}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock Margin="5 0 0 0" Text="{Binding Name}"></TextBlock>
+                                <TextBlock HorizontalAlignment="Right" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock HorizontalAlignment="Right" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </StackPanel>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
 
                 <TextBlock Visibility="{Binding Visibility, ElementName=FileTypeView}" Text="Filetype" Margin="5,0,5,5"></TextBlock>
-                <ComboBox x:Name="FileTypeView" HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
+                <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="FileTypeView" HorizontalContentAlignment="Stretch" Margin="5,0,5,5"
+                          SelectionChanged="ValidateVisibility_SelectionChanged">
                     <ComboBoxItem>.library</ComboBoxItem>
                     <ComboBoxItem IsEnabled="{Binding HasCompiledLibraryCapability}">.compiled-library</ComboBoxItem>
+                </ComboBox>
+
+                <TextBlock Visibility="{Binding Visibility, ElementName=EntitlementView}" Text="Entitlement" Margin="5,0,5,5"></TextBlock>
+                <ComboBox x:Name="EntitlementView" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5"
+                          SelectionChanged="ValidateVisibility_SelectionChanged">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock Margin="5 0 0 0" Text="{Binding Name}"></TextBlock>
+                                <TextBlock HorizontalAlignment="Right" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock HorizontalAlignment="Right" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
                 </ComboBox>
 
                 <Label Content="Runtime License:" HorizontalAlignment="Left" Margin="0"/>
@@ -297,39 +325,52 @@
             <StackPanel VerticalAlignment="Center" Margin="15 60 15 0">
 
                 <TextBlock  Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" TextWrapping="Wrap" Margin="0 0 0 0">
+                    <fa:ImageAwesome Height="12" Icon="Check" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">Known Distributor</Run>
                     <LineBreak></LineBreak>
                     <Run>You already uploaded one or more packages to the Twinpack Server and setup your are distribution name.</Run>
                 </TextBlock>
 
                 <TextBlock  Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" Margin="0 0 0 0">
+                    <fa:ImageAwesome Height="12" Icon="Plus" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">New Distributor</Run>
                     <LineBreak></LineBreak>
                     <Run>You have not uploaded any packages to the Twinpack server. Please use a unique "Distributor name", which is then used for all of your packages. This property is linked to your user account and can not be changed.</Run>
                 </TextBlock>
 
                 <TextBlock TextWrapping="Wrap" Margin="0 15 0 0"  Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
+                    <fa:ImageAwesome Height="12" Icon="Check" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">Known Package</Run>
                     <LineBreak></LineBreak>
                     <Run>There are versions of this package available on the Twinpack Server. You may upload additional versions of this package or apply limited changes to the selected package.</Run>
                 </TextBlock>
 
                 <TextBlock TextWrapping="Wrap" Margin="0 15 0 0"  Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                     <fa:ImageAwesome Height="12" Icon="Plus" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">New Package</Run>
                     <LineBreak></LineBreak>
                     <Run>The package is not known on the Twinpack Server yet!</Run>
                 </TextBlock>
 
                 <TextBlock  TextWrapping="Wrap" Margin="0 15 0 0" Visibility="{Binding IsConfigured, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
+                    <fa:ImageAwesome Height="12" Icon="Warning" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">Missing configuration</Run>
                     <LineBreak></LineBreak>
                     <Run>Certain properties can not be edited, because the package's configuration can not be found.</Run>
                 </TextBlock>
 
-                <TextBlock TextWrapping="Wrap" Margin="0 15 0 0">
-                    <Run FontWeight="SemiBold">Public Visibility</Run>
+                <TextBlock TextWrapping="Wrap" Margin="0 15 0 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <fa:ImageAwesome Height="12" Icon="Users" Margin="0 0 5 0"></fa:ImageAwesome>
+                    <Run FontWeight="SemiBold">Public</Run>
                     <LineBreak></LineBreak>
-                    <Run>The package in the current configuration will be visible to all users of Twinpack.</Run>
+                    <Run>This package is visible publically.</Run>
+                </TextBlock>
+
+                <TextBlock TextWrapping="Wrap" Margin="0 15 0 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
+                    <fa:ImageAwesome Height="12" Icon="UserSecret" Margin="0 0 5 0"></fa:ImageAwesome>
+                    <Run FontWeight="SemiBold">Private</Run>
+                    <LineBreak></LineBreak>
+                    <Run>This package has restriction so it is only visible to a limited audience.</Run>
                 </TextBlock>
             </StackPanel>
 

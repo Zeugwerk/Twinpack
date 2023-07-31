@@ -369,15 +369,39 @@ namespace Twinpack.Models
 
             [JsonPropertyName("public")]
             public int Public { get; set; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+            public bool IsPublic { get { return Public == 1; } }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+            public bool IsPrivate { get { return Public == 0; } }
         }
 
         public class Target
         {
-            [JsonPropertyName("configuration")]
+            [JsonPropertyName("target")]
             public string Name { get; set; }
 
             [JsonPropertyName("public")]
             public int Public { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+            public bool IsPublic { get { return Public == 1; } }
+            [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+            public bool IsPrivate { get { return Public == 0; } }
+        }
+
+        public class Entitlement
+        {
+            [JsonPropertyName("entitlement")]
+            public string Name { get; set; }
+
+            [JsonPropertyName("public")]
+            public int Public { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+            public bool IsPublic { get { return Public == 1; } }
+            [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+            public bool IsPrivate { get { return Public == 0; } }
         }
 
         [JsonPropertyName("user")]
@@ -389,7 +413,7 @@ namespace Twinpack.Models
         [JsonPropertyName("targets")]
         public List<Target> Targets { get; set; }
         [JsonPropertyName("entitlements")]
-        public List<string> Entitlements { get; set; }
+        public List<Entitlement> Entitlements { get; set; }
         [JsonPropertyName("flags")]
         public List<string> Flags { get; set; }
         [JsonPropertyName("update-version")]

@@ -35,6 +35,7 @@ namespace Twinpack.Dialogs
 
         private Models.LoginPostResponse _userInfo;
         private bool _isPublishMode;
+        private bool _isPublic;
         private bool _isGeneralDataReadOnly;
         private bool _isVersionWrongFormat;
         private bool _isNewUser;
@@ -48,7 +49,7 @@ namespace Twinpack.Dialogs
         private TwinpackServer _twinpackServer = new TwinpackServer();
         private Authentication _auth;
 
-        private IEnumerable<string> _branches;
+        private List<string> _branches;
         private IEnumerable<Models.PackageVersionGetResponse> _dependencies;
         private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Models.PackageVersionGetResponse();
@@ -183,9 +184,6 @@ namespace Twinpack.Dialogs
                 ProjectUrl = _package?.ProjectUrl ?? _plcConfig?.ProjectUrl;
                 DistributorName = _package?.DistributorName ?? _plcConfig?.DistributorName;
                 License = _package?.License ?? _plcConfig?.License;
-                LicenseFile = _plcConfig != null ? Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _plcConfig.LicenseFile) : null;
-                LicenseTmcFile = _plcConfig != null ? Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _plcConfig.LicenseTmcFile) : null;
-                IconFile = _plcConfig != null ? Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _plcConfig.IconFile) : null;
                 Version = _packageVersion?.Version ?? _plcConfig?.Version;
                 Authors = _packageVersion?.Authors ?? _plcConfig?.Authors;
                 License = _packageVersion?.License ?? _plcConfig?.License;
@@ -204,6 +202,18 @@ namespace Twinpack.Dialogs
                     Version = x.Version
                 }) ?? new List<Models.PackageVersionGetResponse>();
 
+                try
+                {
+                    LicenseFile = _plcConfig != null && !string.IsNullOrEmpty(_plcConfig.LicenseFile) ? Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _plcConfig.LicenseFile) : null;
+                    LicenseTmcFile = _plcConfig != null && !string.IsNullOrEmpty(_plcConfig.LicenseTmcFile) ? Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _plcConfig.LicenseTmcFile) : null;
+                    IconFile = _plcConfig != null && !string.IsNullOrEmpty(_plcConfig.IconFile) ? Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _plcConfig.IconFile) : null;
+                }
+                catch(Exception ex)
+                {
+                    _logger.Trace(ex);
+                    _logger.Warn(ex.Message);
+                }
+
                 // increment the version number right away
                 if (!IsNewPackage && IsPublishMode)
                 {
@@ -211,26 +221,31 @@ namespace Twinpack.Dialogs
                     Version = new Version(v.Major, v.Minor, v.Build, v.Revision + 1).ToString();
                 }
 
+                // Fill and select advanced options
+                BranchesView.ItemsSource = Branches;
+                EntitlementView.ItemsSource = UserInfo.Entitlements;
+                ConfigurationsView.ItemsSource = UserInfo.Configurations;
+                TargetsView.ItemsSource = UserInfo.Targets;
+
                 var branch = Branches.FirstOrDefault(x => x == _packageVersion?.Branch);
+                var entitlement = UserInfo?.Entitlements.FirstOrDefault(x => x.Name == _package?.Entitlement) ?? UserInfo?.Entitlements.FirstOrDefault(x => x.IsPublic);
+                var configuration = UserInfo?.Configurations.FirstOrDefault(x => x.Name == _packageVersion?.Configuration) ?? UserInfo?.Configurations.FirstOrDefault(x => x.IsPublic);
+                var target = UserInfo?.Targets.FirstOrDefault(x => x.Name == _packageVersion?.Target) ?? UserInfo?.Targets.FirstOrDefault(x => x.IsPublic);
+
                 BranchesView.SelectedIndex = branch != null ? Branches.IndexOf(branch) : 0;
+                EntitlementView.SelectedIndex = entitlement != null ? UserInfo.Entitlements.IndexOf(entitlement) : 0;
+                ConfigurationsView.SelectedIndex = configuration != null ? UserInfo.Configurations.IndexOf(configuration) : 0;
+                TargetsView.SelectedIndex = target != null ? UserInfo.Targets.IndexOf(target) : 0;
+                FileTypeView.SelectedIndex = _packageVersion?.Compiled == 1 ? 1 : 0;
 
-                var entitlement = UserInfo?.Entitlements.FirstOrDefault(x => x == _package?.Entitlement);
-                if (entitlement != null)
-                    EntitlementView.SelectedIndex = UserInfo.Entitlements.IndexOf(entitlement);
-
-                var configuration = UserInfo?.Configurations.FirstOrDefault(x => x.Name == _packageVersion?.Configuration);
-                if (configuration != null)
-                    ConfigurationsView.SelectedIndex = UserInfo.Configurations.IndexOf(configuration);
-
-                var target = UserInfo?.Targets.FirstOrDefault(x => x.Name == _packageVersion?.Target);
-                if (target != null)
-                    TargetsView.SelectedIndex = UserInfo.Targets.IndexOf(target);
-
-                IsConfigured = _plcConfig != null && _plcConfig.Name == _package.Name && _plcConfig.DistributorName == _package.DistributorName && _package.Repository == _twinpackServer.Username;
+                IsConfigured = _plcConfig != null && (_package?.PackageId == null || _plcConfig.Name == _package.Name && _plcConfig.DistributorName == _package.DistributorName && _package.Repository == _twinpackServer.Username);
                 IsNewPackage = _package.PackageId == null;
                 if (IsNewPackage)
                     License = (cmbLicense.Items[2] as ComboBoxItem).Content.ToString();
-                IsGeneralDataReadOnly = _package.Repository != _twinpackServer.Username;
+                IsGeneralDataReadOnly = _package?.PackageId != null && _package.Repository != _twinpackServer.Username;
+                
+                ValidateNewPackageVersion();
+                ValidateVisibility();
             }
             catch (Exception ex)
             {
@@ -267,6 +282,16 @@ namespace Twinpack.Dialogs
             {
                 _isPublishMode = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPublishMode)));
+            }
+        }
+
+        public bool IsPublic
+        {
+            get { return _isPublic; }
+            set
+            {
+                _isPublic = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPublic)));
             }
         }
 
@@ -404,7 +429,7 @@ namespace Twinpack.Dialogs
             }
         }  
         
-        public IEnumerable<string> Branches
+        public List<string> Branches
         {
             get
             { 
@@ -664,6 +689,7 @@ namespace Twinpack.Dialogs
                 ProjectUrl = ProjectUrl,
                 Authors = Authors,
                 License = License,
+                Entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement).Name,
                 LicenseBinary = !string.IsNullOrEmpty(LicenseFile) && File.Exists(LicenseFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseFile)) : null,
                 LicenseTmcBinary = !string.IsNullOrEmpty(LicenseTmcFile) && File.Exists(LicenseTmcFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseTmcFile)) : null,
                 IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
@@ -771,9 +797,10 @@ namespace Twinpack.Dialogs
 
                     LoadingText = "Uploading to Twinpack ...";
                     var branch = BranchesView.SelectedItem as string;
-                    var configuration = ConfigurationsView.SelectedItem as string;
-                    var target = TargetsView.SelectedItem as string;
+                    var configuration = (ConfigurationsView.SelectedItem as Models.LoginPostResponse.Configuration).Name;
+                    var target = (TargetsView.SelectedItem as Models.LoginPostResponse.Target).Name;
                     var compiled = FileTypeView.SelectedIndex != 0;
+                    _plcConfig.Entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement).Name;
 
                     _packageVersion = await _twinpackServer.PostPackageVersionAsync(_plcConfig, configuration, branch, target, Notes,
                         false, cachePath: $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries");
@@ -840,13 +867,10 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async void VersionTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        public void ValidateNewPackageVersion()
         {
-            var text = ((TextBox)sender).Text;
-            Version = text;
-            await Task.Delay(100);
-
-            if(Version != text || _packageVersion.PackageVersionId == null || _package.PackageId == null)
+            if (string.IsNullOrEmpty(DistributorName) ||
+                string.IsNullOrEmpty(PackageName))
             {
                 IsNewPackageVersion = false;
                 return;
@@ -854,10 +878,10 @@ namespace Twinpack.Dialogs
 
             try
             {
-                var version = new Version(text);
-                var latestVersion = new Version(LatestVersion);
+                var version = new Version(Version);
+                var latestVersion = string.IsNullOrEmpty(LatestVersion) ? new Version("0.0.0.0") : new Version(Version);
 
-                IsVersionWrongFormat = !Regex.Match(text, @"^\d+\.\d+\.\d+\.\d+$").Success;
+                IsVersionWrongFormat = !Regex.Match(Version, @"^\d+\.\d+\.\d+\.\d+$").Success;
                 IsNewPackageVersion = version > latestVersion;
             }
             catch (Exception)
@@ -865,6 +889,30 @@ namespace Twinpack.Dialogs
                 IsVersionWrongFormat = true;
                 IsNewPackageVersion = false;
             }
+        }
+
+        public async void PackageNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var text = ((TextBox)sender).Text;
+            PackageName = text;
+
+            ValidateNewPackageVersion();
+        }
+
+        public async void DistributorNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var text = ((TextBox)sender).Text;
+            DistributorName = text;
+
+            ValidateNewPackageVersion();
+        }
+
+        public async void VersionTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var text = ((TextBox)sender).Text;
+            Version = text;
+
+            ValidateNewPackageVersion();
         }
 
         public void ShowLicenseButton_Click(object sender, RoutedEventArgs e)
@@ -911,6 +959,20 @@ namespace Twinpack.Dialogs
             }
 
             return config;
+        }
+
+        private void ValidateVisibility()
+        {
+            var configuration = (ConfigurationsView.SelectedItem as Models.LoginPostResponse.Configuration);
+            var target = (TargetsView.SelectedItem as Models.LoginPostResponse.Target);
+            var entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement);
+
+            IsPublic = configuration?.IsPublic == true && target?.IsPublic == true && entitlement?.IsPublic == true;
+        }
+
+        private void ValidateVisibility_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ValidateVisibility();
         }
     }
 }
