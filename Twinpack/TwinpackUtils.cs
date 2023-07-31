@@ -105,6 +105,7 @@ namespace Twinpack
                 writer.WriteStartElement("TreeItem");
                 writer.WriteStartElement("IECProjectDef");
                 writer.WriteStartElement("ProjectInfo");
+                writer.WriteElementString("Title", plcConfig.Name);
                 writer.WriteElementString("Version", (new Version(plcConfig.Version)).ToString());
                 writer.WriteElementString("Company", plcConfig.DistributorName);
                 writer.WriteEndElement();     // ProjectInfo
