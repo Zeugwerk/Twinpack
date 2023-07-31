@@ -161,6 +161,32 @@ namespace Twinpack.Models
 
             return path;
         }
+
+        public static void UpdatePlcProject(Config config, ConfigPlcProject plcConfig)
+        {
+            if (config == null || plcConfig == null)
+            {
+                _logger.Warn($"The solution doesn't have a package configuration");
+                return;
+            }
+
+            _logger.Info($"Updating package configuration {Path.GetFullPath(config.FilePath)}");
+
+            var projectIndex = config.Projects.FindIndex(x => x.Name == plcConfig.ProjectName);
+            if (projectIndex < 0)
+            {
+                config.Projects.Add(new Models.ConfigProject { Name = plcConfig.ProjectName, Plcs = new List<ConfigPlcProject> { plcConfig } });
+            }
+            else
+            {
+                var plcIndex = config.Projects[projectIndex].Plcs.FindIndex(x => x.Name == plcConfig.Name);
+                
+                if (plcIndex < 0)
+                    config.Projects[projectIndex].Plcs.Add(plcConfig);
+                 else
+                     config.Projects[projectIndex].Plcs[plcIndex] = plcConfig;
+            }
+        }
     }
 
 
