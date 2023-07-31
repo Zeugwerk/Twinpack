@@ -178,6 +178,8 @@ namespace Twinpack.Models
         public string LicenseTmcBinary { get; set; }
         [JsonPropertyName("license-binary")]
         public string LicenseBinary { get; set; }
+        [JsonPropertyName("branches")]
+        public List<string> Branches { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasLicense { get { return !string.IsNullOrEmpty(License); } }
@@ -394,6 +396,10 @@ namespace Twinpack.Models
         public string UpdateVersion { get; set; }
         [JsonPropertyName("update-url")]
         public string UpdateUrl { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool HasCompiledLibraryCapability { get { return Flags?.Contains("FLAG_COMPILED") == true; } }
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool HasLicenseTmcCapability { get { return Flags?.Contains("FLAG_RUNTIME_LICENSE") == true; } }
     }
 
     public class NotificationsGetResponse : Response

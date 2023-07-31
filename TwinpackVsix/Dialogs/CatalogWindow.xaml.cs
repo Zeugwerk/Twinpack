@@ -798,27 +798,11 @@ namespace Twinpack.Dialogs
         public async Task<Models.Config> WritePlcConfigToConfigAsync(Models.ConfigPlcProject plcConfig)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            var config = Models.ConfigFactory.Load(System.IO.Path.GetDirectoryName(_context.Solution.FullName));
+            var config = Models.ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
 
-            if (config != null)
+            if(config != null)
             {
-                _logger.Info($"Updating package configuration {Path.GetFullPath(config.FilePath)}");
-
-                var projectIndex = config.Projects.FindIndex(x => x.Name == plcConfig.ProjectName);
-                if (projectIndex < 0)
-                {
-                    config.Projects.Add(new Models.ConfigProject { Name = plcConfig.ProjectName, Plcs = new List<Models.ConfigPlcProject> { plcConfig } });
-                }
-                else
-                {
-                    var plcIndex = config.Projects[projectIndex].Plcs.FindIndex(x => x.Name == plcConfig.Name);
-
-                    if (plcIndex < 0)
-                        config.Projects[projectIndex].Plcs.Add(plcConfig);
-                    else
-                        config.Projects[projectIndex].Plcs[plcIndex] = plcConfig;
-                }
-
+                Models.ConfigFactory.UpdatePlcProject(config, plcConfig);
                 Models.ConfigFactory.Save(config);
             }
             else
