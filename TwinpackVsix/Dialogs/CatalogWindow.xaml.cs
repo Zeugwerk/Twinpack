@@ -49,6 +49,7 @@ namespace Twinpack.Dialogs
         private double _catalogScrollPosition = 0;
         private double _packageVersionsScrollPosition = 0;
 
+        private bool _isLoadingPlcConfig = false;
         private bool _isFetchingInstalledPackages = false;
         private bool _isFetchingAvailablePackages = false;
         private bool _isFetchingPackageVersions = false;
@@ -399,6 +400,7 @@ namespace Twinpack.Dialogs
             {
                 try
                 {
+                    _isLoadingPlcConfig = true;
                     await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
                     var config = Models.ConfigFactory.Load(System.IO.Path.GetDirectoryName(_context.Solution.FullName));
@@ -426,6 +428,7 @@ namespace Twinpack.Dialogs
             }
             else
             {
+                _isLoadingPlcConfig = false;
                 IsCreateConfigVisible = false;
                 IsConfigured = false;
             }
@@ -681,17 +684,17 @@ namespace Twinpack.Dialogs
             if (_isBrowsingAvailablePackages)
             {
                 Catalog = new List<Models.CatalogItem>(_availablePackages);
-                IsCatalogLoading = IsFetchingAvailablePackages;
+                IsCatalogLoading = IsFetchingAvailablePackages || _isLoadingPlcConfig;
             }
             else if (_isBrowsingInstalledPackages)
             {
                 Catalog = new List<Models.CatalogItem>(_installedPackages);
-                IsCatalogLoading = IsFetchingInstalledPackages;
+                IsCatalogLoading = IsFetchingInstalledPackages || _isLoadingPlcConfig;
             }
             else if (_isBrowsingUpdatablePackages)
             {
                 Catalog = _installedPackages.Where(x => x.IsUpdateable).ToList();
-                IsCatalogLoading = IsFetchingInstalledPackages;
+                IsCatalogLoading = IsFetchingInstalledPackages || _isLoadingPlcConfig;
             }
 
             IsUpdateAllVisible = _isBrowsingUpdatablePackages && Catalog.Any();
@@ -1118,7 +1121,7 @@ namespace Twinpack.Dialogs
             {
                 await _semaphorePackages.WaitAsync();
 
-                var item = (sender as ListView).SelectedItem as Models.CatalogItemGetResponse;
+                var item = (sender as ListView).SelectedItem as Models.CatalogItem;
                 if (item == null)
                     return;
 
@@ -1160,10 +1163,11 @@ namespace Twinpack.Dialogs
                 BranchesView.Visibility = Branches.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
                 TargetsView.Visibility = Targets.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
                 ConfigurationsView.Visibility = Configurations.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
-                BranchesView.SelectedIndex = 0;
-                TargetsView.SelectedIndex = 0;
-                ConfigurationsView.SelectedIndex = 0;
 
+                // todo: maybe instead just load?
+                BranchesView.SelectedIndex = string.IsNullOrEmpty(item.Installed?.Branch) ? 0 : Branches.ToList().FindIndex(x => x.Branch == item.Installed.Branch);
+                TargetsView.SelectedIndex = string.IsNullOrEmpty(item.Installed?.Target) ? 0 : Targets.ToList().FindIndex(x => x.Target == item.Installed.Target);
+                ConfigurationsView.SelectedIndex = string.IsNullOrEmpty(item.Installed?.Configuration) ? 0 : Configurations.ToList().FindIndex(x => x.Configuration == item.Installed.Configuration);
             }
             catch (Exception ex)
             {
