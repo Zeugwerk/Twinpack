@@ -46,7 +46,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CopyVsixExtensionFiles>True</CopyVsixExtensionFiles>
-    <CopyVsixExtensionLocation>.\bin\Releaes\Package</CopyVsixExtensionLocation>
+    <CopyVsixExtensionLocation>.\bin\Release\Package</CopyVsixExtensionLocation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Commands\Command.cs" />
