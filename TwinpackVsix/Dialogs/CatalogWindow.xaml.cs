@@ -1046,7 +1046,7 @@ namespace Twinpack.Dialogs
                     foreach (var item in _plcConfig.Packages)
                     {
                         Models.CatalogItem catalogItem = new Models.CatalogItem(item);
-                        var packageVersion = await _twinpackServer.GetPackageVersionAsync(item.Repository, item.Name, null, item.Configuration, item.Branch, item.Target);
+                        var packageVersion = await _twinpackServer.GetPackageVersionAsync(item.DistributorName, item.Name, null, item.Configuration, item.Branch, item.Target);
 
                         if (packageVersion.PackageVersionId != null)
                         {
@@ -1131,9 +1131,9 @@ namespace Twinpack.Dialogs
 
                 Models.PackageGetResponse package = null;
                 if (_packageConfig != null)
-                    package = await _twinpackServer.GetPackageAsync(_packageConfig.Repository, item.Name);
+                    package = await _twinpackServer.GetPackageAsync(_packageConfig.DistributorName, item.Name);
                 else
-                    package = await _twinpackServer.GetPackageAsync(item.Repository, item.Name);
+                    package = await _twinpackServer.GetPackageAsync(item.DistributorName, item.Name);
 
                 // check if selection has changed in the meanwhile
                 if (package.PackageId != _selectedPackageId)
@@ -1205,7 +1205,7 @@ namespace Twinpack.Dialogs
                     var item = (sender as ComboBox).SelectedItem as Models.PackageVersionsItemGetResponse;
                     if (item != null)
                     {
-                        PackageVersion = await _twinpackServer.GetPackageVersionAsync(item.Repository,
+                        PackageVersion = await _twinpackServer.GetPackageVersionAsync(item.DistributorName,
                             item.Name, item.Version, item.Configuration, item.Branch, item.Target,
                             includeBinary: false, cachePath: null);
                     }

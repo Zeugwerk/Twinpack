@@ -109,6 +109,8 @@ namespace Twinpack.Models
         public int Private { get; set; }
         [JsonPropertyName("repository")]
         public string Repository { get; set; }
+        [JsonPropertyName("distributor-name")]
+        public string DistributorName { get; set; }
         [JsonPropertyName("name")]
         public string Name { get; set; }
         [JsonPropertyName("branch")]

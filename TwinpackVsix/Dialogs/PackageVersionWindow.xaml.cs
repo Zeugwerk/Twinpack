@@ -131,7 +131,7 @@ namespace Twinpack.Dialogs
                 LoadingText = "Retrieving package ...";
                 if (_plcConfig != null)
                 {
-                    _package = await _twinpackServer.GetPackageAsync(_twinpackServer.Username, _plcConfig.Name);
+                    _package = await _twinpackServer.GetPackageAsync(UserInfo?.DistributorName, _plcConfig.Name);
                     _plcConfig.DistributorName = UserInfo?.DistributorName ?? _plcConfig.DistributorName;
                 }
 
@@ -145,7 +145,7 @@ namespace Twinpack.Dialogs
                 {
                     // try to get the specific version
                     IsNewPackageVersion = false;
-                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_package.Repository, _package.Name, _packageVersion.Version, null, null, null, false, null);
+                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_package.DistributorName, _package.Name, _packageVersion.Version, null, null, null, false, null);
 
                     // fallback to the latest available version
                     if (_packageVersion.PackageVersionId == null)
@@ -164,7 +164,7 @@ namespace Twinpack.Dialogs
                     try
                     {
                         _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false);
-                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(_packageVersion.Repository, _packageVersion.Name, null, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target);
+                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(_packageVersion.DistributorName, _packageVersion.Name, null, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target);
                         Dependencies = _packageVersion.Dependencies;
                     }
                     catch (Exceptions.GetException ex)
