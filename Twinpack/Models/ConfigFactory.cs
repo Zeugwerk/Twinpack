@@ -303,21 +303,21 @@ namespace Twinpack.Models
             // collect references
             var references = new List<PlcLibrary>();
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
-            var lst = xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderResolution").Elements(TcNs + "Resolution");
-            foreach (XElement g in lst)
+            foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderResolution").Elements(TcNs + "Resolution"))
             {
                 var match = re.Match(g.Value);
                 if (match.Success)
                     references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
             }
 
-            //ZExperimental,0.8.1.63,Zeugwerk GmbH
             re = new Regex(@"(.*?),(.*?),(.*?)");
-            IEnumerable<XAttribute> lst1 = null;
-            lst1 = xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "LibraryReference").Attributes(TcNs + "Include");
-            foreach (XAttribute g in lst1)
+            foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "LibraryReference"))
             {
-                var match = re.Match(g.Value);
+                var libraryReference = g.Attribute("Include").Value.ToString();
+                if (libraryReference == null)
+                    continue;
+
+                var match = re.Match(libraryReference);
                 if (match.Success)
                     references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
             }
