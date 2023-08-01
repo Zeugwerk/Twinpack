@@ -775,7 +775,7 @@ namespace Twinpack.Dialogs
                 var path = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\{(_packageVersion.Target ?? "TC3.1")}\{_plcConfig.Name}_{_plcConfig.Version}.library";
                 var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
                 var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
-
+                
                 await Task.Run(() =>
                 {
                     TwinpackUtils.SyncPlcProj(iec, _plcConfig);
@@ -788,6 +788,7 @@ namespace Twinpack.Dialogs
 
                     _logger.Info($"Saving and installing library to {path}");
                     LoadingText = "Saving as library ...";
+                    Directory.CreateDirectory(new FileInfo(path).Directory.FullName);
                     iec.SaveAsLibrary(path, false);
                 });
 
