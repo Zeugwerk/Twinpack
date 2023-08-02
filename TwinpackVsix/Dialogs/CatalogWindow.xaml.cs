@@ -40,7 +40,7 @@ namespace Twinpack.Dialogs
 
         private int _currentCatalogPage = 1;
         private int _currentPackageVersionsPage = 1;
-        private int _itemsPerPage = 1;
+        private int _itemsPerPage = 10;
 
         private bool _isLoadingPlcConfig = false;
         private bool _isFetchingInstalledPackages = false;
@@ -518,6 +518,7 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 var config = await WritePlcConfigToConfigAsync(_plcConfig);
                 await LoadInstalledPackagesAsync();
+                await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 UpdateCatalog();
 
                 await _context.WriteStatusAsync($"Successfully added {PackageVersion.Name} to {_plc.Name} references");
@@ -584,6 +585,8 @@ namespace Twinpack.Dialogs
             {
                 var config = await WritePlcConfigToConfigAsync(_plcConfig);
                 await LoadInstalledPackagesAsync();
+                await LoadAvailablePackagesAsync(SearchTextBox.Text);
+                SelectPackageVersionFilter(PackageVersion);
                 UpdateCatalog();
 
                 await _context.WriteStatusAsync($"Successfully restored {items?.Count()} references");
@@ -645,6 +648,7 @@ namespace Twinpack.Dialogs
             { 
                 var config = await WritePlcConfigToConfigAsync(_plcConfig);
                 await LoadInstalledPackagesAsync();
+                await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 UpdateCatalog();
 
                 await _context.WriteStatusAsync($"Successfully updated {items?.Count()} references to their latest version");
@@ -1097,6 +1101,14 @@ namespace Twinpack.Dialogs
             await LoadNextPackageVersionsPageAsync((int)PackageVersion.PackageId, branch, configuration, target);
         }
 
+        private void SelectPackageVersionFilter(Models.PackageVersionGetResponse installed)
+        {
+            ConfigurationsView.SelectedIndex = -1;
+            BranchesView.SelectedIndex = string.IsNullOrEmpty(installed?.Branch) ? 0 : Package.Branches?.FindIndex(x => x == installed.Branch) ?? -1;
+            TargetsView.SelectedIndex = string.IsNullOrEmpty(installed?.Target) ? 0 : Package.Targets?.FindIndex(x => x == installed.Target) ?? -1;
+            ConfigurationsView.SelectedIndex = string.IsNullOrEmpty(installed?.Configuration) ? 0 : Package.Configurations?.FindIndex(x => x == installed.Configuration) ?? -1;
+        }
+
         private async void Catalog_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var item = (sender as ListView).SelectedItem as Models.CatalogItem;
@@ -1137,10 +1149,7 @@ namespace Twinpack.Dialogs
                 TargetsView.Visibility = Package?.Targets.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
                 ConfigurationsView.Visibility = Package?.Configurations.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
 
-                ConfigurationsView.SelectedIndex = -1;
-                BranchesView.SelectedIndex = string.IsNullOrEmpty(item?.Installed?.Branch) ? 0 : Package.Branches.FindIndex(x => x == item.Installed.Branch);
-                TargetsView.SelectedIndex = string.IsNullOrEmpty(item?.Installed?.Target) ? 0 : Package.Targets.FindIndex(x => x == item.Installed.Target);
-                ConfigurationsView.SelectedIndex = string.IsNullOrEmpty(item?.Installed?.Configuration) ? 0 : Package.Configurations.FindIndex(x => x == item.Installed.Configuration);
+                SelectPackageVersionFilter(item?.Installed);
             }
             catch (Exception ex)
             {

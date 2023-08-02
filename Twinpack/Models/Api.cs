@@ -138,6 +138,9 @@ namespace Twinpack.Models
             License = package.License;
             LicenseTmcBinary = package.LicenseTmcBinary;
             LicenseBinary = package.LicenseBinary;
+            Branches = new List<string>(package.Branches);
+            Targets = new List<string>(package.Targets);
+            Configurations = new List<string>(package.Configurations);
         }
 
         [JsonPropertyName("package-id")]
