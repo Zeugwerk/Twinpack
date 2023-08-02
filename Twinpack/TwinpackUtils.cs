@@ -265,8 +265,8 @@ namespace Twinpack
             try
             {
                 BitmapImage img = new BitmapImage();
-                img.CacheOption = BitmapCacheOption.OnLoad;
                 img.BeginInit();
+                img.CacheOption = BitmapCacheOption.None;
                 img.UriSource = new Uri(iconUrl, UriKind.Absolute);
                 img.EndInit();
                 return img;

@@ -23,7 +23,6 @@ namespace Twinpack.Models
             PackageId = packageVersion.PackageId;
             Repository = packageVersion.Repository;
             Description = packageVersion.Description;
-            Entitlement = packageVersion.Entitlement;
             IconUrl = packageVersion.IconUrl;
             Name = packageVersion.Name;
             DisplayName = packageVersion.DisplayName;

@@ -101,6 +101,7 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="auto"></RowDefinition>                
                 <RowDefinition Height="auto"></RowDefinition>
                 <RowDefinition Height="auto"></RowDefinition>
                 <RowDefinition Height="auto"></RowDefinition>
@@ -153,7 +154,23 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="1" Background="#FFcad0de" Visibility="{Binding IsRestoreAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="0 0 0 10" Grid.Column="0" Grid.Row="1" Background="Transparent" Visibility="{Binding IsAvailablePackageAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <Button Click="ShowMoreAvailablePackagesButton_Click" Margin="0" Background="#f5f1ee" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
+                    HorizontalAlignment="Center" VerticalAlignment="Top">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                        <fa:ImageAwesome Margin="2 0 0 0" Icon="ChevronDown" Width="12"/>
+                        <TextBlock Margin="5 0 0 0">Show more</TextBlock>
+                    </StackPanel>
+                </Button>
+                
+            </Grid>
+
+            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="2" Background="#FFcad0de" Visibility="{Binding IsRestoreAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -168,7 +185,7 @@
                 </Button>
             </Grid>
 
-            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="1" Background="#FFcad0de" Visibility="{Binding IsUpdateAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="2" Background="#FFcad0de" Visibility="{Binding IsUpdateAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -184,7 +201,7 @@
                 </Button>
             </Grid>
 
-            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="2" Background="#FFcad0de" Visibility="{Binding IsCreateConfigVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="3" Background="#FFcad0de" Visibility="{Binding IsCreateConfigVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -200,7 +217,7 @@
                 </Button>
             </Grid>
 
-            <Expander Margin="0 3 0 0" Grid.Column="0" Grid.Row="3" Background="#FFcad0de" IsExpanded="True" Header="Disclaimer" VerticalAlignment="Bottom" ExpandDirection="Up">
+            <Expander Margin="0 3 0 0" Grid.Column="0" Grid.Row="4" Background="#FFcad0de" IsExpanded="True" Header="Disclaimer" VerticalAlignment="Bottom" ExpandDirection="Up">
                 <TextBlock Margin="5" TextWrapping="Wrap">
                     Twinpack is a user-driven platform. Zeugwerk or contributors, as developers of the package manager, 
                     do not assume responsibility for any packages distributed by users.
@@ -215,7 +232,7 @@
                 </StackPanel>
             </Grid>
 
-            <ScrollViewer Grid.RowSpan="4" x:Name="PackageVersionView" Visibility="{Binding PackageVersion, Converter={StaticResource NullToVisibilityConverter}}" Margin="10,0,0,0" 
+            <ScrollViewer Grid.RowSpan="5" x:Name="PackageVersionView" Visibility="{Binding PackageVersion, Converter={StaticResource NullToVisibilityConverter}}" Margin="10,0,0,0" 
                           Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -267,40 +284,51 @@
                             <TextBox Text="{Binding InstalledPackageVersion, Mode=OneWay}" Padding="3,0,0,0" IsReadOnly="True" IsEnabled="False" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="0" Margin="5,0,5,5"/>
 
                             <TextBlock Visibility="{Binding Visibility, ElementName=BranchesView}" Text="Branch" Grid.Column="0" Grid.Row="1" Margin="5,0,5,5"></TextBlock>
-                            <ComboBox x:Name="BranchesView" ItemsSource="{Binding Branches}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="1" Margin="5,0,5,5">
+                            <ComboBox x:Name="BranchesView" DataContext="{Binding Package}" ItemsSource="{Binding Branches}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="1" Margin="5,0,5,5">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Branch}"/>
+                                        <TextBlock Text="{Binding }"/>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
 
                             <TextBlock Visibility="{Binding Visibility, ElementName=TargetsView}" Text="Target" Grid.Column="0" Grid.Row="2" Margin="5,0,5,5"></TextBlock>
-                            <ComboBox x:Name="TargetsView" ItemsSource="{Binding Targets}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="2" Margin="5,0,5,5">
+                            <ComboBox x:Name="TargetsView" DataContext="{Binding Package}" ItemsSource="{Binding Targets}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="2" Margin="5,0,5,5">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Target}"/>
+                                        <TextBlock Text="{Binding}"/>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
 
                             <TextBlock Visibility="{Binding Visibility, ElementName=ConfigurationsView}" Text="Configuration" Grid.Column="0" Grid.Row="3" Margin="5,0,5,5"></TextBlock>
-                            <ComboBox x:Name="ConfigurationsView" ItemsSource="{Binding Configurations}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="3" Margin="5,0,5,5">
+                            <ComboBox x:Name="ConfigurationsView" DataContext="{Binding Package}" ItemsSource="{Binding Configurations}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="3" Margin="5,0,5,5">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Configuration}"/>
+                                        <TextBlock Text="{Binding}"/>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
 
                             <TextBlock Text="Available" Grid.Column="0" Grid.Row="4" Margin="5,0,5,5"></TextBlock>
-                            <ComboBox x:Name="VersionsView" ItemsSource="{Binding Versions}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Grid.Column="1" Grid.Row="4" Margin="5,0,5,5">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Version}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+
+                            <StackPanel Grid.Column="1" Grid.Row="4" Margin="5,0,5,5">
+                                <ComboBox x:Name="VersionsView" ItemsSource="{Binding Versions}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Version}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Button Click="ShowMoreAvailableVersionsButton_Click" Margin="0" Background="#f5f1ee" BorderThickness="0" 
+                                        FontWeight="SemiBold" Foreground="#4757b8" HorizontalAlignment="Center" VerticalAlignment="Top"
+                                         Visibility="{Binding IsPackageVersionsAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                        <TextBlock Margin="5 0 0 0">Show older versions</TextBlock>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+
 
                             <Button  Click="UninstallPackageButton_Click" IsEnabled="{Binding IsNewReference, Converter={StaticResource BooleanToInverseBooleanConverter}}" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">
                                 <StackPanel Orientation="Horizontal">
@@ -433,13 +461,14 @@
                     </StackPanel>
                 </Grid>
             </ScrollViewer>
-
+<!--
             <Grid Grid.Column="2" Grid.RowSpan="3" Background="White" d:Visibility="Hidden" Visibility="{Binding IsPackageLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <fa:ImageAwesome Margin="2 0 0 0" Icon="Spinner" Spin="True" Height="12"/>
                     <TextBlock Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
                 </StackPanel>
             </Grid>
+            -->
         </Grid>
     </Grid>
 </UserControl>

@@ -38,7 +38,6 @@ namespace Twinpack.Dialogs
         private bool _isPublic;
         private bool _isGeneralDataReadOnly;
         private bool _isVersionWrongFormat;
-        private bool _isNewUser;
         private bool _isNewPackage;
         private bool _isNewPackageVersion;
         private string _iconFile;
@@ -170,7 +169,7 @@ namespace Twinpack.Dialogs
                     if (_packageVersion.PackageVersionId == null)
                     {
                         IsNewPackageVersion = true;
-                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync((int)_package.PackageId, 1, 1)).FirstOrDefault()?.PackageVersionId;
+                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync((int)_package.PackageId, 1, 1)).Item1?.FirstOrDefault()?.PackageVersionId;
                     }
                 }
                 else if (_plcConfig != null)
