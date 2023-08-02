@@ -132,6 +132,25 @@ namespace Twinpack.Dialogs
                 if (_plcConfig != null)
                 {
                     _package = await _twinpackServer.GetPackageAsync(UserInfo?.DistributorName, _plcConfig.Name);
+
+                    if(_package.PackageId == null)
+                    {      
+                        if (!IsPublishMode)
+                        {
+                            MessageBox.Show($"The package '{_plcConfig.Name}' is not published yet. Please publish your package before modifying it!", "Package not published", MessageBoxButton.OK, MessageBoxImage.Error);
+                            Close();
+                            return;
+                        }  
+                    
+                        var resolvedPackage = await _twinpackServer.ResolvePackageVersionAsync(new Models.PlcLibrary { Name = _plcConfig.Name, Version = "*" });
+                        if(resolvedPackage.PackageId != null)
+                        {
+                            MessageBox.Show($"The package name '{resolvedPackage.Name}' is already taken by '{resolvedPackage.DistributorName}'. Each package on the Twinpack Server must have a unique name. To publish your package, please choose an alternative name that hasn't been used by any other distributor. This can be done by renaming your PLC.", "Package name not available", MessageBoxButton.OK, MessageBoxImage.Error);
+                            Close();
+                            return;
+                        }
+                    }
+
                     _plcConfig.DistributorName = UserInfo?.DistributorName ?? _plcConfig.DistributorName;
                 }
 
@@ -548,7 +567,7 @@ namespace Twinpack.Dialogs
                         _plcConfig.LicenseFile = value == null ? null : Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
 
                     if(_packageVersion != null)
-                        _packageVersion.LicenseBinary = _licenseFile == null ? null : Convert.ToBase64String(File.ReadAllBytes(value));
+                        _packageVersion.LicenseBinary = _licenseFile == null ? _packageVersion.LicenseBinary : Convert.ToBase64String(File.ReadAllBytes(value));
 
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseFile)));
 
@@ -573,7 +592,7 @@ namespace Twinpack.Dialogs
                         _plcConfig.LicenseTmcFile = value == null ? null : Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
 
                     if(_packageVersion != null)
-                        _packageVersion.LicenseTmcBinary = _licenseTmcFile == null ? null : Convert.ToBase64String(File.ReadAllBytes(value));
+                        _packageVersion.LicenseTmcBinary = _licenseTmcFile == null ? _packageVersion.LicenseTmcBinary : Convert.ToBase64String(File.ReadAllBytes(value));
 
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseTmcFile)));
 
@@ -690,8 +709,8 @@ namespace Twinpack.Dialogs
                 Authors = Authors,
                 License = License,
                 Entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement).Name,
-                LicenseBinary = !string.IsNullOrEmpty(LicenseFile) && File.Exists(LicenseFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseFile)) : null,
-                LicenseTmcBinary = !string.IsNullOrEmpty(LicenseTmcFile) && File.Exists(LicenseTmcFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseTmcFile)) : null,
+                LicenseBinary = !string.IsNullOrEmpty(LicenseFile) && File.Exists(LicenseFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseFile)) : _packageVersion?.LicenseBinary,
+                LicenseTmcBinary = !string.IsNullOrEmpty(LicenseTmcFile) && File.Exists(LicenseTmcFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseTmcFile)) : _packageVersion?.LicenseTmcBinary,
                 IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
                 IconBinary = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Convert.ToBase64String(File.ReadAllBytes(IconFile)) : null
             };
@@ -768,11 +787,16 @@ namespace Twinpack.Dialogs
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
+                var branch = BranchesView.SelectedItem as string;
+                var configuration = (ConfigurationsView.SelectedItem as Models.LoginPostResponse.Configuration).Name;
+                var target = (TargetsView.SelectedItem as Models.LoginPostResponse.Target).Name;
+                var compiled = FileTypeView.SelectedIndex != 0;
+
                 IsEnabled = false;
                 IsLoading = true;
                 LoadingText = "Checking all objects ...";
 
-                var path = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\{(_packageVersion.Target ?? "TC3.1")}\{_plcConfig.Name}_{_plcConfig.Version}.library";
+                var path = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\{target}\{_plcConfig.Name}_{_plcConfig.Version}.library";
                 var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
                 var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
                 
@@ -797,10 +821,7 @@ namespace Twinpack.Dialogs
                     await LoginAsync();
 
                     LoadingText = "Uploading to Twinpack ...";
-                    var branch = BranchesView.SelectedItem as string;
-                    var configuration = (ConfigurationsView.SelectedItem as Models.LoginPostResponse.Configuration).Name;
-                    var target = (TargetsView.SelectedItem as Models.LoginPostResponse.Target).Name;
-                    var compiled = FileTypeView.SelectedIndex != 0;
+
                     _plcConfig.Entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement).Name;
 
                     _packageVersion = await _twinpackServer.PostPackageVersionAsync(_plcConfig, configuration, branch, target, Notes,
@@ -816,6 +837,9 @@ namespace Twinpack.Dialogs
                     await WritePlcConfigToConfigAsync(_plcConfig);
 
                     _twinpackServer.InvalidateCache();
+
+                    MessageBox.Show($"You successfully uploaded {_packageVersion.Name} to Twinpack! You may still modify general information of the package.", "Publish successful", MessageBoxButton.OK, MessageBoxImage.Information);
+
                 }
                 catch (Exceptions.LoginException ex)
                 {

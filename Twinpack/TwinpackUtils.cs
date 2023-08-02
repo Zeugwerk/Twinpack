@@ -282,7 +282,7 @@ namespace Twinpack
             try
             {
                 var xdoc = XDocument.Parse(content);
-                var licenseId = xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
+                return xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
             }
             catch(Exception ex)
             {

@@ -425,6 +425,10 @@ namespace Twinpack.Dialogs
                     _logger.Trace(ex);
                     _logger.Error(ex.Message);
                 }
+                finally
+                {
+                    _isLoadingPlcConfig = false;
+                }
             }
             else
             {
