@@ -199,11 +199,12 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<IEnumerable<T>> QueryWithPagination<T>(string endpoint, int page = 1, int perPage = 5)
+        public async Task<Tuple<IEnumerable<T>, bool>> QueryWithPagination<T>(string endpoint, int page = 1, int perPage = 5)
         {
             var results = new List<T>();
             var query = $"/{endpoint}";
             var uri = new Uri(TwinpackUrl + query + $"&page={page}&per_page={perPage}");
+            PaginationHeader pagination = null;
 
             var hasNextPage = true;
             while (hasNextPage)
@@ -227,14 +228,10 @@ namespace Twinpack
                     throw new GetException("Response could not be parsed");
                 }
 
-                if (results.Count() >= perPage)
-                    return results.Take(perPage);
-
                 var linkHeader = response.Headers.GetValues("Link");
                 if (linkHeader.Any())
                 {
                     var h = Regex.Unescape(linkHeader.First());
-                    PaginationHeader pagination = null;
 
                     try
                     {
@@ -249,32 +246,46 @@ namespace Twinpack
                     if (pagination.Next == null)
                     {
                          hasNextPage = false;
-                         break;
                     }
 
-                    uri = new Uri(pagination.Next);
+                    if(pagination?.Next != null)
+                        uri = new Uri(pagination.Next);
                 }
+
+                if (results.Count() >= perPage)
+                    return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination.Next != null);
             }
 
-            return results;
+            return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination.Next != null);
         }
 
-        public async Task<IEnumerable<CatalogItemGetResponse>> GetCatalogAsync(string search, int page = 1, int perPage = 5)
+        public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5)
         {
             return await QueryWithPagination<CatalogItemGetResponse>($"twinpack.php?controller=catalog" +
-                                                $"&search={search}", page, perPage);
+                                                $"&search={HttpUtility.UrlEncode(search)}", page, perPage);
         }
 
-        public async Task<IEnumerable<PackageVersionsItemGetResponse>> GetPackageVersionsAsync(int packageId, int page = 1, int perPage = 5)
+        public async Task<Tuple<IEnumerable<PackageVersionsItemGetResponse>, bool>> GetPackageVersionsAsync(int packageId, int page = 1, int perPage = 5)
         {
             return await QueryWithPagination<PackageVersionsItemGetResponse>($"twinpack.php?controller=package-versions" +
                                             $"&id={packageId}", page, perPage);
         }
 
+        public async Task<Tuple<IEnumerable<PackageVersionsItemGetResponse>, bool>> GetPackageVersionsAsync(int packageId, string branch, string configuration, string target, int page = 1, int perPage = 5)
+        {
+            return await QueryWithPagination<PackageVersionsItemGetResponse>($"twinpack.php?controller=package-versions" +
+                                            $"&id={packageId}" +
+                                            $"&branch={HttpUtility.UrlEncode(branch)}" +
+                                            $"&target={HttpUtility.UrlEncode(target)}" +
+                                            $"&configuration={HttpUtility.UrlEncode(configuration)}", page, perPage);
+        }
+
         public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-resolve" +
-                $"&distributor-name={library.DistributorName}&name={library.Name}&version={library.Version}"));
+                $"&distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
+                $"&name={HttpUtility.UrlEncode(library.Name)}" +
+                $"&version={HttpUtility.UrlEncode(library.Version)}"));
 
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
             AddHeaders(request);

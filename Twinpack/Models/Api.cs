@@ -52,14 +52,9 @@ namespace Twinpack.Models
             IconUrl = obj.IconUrl;
             RuntimeLicense = obj.RuntimeLicense;
             DisplayName = obj.DisplayName;
-            Versions = obj.Versions;
-            Configurations = obj.Configurations;
-            Targets = obj.Targets;
             Downloads = obj.Downloads;
             Created = obj.Created;
             Modified = obj.Modified;
-            Entitlement = obj.Entitlement;
-            Branches = obj.Branches;
         }
 
         [JsonPropertyName("package-id")]
@@ -78,22 +73,13 @@ namespace Twinpack.Models
         public int RuntimeLicense { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
-        [JsonPropertyName("versions")]
-        public int Versions { get; set; }
-        [JsonPropertyName("configurations")]
-        public int Configurations { get; set; }
-        [JsonPropertyName("targets")]
-        public int Targets { get; set; }
+
         [JsonPropertyName("downloads")]
         public int Downloads { get; set; }
         [JsonPropertyName("created")]
         public string Created { get; set; }
         [JsonPropertyName("modified")]
         public string Modified { get; set; }
-        [JsonPropertyName("entitlement")]
-        public string Entitlement { get; set; }
-        [JsonPropertyName("branches")]
-        public List<string> Branches { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasRuntimeLicense { get { return RuntimeLicense > 0; } }
@@ -182,6 +168,11 @@ namespace Twinpack.Models
         public string LicenseBinary { get; set; }
         [JsonPropertyName("branches")]
         public List<string> Branches { get; set; }
+        [JsonPropertyName("configurations")]
+        public List<string> Configurations { get; set; }
+        [JsonPropertyName("targets")]
+        public List<string> Targets { get; set; }
+
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasLicense { get { return !string.IsNullOrEmpty(License); } }
@@ -233,6 +224,7 @@ namespace Twinpack.Models
         public string Binary { get; set; }
         [JsonPropertyName("dependencies")]
         public IEnumerable<PackageVersionGetResponse> Dependencies { get; set; }
+
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasDependencies { get { return Dependencies?.Any() == true; } }
 
