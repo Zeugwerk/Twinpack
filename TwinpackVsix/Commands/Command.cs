@@ -50,10 +50,10 @@ namespace Twinpack.Commands
                 _menuCommand.Enabled = true;
             }
         }
-        public void PackageReset()
+        public virtual void PackageReset()
         {
-            _menuCommand.Visible = false;
-            _menuCommand.Enabled = false;
+            _menuCommand.Visible = true;
+            _menuCommand.Enabled = true;
         }
     }
 }

@@ -6,12 +6,27 @@
 
 	<Include href="KnownImageIds.vsct" />
 	<Commands package="guidTwinpackPackage">
+
+		<Menus>
+			<Menu guid="guidTwinpackCmdSet" id="TwinpackMenu" priority="0x001" type="Menu">
+				<CommandFlag>DefaultInvisible</CommandFlag>
+				<CommandFlag>DynamicVisibility</CommandFlag>
+				<Strings>
+					<ButtonText>Twinpack Package</ButtonText>
+					<CommandName>Twinpack Package</CommandName>
+				</Strings>
+			</Menu>
+		</Menus>
+		
 		<Groups>
 			<Group guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectLibraries" priority="0x002">
 				<Parent guid="plcProjectCommandSet" id="plcProjectLibraries" />
 			</Group>
 			<Group guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectMenu" priority="0x002">
 				<Parent guid="plcProjectCommandSet" id="plcProjectMenu" />
+			</Group>
+			<Group guid="guidTwinpackCmdSet" id="ContextMenuGroup_twinpack" priority="0x0600">
+				<Parent guid="guidTwinpackCmdSet" id="TwinpackMenu" />
 			</Group>
 		</Groups>
 
@@ -29,30 +44,36 @@
 			</Button>
 
 			<Button guid="guidTwinpackCmdSet" id="cmdidPublish" priority="0x0101" type="Button">
-				<Parent guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectMenu" />
+				<Parent guid="guidTwinpackCmdSet" id="ContextMenuGroup_twinpack" />
 				<Icon guid="ImageCatalogGuid" id="UpdateDatabase" />
 				<CommandFlag>IconIsMoniker</CommandFlag>
 				<CommandFlag>DefaultInvisible</CommandFlag>
 				<CommandFlag>DynamicVisibility</CommandFlag>
 				<Strings>
 					<CommandName>PublishCommand</CommandName>
-					<ButtonText>Publish with Twinpack...</ButtonText>
+					<ButtonText>Publish ...</ButtonText>
 				</Strings>
 			</Button>
 
 			<Button guid="guidTwinpackCmdSet" id="cmdidModify" priority="0x0102" type="Button">
-				<Parent guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectMenu" />
+				<Parent guid="guidTwinpackCmdSet" id="ContextMenuGroup_twinpack" />
 				<Icon guid="ImageCatalogGuid" id="UpdateDatabase" />
 				<CommandFlag>IconIsMoniker</CommandFlag>
 				<CommandFlag>DefaultInvisible</CommandFlag>
 				<CommandFlag>DynamicVisibility</CommandFlag>
 				<Strings>
 					<CommandName>ModifyCommand</CommandName>
-					<ButtonText>Modify with Twinpack...</ButtonText>
+					<ButtonText>Modify ...</ButtonText>
 				</Strings>
 			</Button>			
 		</Buttons>
 	</Commands>
+
+	<CommandPlacements>
+		<CommandPlacement guid="guidTwinpackCmdSet" id="TwinpackMenu" priority="0xF00">
+			<Parent guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectMenu" />
+		</CommandPlacement>
+	</CommandPlacements>
 
 	<Symbols>
 		<GuidSymbol name="guidTwinpackPackage" value="{26e0356d-ac0e-4e6a-a50d-dd2a812f6f23}" />
@@ -61,6 +82,9 @@
 			<IDSymbol value="4147" name="ContextMenuGroup_plcProjectMenu" />
 			
 			<IDSymbol value="260" name="cmdidCatalog" />
+
+			<IDSymbol value="263" name="TwinpackMenu" />
+			<IDSymbol value="264" name="ContextMenuGroup_twinpack" />
 			<IDSymbol value="261" name="cmdidPublish" />
 			<IDSymbol value="262" name="cmdidModify" />
 		</GuidSymbol>

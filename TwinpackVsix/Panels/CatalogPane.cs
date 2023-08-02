@@ -33,7 +33,7 @@ namespace Twinpack.Dialogs
 
             var plc = TwinpackUtils.ActivePlc(_context.Dte);
 
-            //if(plc != null)
+            if(plc != null)
             {
                 var catalogWindow = new CatalogWindow(_context);
                 Content = catalogWindow;

@@ -103,6 +103,7 @@ namespace Twinpack
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             await Commands.CatalogCommand.InitializeAsync(this);
+            await Commands.TwinpackMenuCommand.InitializeAsync(this);
             await Commands.ModifyCommand.InitializeAsync(this);
             await Commands.PublishCommand.InitializeAsync(this);
 
@@ -110,6 +111,7 @@ namespace Twinpack
             // Liste aller Kommandos in der Extension --> wichtig für gemeinsame Initialisierung
             _commands = new List<Commands.ICommand>();
             _commands.Add(Commands.CatalogCommand.Instance);
+            _commands.Add(Commands.TwinpackMenuCommand.Instance);
             _commands.Add(Commands.PublishCommand.Instance);
             _commands.Add(Commands.ModifyCommand.Instance);
 
@@ -139,13 +141,9 @@ namespace Twinpack
 
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (Context == null)
-                return;
-
             try
             {
-                if (Context.Dte == null)
-                    Context.Dte = GetService(typeof(DTE)) as DTE2;
+                Context.Dte = GetService(typeof(DTE)) as DTE2;
 
                 if (Context.Dte == null)
                 {
@@ -208,8 +206,7 @@ namespace Twinpack
         private void ResetPackage()
         {
             IsInitialized = false;
-
-            Context = null;
+            
 
             foreach (var cmd in _commands)
                 cmd.PackageReset();

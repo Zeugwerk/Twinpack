@@ -105,8 +105,8 @@
 
             <Label Content="License File:" HorizontalAlignment="Left" Margin="0"/>
             <StackPanel Orientation="Horizontal">
-                <StackPanel Orientation="Vertical" Margin="5,0,5,5">
-                    <TextBox Text="{Binding LicenseFile}" Width="165" Margin="0"/>
+                <StackPanel Orientation="Vertical" Margin="0,0,5,5">
+                    <TextBox Text="{Binding LicenseFile}" Width="170" Margin="0"/>
                     <StackPanel Orientation="Horizontal" Visibility="{Binding HasLicenseBinary, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <fa:ImageAwesome Margin="2 0 0 0" Icon="CheckSquare" Height="12"/>
                         <TextBlock Margin="5 0 0 0">File uploaded</TextBlock>
@@ -202,133 +202,136 @@
                     <Run Text="Advanced"></Run>
                 </TextBlock>
             </Expander.Header>
-            <StackPanel Orientation="Vertical" DataContext="{Binding UserInfo}" IsEnabled="{Binding IsPublishMode, ElementName=wndParent}">
-                <TextBlock Visibility="{Binding Visibility, ElementName=BranchesView}" Text="Branch" Margin="5,0,5,5"></TextBlock>
-                <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="BranchesView" 
+            <StackPanel>
+
+                <StackPanel Orientation="Vertical" DataContext="{Binding UserInfo}" IsEnabled="{Binding IsPublishMode, ElementName=wndParent}">
+                    <TextBlock Visibility="{Binding Visibility, ElementName=BranchesView}" Text="Branch" Margin="5,0,5,5"></TextBlock>
+                    <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="BranchesView" 
                           d:SelectedIndex="0"
                           d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5"
                           SelectionChanged="ValidateVisibility_SelectionChanged">
-                <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid HorizontalAlignment="Stretch">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="auto"/>
-                                    <ColumnDefinition Width="auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="CodeFork" Height="12"/>
-                                <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding}"></TextBlock>
-                                <TextBlock HorizontalAlignment="Right" Grid.Column="2" Text="Public"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid HorizontalAlignment="Stretch">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="CodeFork" Height="12"/>
+                                    <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding}"></TextBlock>
+                                    <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Public"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
 
-                <TextBlock Visibility="{Binding Visibility, ElementName=TargetsView}" Text="Target" Margin="5,0,5,5"></TextBlock>
-                <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="TargetsView" HorizontalContentAlignment="Stretch" Margin="5,0,5,5"
+                    <TextBlock Visibility="{Binding Visibility, ElementName=TargetsView}" Text="Target" Margin="5,0,5,5"></TextBlock>
+                    <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="TargetsView" HorizontalContentAlignment="Stretch" Margin="5,0,5,5"
                           SelectionChanged="ValidateVisibility_SelectionChanged">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid HorizontalAlignment="Stretch">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="auto"/>
-                                    <ColumnDefinition Width="auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding Name}"></TextBlock>
-                                <TextBlock HorizontalAlignment="Right" Grid.Column="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock HorizontalAlignment="Right" Grid.Column="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid HorizontalAlignment="Stretch">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding Name}"></TextBlock>
+                                    <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
 
-                <TextBlock Visibility="{Binding Visibility, ElementName=ConfigurationsView}" Text="Configuration" Margin="5,0,5,5"></TextBlock>
-                <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="ConfigurationsView" d:ItemsSource="{d:SampleData ItemCount=3}" 
+                    <TextBlock Visibility="{Binding Visibility, ElementName=ConfigurationsView}" Text="Configuration" Margin="5,0,5,5"></TextBlock>
+                    <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="ConfigurationsView" d:ItemsSource="{d:SampleData ItemCount=3}" 
                           SelectionChanged="ValidateVisibility_SelectionChanged"
                           HorizontalContentAlignment="Stretch" Margin="5,0,5,5">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid HorizontalAlignment="Stretch">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="auto"/>
-                                    <ColumnDefinition Width="auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding Name}"></TextBlock>
-                                <TextBlock HorizontalAlignment="Right" Grid.Column="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock HorizontalAlignment="Right" Grid.Column="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid HorizontalAlignment="Stretch">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding Name}"></TextBlock>
+                                    <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
 
-                <TextBlock Visibility="{Binding Visibility, ElementName=FileTypeView}" Text="Filetype" Margin="5,0,5,5"></TextBlock>
-                <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="FileTypeView" Margin="5,0,5,5"
+                    <TextBlock Visibility="{Binding Visibility, ElementName=FileTypeView}" Text="Filetype" Margin="5,0,5,5"></TextBlock>
+                    <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="FileTypeView" Margin="5,0,5,5"
                           d:SelectedIndex="1"
                           SelectionChanged="ValidateVisibility_SelectionChanged">
-                    <ComboBoxItem>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="auto"/>
-                                <ColumnDefinition Width="auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="FileCodeOutline" Height="12"/>
-                            <TextBlock Margin="5 0 0 0" Grid.Column="1" Text=".library"></TextBlock>
-                        </Grid>
-                    </ComboBoxItem>
-                    <ComboBoxItem IsEnabled="{Binding HasCompiledLibraryCapability}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="auto"/>
-                                <ColumnDefinition Width="auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="FileArchiveOutline" Height="12"/>
-                            <TextBlock Margin="5 0 0 0" Grid.Column="1" Text=".compiled-library"></TextBlock>
-                        </Grid>
-                    </ComboBoxItem>
-                </ComboBox>
-
-                <TextBlock Visibility="{Binding Visibility, ElementName=EntitlementView}" Text="Entitlement" Margin="5,0,5,5"></TextBlock>
-                <ComboBox x:Name="EntitlementView" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5"
-
-                          SelectionChanged="ValidateVisibility_SelectionChanged">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid HorizontalAlignment="Stretch">
+                        <ComboBoxItem>
+                            <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="auto"/>
                                     <ColumnDefinition Width="auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding Name}"></TextBlock>
-                                <TextBlock HorizontalAlignment="Right" Grid.Column="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock HorizontalAlignment="Right" Grid.Column="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="FileCodeOutline" Height="12"/>
+                                <TextBlock Margin="5 0 0 0" Grid.Column="1" Text=".library"></TextBlock>
                             </Grid>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                        </ComboBoxItem>
+                        <ComboBoxItem IsEnabled="{Binding HasCompiledLibraryCapability}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="FileArchiveOutline" Height="12"/>
+                                <TextBlock Margin="5 0 0 0" Grid.Column="1" Text=".compiled-library"></TextBlock>
+                            </Grid>
+                        </ComboBoxItem>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Orientation="Vertical" DataContext="{Binding UserInfo}" >
+                    <TextBlock Visibility="{Binding Visibility, ElementName=EntitlementView}" Text="Entitlement" Margin="5,0,5,5"></TextBlock>
+                    <ComboBox x:Name="EntitlementView" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch" Margin="5,0,5,5"
+                          SelectionChanged="ValidateVisibility_SelectionChanged">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid HorizontalAlignment="Stretch">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding Name}"></TextBlock>
+                                    <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
 
-                <Label Content="Runtime License:" HorizontalAlignment="Left" Margin="0"/>
-                <StackPanel Orientation="Horizontal" IsEnabled="{Binding HasLicenseTmcCapability}">
-                    <StackPanel Orientation="Vertical" Margin="5,0,5,5">
-                        <TextBox x:Name="txbLicenseFile" Text="{Binding LicenseTmcFile, ElementName=wndParent}" Width="176" Margin="0"/>
-                        <StackPanel Orientation="Horizontal" Visibility="{Binding HasLicenseTmcBinary, ElementName=wndParent, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <fa:ImageAwesome Margin="2 0 0 0" Icon="CheckSquare" Height="12"/>
-                            <TextBlock Margin="5 0 0 0">File uploaded</TextBlock>
-                            <Button Click="ShowLicenseTmcButton_Click" Margin="5 -1 0 0" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
+                    <Label Content="Runtime License:" HorizontalAlignment="Left" Margin="0"/>
+                    <StackPanel Orientation="Horizontal" IsEnabled="{Binding HasLicenseTmcCapability}">
+                        <StackPanel Orientation="Vertical" Margin="5,0,5,5">
+                            <TextBox x:Name="txbLicenseFile" Text="{Binding LicenseTmcFile, ElementName=wndParent}" Width="176" Margin="0"/>
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding HasLicenseTmcBinary, ElementName=wndParent, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <fa:ImageAwesome Margin="2 0 0 0" Icon="CheckSquare" Height="12"/>
+                                <TextBlock Margin="5 0 0 0">File uploaded</TextBlock>
+                                <Button Click="ShowLicenseTmcButton_Click" Margin="5 -1 0 0" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
                                         Content="Show" VerticalAlignment="Top"/>
+                            </StackPanel>
                         </StackPanel>
+                        <Button Click="ChangeLicenseTmc_Click" Content="..." Width="25" Margin="0 0 5 0" HorizontalAlignment="Center" VerticalAlignment="Top"/>
                     </StackPanel>
-                    <Button Click="ChangeLicenseTmc_Click" Content="..." Width="25" Margin="0 0 5 0" HorizontalAlignment="Center" VerticalAlignment="Top"/>
                 </StackPanel>
             </StackPanel>
         </Expander>

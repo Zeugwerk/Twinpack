@@ -52,6 +52,7 @@
     <Compile Include="Commands\Command.cs" />
     <Compile Include="Commands\ICommand.cs" />
     <Compile Include="Commands\CatalogCommand.cs" />
+    <Compile Include="Commands\TwinpackMenuCommand.cs" />
     <Compile Include="Commands\ModifyCommand.cs" />
     <Compile Include="Commands\PublishCommand.cs" />
     <Compile Include="Dialogs\Authentication.cs" />

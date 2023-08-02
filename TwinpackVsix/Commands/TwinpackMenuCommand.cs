@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Twinpack;
+using TCatSysManagerLib;
 using Task = System.Threading.Tasks.Task;
 
 namespace Twinpack.Commands
@@ -14,12 +16,12 @@ namespace Twinpack.Commands
     /// <summary>
     /// Command handler
     /// </summary>
-    internal sealed class CatalogCommand : Command, ICommand
+    internal sealed class TwinpackMenuCommand : Command, ICommand
     {
         /// <summary>
         /// Command ID.
         /// </summary>
-        public const int CommandId = 260;
+        public const int CommandId = 263;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BackuppanelCommand"/> class.
@@ -27,7 +29,7 @@ namespace Twinpack.Commands
         /// </summary>
         /// <param name="package">Owner package, not null.</param>
         /// <param name="commandService">Command service to add command to, not null.</param>
-        private CatalogCommand(TwinpackPackage package, OleMenuCommandService commandService)
+        private TwinpackMenuCommand(TwinpackPackage package, OleMenuCommandService commandService)
           : base(package)
         {
             var menuCommandID = new CommandID(CommandSet, CommandId);
@@ -44,7 +46,7 @@ namespace Twinpack.Commands
         /// <summary>
         /// Gets the instance of the command.
         /// </summary>
-        public static CatalogCommand Instance
+        public static TwinpackMenuCommand Instance
         {
             get;
             private set;
@@ -61,7 +63,7 @@ namespace Twinpack.Commands
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
 
             OleMenuCommandService commandService = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
-            Instance = new CatalogCommand(package, commandService);
+            Instance = new TwinpackMenuCommand(package, commandService);
         }
 
         /// <summary>
@@ -71,37 +73,7 @@ namespace Twinpack.Commands
         /// <param name="e">The event args.</param>
         private async void Execute(object sender, EventArgs e)
         {
-            try
-            {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
 
-                ToolWindowPane window = _package.FindToolWindow(typeof(Dialogs.CatalogPane), 0, true);
-                if ((null == window) || (null == window.Frame))
-                {
-                    throw new NotSupportedException("Cannot create tool window");
-                }
-
-                (window as Dialogs.CatalogPane).Update();
-                IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
-                Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
-            }
-            catch(Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-        }
-
-        public override void PackageReset()
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            ToolWindowPane window = _package.FindToolWindow(typeof(Dialogs.CatalogPane), 0, false);
-
-            if(window != null)
-            {
-                ((window as Dialogs.CatalogPane)?.Frame as IVsWindowFrame).Hide();
-            }
-            base.PackageReset();
         }
     }
 }
