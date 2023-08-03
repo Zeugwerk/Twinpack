@@ -8,7 +8,7 @@
              mc:Ignorable="d" 
              ResizeMode="NoResize"
              WindowStartupLocation="CenterScreen"
-             Title="License Agreement" Height="400" Width="600">
+             Title="License Agreement" Height="600" Width="800">
     <Window.Resources>
         <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>

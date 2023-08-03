@@ -125,7 +125,11 @@
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
                             </Grid.ColumnDefinitions>
                             <Image d:Source="Images/Twinpack.png" Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" Grid.Column="0" Width="48" Height="48"/>
-                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="auto"></RowDefinition>
+                                    <RowDefinition Height="*" MaxHeight="100"></RowDefinition>
+                                </Grid.RowDefinitions>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Margin="8 0 0 0">
                                     <fa:ImageAwesome Margin="0 0 0 0" Icon="IdCard" Height="14" Visibility="{Binding HasRuntimeLicense, Converter={StaticResource BooleanToVisibilityConverter}}"/>                                                                                
@@ -139,8 +143,8 @@
                                         <Run Text="downloads"/>
                                     </TextBlock>
                                 </StackPanel>
-                                <TextBlock Margin="8 0 0 0" Text="{Binding Description}"/>
-                            </StackPanel>
+                                <TextBlock Grid.Row="1" Margin="8 0 0 0" Text="{Binding Description}" TextWrapping="Wrap"/>
+                            </Grid>
 
                             <Grid Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch">
                                 <TextBlock Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" FontWeight="SemiBold">

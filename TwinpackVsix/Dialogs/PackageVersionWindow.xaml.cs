@@ -130,7 +130,8 @@ namespace Twinpack.Dialogs
                 LoadingText = "Retrieving package ...";
                 if (_plcConfig != null)
                 {
-                    _package = await _twinpackServer.GetPackageAsync(UserInfo?.DistributorName, _plcConfig.Name);
+                    if(!string.IsNullOrEmpty(UserInfo?.DistributorName) && !string.IsNullOrEmpty(_plcConfig?.Name))
+                        _package = await _twinpackServer.GetPackageAsync(UserInfo?.DistributorName, _plcConfig.Name);
 
                     if(_package.PackageId == null)
                     {      
@@ -788,6 +789,7 @@ namespace Twinpack.Dialogs
 
                 var branch = BranchesView.SelectedItem as string;
                 var configuration = (ConfigurationsView.SelectedItem as Models.LoginPostResponse.Configuration).Name;
+                var entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement).Name;
                 var target = (TargetsView.SelectedItem as Models.LoginPostResponse.Target).Name;
                 var compiled = FileTypeView.SelectedIndex != 0;
 
@@ -821,10 +823,42 @@ namespace Twinpack.Dialogs
 
                     LoadingText = "Uploading to Twinpack ...";
 
-                    _plcConfig.Entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement).Name;
+                    var cachePath = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries";
+                    var suffix = compiled ? "compiled-library" : "library";                   
+                    var packageVersion = new Models.PackageVersionPostRequest()
+                    {
+                        Name = PackageName,
+                        Version = Version,
+                        Target = target,
+                        License = License,
+                        Description = Description,
+                        DistributorName = DistributorName,
+                        Authors = Authors,
+                        Entitlement = entitlement,
+                        ProjectUrl = ProjectUrl,
+                        DisplayName = DisplayName,
+                        Branch = branch,
+                        Configuration = configuration,
+                        Compiled = compiled ? 1 : 0,
+                        Notes = Notes,
+                        LicenseBinary = !string.IsNullOrEmpty(LicenseFile) && File.Exists(LicenseFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseFile)) : _packageVersion?.LicenseBinary,
+                        LicenseTmcBinary = !string.IsNullOrEmpty(LicenseTmcFile) && File.Exists(LicenseTmcFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseTmcFile)) : _packageVersion?.LicenseTmcBinary,
+                        IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
+                        IconBinary = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Convert.ToBase64String(File.ReadAllBytes(IconFile)) : null,
+                        Binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath}\{target}\{_plcConfig.Name}_{_plcConfig.Version}.{suffix}")),
+                        Dependencies = _plcConfig.Packages?.Select(x => new Models.PackageVersionDependencyPostRequest
+                        {
+                            Repository = x.Repository,
+                            DistributorName = x.DistributorName,
+                            Name = x.Name,
+                            Version = x.Version,
+                            Branch = x.Branch,
+                            Target = x.Target,
+                            Configuration = x.Configuration
+                        })
+                    };
 
-                    _packageVersion = await _twinpackServer.PostPackageVersionAsync(_plcConfig, configuration, branch, target, Notes,
-                        false, cachePath: $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries");
+                    _packageVersion = await _twinpackServer.PostPackageVersionAsync(packageVersion);
                     _package = _packageVersion;
                     _packageVersionLatest.Version = _packageVersion.Version;
 

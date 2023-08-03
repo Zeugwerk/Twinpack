@@ -112,7 +112,46 @@ namespace Twinpack
             {
                 try
                 {
-                    await PostPackageVersionAsync(plc, configuration, branch, target, notes, compiled);
+                    suffix = compiled ? "compiled-library" : "library";
+                    string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
+                    string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
+                    string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
+                    string iconBinary = (!File.Exists(plc.IconFile) || string.IsNullOrEmpty(plc.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.IconFile));
+
+                    var packageVersion = new PackageVersionPostRequest()
+                    {
+                        Name = plc.Name,
+                        Version = plc.Version,
+                        Target = target,
+                        License = plc.License,
+                        Description = plc.Description,
+                        DistributorName = plc.DistributorName,
+                        Authors = plc.Authors,
+                        Entitlement = plc.Entitlement,
+                        ProjectUrl = plc.ProjectUrl,
+                        DisplayName = plc.DisplayName,
+                        Branch = branch,
+                        Configuration = configuration,
+                        Compiled = compiled ? 1 : 0,
+                        Notes = notes,
+                        IconFilename = Path.GetFileName(plc.IconFile),
+                        IconBinary = iconBinary,
+                        LicenseBinary = licenseBinary,
+                        LicenseTmcBinary = licenseTmcBinary,
+                        Binary = binary,
+                        Dependencies = plc.Packages?.Select(x => new PackageVersionDependencyPostRequest
+                        {
+                            Repository = x.Repository,
+                            DistributorName = x.DistributorName,
+                            Name = x.Name,
+                            Version = x.Version,
+                            Branch = x.Branch,
+                            Target = x.Target,
+                            Configuration = x.Configuration
+                        })
+                    };
+
+                    await PostPackageVersionAsync(packageVersion);
                 }
                 catch(Exception ex)
                 {
@@ -127,49 +166,11 @@ namespace Twinpack
             }
         }
 
-        public async Task<PackageVersionGetResponse> PostPackageVersionAsync(ConfigPlcProject plc, string configuration, string branch, string target, string notes, bool compiled, string cachePath = null)
+        public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion)
         {
-            _logger.Info($"Uploading Package '{plc.Name}' (branch: {branch}, target: {target}, configuration: {configuration}, version: {plc.Version}");
+            _logger.Info($"Uploading Package '{packageVersion.Name}' (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration}, version: {packageVersion.Version}");
 
-            var suffix = compiled ? "compiled-library" : "library";
-            string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
-            string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
-            string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
-            string iconBinary = (!File.Exists(plc.IconFile) || string.IsNullOrEmpty(plc.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.IconFile));
-
-            var requestBody = new PackageVersionPostRequest()
-            {
-                Name = plc.Name,
-                Version = plc.Version,
-                Target = target,
-                License = plc.License,
-                Description = plc.Description,
-                DistributorName = plc.DistributorName,
-                Authors = plc.Authors,
-                Entitlement = plc.Entitlement,
-                ProjectUrl = plc.ProjectUrl,
-                DisplayName = plc.DisplayName,
-                Branch = branch,
-                Configuration = configuration,
-                Compiled = compiled ? 1 : 0,
-                Notes = notes,
-                IconFilename = Path.GetFileName(plc.IconFile),
-                IconBinary = iconBinary,
-                LicenseBinary = licenseBinary,
-                LicenseTmcBinary = licenseTmcBinary,
-                Binary = binary,
-                Dependencies = plc.Packages?.Select(x => new PackageVersionDependencyPostRequest {
-                    Repository = x.Repository,
-                    DistributorName = x.DistributorName,
-                    Name = x.Name,
-                    Version = x.Version,
-                    Branch = x.Branch,
-                    Target = x.Target,
-                    Configuration = x.Configuration
-                })
-            };      
-
-            var requestBodyJson = JsonSerializer.Serialize(requestBody);
+            var requestBodyJson = JsonSerializer.Serialize(packageVersion);
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 

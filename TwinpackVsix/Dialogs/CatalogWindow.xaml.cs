@@ -50,7 +50,6 @@ namespace Twinpack.Dialogs
         private bool _isFetchingPackageVersions = false;
         private bool _isFetchingPackageVersion = false;
 
-        private int? _selectedPackageId = null;
         private string _searchText = "";
         private TwinpackServer _twinpackServer = new TwinpackServer();
         private Authentication _auth;
