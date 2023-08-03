@@ -744,6 +744,13 @@ namespace Twinpack.Dialogs
             _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != PackageVersion.Name && x.Repository == PackageVersion.Repository).ToList();
         }
 
+        public void IsLicenseDialogRequired(Models.PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
+        {
+            licenseId = TwinpackUtils.ParseLicenseId(packageVersion.LicenseTmcText);
+            return (ForceShowLicense || (showLicenseDialog && !TwinpackUtils.IsPackageInstalled(libManager, packageVersion))) &&
+                   (!string.IsNullOrEmpty(packageVersion.LicenseBinary) || (!string.IsNullOrEmpty(packageVersion.LicenseTmcBinary) && !shownLicenses.Contains(licenseId)));
+        }
+
         public async Task AddOrUpdatePackageAsync(Models.PackageVersionGetResponse packageVersion, bool showLicenseDialog = true)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -756,30 +763,32 @@ namespace Twinpack.Dialogs
             var sysManager = plc.SystemManager as ITcSysManager2;
             var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
             var knownLicenseIds = TwinpackUtils.KnownLicenseIds();
+            var shownLicenseIds = new HashSet<string>(knownLicenseIds);
 
-            if (ForceShowLicense || (showLicenseDialog && !TwinpackUtils.IsPackageInstalled(libManager, packageVersion)))
+            if(IsLicenseDialogRequired(packageVersion, showLicenseDialog, shownLicenseIds))
             {
-                if (!string.IsNullOrEmpty(packageVersion.License) || !string.IsNullOrEmpty(packageVersion.LicenseBinary))
+                var licenseDialog = new LicenseWindow(libManager, packageVersion);
+                if (licenseDialog.ShowLicense() == false)
                 {
-                    var licenseDialog = new LicenseWindow(libManager, packageVersion);
-                    if (licenseDialog.ShowLicense() == false)
+                    _logger.Warn($"License for {packageVersion.Name} was declined");
+                    return;
+                }
+
+                shownLicenseIds.Add(TwinpackUtils.ParseLicenseId(packageVersion.LicenseTmcText));
+            }
+
+            foreach (var dependency in packageVersion.Dependencies)
+            {
+                if (IsLicenseDialogRequired(dependency, showLicenseDialog, shownLicenseIds))
+                {
+                    var licenseWindow = new LicenseWindow(libManager, dependency);
+                    if (licenseWindow.ShowLicense() == false)
                     {
                         _logger.Warn($"License for {packageVersion.Name} was declined");
                         return;
                     }
-                }
 
-                foreach (var dependency in packageVersion.Dependencies)
-                {
-                    if (!string.IsNullOrEmpty(packageVersion.License) || !string.IsNullOrEmpty(packageVersion.LicenseBinary))
-                    {
-                        var licenseWindow = new LicenseWindow(libManager, dependency);
-                        if (licenseWindow.ShowLicense() == false)
-                        {
-                            _logger.Warn($"License for {packageVersion.Name} was declined");
-                            return;
-                        }
-                    }
+                    shownLicenseIds.Add(TwinpackUtils.ParseLicenseId(dependency.LicenseTmcText));
                 }
             }
 
