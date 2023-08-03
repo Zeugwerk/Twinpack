@@ -757,7 +757,7 @@ namespace Twinpack.Dialogs
             var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
             var knownLicenseIds = TwinpackUtils.KnownLicenseIds();
 
-            if (ForceShowLicense || (showLicenseDialog && TwinpackUtils.IsPackageInstalled(libManager, packageVersion)))
+            if (ForceShowLicense || (showLicenseDialog && !TwinpackUtils.IsPackageInstalled(libManager, packageVersion)))
             {
                 if (!string.IsNullOrEmpty(packageVersion.License) || !string.IsNullOrEmpty(packageVersion.LicenseBinary))
                 {
