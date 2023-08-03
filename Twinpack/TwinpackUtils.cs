@@ -245,16 +245,19 @@ namespace Twinpack
             }
         }
 
-        public static void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName, bool addAsPlaceholder = true)
+        public static async Task AddReferenceAsync(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName, bool addAsPlaceholder = true)
         {
-            distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
-            RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
+            await Task.Run(() =>
+            {
+                distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
+                RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
 
-            _logger.Info($"Adding reference to {placeholderName} (version: {version}, distributor: {distributorName})");
-            if (addAsPlaceholder)
-                libManager.AddPlaceholder(placeholderName, libraryName, version, distributorName);
-            else
-                libManager.AddLibrary(libraryName, version, distributorName);
+                _logger.Info($"Adding reference to {placeholderName} (version: {version}, distributor: {distributorName})");
+                if (addAsPlaceholder)
+                    libManager.AddPlaceholder(placeholderName, libraryName, version, distributorName);
+                else
+                    libManager.AddLibrary(libraryName, version, distributorName);
+            });
         }
 
         public static BitmapImage IconImage(string iconUrl)
