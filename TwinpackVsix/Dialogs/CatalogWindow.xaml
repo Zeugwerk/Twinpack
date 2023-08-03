@@ -110,21 +110,24 @@
             <ListView Grid.Column="0" Grid.Row="0" x:Name="CatalogView"
                       ItemsSource="{Binding Catalog}" BorderBrush="#FFcad0de"
                       BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
-                      ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
+                      HorizontalContentAlignment="Stretch"
+                      ScrollViewer.CanContentScroll="True"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Visible">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"></Setter>
                     </Style>
-                </ListBox.ItemContainerStyle>
+                </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
-                                <ColumnDefinition Width="*"></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
                             </Grid.ColumnDefinitions>
-                            <Image d:Source="Images/Twinpack.png" Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" Grid.Column="0" Width="48" Height="48"/>
+                            <Image d:Source="Images/Twinpack.png" Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
                             <Grid Grid.Column="1">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="auto"></RowDefinition>
@@ -132,9 +135,9 @@
                                 </Grid.RowDefinitions>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Margin="8 0 0 0">
-                                    <fa:ImageAwesome Margin="0 0 0 0" Icon="IdCard" Height="14" Visibility="{Binding HasRuntimeLicense, Converter={StaticResource BooleanToVisibilityConverter}}"/>                                                                                
+                                    <fa:ImageAwesome Margin="0 0 0 0" Icon="IdCard" Height="14" d:Visibility="Visible" Visibility="{Binding HasRuntimeLicense, Converter={StaticResource BooleanToVisibilityConverter}}"/>                                                                              
                                     <Run Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="16"/>
-                                    <Run Text="distributed by"/>
+                                    <Run Text="by"/>
                                     <Run Text="{Binding DistributorName}"/>
                                     </TextBlock>
                                     <TextBlock Margin="0 0 0 0" Visibility="{Binding Downloads, Converter={StaticResource IntToVisibilityConverter}, ConverterParameter='0'}">                                    
@@ -143,16 +146,15 @@
                                         <Run Text="downloads"/>
                                     </TextBlock>
                                 </StackPanel>
-                                <TextBlock Grid.Row="1" Margin="8 0 0 0" Text="{Binding Description}" TextWrapping="Wrap"/>
+                                <TextBlock Grid.Row="1" Margin="8 0 0 0" MaxHeight="50" Text="{Binding Description}" d:Text="The path of the righteous man is beset on all sides by the iniquities of the selfish and the tyranny of the evil men. Blessed is he who, in the name of charity and goodwill, shepherds the weak through the valley of darkness, for he is truly his brother's keeper," TextWrapping="Wrap"/>
                             </Grid>
 
                             <Grid Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch">
                                 <TextBlock Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" FontWeight="SemiBold">
-                                    <fa:ImageAwesome Icon="Bolt" Height="12" Visibility="{Binding IsUpdateable, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
-                                    <Run Text="{Binding InstalledVersion, Mode=OneWay}"></Run>
+                                    <fa:ImageAwesome Icon="Bolt" Height="12" d:Visibility="Visible" Visibility="{Binding IsUpdateable, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
+                                    <Run d:Text="1.0.0.0" Text="{Binding InstalledVersion, Mode=OneWay}"></Run>
                                 </TextBlock>
                             </Grid>
-
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
@@ -261,7 +263,7 @@
                         </Button>
                         -->
                         <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10">
-                            <Run Text="distributed by"/>
+                            <Run Text="by"/>
                             <Run Text="{Binding DistributorName}" d:Text="Zeugwerk GmbH"/>
                         </TextBlock>
                     </Grid>
