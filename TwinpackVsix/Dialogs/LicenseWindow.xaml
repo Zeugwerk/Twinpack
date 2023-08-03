@@ -64,10 +64,12 @@
                     <Run Text="The package comes with the following license agreement."></Run>                
                     <Run Text="Please read the License Agreement carefully, if you accept the terms of the license agreement and want to install the package you have to accept the agreement"></Run>
                 </TextBlock>
-                <ScrollViewer Grid.Row="2" Margin="0 10 0 5">
-                    <TextBox Margin="5 0 0 0" IsReadOnly="True" d:Text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+                <Border BorderThickness="1" BorderBrush="#4757b8" Grid.Row="2" Margin="0 10 0 5">
+                    <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto">
+                        <TextBox BorderThickness="0" Margin="5 0 0 0" IsReadOnly="True" d:Text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
                              Text="{Binding LicenseText}" TextWrapping="Wrap" FontSize="12"/>
-                </ScrollViewer>
+                    </ScrollViewer>
+                </Border>
             </Grid>
 
             <Grid Margin="0 10 0 0" d:Visibility="Hidden" Visibility="{Binding ShowLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -77,14 +79,17 @@
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>                
                 <TextBlock FontWeight="DemiBold" Text="Runtime License"></TextBlock>
-                <TextBlock Grid.Row="1"  Margin="5 0 5 0"  Visibility="{Binding HasLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" >
+                <TextBlock Grid.Row="1" Margin="5 0 5 0"  Visibility="{Binding HasLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" >
                     <Run Text="The package is protected against unauthorized use of software functions with an OEM license."></Run><LineBreak/>
                     <Run Text="Twinpack will try to copy the following content as a tmc file into your local TwinCAT custom config folder."></Run>
                 </TextBlock>
-                <ScrollViewer Grid.Row="2"  Margin="0 10 0 5" CanContentScroll="True" VerticalScrollBarVisibility="Auto">
-                    <TextBox Margin="5 0 0 0" IsReadOnly="True" d:Text=""
+                <Border BorderThickness="1" BorderBrush="#4757b8" Grid.Row="2" Margin="0 10 0 5">
+                    <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto">
+                        <TextBox Margin="5 0 0 0" IsReadOnly="True" d:Text=""
                              Text="{Binding LicenseTmcText}"  TextWrapping="NoWrap" FontSize="12"/>
-                </ScrollViewer>
+                    </ScrollViewer>
+                </Border>
+
             </Grid>                
         </Grid>
 
