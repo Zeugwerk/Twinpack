@@ -134,6 +134,7 @@ namespace Twinpack
             var suffix = compiled ? "compiled-library" : "library";
             string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
             string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
+            string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
             string iconBinary = (!File.Exists(plc.IconFile) || string.IsNullOrEmpty(plc.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.IconFile));
 
             var requestBody = new PackageVersionPostRequest()
@@ -155,6 +156,7 @@ namespace Twinpack
                 IconFilename = Path.GetFileName(plc.IconFile),
                 IconBinary = iconBinary,
                 LicenseBinary = licenseBinary,
+                LicenseTmcBinary = licenseTmcBinary,
                 Binary = binary,
                 Dependencies = plc.Packages?.Select(x => new PackageVersionDependencyPostRequest {
                     Repository = x.Repository,
