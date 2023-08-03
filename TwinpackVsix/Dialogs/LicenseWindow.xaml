@@ -27,7 +27,7 @@
                     <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" d:Text="Zeugwerk Core" FontSize="20" Margin="0" FontWeight="SemiBold"></TextBlock>
                 </StackPanel>
                 <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10">
-                            <Run Text="distributed by"/>
+                            <Run Text="by"/>
                             <Run Text="{Binding DistributorName}" d:Text="Zeugwerk GmbH"/>
                 </TextBlock>
             </StackPanel>
