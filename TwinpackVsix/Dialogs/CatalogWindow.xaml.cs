@@ -744,11 +744,11 @@ namespace Twinpack.Dialogs
             _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != PackageVersion.Name && x.Repository == PackageVersion.Repository).ToList();
         }
 
-        public void IsLicenseDialogRequired(Models.PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
+        public bool IsLicenseDialogRequired(ITcPlcLibraryManager libManager, Models.PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
         {
-            licenseId = TwinpackUtils.ParseLicenseId(packageVersion.LicenseTmcText);
-            return (ForceShowLicense || (showLicenseDialog && !TwinpackUtils.IsPackageInstalled(libManager, packageVersion))) &&
-                   (!string.IsNullOrEmpty(packageVersion.LicenseBinary) || (!string.IsNullOrEmpty(packageVersion.LicenseTmcBinary) && !shownLicenses.Contains(licenseId)));
+            var licenseId = TwinpackUtils.ParseLicenseId(packageVersion.LicenseTmcText);
+            return (ForceShowLicense || (showLicenseDialogHint && !TwinpackUtils.IsPackageInstalled(libManager, packageVersion))) &&
+                   (!string.IsNullOrEmpty(packageVersion.LicenseBinary) || (!string.IsNullOrEmpty(packageVersion.LicenseTmcBinary) && (ForceShowLicense || !shownLicenses.Contains(licenseId))));
         }
 
         public async Task AddOrUpdatePackageAsync(Models.PackageVersionGetResponse packageVersion, bool showLicenseDialog = true)
@@ -765,7 +765,7 @@ namespace Twinpack.Dialogs
             var knownLicenseIds = TwinpackUtils.KnownLicenseIds();
             var shownLicenseIds = new HashSet<string>(knownLicenseIds);
 
-            if(IsLicenseDialogRequired(packageVersion, showLicenseDialog, shownLicenseIds))
+            if(IsLicenseDialogRequired(libManager, packageVersion, showLicenseDialog, shownLicenseIds))
             {
                 var licenseDialog = new LicenseWindow(libManager, packageVersion);
                 if (licenseDialog.ShowLicense() == false)
@@ -779,7 +779,7 @@ namespace Twinpack.Dialogs
 
             foreach (var dependency in packageVersion.Dependencies)
             {
-                if (IsLicenseDialogRequired(dependency, showLicenseDialog, shownLicenseIds))
+                if (IsLicenseDialogRequired(libManager, dependency, showLicenseDialog, shownLicenseIds))
                 {
                     var licenseWindow = new LicenseWindow(libManager, dependency);
                     if (licenseWindow.ShowLicense() == false)
@@ -803,7 +803,7 @@ namespace Twinpack.Dialogs
             var downloadPackageVersion = await TwinpackUtils.DownloadPackageVersionAndDependenciesAsync(libManager, packageVersion, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
             await TwinpackUtils.InstallPackageVersionsAsync(libManager, downloadPackageVersion, cachePath: cachePath);
             await _context.WriteStatusAsync($"Adding package {packageVersion.Name} to references ...");
-            TwinpackUtils.AddReference(libManager, packageVersion.Name, packageVersion.Name, packageVersion.Version, packageVersion.DistributorName);
+            await TwinpackUtils.AddReferenceAsync(libManager, packageVersion.Name, packageVersion.Name, packageVersion.Version, packageVersion.DistributorName);
             IsNewReference = false;
 
             // update config
@@ -1139,7 +1139,6 @@ namespace Twinpack.Dialogs
                     Package = await _twinpackServer.GetPackageAsync(item.DistributorName, item.Name);
 
                 var index = 0;
-                IsNewReference = PackageVersion.PackageVersionId == null || !_installedPackages.Any(x => x.PackageId == Package.PackageId);
                 if (PackageVersion.PackageVersionId != null && PackageVersion.PackageId == Package.PackageId)
                 {
                     InstalledPackageVersion = PackageVersion.Version ?? "";
@@ -1213,6 +1212,8 @@ namespace Twinpack.Dialogs
                         item.Name, item.Version, item.Configuration, item.Branch, item.Target,
                         includeBinary: false, cachePath: null);
                 }
+
+                IsNewReference = PackageVersion.PackageVersionId == null || !_installedPackages.Any(x => x.PackageId == Package.PackageId);
             }
             catch (Exception ex)
             {
