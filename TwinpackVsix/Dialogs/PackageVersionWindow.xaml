@@ -44,8 +44,8 @@
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <Image Grid.Column="0" Height="50" Source="Images/Twinpack.png" HorizontalAlignment="Center" VerticalAlignment="Center"></Image>
-            <TextBlock Grid.Column="1" Text="Twinpack Edit Package" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontFamily="Menrope" FontWeight="DemiBold" Foreground="#FF2A334B"/>
-            <TextBlock Grid.Column="1" Text="Twinpack Publish Package" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontFamily="Menrope" FontWeight="DemiBold" Foreground="#FF2A334B"/>
+            <TextBlock Grid.Column="1" Text="Twinpack Edit Package" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontWeight="DemiBold" Foreground="#FF2A334B"/>
+            <TextBlock Grid.Column="1" Text="Twinpack Publish Package" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontWeight="DemiBold" Foreground="#FF2A334B"/>
         </Grid>
 
         <!-- General Data -->
