@@ -46,6 +46,14 @@ namespace Twinpack
             }
         }
 
+        public bool IsClientUpdateAvailable
+        {
+            get
+            {
+                return UserInfo?.UpdateVersion != null && new Version(UserInfo?.UpdateVersion) > ClientVersion;
+            }
+        }
+
         public void AddHeaders(System.Net.Http.HttpRequestMessage request)
         {
             request.Headers.Add("zgwk-username", Username);
@@ -548,7 +556,7 @@ namespace Twinpack
                 if(!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
                     CredentialManager.WriteCredential(TwinpackUrl, Username, Password, CredentialPersistence.LocalMachine);
 
-                if(UserInfo?.UpdateVersion != null && new Version(UserInfo?.UpdateVersion) > ClientVersion)
+                if(IsClientUpdateAvailable)
                     _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Download and install the lastest version at {UserInfo.UpdateUrl}");
 
                 _logger.Info("Log in to Twinpack Server successful");

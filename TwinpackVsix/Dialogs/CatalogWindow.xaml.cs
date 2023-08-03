@@ -42,6 +42,7 @@ namespace Twinpack.Dialogs
         private int _currentPackageVersionsPage = 1;
         private int _itemsPerPage = 10;
 
+        private bool _isUpdateAvailable = false;
         private bool _isLoadingPlcConfig = false;
         private bool _isFetchingInstalledPackages = false;
         private bool _isAvailablePackageAvailable = false;
@@ -103,6 +104,16 @@ namespace Twinpack.Dialogs
                     else
                         UpdateCatalog();
                 }
+            }
+        }
+        
+        public bool IsUpdateAvailable
+        {
+            get { return _isUpdateAvailable; }
+            set
+            {
+                _isUpdateAvailable = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsUpdateAvailable)));
             }
         }
 
@@ -376,6 +387,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
+                IsUpdateAvailable = _twinpackServer.IsClientUpdateAvailable == true;
                 btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
                 btnRegister.Visibility = _twinpackServer.LoggedIn ? Visibility.Collapsed : Visibility.Visible;
             }
@@ -896,6 +908,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
+                IsUpdateAvailable = _twinpackServer.IsClientUpdateAvailable;
                 btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
                 btnRegister.Visibility = _twinpackServer.LoggedIn ? Visibility.Collapsed : Visibility.Visible;
             }
@@ -1295,26 +1308,13 @@ namespace Twinpack.Dialogs
 
         public void ShowProjectUrl_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                Process process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = PackageVersion.ProjectUrl,
-                        UseShellExecute = true
-                    }
-                };
-
-                process.Start();
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+            Process.Start(PackageVersion.ProjectUrl);
         }
 
+        public void UpdateAvailableButton_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(_twinpackServer?.UserInfo?.UpdateUrl);
+        }
 
         public async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
