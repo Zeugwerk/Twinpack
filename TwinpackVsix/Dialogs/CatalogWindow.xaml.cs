@@ -768,7 +768,7 @@ namespace Twinpack.Dialogs
             }
 
             // update config
-            _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != PackageVersion.Name && x.DistributorName != PackageVersion.DistributorName).ToList();
+            _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != PackageVersion.Name).ToList();
         }
 
         public bool IsLicenseDialogRequired(ITcPlcLibraryManager libManager, Models.PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
@@ -834,7 +834,7 @@ namespace Twinpack.Dialogs
             IsNewReference = false;
 
             // update config
-            _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != packageVersion.Name && x.DistributorName != packageVersion.DistributorName)
+            _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != packageVersion.Name)
                                                         .Append(new Models.ConfigPlcPackage
                                                         {
                                                             Name = packageVersion.Name,
