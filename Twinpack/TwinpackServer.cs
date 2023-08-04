@@ -276,15 +276,15 @@ namespace Twinpack
                                                 $"&search={HttpUtility.UrlEncode(search)}", page, perPage);
         }
 
-        public async Task<Tuple<IEnumerable<PackageVersionsItemGetResponse>, bool>> GetPackageVersionsAsync(int packageId, int page = 1, int perPage = 5)
+        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(int packageId, int page = 1, int perPage = 5)
         {
-            return await QueryWithPagination<PackageVersionsItemGetResponse>($"twinpack.php?controller=package-versions" +
+            return await QueryWithPagination<PackageVersionGetResponse>($"twinpack.php?controller=package-versions" +
                                             $"&id={packageId}", page, perPage);
         }
 
-        public async Task<Tuple<IEnumerable<PackageVersionsItemGetResponse>, bool>> GetPackageVersionsAsync(int packageId, string branch, string configuration, string target, int page = 1, int perPage = 5)
+        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(int packageId, string branch, string configuration, string target, int page = 1, int perPage = 5)
         {
-            return await QueryWithPagination<PackageVersionsItemGetResponse>($"twinpack.php?controller=package-versions" +
+            return await QueryWithPagination<PackageVersionGetResponse>($"twinpack.php?controller=package-versions" +
                                             $"&id={packageId}" +
                                             $"&branch={HttpUtility.UrlEncode(branch)}" +
                                             $"&target={HttpUtility.UrlEncode(target)}" +

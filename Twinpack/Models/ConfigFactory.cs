@@ -212,7 +212,8 @@ namespace Twinpack.Models
             {
                 string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
                 var plcName = System.IO.Path.GetFileNameWithoutExtension(projectPath);
-                return config.Projects.FirstOrDefault(x => x.Name == prj.Name)?.Plcs?.FirstOrDefault(x => x.Name == plcName);
+                return config.Projects.SelectMany(x => x.Plcs).FirstOrDefault(x => x.Name == plcName);
+                //return config.Projects.FirstOrDefault(x => x.Name == prj.Name)?.Plcs?.FirstOrDefault(x => x.Name == plcName);
             }
 
             return null;
