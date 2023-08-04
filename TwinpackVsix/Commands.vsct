@@ -70,7 +70,7 @@
 	</Commands>
 
 	<CommandPlacements>
-		<CommandPlacement guid="guidTwinpackCmdSet" id="TwinpackMenu" priority="0xF01">
+		<CommandPlacement guid="guidTwinpackCmdSet" id="TwinpackMenu" priority="0xE00">
 			<Parent guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectMenu" />
 		</CommandPlacement>
 	</CommandPlacements>
