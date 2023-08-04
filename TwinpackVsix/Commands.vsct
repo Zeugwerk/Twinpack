@@ -25,7 +25,7 @@
 			<Group guid="guidTwinpackCmdSet" id="ContextMenuGroup_plcProjectMenu" priority="0x002">
 				<Parent guid="plcProjectCommandSet" id="plcProjectMenu" />
 			</Group>
-			<Group guid="guidTwinpackCmdSet" id="ContextMenuGroup_twinpack" priority="0x0700">
+			<Group guid="guidTwinpackCmdSet" id="ContextMenuGroup_twinpack" priority="0x0600">
 				<Parent guid="guidTwinpackCmdSet" id="TwinpackMenu" />
 			</Group>
 		</Groups>
