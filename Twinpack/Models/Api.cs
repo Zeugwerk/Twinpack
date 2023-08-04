@@ -84,41 +84,6 @@ namespace Twinpack.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasRuntimeLicense { get { return RuntimeLicense > 0; } }
     }
-
-    public class PackageVersionsItemGetResponse : Response
-    {
-        [JsonPropertyName("package-version-id")]
-        public int? PackageVersionId { get; set; }
-        [JsonPropertyName("package-id")]
-        public int? PackageId { get; set; }
-        [JsonPropertyName("private")]
-        public int Private { get; set; }
-        [JsonPropertyName("repository")]
-        public string Repository { get; set; }
-        [JsonPropertyName("distributor-name")]
-        public string DistributorName { get; set; }
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-        [JsonPropertyName("branch")]
-        public string Branch { get; set; }
-        [JsonPropertyName("version")]
-        public string Version { get; set; }
-        [JsonPropertyName("target")]
-        public string Target { get; set; }
-        [JsonPropertyName("configuration")]
-        public string Configuration { get; set; }
-        [JsonPropertyName("authors")]
-        public string Authors { get; set; }
-        [JsonPropertyName("entitlement")]
-        public string Entitlement { get; set; }
-        [JsonPropertyName("project-url")]
-        public string ProjectUrl { get; set; }
-        [JsonPropertyName("license")]
-        public string License { get; set; }
-        [JsonPropertyName("notes")]
-        public string Notes { get; set; }
-    }
-
     public class PackageGetResponse : Response
     {
         public PackageGetResponse() { }

@@ -33,7 +33,7 @@ namespace Twinpack.Dialogs
         private List<Models.CatalogItem> _availablePackages = new List<Models.CatalogItem>();
         private List<Models.CatalogItem> _installedPackages = new List<Models.CatalogItem>();
         private SemaphoreSlim _semaphorePackages = new SemaphoreSlim(1, 1);
-        private List<Models.PackageVersionsItemGetResponse> _packageVersions;
+        private List<Models.PackageVersionGetResponse> _packageVersions;
 
         private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Twinpack.Models.PackageVersionGetResponse();
@@ -64,6 +64,7 @@ namespace Twinpack.Dialogs
         private bool _isNewReference;
         private bool _isConfigured;
         private bool _isCreateConfigVisible;
+        private bool _isMigrateConfigVisible;
         private bool _isUpdateAllVisible;
         private bool _isRestoreAllVisible;
         private bool _isUpdateAllEnabled;
@@ -195,7 +196,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public List<Models.PackageVersionsItemGetResponse> Versions
+        public List<Models.PackageVersionGetResponse> Versions
         {
             get { return _packageVersions; }
             set
@@ -303,6 +304,16 @@ namespace Twinpack.Dialogs
             {
                 _isCreateConfigVisible = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCreateConfigVisible)));
+            }
+        }
+
+        public bool IsMigrateConfigVisible
+        {
+            get { return _isMigrateConfigVisible; }
+            set
+            {
+                _isMigrateConfigVisible = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsMigrateConfigVisible)));
             }
         }
 
@@ -422,15 +433,18 @@ namespace Twinpack.Dialogs
                     _isLoadingPlcConfig = true;
                     await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                    var config = Models.ConfigFactory.Load(System.IO.Path.GetDirectoryName(_context.Solution.FullName));
+                    var config = Models.ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
                     if (config != null)
                     {
                         _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, _plc);
                         IsCreateConfigVisible = false;
+                        IsMigrateConfigVisible = false;
+                        IsMigrateConfigVisible = _plcConfig?.Packages?.Any() == false && _plcConfig.Frameworks?.Zeugwerk?.References?.Any() == true;
                     }
                     else
                     {
                         IsCreateConfigVisible = true;
+                        IsMigrateConfigVisible = false;
                         _plcConfig = await Models.ConfigPlcProjectFactory.CreateAsync(_context.Solution, _plc, _twinpackServer);
                     }
 
@@ -439,6 +453,7 @@ namespace Twinpack.Dialogs
                 catch (Exception ex)
                 {
                     IsCreateConfigVisible = true;
+                    IsMigrateConfigVisible = false;
                     IsConfigured = false;
                     _plcConfig = null;
                     _logger.Trace(ex);
@@ -453,6 +468,7 @@ namespace Twinpack.Dialogs
             {
                 _isLoadingPlcConfig = false;
                 IsCreateConfigVisible = false;
+                IsMigrateConfigVisible = false;
                 IsConfigured = false;
             }
         }
@@ -462,7 +478,7 @@ namespace Twinpack.Dialogs
             if (packageId == null)
                 return;
 
-            var packageVersionId = (VersionsView.SelectedItem as Models.PackageVersionsItemGetResponse)?.PackageVersionId;
+            var packageVersionId = (VersionsView.SelectedItem as Models.PackageVersionGetResponse)?.PackageVersionId;
             var packagePublish = new PackageVersionWindow(false, _context, _plc, packageId, packageVersionId);
             packagePublish.ShowDialog();
 
@@ -479,7 +495,7 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = false;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _context?.Logger?.ActivateAsync();
+                //await _context?.Logger?.ActivateAsync();
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
@@ -518,7 +534,7 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = false;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _context?.Logger?.ActivateAsync();
+                //await _context?.Logger?.ActivateAsync();
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 await AddOrUpdatePackageAsync(PackageVersion);
@@ -564,7 +580,7 @@ namespace Twinpack.Dialogs
 
                 await _semaphorePackages.WaitAsync();
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _context?.Logger?.ActivateAsync();
+                //await _context?.Logger?.ActivateAsync();
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 items = _installedPackages;
@@ -627,7 +643,7 @@ namespace Twinpack.Dialogs
 
                 await _semaphorePackages.WaitAsync();
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _context?.Logger?.ActivateAsync();
+                //await _context?.Logger?.ActivateAsync();
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 items = _installedPackages.Where(x => x.IsUpdateable);
@@ -729,7 +745,7 @@ namespace Twinpack.Dialogs
         public async Task UninstallPackageAsync()
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            await _context?.Logger?.ActivateAsync();
+            //await _context?.Logger?.ActivateAsync();
 
             IsPackageVersionPanelEnabled = false;
 
@@ -752,7 +768,7 @@ namespace Twinpack.Dialogs
             }
 
             // update config
-            _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != PackageVersion.Name && x.Repository == PackageVersion.Repository).ToList();
+            _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != PackageVersion.Name && x.DistributorName != PackageVersion.DistributorName).ToList();
         }
 
         public bool IsLicenseDialogRequired(ITcPlcLibraryManager libManager, Models.PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
@@ -818,7 +834,7 @@ namespace Twinpack.Dialogs
             IsNewReference = false;
 
             // update config
-            _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != packageVersion.Name && x.Repository == packageVersion.Repository)
+            _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != packageVersion.Name && x.DistributorName != packageVersion.DistributorName)
                                                         .Append(new Models.ConfigPlcPackage
                                                         {
                                                             Name = packageVersion.Name,
@@ -886,7 +902,7 @@ namespace Twinpack.Dialogs
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _context?.Logger?.ActivateAsync();
+                //await _context?.Logger?.ActivateAsync();
 
                 if (!_twinpackServer.LoggedIn)
                 {
@@ -980,7 +996,7 @@ namespace Twinpack.Dialogs
                 IsPackageVersionsAvailable = results.Item2;
 
                 if (reset)
-                    Versions = new List<Models.PackageVersionsItemGetResponse>();
+                    Versions = new List<Models.PackageVersionGetResponse>();
             
                 Versions = Versions.Concat(results.Item1).ToList();
                 _currentPackageVersionsPage++;
@@ -1198,7 +1214,16 @@ namespace Twinpack.Dialogs
                 var target = TargetsView.SelectedItem as string;
 
                 await LoadFirstPackageVersionsPageAsync((int)Package.PackageId, branch, configuration, target);
-                VersionsView.SelectedIndex = 0;
+
+                var item = CatalogView.SelectedItem as Models.CatalogItem;
+                var index = Versions?.FindIndex(x => x.Version == item?.Installed?.Version) ?? -1;
+                if (index < 0 && item?.Installed != null)
+                {
+                    index = 0;
+                    //Versions = Versions.Concat(new List<Models.PackageVersionGetResponse> { item.Installed }).ToList();
+                    //index = Versions.Count() - 1;
+                }
+                VersionsView.SelectedIndex = string.IsNullOrEmpty(item?.Installed?.Version) ? 0 : index;
             }
             catch (Exception ex)
             {
@@ -1217,7 +1242,7 @@ namespace Twinpack.Dialogs
             {
                 IsPackageLoading = Package.PackageId != PackageVersion.PackageId;
 
-                var item = (sender as ComboBox).SelectedItem as Models.PackageVersionsItemGetResponse;
+                var item = (sender as ComboBox).SelectedItem as Models.PackageVersionGetResponse;
                 if (item != null)
                 {
                     PackageVersion = await _twinpackServer.GetPackageVersionAsync(item.DistributorName,
@@ -1243,7 +1268,7 @@ namespace Twinpack.Dialogs
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _context?.Logger?.ActivateAsync();
+                //await _context?.Logger?.ActivateAsync();
 
                 IsPackageLoading = false;
                 Package = new Models.PackageGetResponse();
@@ -1268,7 +1293,8 @@ namespace Twinpack.Dialogs
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _context?.Logger?.ActivateAsync();
+                await _context.WriteStatusAsync($"Creating config.json");
+                //await _context?.Logger?.ActivateAsync();
 
                 var config = await Models.ConfigFactory.CreateFromSolutionAsync(_context.Solution, _twinpackServer);
                 if (config == null)
@@ -1297,6 +1323,9 @@ namespace Twinpack.Dialogs
                         process.Start();
                         process.WaitForExit();
                     }
+
+                    await LoadPlcConfigAsync();
+                    await LoadInstalledPackagesAsync();
                 }
 
             }
