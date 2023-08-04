@@ -22,7 +22,7 @@ namespace Twinpack
     [Target("VsOutputWindowTarget")]
     public class VsOutputWindowTarget : AsyncTaskTarget
     {
-        private static Guid OutputPaneGuid = new Guid("E12CEAA1-6466-4841-8A70-9D4E96638CD8");
+        private static Guid OutputPaneGuid = new Guid("E12CEAA1-6466-4841-8A69-9D4E96638CD8");
         private IVsOutputWindowPane _outputPane;
 
         public async Task ActivateAsync()

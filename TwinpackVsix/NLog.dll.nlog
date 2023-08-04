@@ -31,6 +31,6 @@
 	<rules>
 		<logger name="*" minlevel="Trace" writeTo="ExtensionTraceLog" enabled="true" />
 		<logger name="*" minlevel="Debug" writeTo="ExtensionDebugLog" />
-		<logger name="*" minlevel="Info" writeTo="VsOutputWindowTarget" />
+		<!--<logger name="*" minlevel="Info" writeTo="VsOutputWindowTarget" />-->
 	</rules>
 </nlog>
