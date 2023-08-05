@@ -16,6 +16,7 @@ using System.Threading;
 using TCatSysManagerLib;
 using Task = System.Threading.Tasks.Task;
 using FontAwesome.WPF;
+using NLog.Layouts;
 
 namespace Twinpack
 {
@@ -86,11 +87,31 @@ namespace Twinpack
 
         public TwinpackPackage() : base()
         {
-            LogManager.Setup().SetupExtensions(ext => ext.RegisterTarget<VsOutputWindowTarget>("VsOutputWindowTarget"));
+            // all context information, which is needed in all classes in the extension
+            Context = new PackageContext
+            {
+                Statusbar = (IVsStatusbar)GetGlobalService(typeof(SVsStatusbar)),
+                Logger = new VsOutputWindowTarget { Layout = @"${uppercase:${level:padding=6:fixedLength=true}} ${message}" }
+            };
+
+            var config = LogManager.Configuration ?? new NLog.Config.LoggingConfiguration();
+            var logFileTraceTarget = new NLog.Targets.FileTarget("Twinpack")
+            {
+                FileName = @"${specialfolder:folder=LocalApplicationData}\Zeugwerk\logs\Twinpack\Twinpack.debug.log",
+                MaxArchiveFiles = 7,
+                ArchiveEvery = NLog.Targets.FileArchivePeriod.Day,
+                ArchiveFileName = @"${specialfolder:folder=LocalApplicationData}\Zeugwerk\logs\Twinpack\Twinpack.debug{#}.log",
+                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.Rolling,
+                KeepFileOpen = false
+            };
+            config.AddRule(LogLevel.Trace, LogLevel.Fatal, logFileTraceTarget, "Twinpack.*");
+            config.AddRule(LogLevel.Info, LogLevel.Fatal, Context.Logger, "Twinpack.*");
+            LogManager.Configuration = config;
+
             _logger = LogManager.GetCurrentClassLogger();
 
             // This is needed to vsix is loading the assembly for FontAwesome.WPF
-            _logger.Trace(FontAwesome.WPF.FontAwesomeIcon.FolderOpen.ToString());
+            _logger.Trace(FontAwesomeIcon.FolderOpen.ToString());
         }
 
         /// <summary>
@@ -118,13 +139,6 @@ namespace Twinpack
             // When initialized asynchronously, the current thread may be a background thread at this point.
             // Do any initialization that requires the UI thread after switching to the UI thread.
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-
-            // all context information, which is needed in all classes in the extension
-            Context = new PackageContext
-            {
-                Statusbar = (IVsStatusbar)GetGlobalService(typeof(SVsStatusbar)),
-                Logger = LogManager.Configuration.FindTargetByName<VsOutputWindowTarget>("VsOutputWindowTarget")
-            };
 
             if (await GetServiceAsync(typeof(SVsSolution)) is IVsSolution vssolution_)
                 vssolution_.AdviseSolutionEvents(this, out _solutionEventsCookie);

@@ -786,6 +786,8 @@ namespace Twinpack.Dialogs
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _context?.Logger?.ActivateAsync(clear: true);
+                _logger.Info("Publishing package");
 
                 var branch = BranchesView.SelectedItem as string;
                 var configuration = (ConfigurationsView.SelectedItem as Models.LoginPostResponse.Configuration).Name;
@@ -820,7 +822,7 @@ namespace Twinpack.Dialogs
                 try
                 {
                     await LoginAsync();
-
+                    _logger.Info("Uploading to Twinpack ...");
                     LoadingText = "Uploading to Twinpack ...";
 
                     var cachePath = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries";
@@ -909,6 +911,9 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                await _context?.Logger?.ActivateAsync(clear: true);
+                _logger.Info("Modifying package");
+
                 IsEnabled = false;
                 if (await PatchPackageAsync())
                     await PatchPackageVersionAsync();
