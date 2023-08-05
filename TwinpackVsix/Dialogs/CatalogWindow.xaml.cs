@@ -495,7 +495,8 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = false;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                //await _context?.Logger?.ActivateAsync();
+                await _context?.Logger?.ActivateAsync(clear: true);
+                _logger.Info("Uninstalling package");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
@@ -511,7 +512,7 @@ namespace Twinpack.Dialogs
                 await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 UpdateCatalog();
 
-                await _context.WriteStatusAsync($"Successfully removed {PackageVersion.Name} from {_plc.Name} references");
+                _logger.Info($"Successfully removed {PackageVersion.Name} from {_plc.Name} references");
                 _logger.Info("Finished\n");
 
             }
@@ -534,7 +535,8 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = false;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                //await _context?.Logger?.ActivateAsync();
+                await _context?.Logger?.ActivateAsync(clear: true);
+                _logger.Info("Adding package");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 await AddOrUpdatePackageAsync(PackageVersion);
@@ -548,7 +550,7 @@ namespace Twinpack.Dialogs
                 await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 UpdateCatalog();
 
-                await _context.WriteStatusAsync($"Successfully added {PackageVersion.Name} to {_plc.Name} references");
+                _logger.Info($"Successfully added {PackageVersion.Name} to {_plc.Name} references");
                 _logger.Info("Finished\n");
 
             }
@@ -580,7 +582,8 @@ namespace Twinpack.Dialogs
 
                 await _semaphorePackages.WaitAsync();
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                //await _context?.Logger?.ActivateAsync();
+                await _context?.Logger?.ActivateAsync(clear: true);
+                _logger.Info("Restoring all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 items = _installedPackages;
@@ -616,8 +619,7 @@ namespace Twinpack.Dialogs
                 SelectPackageVersionFilter(PackageVersion);
                 UpdateCatalog();
 
-                await _context.WriteStatusAsync($"Successfully restored {items?.Count()} references");
-
+                _logger.Info($"Successfully restored {items?.Count()} references");
                 _logger.Info("Finished\n");
             }
             catch (Exception ex)
@@ -643,7 +645,8 @@ namespace Twinpack.Dialogs
 
                 await _semaphorePackages.WaitAsync();
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                //await _context?.Logger?.ActivateAsync();
+                await _context?.Logger?.ActivateAsync(clear: true);
+                _logger.Info("Updating all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 items = _installedPackages.Where(x => x.IsUpdateable);
@@ -678,8 +681,7 @@ namespace Twinpack.Dialogs
                 await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 UpdateCatalog();
 
-                await _context.WriteStatusAsync($"Successfully updated {items?.Count()} references to their latest version");
-
+                _logger.Info($"Successfully updated {items?.Count()} references to their latest version");
                 _logger.Info("Finished\n");
             }
             catch (Exception ex)
@@ -745,25 +747,23 @@ namespace Twinpack.Dialogs
         public async Task UninstallPackageAsync()
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            //await _context?.Logger?.ActivateAsync();
 
             IsPackageVersionPanelEnabled = false;
 
             if (PackageVersion.PackageVersionId == null)
                 throw new Exception("No packages is selected that could be uninstalled!");
 
-            var plc = (_plc.Object as dynamic);
+            var plc = _plc.Object as dynamic;
             var sysManager = plc.SystemManager as ITcSysManager2;
             var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
 
             _context.Dte.ExecuteCommand("File.SaveAll");
-            await _context.WriteStatusAsync($"Removing package {PackageVersion.Name} from references ...");
             TwinpackUtils.RemoveReference(libManager, Package.Name, Package.Name, PackageVersion.Version, _package.DistributorName);
             _context.Dte.ExecuteCommand("File.SaveAll");
 
             if (UninstallDeletes)
             {
-                await _context.WriteStatusAsync($"Uninstalling package {PackageVersion.Name} from system ...");
+                _logger.Info($"Uninstalling package {PackageVersion.Name} from system ...");
                 TwinpackUtils.UninstallReferenceAsync(libManager, _packageVersion);
             }
 
@@ -819,17 +819,25 @@ namespace Twinpack.Dialogs
                 }
             }
 
-            await _context.WriteStatusAsync($"Copying License TMC file(s) for {packageVersion.Name} ...");
-
-            TwinpackUtils.CopyLicenseTmcIfNeeded(packageVersion, knownLicenseIds);
-            foreach (var dependency in packageVersion.Dependencies)
+            if(packageVersion.LicenseTmcBinary != null)
+            {
+                _logger.Info($"Copying license description file to TwinCAT for {packageVersion.Name} ...");
                 TwinpackUtils.CopyLicenseTmcIfNeeded(packageVersion, knownLicenseIds);
+            }
 
-            await _context.WriteStatusAsync($"Installing package {packageVersion.Name} ...");
+            foreach (var dependency in packageVersion.Dependencies)
+            {
+                if (dependency.LicenseTmcBinary != null)
+                {
+                    _logger.Info($"Copying license description file to TwinCAT for {dependency.Name} ...");
+                    TwinpackUtils.CopyLicenseTmcIfNeeded(dependency, knownLicenseIds);
+                }
+            }
+
+            _logger.Info($"Installing package {packageVersion.Name} ...");
 
             var downloadPackageVersion = await TwinpackUtils.DownloadPackageVersionAndDependenciesAsync(libManager, packageVersion, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
             await TwinpackUtils.InstallPackageVersionsAsync(libManager, downloadPackageVersion, cachePath: cachePath);
-            await _context.WriteStatusAsync($"Adding package {packageVersion.Name} to references ...");
             await TwinpackUtils.AddReferenceAsync(libManager, packageVersion.Name, packageVersion.Name, packageVersion.Version, packageVersion.DistributorName);
             IsNewReference = false;
 
@@ -902,7 +910,7 @@ namespace Twinpack.Dialogs
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                //await _context?.Logger?.ActivateAsync();
+                await _context?.Logger?.ActivateAsync(clear: true);
 
                 if (!_twinpackServer.LoggedIn)
                 {
@@ -1268,7 +1276,8 @@ namespace Twinpack.Dialogs
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                //await _context?.Logger?.ActivateAsync();
+                await _context?.Logger?.ActivateAsync(clear: true);
+                _logger.Info("Reloading catalog");
 
                 IsPackageLoading = false;
                 Package = new Models.PackageGetResponse();
@@ -1293,16 +1302,19 @@ namespace Twinpack.Dialogs
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _context.WriteStatusAsync($"Creating config.json");
-                //await _context?.Logger?.ActivateAsync();
+                await _context?.Logger?.ActivateAsync(clear: true);
+                _logger.Info($"Creating package configuration");
 
                 var config = await Models.ConfigFactory.CreateFromSolutionAsync(_context.Solution, _twinpackServer);
+
                 if (config == null)
                 {
                     throw new Exception("Generating the configuration file failed, please create the configuration file manually!");
                 }
                 else
                 {
+                    _logger.Info($"Detected {config?.Projects?.SelectMany(x => x.Plcs)?.SelectMany(x => x.Packages)?.Count()} Twinpack packages and {config?.Projects?.SelectMany(x => x.Plcs)?.SelectMany(x => x.References)?.Count()} other references");
+
                     IsCreateConfigVisible = false;
                     var path = Models.ConfigFactory.Save(config);
 
@@ -1331,7 +1343,8 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Configuration failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
 

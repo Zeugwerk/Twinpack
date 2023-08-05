@@ -25,12 +25,20 @@ namespace Twinpack
         private static Guid OutputPaneGuid = new Guid("E12CEAA1-6466-4841-8A69-9D4E96638CD8");
         private IVsOutputWindowPane _outputPane;
 
-        public async Task ActivateAsync()
+        public async Task ActivateAsync(bool clear)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            IVsOutputWindow outputWindow = Package.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;
+            if (clear)
+                _outputPane?.Clear();
+
             _outputPane?.Activate();
+
+            Guid outputWindowGuid = new Guid(ToolWindowGuids80.Outputwindow);
+            IVsWindowFrame frame = null;
+            IVsUIShell uiShell = Package.GetGlobalService(typeof(SVsUIShell)) as IVsUIShell;
+            uiShell?.FindToolWindow((uint)__VSFINDTOOLWIN.FTW_fForceCreate, outputWindowGuid, out frame);
+            frame?.Show();
         }
 
         public async Task LogToOutputWindowAsync(string message)
@@ -57,14 +65,12 @@ namespace Twinpack
             }
 
             if (_outputPane != null)
-            {
-                _outputPane.OutputString(message + Environment.NewLine);
-            }
+                _outputPane.OutputStringThreadSafe(message + Environment.NewLine);
         }
 
         protected override Task WriteAsyncTask(LogEventInfo logEvent, CancellationToken cancellationToken)
         {
-            string logMessage = this.Layout.Render(logEvent);
+            string logMessage = Layout.Render(logEvent);
             return LogToOutputWindowAsync(logMessage);
         }
     }
