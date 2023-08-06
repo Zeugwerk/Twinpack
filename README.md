@@ -1,8 +1,6 @@
 # Twinpack - The Library Package Manager for TwinCAT
 
-The Twinpack Package Manager is a powerful and user-friendly package management tool. It enables the TwinCAT community to share their libraries, enabling seamless integration of custom code and third-party components into your TwinCAT projects. 
-
-Whether you are a seasoned TwinCAT developer or just getting started, Twinpack empowers you to extend the capabilities of your TwinCAT projects by providing a seamless library management experience. Enhance your productivity, foster collaboration, and unlock the full potential of TwinCAT with this indispensable tool.
+The Twinpack Package Manager is a powerful and user-friendly package management tool. Whether you are a seasoned TwinCAT developer or just getting started, Twinpack empowers you to extend the capabilities of your TwinCAT projects by providing a seamless library management experience. Enhance your productivity, foster collaboration, and unlock the full potential of TwinCAT with this indispensable tool.
 
 ## Table of Contents
 
