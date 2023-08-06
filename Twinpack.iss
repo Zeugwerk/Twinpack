@@ -32,6 +32,8 @@ CloseApplications=force
 RestartApplications=True
 SetupIconFile=Zeugwerk.ico
 WizardSmallImageFile=Zeugwerk.bmp
+LicenseFile=LICENSE
+InfoBeforeFile=DISCLAIMER
 
 [Files]
 Source: "TwinpackVsix\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell;
@@ -167,14 +169,14 @@ end;
 procedure InitializeWizard;
 begin
   ExtractTemporaryFile('vswhere.exe');
-  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products *', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput);
+  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -version [15.0, 16.0]', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput);
   
   { Create the pages }
   
   { UserPage }
   UserPage := CreateInputQueryPage(wpWelcome,
-    'Welcome to the Twinpack Installer', 'For publishing packages, you have to create a Zeugwerk account. You may skip this step if you do not want to publish packages.',
-    'Register a Zeugwerk account');
+    'Welcome to the Twinpack Installer', 'Twinpack is a package manage tool to faciliate sharing of TwinCAT libraries within the community.',
+    'Register a Twinpack account (only needed if you want to publish packages to the Twinpack Server)');
   UserPage.Add('Email:', False);
   UserPage.Edits[0].OnChange := @RegisterEnable;
   
