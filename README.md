@@ -13,6 +13,8 @@ With TwinCAT 3.1.4026, Beckhoff introduced a package manager which emphasizes th
 
 ## Installation
 
+**The first official release of Twinpack is on the horizon - stay tuned**
+
 To use the Twinpack Package Manager, follow these steps:
 
 1. Download the latest installer.
