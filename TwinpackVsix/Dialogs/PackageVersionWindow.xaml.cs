@@ -942,7 +942,7 @@ namespace Twinpack.Dialogs
             try
             {
                 var version = new Version(Version);
-                var latestVersion = string.IsNullOrEmpty(LatestVersion) ? new Version("0.0.0.0") : new Version(Version);
+                var latestVersion = string.IsNullOrEmpty(LatestVersion) ? new Version("0.0.0.0") : new Version(LatestVersion);
 
                 IsVersionWrongFormat = !Regex.Match(Version, @"^\d+\.\d+\.\d+\.\d+$").Success;
                 IsNewPackageVersion = version > latestVersion;
