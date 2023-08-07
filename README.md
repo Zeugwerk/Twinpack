@@ -1,18 +1,15 @@
 # Twinpack - The Library Package Manager for TwinCAT
 
-The Twinpack Package Manager is a powerful and user-friendly package management tool. Whether you are a seasoned TwinCAT developer or just getting started, Twinpack empowers you to extend the capabilities of your TwinCAT projects by providing a seamless library management experience. Enhance your productivity, foster collaboration, and unlock the full potential of TwinCAT with this indispensable tool.
+The Twinpack Package Manager is a powerful and user-friendly package management tool for TwinCAT libraries. It is designed to empower the TwinCAT community by enabling seamless sharing and distribution of libraries, fostering collaboration, and facilitating the exchange of specialized components among developers. It acts as a versatile platform akin to NuGet, allowing users to efficiently manage and deploy their custom-built modules.
+
+With TwinCAT 3.1.4026, Beckhoff introduced a package manager which primarily emphasizes the installation and maintenance of the TwinCAT Integrated Development Environment (IDE) and other software components tightly integrated with Beckhoff's proprietary offerings. While Twinpack and Beckhoff's package manager contribute to the advancement of TwinCAT technology, Twinpack stands out for its community-driven ethos, encouraging innovation, customization, and knowledge exchange among users, while Beckhoff's package manager centers on providing a streamlined experience for their official software installations.
 
 ## Table of Contents
 
-- [Concept](#concept)
 - [Installation](#installation)
 - [Using a Package](#using-a-package)
 - [Sharing a Package](#sharing-a-package)
 - [Disclaimer](#disclaimer)
-
-## Concept
-
-Twinpack is designed to facilitate the sharing of TwinCAT libraries within the community. It provides a centralized repository of libraries contributed by the community, allowing you to enhance your projects with pre-built functionality and accelerate development and to share your libraries with thecommunity. Keep track of library versions and easily switch between different versions within your projects. Twinpack ensures that you have full control over the libraries you use, allowing you to maintain compatibility and stability as your projects evolve.
 
 ## Installation
 
