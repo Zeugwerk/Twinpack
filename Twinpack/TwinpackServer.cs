@@ -562,7 +562,7 @@ namespace Twinpack
                 _logger.Info("Log in to Twinpack Server successful");
                 return UserInfo;
             }
-            catch (Exception ex)
+            catch
             {
                 DeleteCredential();
                 throw;
