@@ -297,7 +297,11 @@
                         </TextBlock>
                     </Grid>
 
-                    <StackPanel IsEnabled="{Binding IsConfigured, ElementName=This}" Grid.Row="1" Orientation="Vertical" Margin="0,20,0,0">
+                    <Grid IsEnabled="{Binding IsConfigured, ElementName=This}" Grid.Row="1" Margin="0,20,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto"></RowDefinition>
+                            <RowDefinition Height="*"></RowDefinition>
+                        </Grid.RowDefinitions>
                         <Grid HorizontalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -408,7 +412,9 @@
                             </Expander>
                         </Grid>
 
-                        <StackPanel DataContext="{Binding PackageVersion}" Orientation="Vertical">
+                        <StackPanel Grid.Row="1" 
+                                    DataContext="{Binding PackageVersion}" Orientation="Vertical"
+                                    Visibility="{Binding IsPackageVersionLoading, ElementName=This, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
                             <TextBlock Text="Notes: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
                             <TextBlock Text="{Binding Notes}" TextWrapping="Wrap" Margin="15,0,0,0"></TextBlock>
 
@@ -498,17 +504,25 @@
                                 </Grid>
                             </Expander>
                         </StackPanel>
-                    </StackPanel>
+
+                        <Grid Grid.Row="1" Grid.RowSpan="3" d:Visibility="Hidden" Visibility="{Binding IsPackageVersionLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <fa:ImageAwesome Margin="2 0 0 0" Icon="Spinner" Spin="True" Height="12"/>
+                                <TextBlock Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+                            </StackPanel>
+                        </Grid>
+                        
+                    </Grid>
                 </Grid>
             </ScrollViewer>
-<!--
+
             <Grid Grid.Column="2" Grid.RowSpan="3" Background="White" d:Visibility="Hidden" Visibility="{Binding IsPackageLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <fa:ImageAwesome Margin="2 0 0 0" Icon="Spinner" Spin="True" Height="12"/>
                     <TextBlock Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
                 </StackPanel>
             </Grid>
-            -->
+
         </Grid>
     </Grid>
 </UserControl>
