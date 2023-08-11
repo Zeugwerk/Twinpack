@@ -407,6 +407,7 @@ namespace Twinpack.Dialogs
             {
                 _plc = TwinpackUtils.ActivePlc(_context.Dte);
 
+                cmbTwinpackServer.Items.Clear();
                 cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrl);
                 cmbTwinpackServer.SelectedIndex = 0;
 
