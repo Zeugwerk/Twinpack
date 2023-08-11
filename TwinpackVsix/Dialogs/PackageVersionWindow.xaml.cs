@@ -1,23 +1,18 @@
 ﻿using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
 using System.IO;
-using System.Net;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
-using System.Windows.Media;
-using Meziantou.Framework.Win32;
 using Microsoft.VisualStudio.Threading;
 using TCatSysManagerLib;
 using Microsoft.Win32;
 using System.Text.RegularExpressions;
+using Jdenticon.Wpf;
+using Jdenticon.Rendering;
 
 namespace Twinpack.Dialogs
 {
@@ -206,7 +201,7 @@ namespace Twinpack.Dialogs
                 Version = _packageVersion?.Version ?? _plcConfig?.Version;
                 Authors = _packageVersion?.Authors ?? _plcConfig?.Authors;
                 License = _packageVersion?.License ?? _plcConfig?.License;
-                IconImage = IconCache.Icon(_package?.IconUrl);
+                IconImage = IconCache.Icon(_package?.IconUrl ?? PackageName);
                 Notes = _packageVersion?.Notes;
                 Version = _packageVersion?.Version;
                 LatestVersion = _packageVersionLatest?.Version;
@@ -725,7 +720,7 @@ namespace Twinpack.Dialogs
                 ProjectUrl = packageResult.ProjectUrl;
                 Authors = packageResult.Authors;
                 License = packageResult.License;
-                IconImage = IconCache.Icon(packageResult.IconUrl);
+                IconImage = IconCache.Icon(packageResult?.IconUrl ?? PackageName);
             }
             catch (Exceptions.GetException ex)
             {

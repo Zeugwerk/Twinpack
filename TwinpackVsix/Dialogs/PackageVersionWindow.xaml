@@ -368,7 +368,7 @@
             </Button>
         </StackPanel>
 
-        <Grid Grid.Column="1" Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="4" Background="White" 
+        <Grid Grid.Column="1" Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="4" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" 
                      Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" 
                      d:Visibility="Hidden"
                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch">

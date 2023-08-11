@@ -1175,6 +1175,7 @@ namespace Twinpack.Dialogs
                 await _semaphorePackages.WaitAsync();
 
                 IsPackageLoading = true;
+                IsPackageVersionLoading = true;
 
                 // check if the plc already contains the selected package
                 _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == item.Name);
@@ -1226,6 +1227,7 @@ namespace Twinpack.Dialogs
                     return;
 
                 IsPackageLoading = Package.PackageId != PackageVersion.PackageId;
+                IsPackageVersionLoading = IsPackageLoading;
 
                 var branch = BranchesView.SelectedItem as string;
                 var configuration = ConfigurationsView.SelectedItem as string;

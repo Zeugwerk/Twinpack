@@ -24,17 +24,14 @@ namespace Twinpack.Dialogs
             {
 
             }
-            try
-            {
-                return (value as Models.PackageVersionGetResponse).PackageVersionId != null ? Visibility.Visible : Visibility.Collapsed;
-            }
-            catch
-            {
 
-            }
             try
             {
-                return (value as Models.PackageGetResponse).PackageId != null ? Visibility.Visible : Visibility.Collapsed;
+                if(value as Models.PackageVersionGetResponse != null)
+                    return (value as Models.PackageVersionGetResponse).PackageVersionId != null ? Visibility.Visible : Visibility.Collapsed;
+
+                if (value as Models.PackageGetResponse != null)
+                    return (value as Models.PackageGetResponse).PackageId != null ? Visibility.Visible : Visibility.Collapsed;
             }
             catch
             {

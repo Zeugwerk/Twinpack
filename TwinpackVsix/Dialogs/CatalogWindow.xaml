@@ -11,6 +11,7 @@
              d:DesignHeight="800" d:DesignWidth="700">
     <UserControl.Resources>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <local:VisibilityToInverseVisibilityConverter x:Key="VisibilityToInverseVisibilityConverter"/>
         <local:UrlToImageConverter x:Key="UrlToImageConverter"/>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
@@ -138,7 +139,17 @@
                                 <ColumnDefinition></ColumnDefinition>
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
                             </Grid.ColumnDefinitions>
-                            <Image d:Source="Images/Twinpack.png" Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
+
+                            <Image d:Source="Images/Twinpack.png" 
+                                   x:Name="ImageIcon"
+                                   Visibility="{Binding IconUrl, Converter={StaticResource NullToVisibilityConverter}}"
+                                   Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
+
+                            
+                            <Image d:Source="Images/Twinpack.png" 
+                                   Visibility="{Binding Visibility, ElementName=ImageIcon, Converter={StaticResource VisibilityToInverseVisibilityConverter}}"
+                                   Source="{Binding Name, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
+
                             <Grid Grid.Column="1">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="auto"></RowDefinition>
@@ -516,7 +527,7 @@
                 </Grid>
             </ScrollViewer>
 
-            <Grid Grid.Column="2" Grid.RowSpan="3" Background="White" d:Visibility="Hidden" Visibility="{Binding IsPackageLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Grid Grid.Column="2" Grid.RowSpan="10" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" d:Visibility="Hidden" Visibility="{Binding IsPackageLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <fa:ImageAwesome Margin="2 0 0 0" Icon="Spinner" Spin="True" Height="12"/>
                     <TextBlock Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
