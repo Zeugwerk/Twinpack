@@ -61,6 +61,7 @@ namespace Twinpack.Dialogs
 
         private bool _isCatalogLoading;
         private bool _isPackageLoading;
+        private bool _isPackageVersionLoading;
         private bool _isNewReference;
         private bool _isConfigured;
         private bool _isCreateConfigVisible;
@@ -255,7 +256,15 @@ namespace Twinpack.Dialogs
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPackageLoading)));
             }
         }
-
+        public bool IsPackageVersionLoading
+        {
+            get { return _isPackageVersionLoading; }
+            set
+            {
+                _isPackageVersionLoading = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPackageVersionLoading)));
+            }
+        }
 
         public bool IsUpdateAllVisible
         {
@@ -1250,8 +1259,10 @@ namespace Twinpack.Dialogs
             try
             {
                 IsPackageLoading = Package.PackageId != PackageVersion.PackageId;
-
                 var item = (sender as ComboBox).SelectedItem as Models.PackageVersionGetResponse;
+
+                IsPackageVersionLoading = item?.PackageVersionId != PackageVersion.PackageVersionId;
+
                 if (item != null)
                 {
                     PackageVersion = await _twinpackServer.GetPackageVersionAsync(item.DistributorName,
@@ -1269,6 +1280,7 @@ namespace Twinpack.Dialogs
             finally
             {
                 IsPackageLoading = false;
+                IsPackageVersionLoading = false;
             }
         }
 
