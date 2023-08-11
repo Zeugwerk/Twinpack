@@ -468,7 +468,8 @@
                                         Visibility="{Binding HasProjectUrl, Converter={StaticResource BooleanToVisibilityConverter}}"  />                                
                             </StackPanel>
 
-                            <Expander Grid.ColumnSpan="3" Margin="0,10,0,0" Header="Dependencies" IsExpanded="{Binding HasDependencies, Mode=OneWay}">
+                            <Expander Grid.ColumnSpan="3" Margin="0,10,0,0" Header="Dependencies" 
+                                      Visibility="{Binding HasDependencies, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <Grid Margin="5 5 0 0">
                                   <ListView Grid.Column="0" Grid.Row="0" Background="Transparent"
                                         ItemsSource="{Binding Dependencies}"
