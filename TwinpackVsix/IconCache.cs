@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Jdenticon.Rendering;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows.Media.Imaging;
 
 namespace Twinpack
@@ -8,16 +10,54 @@ namespace Twinpack
     {
         private static Dictionary<string, BitmapImage> _icons;
 
+        public static byte[] GenerateIdenticon(string packageName)
+        {
+            var size = 128;
+            var renderer = new PngRenderer(size, size);
+            var icon = Jdenticon.Identicon.FromValue(packageName, size);
+            icon.Style.BackColor = Color.Transparent;
+            icon.Style.ColorLightness = new Jdenticon.Range<float>(0, 0.5f);
+            icon.Draw(renderer);
+
+            using (var stream = new MemoryStream())
+            {
+                renderer.SavePng(stream);
+                return stream.ToArray();
+            }
+        }
+
+        public static BitmapImage GenerateIdenticonAsBitmapImage(string packageName)
+        {
+            var image = new BitmapImage();
+
+            using (var stream = new MemoryStream(GenerateIdenticon(packageName)))
+            {
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.StreamSource = stream;
+                image.EndInit();
+                image.Freeze();
+            }
+
+            return image;
+        }
+
         public static BitmapImage Icon(string iconUrl)
         {
-            if (iconUrl == null)
-                return null;
+            if (_icons == null)
+                _icons = new Dictionary<string, BitmapImage>();
+
+            if (iconUrl?.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase) == false)
+            {
+                var img = GenerateIdenticonAsBitmapImage(iconUrl);
+                return img;
+            }
+
+            if (_icons == null)
+                _icons = new Dictionary<string, BitmapImage>();
 
             try
             {
-                if (_icons == null)
-                    _icons = new Dictionary<string, BitmapImage>();
-
                 if (_icons.ContainsKey(iconUrl))
                     return _icons[iconUrl];
 

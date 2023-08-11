@@ -57,6 +57,7 @@
     <Compile Include="Commands\PublishCommand.cs" />
     <Compile Include="Dialogs\Authentication.cs" />
     <Compile Include="Dialogs\Converters\BooleanToInverseBooleanConverter.cs" />
+    <Compile Include="Dialogs\Converters\VisibilityToInverseVisibilityConverter.cs" />
     <Compile Include="Dialogs\Converters\IntToVisibilityConverter.cs" />
     <Compile Include="Dialogs\Converters\NullToVisibilityConverter.cs" />
     <Compile Include="Dialogs\Converters\BooleanToVisibilityConverter.cs" />
@@ -106,6 +107,9 @@
   <ItemGroup>
     <PackageReference Include="FontAwesome.WPF">
       <Version>4.7.0.9</Version>
+    </PackageReference>
+    <PackageReference Include="Jdenticon.Wpf">
+      <Version>3.1.2</Version>
     </PackageReference>
     <PackageReference Include="Meziantou.Framework.Win32.CredentialManager">
       <Version>1.4.2</Version>
