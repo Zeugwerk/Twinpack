@@ -8,7 +8,7 @@ namespace Twinpack.Dialogs
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return TwinpackUtils.IconImage((string)value);
+            return IconCache.Icon((string)value);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

@@ -260,26 +260,6 @@ namespace Twinpack
             });
         }
 
-        public static BitmapImage IconImage(string iconUrl)
-        {
-            if (iconUrl == null)
-                return null;
-
-            try
-            {
-                BitmapImage img = new BitmapImage();
-                img.BeginInit();
-                img.CacheOption = BitmapCacheOption.None;
-                img.UriSource = new Uri(iconUrl, UriKind.Absolute);
-                img.EndInit();
-                return img;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         public static string ParseLicenseId(string content)
         {
             try
