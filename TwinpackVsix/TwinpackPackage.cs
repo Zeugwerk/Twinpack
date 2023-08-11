@@ -70,7 +70,10 @@ namespace Twinpack
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(TwinpackPackage.PackageGuidString)]
-    [ProvideToolWindow(typeof(Dialogs.CatalogPane))]
+    [ProvideToolWindow(typeof(Dialogs.CatalogPane), 
+        Orientation = ToolWindowOrientation.Right,
+        Window = EnvDTE.Constants.vsWindowKindMainWindow,
+        Style = VsDockStyle.Tabbed)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class TwinpackPackage : AsyncPackage, IVsSolutionEvents
     {
