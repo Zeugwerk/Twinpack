@@ -564,14 +564,21 @@ namespace Twinpack
             }
             catch (Exception ex)
             {
-                _logger.Info("Log in to Twinpack Server failed");
-                _logger.Error(ex.Message);
-                UserInfo = new LoginPostResponse();
-                Username = "";
-                Password = "";
-                CredentialManager.DeleteCredential(TwinpackUrl);
-                throw ex;
+                DeleteCredential();
+                throw;
             }
+        }
+
+        private void DeleteCredential()
+        {
+            UserInfo = new LoginPostResponse();
+            Username = "";
+            Password = "";
+            try
+            {
+                CredentialManager.DeleteCredential(TwinpackUrl);
+            }
+            catch { }
         }
 
         public void Logout()
