@@ -62,7 +62,7 @@ namespace Twinpack.Dialogs
                 }
                 catch (Exception ex)
                 {
-                    message = "You have to login to the Twinpack server to publish packages.";
+                    message = "Login to Twinpack Server failed!";
                     _logger.Trace(ex);
                     _logger.Error(ex.Message);
                 }
