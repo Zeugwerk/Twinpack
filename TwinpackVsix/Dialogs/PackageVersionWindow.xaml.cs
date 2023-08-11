@@ -810,7 +810,10 @@ namespace Twinpack.Dialogs
                     if (!iec.CheckAllObjects())
                     {
                         if (TwinpackUtils.BuildErrorCount(_context.Dte) > 0)
+                        {
                             _logger.Error($"{_plcConfig.Name} does not compile!");
+                            return;
+                        }
                     }
 
                     _logger.Info($"Saving and installing library to {path}");
