@@ -73,6 +73,7 @@
     <Compile Include="Dialogs\PackageVersionWindow.xaml.cs">
       <DependentUpon>PackageVersionWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="IconCache.cs" />
     <Compile Include="Logger\VsOutputWindowTarget.cs" />
     <Compile Include="Panels\CatalogPane.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

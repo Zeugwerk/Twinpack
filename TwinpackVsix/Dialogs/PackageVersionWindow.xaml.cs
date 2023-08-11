@@ -206,7 +206,7 @@ namespace Twinpack.Dialogs
                 Version = _packageVersion?.Version ?? _plcConfig?.Version;
                 Authors = _packageVersion?.Authors ?? _plcConfig?.Authors;
                 License = _packageVersion?.License ?? _plcConfig?.License;
-                IconImage = TwinpackUtils.IconImage(_package?.IconUrl);
+                IconImage = IconCache.Icon(_package?.IconUrl);
                 Notes = _packageVersion?.Notes;
                 Version = _packageVersion?.Version;
                 LatestVersion = _packageVersionLatest?.Version;
@@ -685,7 +685,7 @@ namespace Twinpack.Dialogs
                 if (openFileDialog.ShowDialog() == true)
                 {
                     IconFile = openFileDialog.FileName;
-                    IconImage = TwinpackUtils.IconImage(openFileDialog.FileName);            
+                    IconImage = IconCache.Icon(openFileDialog.FileName);            
                 }
             }
             catch (Exception ex)
@@ -725,7 +725,7 @@ namespace Twinpack.Dialogs
                 ProjectUrl = packageResult.ProjectUrl;
                 Authors = packageResult.Authors;
                 License = packageResult.License;
-                IconImage = TwinpackUtils.IconImage(packageResult.IconUrl);
+                IconImage = IconCache.Icon(packageResult.IconUrl);
             }
             catch (Exceptions.GetException ex)
             {
