@@ -360,7 +360,7 @@
                     <TextBlock Margin="5 0 0 0">Modify</TextBlock>
                 </StackPanel>
             </Button>
-            <Button HorizontalAlignment="Right" Width="80" Margin="5" Click="Close_Click">
+            <Button HorizontalAlignment="Right" Width="80" Margin="5" Click="Close_Click" IsCancel="True">
                 <StackPanel Orientation="Horizontal">
                     <fa:ImageAwesome Margin="2 0 0 0" Icon="Close" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Close</TextBlock>
