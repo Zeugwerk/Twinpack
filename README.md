@@ -56,7 +56,7 @@ To share your own TwinCAT library as a package with the TwinCAT community, pleas
    - Check all objects of your library
    - Upload the library as a package to the Twinpack server making it available for the community
   
-After the initial upload of your library as a package, you may publish newer versions of your library. Users of Twinpack will be notified automatically whenever a newer version is available whilst opening Twinpack Catalog.
+After the initial upload of your library as a package, you may publish newer versions of your library. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
 
 Please note that your package should meet certain standards and guidelines to ensure its quality and compatibility with TwinCAT. If you don't have any guidelines yet, [here](https://doc.zeugwerk.dev/contribute/contribute_code.html) are some suggestions.
 
