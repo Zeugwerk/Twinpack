@@ -44,7 +44,20 @@ namespace Twinpack.Models
         public PackageVersionGetResponse Update { get; set; }
         public PackageVersionGetResponse Installed { get; set; }
 
-        public bool IsUpdateable { get { return InstalledVersion != null && Update?.Version != null && new Version(InstalledVersion) < new Version(Update?.Version); } }
+        public bool IsUpdateable 
+        { 
+            get
+            {
+                try
+                {
+                    return InstalledVersion != null && Update?.Version != null && new Version(InstalledVersion) < new Version(Update?.Version);
+                }
+                catch
+                {
+                    return true;
+                }
+            } 
+        }
         public string UpdateVersion { get { return Update?.Version; } }
     }
 }
