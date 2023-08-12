@@ -58,5 +58,5 @@ To share your own TwinCAT library as a package with the TwinCAT community, pleas
   
 After the initial upload of your library as a package, you may publish newer versions of your library. Users of Twinpack will be notified automatically whenever a newer version is available whilst opening Twinpack Catalog.
 
-Please note that your package should meet certain standards and guidelines to ensure its quality and compatibility with TwinCAT. If you dont have any guidelines here is a good way to start at [Zeugwerks DevSpace](https://doc.zeugwerk.dev/contribute/contribute_code.html). We also have a list of recommended [IDE-Settings](https://doc.zeugwerk.dev/contribute/recom_xae_settings.html) to work with TwinCAT XAE Shell.
+Please note that your package should meet certain standards and guidelines to ensure its quality and compatibility with TwinCAT. If you don't have any guidelines yet, [here](https://doc.zeugwerk.dev/contribute/contribute_code.html) are some suggestions.
 
