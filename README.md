@@ -25,6 +25,8 @@ To use the Twinpack Package Manager, follow these steps:
 
 ## Using a Package
 
+<img align="center" src="/images/twinpack_catalog.png" width="800" />
+
 To install a package from the Twinpack Server, follow these steps:
 
 1. Open a TwinCAT solution and navigate to a PLC.
@@ -38,6 +40,8 @@ To install a package from the Twinpack Server, follow these steps:
 9. Follow the library documentation or instructions to incorporate its functionality into your project.
 
 ## Sharing a Package
+
+<img align="center" src="/images/twinpack_publish.png" width="800" />
 
 To share your own TwinCAT library as a package with the TwinCAT community, please follow these guidelines:
 
