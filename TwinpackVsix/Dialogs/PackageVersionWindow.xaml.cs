@@ -86,6 +86,7 @@ namespace Twinpack.Dialogs
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                _context.Dte.ExecuteCommand("File.SaveAll");
 
                 IsEnabled = false;
                 IsLoading = true;

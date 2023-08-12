@@ -311,6 +311,13 @@ namespace Twinpack.Models
                     references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
             }
 
+            foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderReference").Elements(TcNs + "DefaultResolution"))
+            {
+                var match = re.Match(g.Value);
+                if (match.Success && references.Any(x => x.Name == match.Groups[1].Value.Trim()) == false)
+                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
+            }
+
             re = new Regex(@"(.*?),(.*?),(.*?)");
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "LibraryReference"))
             {
