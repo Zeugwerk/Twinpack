@@ -13,10 +13,6 @@ using System.Windows.Media;
 using Microsoft.VisualStudio.Threading;
 using TCatSysManagerLib;
 
-
-
-
-
 namespace Twinpack.Dialogs
 {
     public partial class CatalogWindow : UserControl, INotifyPropertyChanged
@@ -1375,19 +1371,15 @@ namespace Twinpack.Dialogs
 
         public async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (_isBrowsingAvailablePackages)
-            {
-                var text = ((TextBox)sender).Text;
-                _searchText = text;
-                await Task.Delay(100);
+            if (!_isBrowsingAvailablePackages)
+                return;
+            
+            var text = ((TextBox)sender).Text;
+            _searchText = text;
+            await Task.Delay(100);
 
-                if (_searchText == text)
-                    await LoadAvailablePackagesAsync(text);
-            }
-            else
-            {
-
-            }
+            if (_searchText == text)
+                await LoadAvailablePackagesAsync(text);
         }
     }
 }

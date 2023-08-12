@@ -36,7 +36,9 @@
                 <ColumnDefinition Width="*"></ColumnDefinition>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <Image Grid.Column="0" Height="50" Source="Images/Twinpack.png" HorizontalAlignment="Center" VerticalAlignment="Center"></Image>
+            <Image RenderOptions.BitmapScalingMode="HighQuality" 
+                   Grid.Column="0" Height="50" Source="Images/Twinpack.png"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"></Image>
             <TextBlock Grid.Column="1" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontWeight="DemiBold" Text="Twinpack Catalog" Foreground="#FF2A334B"/>
 
             <Button Grid.Column="2" Click="UpdateAvailableButton_Click" Margin="0" Background="Transparent" BorderThickness="0" 
@@ -141,12 +143,14 @@
                             </Grid.ColumnDefinitions>
 
                             <Image d:Source="Images/Twinpack.png" 
+                                   RenderOptions.BitmapScalingMode="HighQuality" 
                                    x:Name="ImageIcon"
                                    Visibility="{Binding IconUrl, Converter={StaticResource NullToVisibilityConverter}}"
                                    Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
 
                             
                             <Image d:Source="Images/Twinpack.png" 
+                                   RenderOptions.BitmapScalingMode="HighQuality" 
                                    Visibility="{Binding Visibility, ElementName=ImageIcon, Converter={StaticResource VisibilityToInverseVisibilityConverter}}"
                                    Source="{Binding Name, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
 
