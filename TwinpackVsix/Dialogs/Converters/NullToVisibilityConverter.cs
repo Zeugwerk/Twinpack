@@ -38,6 +38,9 @@ namespace Twinpack.Dialogs
 
             }
 
+            if (string.IsNullOrEmpty(value as string))
+                return Visibility.Collapsed;
+
             return Visibility.Visible;
         }
 

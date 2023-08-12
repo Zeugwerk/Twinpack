@@ -430,8 +430,16 @@
                         <StackPanel Grid.Row="1" 
                                     DataContext="{Binding PackageVersion}" Orientation="Vertical"
                                     Visibility="{Binding IsPackageVersionLoading, ElementName=This, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
-                            <TextBlock Text="Notes: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
-                            <TextBlock Text="{Binding Notes}" TextWrapping="Wrap" Margin="15,0,0,0"></TextBlock>
+
+                            <StackPanel Visibility="{Binding Description, Converter={StaticResource NullToVisibilityConverter}}">
+                                <TextBlock Text="Description: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
+                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="15,0,0,0"></TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding Notes, Converter={StaticResource NullToVisibilityConverter}}">
+                                <TextBlock Text="Notes: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
+                                <TextBlock Text="{Binding Notes}" TextWrapping="Wrap" Margin="15,0,0,0"></TextBlock>
+                            </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Branch: " FontWeight="SemiBold"></TextBlock>
@@ -448,7 +456,8 @@
                                 <TextBlock Text="{Binding Target}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
-                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                            <StackPanel Visibility="{Binding Entitlement, Converter={StaticResource NullToVisibilityConverter}}"
+                                        Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Entitlement: " FontWeight="SemiBold"></TextBlock>
                                 <TextBlock Text="{Binding Entitlement}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
@@ -463,7 +472,8 @@
                                 <TextBlock Text="{Binding DistributorName}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
-                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                            <StackPanel Visibility="{Binding Authors, Converter={StaticResource NullToVisibilityConverter}}"
+                                        Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Authors: " FontWeight="SemiBold"></TextBlock>
                                 <TextBlock Text="{Binding Authors}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
@@ -482,7 +492,8 @@
                                         Content="Show" VerticalAlignment="Top"/>
                             </StackPanel>
 
-                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                            <StackPanel Visibility="{Binding ProjectUrl, Converter={StaticResource NullToVisibilityConverter}}"
+                                        Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Project URL: " FontWeight="SemiBold"></TextBlock>
                                 <Button Click="ShowProjectUrl_Click" Margin="0 -1 0 0" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8"
                                         Content="{Binding ProjectUrl}" VerticalAlignment="Top"
