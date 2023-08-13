@@ -413,7 +413,7 @@ namespace Twinpack.Dialogs
                 _plc = TwinpackUtils.ActivePlc(_context.Dte);
 
                 cmbTwinpackServer.Items.Clear();
-                cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrl);
+                cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrlBase);
                 cmbTwinpackServer.SelectedIndex = 0;
 
                 _isBrowsingAvailablePackages = true;

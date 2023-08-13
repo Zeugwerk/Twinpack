@@ -23,7 +23,8 @@ namespace Twinpack
 
         private CachedHttpClient _client = new CachedHttpClient();
 
-        public string TwinpackUrl = "https://twinpack.dev";
+        public string TwinpackUrlBase = "https://twinpack.dev";
+        public string TwinpackUrl = "https://twinpack.dev/index.php";
         public string RegisterUrl = "https://twinpack.dev/wp-login.php";
 
         public string Username { get; set; }
@@ -179,7 +180,7 @@ namespace Twinpack
             _logger.Info($"Uploading Package '{packageVersion.Name}' (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration}, version: {packageVersion.Version}");
 
             var requestBodyJson = JsonSerializer.Serialize(packageVersion);
-            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
+            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/package-version"));
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             AddHeaders(request);
@@ -213,8 +214,7 @@ namespace Twinpack
         public async Task<Tuple<IEnumerable<T>, bool>> QueryWithPagination<T>(string endpoint, int page = 1, int perPage = 5)
         {
             var results = new List<T>();
-            var query = $"/{endpoint}";
-            var uri = new Uri(TwinpackUrl + query + $"&page={page}&per_page={perPage}");
+            var uri = new Uri(TwinpackUrl + $"/{endpoint}?page={page}&per_page={perPage}");
             PaginationHeader pagination = null;
 
             var hasNextPage = true;
@@ -272,20 +272,20 @@ namespace Twinpack
 
         public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5)
         {
-            return await QueryWithPagination<CatalogItemGetResponse>($"twinpack.php?controller=catalog" +
-                                                $"&search={HttpUtility.UrlEncode(search)}", page, perPage);
+            return await QueryWithPagination<CatalogItemGetResponse>($"catalog" +
+                                                $"?search={HttpUtility.UrlEncode(search)}", page, perPage);
         }
 
         public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(int packageId, int page = 1, int perPage = 5)
         {
-            return await QueryWithPagination<PackageVersionGetResponse>($"twinpack.php?controller=package-versions" +
-                                            $"&id={packageId}", page, perPage);
+            return await QueryWithPagination<PackageVersionGetResponse>($"package-versions" +
+                                            $"?id={packageId}", page, perPage);
         }
 
         public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(int packageId, string branch, string configuration, string target, int page = 1, int perPage = 5)
         {
-            return await QueryWithPagination<PackageVersionGetResponse>($"twinpack.php?controller=package-versions" +
-                                            $"&id={packageId}" +
+            return await QueryWithPagination<PackageVersionGetResponse>($"package-versions" +
+                                            $"?id={packageId}" +
                                             $"&branch={HttpUtility.UrlEncode(branch)}" +
                                             $"&target={HttpUtility.UrlEncode(target)}" +
                                             $"&configuration={HttpUtility.UrlEncode(configuration)}", page, perPage);
@@ -293,8 +293,8 @@ namespace Twinpack
 
         public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-resolve" +
-                $"&distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-resolve" +
+                $"?distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
                 $"&name={HttpUtility.UrlEncode(library.Name)}" +
                 $"&version={HttpUtility.UrlEncode(library.Version)}"));
 
@@ -323,8 +323,8 @@ namespace Twinpack
 
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(int packageVersionId, bool includeBinary, string cachePath = null)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
-                $"&id={packageVersionId}&include-binary={(includeBinary ? 1 : 0)}"));
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-version" +
+                $"?id={packageVersionId}&include-binary={(includeBinary ? 1 : 0)}"));
 
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
             AddHeaders(request);
@@ -362,8 +362,8 @@ namespace Twinpack
             if(includeBinary)
                 _logger.Info($"Downloading Package '{name}' (version: {version}, configuration: {configuration}, branch: {branch}, target: {target})");
 
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package-version" +
-                $"&distributor-name={HttpUtility.UrlEncode(distributorName)}" +
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-version" +
+                $"?distributor-name={HttpUtility.UrlEncode(distributorName)}" +
                 $"&name={HttpUtility.UrlEncode(name)}" +
                 $"&version={HttpUtility.UrlEncode(version)}" +
                 $"&configuration={HttpUtility.UrlEncode(configuration)}" +
@@ -405,8 +405,8 @@ namespace Twinpack
 
         public async Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package" +
-                $"&distributor-name={HttpUtility.UrlEncode(distributorName)}" +
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package" +
+                $"?distributor-name={HttpUtility.UrlEncode(distributorName)}" +
                 $"&name={HttpUtility.UrlEncode(packageName)}"));
 
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
@@ -434,7 +434,7 @@ namespace Twinpack
 
         public async Task<PackageGetResponse> GetPackageAsync(int packageId)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/twinpack.php?controller=package&id={packageId}"));
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package?id={packageId}"));
 
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
@@ -464,7 +464,7 @@ namespace Twinpack
             _logger.Info("Updating package version");
             var requestBodyJson = JsonSerializer.Serialize(package);
 
-            var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package-version"));
+            var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/package-version"));
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
             AddHeaders(request);
             request.Content = new StreamContent(
@@ -495,7 +495,7 @@ namespace Twinpack
             _logger.Info("Updating general package");
             var requestBodyJson = JsonSerializer.Serialize(package);
 
-            var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/twinpack.php?controller=package"));
+            var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + "/package"));
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             AddHeaders(request);
@@ -524,9 +524,9 @@ namespace Twinpack
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null)
         {
-            var credentials = CredentialManager.ReadCredential(TwinpackUrl);
+            var credentials = CredentialManager.ReadCredential(TwinpackUrlBase);
 
-            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/twinpack.php?controller=login"));
+            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrlBase + "/login"));
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             Username = username ?? credentials?.UserName;
@@ -554,7 +554,7 @@ namespace Twinpack
                 UserInfo = result;
 
                 if(!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
-                    CredentialManager.WriteCredential(TwinpackUrl, Username, Password, CredentialPersistence.LocalMachine);
+                    CredentialManager.WriteCredential(TwinpackUrlBase, Username, Password, CredentialPersistence.LocalMachine);
 
                 if(IsClientUpdateAvailable)
                     _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Download and install the lastest version at {UserInfo.UpdateUrl}");
@@ -576,7 +576,7 @@ namespace Twinpack
             Password = "";
             try
             {
-                CredentialManager.DeleteCredential(TwinpackUrl);
+                CredentialManager.DeleteCredential(TwinpackUrlBase);
             }
             catch { }
         }
@@ -591,7 +591,7 @@ namespace Twinpack
 
             try
             {
-                CredentialManager.DeleteCredential(TwinpackUrl);
+                CredentialManager.DeleteCredential(TwinpackUrlBase);
             }
             catch (Exception) { }
         }
