@@ -44,8 +44,6 @@ namespace Twinpack.Dialogs
         private bool _isAvailablePackageAvailable = false;
         private bool _isPackageVersionsAvailable = false;        
         private bool _isFetchingAvailablePackages = false;
-        private bool _isFetchingPackageVersions = false;
-        private bool _isFetchingPackageVersion = false;
 
         private string _searchText = "";
         private TwinpackServer _twinpackServer = new TwinpackServer();
@@ -719,35 +717,58 @@ namespace Twinpack.Dialogs
             UpdateCatalog();
         }
 
-        public void ShowCatalog_Click(object sender, RoutedEventArgs e)
+        public async void ShowCatalog_Click(object sender, RoutedEventArgs e)
         {
             _isBrowsingAvailablePackages = true;
             _isBrowsingUpdatablePackages = false;
             _isBrowsingInstalledPackages = false;
-            UpdateCatalog();
+
+            try
+            {
+                if (_searchText != SearchTextBox.Text)
+                {
+                    await LoadAvailablePackagesAsync(SearchTextBox.Text);
+                    _searchText = SearchTextBox.Text;
+                }
+                UpdateCatalog();
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
         }
 
         public void UpdateCatalog()
         {
+            var text = SearchTextBox.Text;
             if (_isBrowsingAvailablePackages)
             {
-                Catalog = new List<Models.CatalogItem>(_availablePackages);
+                Catalog = _availablePackages.Where(x =>
+                     x.DisplayName.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.DistributorName.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.Name.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
                 IsCatalogLoading = IsFetchingAvailablePackages || _isLoadingPlcConfig;
             }
             else if (_isBrowsingInstalledPackages)
             {
-                Catalog = new List<Models.CatalogItem>(_installedPackages);
+                Catalog = _installedPackages.Where(x =>
+                     x.DisplayName.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.DistributorName.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.Name.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
                 IsCatalogLoading = IsFetchingInstalledPackages || _isLoadingPlcConfig;
             }
             else if (_isBrowsingUpdatablePackages)
             {
-                Catalog = _installedPackages.Where(x => x.IsUpdateable).ToList();
+                Catalog = _installedPackages.Where(x => x.IsUpdateable &&
+                    (x.DisplayName.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.DistributorName.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.Name.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0)).ToList();
                 IsCatalogLoading = IsFetchingInstalledPackages || _isLoadingPlcConfig;
             }
 
             IsUpdateAllVisible = _isBrowsingUpdatablePackages && Catalog.Any();
             IsRestoreAllVisible = _isBrowsingInstalledPackages && Catalog.Any();
-
         }
 
         public async Task UninstallPackageAsync()
@@ -955,34 +976,9 @@ namespace Twinpack.Dialogs
             }
         }
 
-        private async Task<Models.PackageGetResponse> LoadPackageAsync(int packageVersionId)
-        {
-            if (_isFetchingPackageVersion)
-                return null;
-
-            _isFetchingPackageVersion = true;
-
-            try
-            {
-                return await _twinpackServer.GetPackageAsync(packageVersionId);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
-            {
-                _isFetchingPackageVersion = false;
-            }
-
-            _isFetchingPackageVersion = false;
-            return null;
-        }
-
         private async Task LoadFirstPackageVersionsPageAsync(int? packageId, string branch, string configuration, string target)
         {
-            if (_isFetchingPackageVersions || packageId == null)
+            if (packageId == null)
                 return;
 
             await LoadNextPackageVersionsPageAsync((int)packageId, branch, configuration, target, true);
@@ -990,11 +986,6 @@ namespace Twinpack.Dialogs
 
         private async Task LoadNextPackageVersionsPageAsync(int packageId, string branch, string configuration, string target, bool reset = false)
         {
-            if (_isFetchingPackageVersions)
-                return;
-
-            _isFetchingPackageVersions = true;
-
             try
             {
                 if (reset)
@@ -1022,7 +1013,6 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                _isFetchingPackageVersions = false;
             }
         }
 
@@ -1033,9 +1023,6 @@ namespace Twinpack.Dialogs
 
         private async Task LoadNextCatalogPageAsync(string text = "", bool reset = false)
         {
-            if (IsFetchingAvailablePackages)
-                return;
-
             try
             {
                 await _semaphorePackages.WaitAsync();
@@ -1083,9 +1070,6 @@ namespace Twinpack.Dialogs
         }
         private async Task LoadInstalledPackagesAsync()
         {
-            if (IsFetchingInstalledPackages)
-                return;
-
             try
             {
                 IsFetchingInstalledPackages = true;
@@ -1371,15 +1355,20 @@ namespace Twinpack.Dialogs
 
         public async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (!_isBrowsingAvailablePackages)
-                return;
-            
             var text = ((TextBox)sender).Text;
-            _searchText = text;
-            await Task.Delay(100);
 
-            if (_searchText == text)
-                await LoadAvailablePackagesAsync(text);
+            if (_isBrowsingAvailablePackages)
+            {
+                _searchText = text;
+                await Task.Delay(250);
+
+                if(_searchText == text)
+                    await LoadAvailablePackagesAsync(text);
+            }
+            else
+            {
+                UpdateCatalog();
+            }
         }
     }
 }
