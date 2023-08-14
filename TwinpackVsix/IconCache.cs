@@ -15,8 +15,17 @@ namespace Twinpack
             var size = 128;
             var renderer = new PngRenderer(size, size);
             var icon = Jdenticon.Identicon.FromValue(packageName, size);
-            icon.Style.BackColor = Color.Transparent;
-            icon.Style.ColorLightness = new Jdenticon.Range<float>(0, 0.5f);
+            
+            icon.Style = new IdenticonStyle 
+            {
+                Hues = new HueCollection { { 6, HueUnit.Degrees } },
+                BackColor = Color.FromRgba(42, 51, 75, 255),
+                ColorLightness = Range.Create(0.64f, 0.64f),
+                GrayscaleLightness = Range.Create(1.00f, 1.00f),
+                ColorSaturation = 0.60f,
+                GrayscaleSaturation = 0.0f
+            };
+            
             icon.Draw(renderer);
 
             using (var stream = new MemoryStream())
