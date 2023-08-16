@@ -526,7 +526,7 @@ namespace Twinpack
         {
             var credentials = CredentialManager.ReadCredential(TwinpackUrlBase);
 
-            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrlBase + "/login"));
+            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/login"));
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             Username = username ?? credentials?.UserName;
