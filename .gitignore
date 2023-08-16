@@ -6,6 +6,8 @@
 GeneratedFiles
 
 # User-specific files
+Output/
+vswhere.exe*
 *.orig
 *.rsuser
 *.suo
