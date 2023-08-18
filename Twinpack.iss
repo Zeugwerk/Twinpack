@@ -70,6 +70,13 @@ var
   end;
 end;
 
+procedure OpenPrivacyPolicy(Sender : TObject);
+var
+  ErrorCode : Integer;
+begin
+  ShellExec('open', 'https://github.com/Zeugwerk/Twinpack/blob/main/PRIVACY_POLICY.md', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
+end;
+
 // Exec with output stored in result.
 // ResultString will only be altered if True is returned.
 function ExecWithResult(Filename, Params, WorkingDir: String; ShowCmd: Integer; Wait: TExecWait; var ResultCode: Integer; var ResultString: String): Boolean;
@@ -93,6 +100,7 @@ end;
 
 var
   UserPage : TInputQueryWizardPage;
+  UserPagePolicyLabel : TLabel;
   VisualStudioOptionsPage: TInputOptionWizardPage;
   UserPageRegisterButton: TNewButton;
 
@@ -188,6 +196,16 @@ begin
   UserPageRegisterButton.Caption := 'Register';
   UserPageRegisterButton.OnClick  := @Register;  
   UserPageRegisterButton.Enabled := False;    
+
+  UserPagePolicyLabel := TLabel.Create(UserPage);
+  UserPagePolicyLabel.Left := UserPageRegisterButton.Left + UserPageRegisterButton.Width + ScaleX(5);
+  UserPagePolicyLabel.Top := UserPageRegisterButton.Top + ScaleY(5);
+  UserPagePolicyLabel.Parent := UserPage.Edits[0].Parent;
+  UserPagePolicyLabel.Caption := 'Privacy policy';
+  UserPagePolicyLabel.OnClick := @OpenPrivacyPolicy;
+  UserPagePolicyLabel.Font.Style := UserPagePolicyLabel.Font.Style + [fsUnderline];
+  UserPagePolicyLabel.Font.Color := clBlue;
+  UserPagePolicyLabel.Cursor := crHand; 
 
   { VisualStudioOptionsPage } 
 	VisualStudioOptionsPage := CreateInputOptionPage(UserPage.ID,
