@@ -15,7 +15,7 @@ With TwinCAT 3.1.4026, Beckhoff introduced a package manager which emphasizes th
 
 To use the Twinpack Package Manager, follow these steps:
 
-1. Download the latest [installer](https://github.com/Zeugwerk/Twinpack/releases/tag/0.2.6.0).
+1. [Download](https://github.com/Zeugwerk/Twinpack/releases/tag/0.2.6.0) the latest installer.
 2. In the installation process you will be asked to optionally register yourself for publishing your own packages. Type in a valid email address to get your login information right after the installation of Twinpack
 3. Twinpack supports multiple versions of Visual Studio and TwinCAT XAE Shell. Select the IDEs, which Twinpack should be installed for.
 4. Click on "Install".
