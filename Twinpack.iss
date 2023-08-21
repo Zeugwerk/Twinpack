@@ -177,7 +177,7 @@ end;
 procedure InitializeWizard;
 begin
   ExtractTemporaryFile('vswhere.exe');
-  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -version [15.0, 16.0]', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput);
+  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput);
   
   { Create the pages }
   
