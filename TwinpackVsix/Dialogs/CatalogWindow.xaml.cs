@@ -31,6 +31,7 @@ namespace Twinpack.Dialogs
         private SemaphoreSlim _semaphorePackages = new SemaphoreSlim(1, 1);
         private List<Models.PackageVersionGetResponse> _packageVersions;
 
+        private Models.CatalogItem _item = null;
         private Models.PackageGetResponse _package = new Models.PackageGetResponse();
         private Models.PackageVersionGetResponse _packageVersion = new Twinpack.Models.PackageVersionGetResponse();
 
@@ -478,7 +479,7 @@ namespace Twinpack.Dialogs
         }
         public async void EditPackageButton_Click(object sender, RoutedEventArgs e)
         {
-            var packageId = (CatalogView.SelectedItem as Models.CatalogItemGetResponse)?.PackageId;
+            var packageId = _item?.PackageId;
             if (packageId == null)
                 return;
 
@@ -1146,8 +1147,8 @@ namespace Twinpack.Dialogs
 
         private async void Catalog_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var item = (sender as ListView).SelectedItem as Models.CatalogItem;
-            if (item == null)
+            _item = (sender as ListView).SelectedItem as Models.CatalogItem;
+            if (_item == null)
                 return;
 
             try
@@ -1158,12 +1159,12 @@ namespace Twinpack.Dialogs
                 IsPackageVersionLoading = true;
 
                 // check if the plc already contains the selected package
-                _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == item.Name);
+                _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _item.Name);
 
                 if (_packageConfig != null)
-                    Package = await _twinpackServer.GetPackageAsync(_packageConfig.DistributorName, item.Name);
+                    Package = await _twinpackServer.GetPackageAsync(_packageConfig.DistributorName, _item.Name);
                 else
-                    Package = await _twinpackServer.GetPackageAsync(item.DistributorName, item.Name);
+                    Package = await _twinpackServer.GetPackageAsync(_item.DistributorName, _item.Name);
 
                 var index = 0;
                 if (PackageVersion.PackageVersionId != null && PackageVersion.PackageId == Package.PackageId)
@@ -1184,7 +1185,7 @@ namespace Twinpack.Dialogs
                 TargetsView.Visibility = Package?.Targets.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
                 ConfigurationsView.Visibility = Package?.Configurations.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
 
-                SelectPackageVersionFilter(item?.Installed);
+                SelectPackageVersionFilter(_item?.Installed);
             }
             catch (Exception ex)
             {
@@ -1215,15 +1216,11 @@ namespace Twinpack.Dialogs
 
                 await LoadFirstPackageVersionsPageAsync((int)Package.PackageId, branch, configuration, target);
 
-                var item = CatalogView.SelectedItem as Models.CatalogItem;
-                var index = Versions?.FindIndex(x => x.Version == item?.Installed?.Version) ?? -1;
-                if (index < 0 && item?.Installed != null)
-                {
+                var index = Versions?.FindIndex(x => x.Version == _item?.Installed?.Version) ?? -1;
+                if (index < 0 && _item?.Installed != null)
                     index = 0;
-                    //Versions = Versions.Concat(new List<Models.PackageVersionGetResponse> { item.Installed }).ToList();
-                    //index = Versions.Count() - 1;
-                }
-                VersionsView.SelectedIndex = string.IsNullOrEmpty(item?.Installed?.Version) ? 0 : index;
+
+                VersionsView.SelectedIndex = string.IsNullOrEmpty(_item?.Installed?.Version) ? 0 : index;
             }
             catch (Exception ex)
             {
@@ -1274,6 +1271,7 @@ namespace Twinpack.Dialogs
                 await _context?.Logger?.ActivateAsync(clear: true);
                 _logger.Info("Reloading catalog");
 
+                _item = null;
                 IsPackageLoading = false;
                 Package = new Models.PackageGetResponse();
                 PackageVersion = new Models.PackageVersionGetResponse();
