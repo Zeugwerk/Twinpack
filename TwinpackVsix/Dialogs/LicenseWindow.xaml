@@ -3,6 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:platform="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+             toolkit:Themes.UseVsTheme="True"          
              xmlns:fa="http://schemas.fontawesome.io/icons/"        
              xmlns:local="clr-namespace:Twinpack.Dialogs"
              mc:Ignorable="d" 
@@ -22,8 +25,8 @@
         <StackPanel Orientation="Vertical" Margin="5">
             <StackPanel DataContext="{Binding PackageVersion}">
                 <StackPanel Orientation="Horizontal">
-                    <fa:ImageAwesome Margin="0 0 5 0" Icon="File" Visibility="{Binding HasLicenseBinary, Converter={StaticResource BooleanToVisibilityConverter}}" Height="16" />
-                    <fa:ImageAwesome Margin="0 0 5 0" Icon="IdCard" Visibility="{Binding HasLicenseTmcBinary, Converter={StaticResource BooleanToVisibilityConverter}}" Height="16" />                    
+                    <fa:ImageAwesome Margin="0 0 5 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="File" Visibility="{Binding HasLicenseBinary, Converter={StaticResource BooleanToVisibilityConverter}}" Height="16" />
+                    <fa:ImageAwesome Margin="0 0 5 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="IdCard" Visibility="{Binding HasLicenseTmcBinary, Converter={StaticResource BooleanToVisibilityConverter}}" Height="16" />                    
                     <TextBlock Grid.ColumnSpan="2" Text="{Binding DisplayName}" d:Text="Zeugwerk Core" FontSize="20" Margin="0" FontWeight="SemiBold"></TextBlock>
                 </StackPanel>
                 <TextBlock Grid.Row="1" Margin="10,0,0,0" FontSize="10">
@@ -35,17 +38,17 @@
             <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
                 <Button  Grid.Column="2" Click="LicenseAgreementButton_Click" VerticalAlignment="Center" 
                          Visibility="{Binding HasLicenseText, Converter={StaticResource BooleanToVisibilityConverter}}"
-                         Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8">
+                         BorderThickness="0" FontWeight="SemiBold">
                     <StackPanel Orientation="Horizontal">
-                        <fa:FontAwesome Margin="2 0 0 0" Icon="File" Height="12"/>
+                        <fa:FontAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="File" Height="12"/>
                         <TextBlock Margin="5 0 0 0">License Agreement</TextBlock>
                     </StackPanel>
                 </Button>
                 <Button Margin="10 0 0 0" Grid.Column="2" Click="RuntimeLicenseButton_Click" VerticalAlignment="Center"
                         Visibility="{Binding HasLicenseTmcText, Converter={StaticResource BooleanToVisibilityConverter}}"
-                        Background="Transparent" BorderThickness="0" FontWeight="SemiBold" Foreground="#4757b8">
+                        BorderThickness="0" FontWeight="SemiBold">
                     <StackPanel Orientation="Horizontal">
-                        <fa:FontAwesome Margin="2 0 0 0" Icon="DriversLicense" Height="12"/>
+                        <fa:FontAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="DriversLicense" Height="12"/>
                         <TextBlock Margin="5 0 0 0">Runtime License</TextBlock>
                     </StackPanel>
                 </Button>                
@@ -96,19 +99,19 @@
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="AcceptButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,10">
                 <StackPanel Orientation="Horizontal">
-                    <fa:ImageAwesome Margin="2 0 0 0" Icon="Check" Height="12"/>
+                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Check" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Accept</TextBlock>
                 </StackPanel>
             </Button>
             <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}}" Click="DeclineButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10,10">
                 <StackPanel Orientation="Horizontal">
-                    <fa:ImageAwesome Margin="2 0 0 0" Icon="ChainBroken" Height="12"/>
+                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="ChainBroken" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Decline</TextBlock>
                 </StackPanel>
             </Button>
             <Button Visibility="{Binding IsInstalling, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" Click="CloseButton_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10,10">
                 <StackPanel Orientation="Horizontal">
-                    <fa:ImageAwesome Margin="2 0 0 0" Icon="Close" Height="12"/>
+                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Close" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Close</TextBlock>
                 </StackPanel>
             </Button>
