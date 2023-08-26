@@ -111,6 +111,8 @@ var
   ErrorCode: integer;
   i : integer; 
   VsWhereOutput : string;
+  CustomButtonHeight : Integer;
+  CustomButtonWidth : Integer;
 
 function ValidateEmail(strEmail : String) : boolean;
 var
@@ -285,41 +287,64 @@ var
   OKButton: TButton;
 begin
   Form := CreateCustomForm;
-  Form.ClientWidth := ScaleX(400);
-  Form.ClientHeight := ScaleY(200);
-  Form.Caption := 'Bye Bye Twinpack User';
+  Form.ClientWidth := ScaleX(350);
+  Form.ClientHeight := ScaleY(110);
+  Form.Caption := 'ByeBye Twinpack User';
 
   Label1 := TLabel.Create(Form);
   Label1.Parent := Form;
   Label1.Left := ScaleX(10);
   Label1.Top := ScaleY(10);
-  Label1.AutoSize := True;
-  Label1.WordWrap := True;
-  Label1.Caption := 'Thanks for using Twinpack, please leave us some Feedback on:';
+  Label1.Width := Form.ClientWidth - 20;
+  Label1.Height := Form.ClientHeight - 20 - CustomButtonHeight;
+  //Label1.AutoSize := True;
+  //Label1.WordWrap := True;
+  Label1.Caption := 'It was nice having you here!' #13 #10 
+                    'Thanks for using Twinpack, please leave us some Feedback on:';
+
+  OKButton := TButton.Create(Form);
+  OKButton.Parent := Form;
+  OKButton.ModalResult := mrOK;
+  OKButton.Height := CustomButtonHeight;
+  OKButton.Width := CustomButtonWidth;  
+  OKButton.Left := (Form.ClientWidth - OKButton.Width) div 2;
+  OKButton.Top := Form.ClientHeight - OKButton.Height - ScaleY(10);
+  OKButton.Caption := 'Goodbye!';
 
   LinkLabel := TNewStaticText.Create(Form);
   LinkLabel.Parent := Form;
   LinkLabel.Left := ScaleX(10);
-  LinkLabel.Top := ScaleY(40);
-  LinkLabel.AutoSize := True;
+  LinkLabel.Top := Form.ClientHeight - OKButton.Height - ScaleY(30);
+  LinkLabel.Width := Form.ClientWidth - 20;
+  LinkLabel.Height := 30;
+  //LinkLabel.AutoSize := True;
   LinkLabel.Cursor := crHand;
   LinkLabel.Font.Color := clBlue;
   LinkLabel.Caption := 'https://github.com/Zeugwerk/Twinpack/discussions';
   LinkLabel.OnClick := @OpenTwinpackDiscussionOnClick;
 
-  OKButton := TButton.Create(Form);
-  OKButton.Parent := Form;
-  OKButton.ModalResult := mrOK;
-  OKButton.Left := (Form.ClientWidth - OKButton.Width) div 2;
-  OKButton.Top := Form.ClientHeight - OKButton.Height - ScaleY(10);
-  OKButton.Caption := 'OK';
-  OKButton.Height := 50;
-  OKButton.Width := 100;
   Form.ShowModal;
+end;
+
+function InitializeUninstall(): Boolean;
+begin
+  Result := True;
 end;
 
 procedure DeinitializeUninstall();
 begin
-  MsgBox('Some message.', mbInformation, MB_OK);
   ShowByeByeMessageWithCallToAction;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ReturnCode : Integer;
+begin
+  case CurUninstallStep of
+    usUninstall:
+      begin
+        CustomButtonHeight := UninstallProgressForm.CancelButton.Height;
+        CustomButtonWidth := UninstallProgressForm.CancelButton.Width;      
+      end;
+  end;
 end;
