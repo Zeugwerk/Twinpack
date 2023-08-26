@@ -38,7 +38,7 @@ InfoBeforeFile=DISCLAIMER
 [Files]
 Source: "TwinpackVsix\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell;
 Source: "TwinpackVsix\bin\{#MyConfiguration}\TwinpackVsix.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
-Source: "vswhere.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall;
+Source: "vswhere.exe"; DestDir: "{#TcXaeShellExtensionsFolder}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs;
 
 [Dirs]
 Name: "C:\Program Files (x86)\Beckhoff\TcXaeShell\Common7\IDE\Extensions\Zeugwerk\Twinpack"
@@ -111,6 +111,7 @@ var
   ErrorCode: integer;
   i : integer; 
   VsWhereOutput : string; 
+  TwinpackVsixGuid : string;
 
 function ValidateEmail(strEmail : String) : boolean;
 var
@@ -176,6 +177,8 @@ end;
 
 procedure InitializeWizard;
 begin
+  TwinpackVsixGuid := 'TwinpackVsix.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23';
+
   ExtractTemporaryFile('vswhere.exe');
   ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput);
   
@@ -230,10 +233,6 @@ begin
   end;
 end;
 
-const
-  SHCONTCH_NOPROGRESSBOX = 4;
-  SHCONTCH_RESPONDYESTOALL = 16;
-
 function InstallVsixInTcXaeShell(): Boolean;
 begin
   Result := VisualStudioOptionsPage.CheckListBox.Checked[0] = True;
@@ -253,12 +252,11 @@ begin
     begin
       if(VisualStudioOptionsPage.CheckListBox.Checked[i+1]) then
       begin
-        ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + '/u:TwinpackVsix.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23 /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
+        ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + '/u:'+TwinpackVsixGuid+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
         ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + ExpandConstant('{tmp}\TwinpackVsix.vsix'), '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
       end;
     end;
   end;
-
 end;
 
 function InstallVsixThroughVsixInstaller(): Boolean;
@@ -268,4 +266,35 @@ begin
   begin
     Result := True;
   end  
+end;
+
+function InitializeUninstall(): Boolean;
+begin
+  ExecWithResult(ExpandConstant('{#TcXaeShellExtensionsFolder}Zeugwerk\\Twinpack\\vswhere.exe'), '-all -products * -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput);
+
+  DisplayNames := VsWhereValue('displayName', VsWhereOutput);
+  InstallationPaths := VsWhereValue('installationPath', VsWhereOutput);   
+
+  Result := True;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ReturnCode : Integer;
+begin
+  TwinpackVsixGuid := 'TwinpackVsix.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23';
+
+  case CurUninstallStep of
+    usUninstall:
+      begin
+        for i:= 0 to DisplayNames.Count-1 do
+        begin
+          ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + '/u:'+TwinpackVsixGuid+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);  
+        end;        
+      end;
+    usPostUninstall:
+      begin
+        // ...insert code to perform post-uninstall tasks here...
+      end;
+  end;
 end;
