@@ -110,7 +110,7 @@ var
   DisplayNames: TStringList;
   ErrorCode: integer;
   i : integer; 
-  VsWhereOutput : string; 
+  VsWhereOutput : string;
 
 function ValidateEmail(strEmail : String) : boolean;
 var
@@ -268,4 +268,56 @@ begin
   begin
     Result := True;
   end  
+end;
+
+procedure OpenTwinpackDiscussionOnClick(Sender: TObject);
+begin
+  ShellExec('', 'https://github.com/Zeugwerk/Twinpack/discussions', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
+end;
+
+procedure ShowByeByeMessageWithCallToAction;
+var
+  Form: TForm;
+  Label1: TLabel;
+  LinkLabel: TNewStaticText;
+  OKButton: TButton;
+begin
+  Form := CreateCustomForm;
+  Form.ClientWidth := ScaleX(400);
+  Form.ClientHeight := ScaleY(200);
+  Form.Caption := 'Bye Bye Twinpack User';
+
+  Label1 := TLabel.Create(Form);
+  Label1.Parent := Form;
+  Label1.Left := ScaleX(10);
+  Label1.Top := ScaleY(10);
+  Label1.AutoSize := True;
+  Label1.WordWrap := True;
+  Label1.Caption := 'Thanks for using Twinpack, please leave us some Feedback on:';
+
+  LinkLabel := TNewStaticText.Create(Form);
+  LinkLabel.Parent := Form;
+  LinkLabel.Left := ScaleX(10);
+  LinkLabel.Top := ScaleY(40);
+  LinkLabel.AutoSize := True;
+  LinkLabel.Cursor := crHand;
+  LinkLabel.Font.Color := clBlue;
+  LinkLabel.Caption := 'https://github.com/Zeugwerk/Twinpack/discussions';
+  LinkLabel.OnClick := @OpenTwinpackDiscussionOnClick;
+
+  OKButton := TButton.Create(Form);
+  OKButton.Parent := Form;
+  OKButton.ModalResult := mrOK;
+  OKButton.Left := (Form.ClientWidth - OKButton.Width) div 2;
+  OKButton.Top := Form.ClientHeight - OKButton.Height - ScaleY(10);
+  OKButton.Caption := 'OK';
+  OKButton.Height := 50;
+  OKButton.Width := 100;
+  Form.ShowModal;
+end;
+
+procedure DeinitializeUninstall();
+begin
+  MsgBox('Some message.', mbInformation, MB_OK);
+  ShowByeByeMessageWithCallToAction;
 end;
