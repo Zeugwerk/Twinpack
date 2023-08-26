@@ -190,15 +190,17 @@ begin
     'Register a Twinpack account (only needed if you want to publish packages to the Twinpack Server)');
   UserPage.Add('Email:', False);
   UserPage.Edits[0].OnChange := @RegisterEnable;
-  
+
   UserPageRegisterButton := TNewButton.Create(UserPage);
   UserPageRegisterButton.Left := UserPage.Edits[0].Left;
   UserPageRegisterButton.Top := UserPage.Edits[0].Top + UserPage.Edits[0].Height + ScaleY(5);
+  UserPageRegisterButton.Width := WizardForm.NextButton.Width;   
+  UserPageRegisterButton.Height := WizardForm.NextButton.Height;
   UserPageRegisterButton.Parent := UserPage.Edits[0].Parent;
   UserPageRegisterButton.ParentFont := True;
   UserPageRegisterButton.Caption := 'Register';
   UserPageRegisterButton.OnClick  := @Register;  
-  UserPageRegisterButton.Enabled := False;    
+  UserPageRegisterButton.Enabled := False;   
 
   UserPagePolicyLabel := TLabel.Create(UserPage);
   UserPagePolicyLabel.Left := UserPageRegisterButton.Left + UserPageRegisterButton.Width + ScaleX(5);
