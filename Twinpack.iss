@@ -252,7 +252,7 @@ begin
     begin
       if(VisualStudioOptionsPage.CheckListBox.Checked[i+1]) then
       begin
-        ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + '/u:'+TwinpackVsixGuid+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
+        ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/u:'+TwinpackVsixGuid+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
         ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + ExpandConstant('{tmp}\TwinpackVsix.vsix'), '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
       end;
     end;
@@ -289,7 +289,7 @@ begin
       begin
         for i:= 0 to DisplayNames.Count-1 do
         begin
-          ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + '/u:'+TwinpackVsixGuid+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);  
+          ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/u:'+TwinpackVsixGuid+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);  
         end;        
       end;
     usPostUninstall:
