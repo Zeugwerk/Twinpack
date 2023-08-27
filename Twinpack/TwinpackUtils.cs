@@ -128,7 +128,8 @@ namespace Twinpack
         {
             foreach (ITcPlcLibrary r in libManager.ScanLibraries())
             {
-                if (r.Name == package.Name && r.Distributor == package.DistributorName)
+                if (string.Equals(r.Name, package.Name, StringComparison.InvariantCultureIgnoreCase) &&
+                    string.Equals(r.Distributor, package.DistributorName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return true;
                 }
@@ -147,7 +148,10 @@ namespace Twinpack
             {
                 foreach (ITcPlcLibrary r in libManager.ScanLibraries())
                 {
-                    if (r.Name == packageVersion.Name && r.Version == packageVersion.Version && r.Distributor == packageVersion.DistributorName)
+                    _logger.Trace($"{r.Name} {r.Distributor} {r.Version}");
+                    if (string.Equals(r.Name, packageVersion.Name, StringComparison.InvariantCultureIgnoreCase) && 
+                        string.Equals(r.Distributor, packageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
+                        r.Version == packageVersion.Version)
                     {
                         referenceFound = true;
                         break;
