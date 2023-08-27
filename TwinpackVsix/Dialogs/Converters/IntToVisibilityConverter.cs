@@ -15,8 +15,9 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                int? threshold = parameter as int?;
-                return (value as int?) > (parameter != null ? threshold : 0) ? Visibility.Visible : Visibility.Hidden;
+                int threshold = 0;
+                int.TryParse(parameter as string, out threshold);
+                return (value as int?) > threshold ? Visibility.Visible : Visibility.Hidden;
             }
             catch (Exception) { }
             return Visibility.Visible;

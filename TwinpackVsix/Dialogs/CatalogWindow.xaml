@@ -166,7 +166,7 @@
                                     <Run Text="by"/>
                                     <Run Text="{Binding DistributorName}"/>
                                     </TextBlock>
-                                    <TextBlock Margin="0 0 0 0" Visibility="{Binding Downloads, Converter={StaticResource IntToVisibilityConverter}, ConverterParameter='0'}">                                    
+                                    <TextBlock Margin="0 0 0 0">                                    
                                         <Run Text=","/>
                                         <Run Text="{Binding Downloads}" FontWeight="SemiBold"/>
                                         <Run Text="downloads"/>
