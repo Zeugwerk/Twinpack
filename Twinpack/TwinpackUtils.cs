@@ -148,7 +148,6 @@ namespace Twinpack
             {
                 foreach (ITcPlcLibrary r in libManager.ScanLibraries())
                 {
-                    _logger.Trace($"{r.Name} {r.Distributor} {r.Version}");
                     if (string.Equals(r.Name, packageVersion.Name, StringComparison.InvariantCultureIgnoreCase) && 
                         string.Equals(r.Distributor, packageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
                         r.Version == packageVersion.Version)
