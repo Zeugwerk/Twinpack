@@ -1049,8 +1049,8 @@ namespace Twinpack.Dialogs
                     {
                         catalogItem.Update = installedPackage.Update;
                         catalogItem.Installed = installedPackage.Installed;
-
                     }
+                    catalogItem.Downloads = item.Downloads;
 
                     _availablePackages.Add(catalogItem);
                 }
@@ -1098,6 +1098,7 @@ namespace Twinpack.Dialogs
                         {
                             availablePackage.Installed = catalogItem.Installed;
                             availablePackage.Update = packageVersion;
+                            catalogItem.Downloads = availablePackage.Downloads;
                         }
 
                         _installedPackages.Add(catalogItem);
