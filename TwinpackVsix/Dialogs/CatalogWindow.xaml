@@ -425,6 +425,18 @@
                                     DataContext="{Binding PackageVersion}" Orientation="Vertical"
                                     Visibility="{Binding IsPackageVersionLoading, ElementName=This, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
 
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Name, Converter={StaticResource NullToVisibilityConverter}}"
+                                        Margin="10,5,0,0">
+                                <TextBlock Text="Name: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock Text="{Binding Name}" TextWrapping="Wrap"></TextBlock>                                
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Title, Converter={StaticResource NullToVisibilityConverter}}"
+                                         Margin="10,5,0,0">
+                                <TextBlock Text="Title: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock Text="{Binding Title}" TextWrapping="Wrap"></TextBlock>
+                            </StackPanel>
+                            
                             <StackPanel Visibility="{Binding Description, Converter={StaticResource NullToVisibilityConverter}}">
                                 <TextBlock Text="Description: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
                                 <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="15,0,0,0"></TextBlock>

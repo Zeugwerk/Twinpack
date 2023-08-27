@@ -786,7 +786,7 @@ namespace Twinpack.Dialogs
             var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
 
             _context.Dte.ExecuteCommand("File.SaveAll");
-            TwinpackUtils.RemoveReference(libManager, Package.Name, Package.Name, PackageVersion.Version, _package.DistributorName);
+            TwinpackUtils.RemoveReference(libManager, Package.Title, Package.Title, PackageVersion.Version, _package.DistributorName);
             _context.Dte.ExecuteCommand("File.SaveAll");
 
             if (UninstallDeletes)
@@ -866,7 +866,7 @@ namespace Twinpack.Dialogs
 
             var downloadPackageVersion = await TwinpackUtils.DownloadPackageVersionAndDependenciesAsync(libManager, packageVersion, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
             await TwinpackUtils.InstallPackageVersionsAsync(libManager, downloadPackageVersion, cachePath: cachePath);
-            await TwinpackUtils.AddReferenceAsync(libManager, packageVersion.Name, packageVersion.Name, packageVersion.Version, packageVersion.DistributorName);
+            await TwinpackUtils.AddReferenceAsync(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
             IsNewReference = false;
 
             // update config
