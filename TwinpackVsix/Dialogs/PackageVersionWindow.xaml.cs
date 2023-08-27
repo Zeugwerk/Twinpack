@@ -194,6 +194,7 @@ namespace Twinpack.Dialogs
                 }
 
                 PackageName = _package?.Name ?? _plcConfig?.Name;
+                PackageTitle = _package?.Title ?? _plcConfig?.Title ?? PackageName;
                 DisplayName = _package?.DisplayName ?? _plcConfig?.DisplayName;
                 Description = _package?.Description ?? _plcConfig?.Description;
                 ProjectUrl = _package?.ProjectUrl ?? _plcConfig?.ProjectUrl;
@@ -383,6 +384,17 @@ namespace Twinpack.Dialogs
                 if (_plcConfig != null)
                     _plcConfig.Name = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageName)));
+            }
+        }
+        public string PackageTitle
+        {
+            get { return _package.Title; }
+            set
+            {
+                _package.Title = value;
+                if (_plcConfig != null)
+                    _plcConfig.Title = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageTitle)));
             }
         }
 
@@ -829,6 +841,7 @@ namespace Twinpack.Dialogs
                     var packageVersion = new Models.PackageVersionPostRequest()
                     {
                         Name = PackageName,
+                        Title = PackageTitle,
                         Version = Version,
                         Target = target,
                         License = License,

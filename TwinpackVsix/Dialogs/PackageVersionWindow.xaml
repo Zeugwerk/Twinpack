@@ -53,7 +53,9 @@
         <StackPanel Grid.Row="1" Grid.Column="2" Margin="50 15 50 0"  IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
             <TextBlock Text="{Binding PackageName}" d:Text="Zeugwerk.Core"
                        HorizontalAlignment="Center" Margin="0" FontSize="18" FontWeight="SemiBold"/>
-
+            <TextBlock Text="{Binding PackageTitle}" d:Text="ZCore"
+                       HorizontalAlignment="Center" Margin="0" FontWeight="SemiBold"/>
+            
             <Image RenderOptions.BitmapScalingMode="HighQuality" 
                    Source="{Binding IconImage}" Width="128" Height="128" Margin="0,10,0,10"/>
 
