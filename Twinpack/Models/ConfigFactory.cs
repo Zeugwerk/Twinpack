@@ -256,6 +256,7 @@ namespace Twinpack.Models
             XDocument xdoc = XDocument.Load(GuessFilePath(plc));
 
             plc.Name = System.IO.Path.GetFileNameWithoutExtension(plcProjFilepath);
+            plc.Title = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Title")?.FirstOrDefault()?.Value ?? plc.Name;
             plc.Packages = new List<ConfigPlcPackage>();
             //plc.Name = xdoc.Elements(Config.TcNs + "Project").Elements(Config.TcNs + "PropertyGroup").Elements(Config.TcNs + "Name")?.FirstOrDefault()?.Value;
             plc.Version = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Version")?.FirstOrDefault()?.Value;
@@ -263,7 +264,7 @@ namespace Twinpack.Models
             plc.Description = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Description")?.FirstOrDefault()?.Value;
             plc.DistributorName = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Company")?.FirstOrDefault()?.Value;
             plc.IconFile = "";
-            plc.DisplayName = plc.Name;
+            plc.DisplayName = plc.Title;
             plc.ProjectUrl = "";
 
             // Fallback

@@ -92,6 +92,7 @@ namespace Twinpack.Models
         {
             PackageId = package.PackageId;
             Name = package.Name;
+            Title = package.Title;
             Repository = package.Repository;
             DistributorName = package.DistributorName;
             DisplayName = package.DisplayName;
@@ -112,6 +113,8 @@ namespace Twinpack.Models
         public int? PackageId { get; set; }
         [JsonPropertyName("name")]
         public string Name { get; set; }
+        [JsonPropertyName("title")]
+        public string Title { get; set; }
         [JsonPropertyName("repository")]
         public string Repository { get; set; }
         [JsonPropertyName("distributor-name")]
@@ -210,7 +213,7 @@ namespace Twinpack.Models
 
         public static bool operator ==(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
         {
-            return lhs?.Name == rhs?.Name && lhs?.Version == rhs?.Version && lhs?.Target == rhs?.Target && lhs?.Configuration == rhs?.Configuration && lhs?.Branch == rhs?.Branch;
+            return lhs?.Name == rhs?.Name && lhs?.Title == rhs?.Title && lhs?.Version == rhs?.Version && lhs?.Target == rhs?.Target && lhs?.Configuration == rhs?.Configuration && lhs?.Branch == rhs?.Branch;
         }
 
         public static bool operator !=(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
@@ -282,6 +285,8 @@ namespace Twinpack.Models
     {
         [JsonPropertyName("name")]
         public string Name { get; set; }
+        [JsonPropertyName("title")]
+        public string Title { get; set; }
         [JsonPropertyName("version")]
         public string Version { get; set; }
         [JsonPropertyName("target")]
