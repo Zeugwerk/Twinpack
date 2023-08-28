@@ -38,7 +38,7 @@ InfoBeforeFile=DISCLAIMER
 [Files]
 Source: "TwinpackVsix\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell;
 Source: "TwinpackVsix\bin\{#MyConfiguration}\TwinpackVsix.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
-Source: "vswhere.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall;
+Source: "vswhere.exe"; DestDir: "{#TcXaeShellExtensionsFolder}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs;
 
 [Dirs]
 Name: "C:\Program Files (x86)\Beckhoff\TcXaeShell\Common7\IDE\Extensions\Zeugwerk\Twinpack"
@@ -77,6 +77,13 @@ begin
   ShellExec('open', 'https://github.com/Zeugwerk/Twinpack/blob/main/PRIVACY_POLICY.md', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
 end;
 
+procedure OpenDiscussionPage(Sender : TObject);
+var
+  ErrorCode : Integer;
+begin
+  ShellExec('open', 'https://github.com/Zeugwerk/Twinpack/discussions', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
+end;
+
 // Exec with output stored in result.
 // ResultString will only be altered if True is returned.
 function ExecWithResult(Filename, Params, WorkingDir: String; ShowCmd: Integer; Wait: TExecWait; var ResultCode: Integer; var ResultString: String): Boolean;
@@ -110,9 +117,10 @@ var
   DisplayNames: TStringList;
   ErrorCode: integer;
   i : integer; 
+  TwinpackVsixGuid : string;
   VsWhereOutput : string;
-  CustomButtonHeight : Integer;
-  CustomButtonWidth : Integer;
+  UninstallFirstPage: TNewNotebookPage;
+  UninstallButton: TNewButton;
 
 function ValidateEmail(strEmail : String) : boolean;
 var
@@ -178,6 +186,8 @@ end;
 
 procedure InitializeWizard;
 begin
+  TwinpackVsixGuid := 'TwinpackVsix.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23';
+
   ExtractTemporaryFile('vswhere.exe');
   ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput);
   
@@ -234,10 +244,6 @@ begin
   end;
 end;
 
-const
-  SHCONTCH_NOPROGRESSBOX = 4;
-  SHCONTCH_RESPONDYESTOALL = 16;
-
 function InstallVsixInTcXaeShell(): Boolean;
 begin
   Result := VisualStudioOptionsPage.CheckListBox.Checked[0] = True;
@@ -257,12 +263,11 @@ begin
     begin
       if(VisualStudioOptionsPage.CheckListBox.Checked[i+1]) then
       begin
-        ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + '/u:TwinpackVsix.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23 /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
+        ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/u:'+TwinpackVsixGuid+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
         ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + ExpandConstant('{tmp}\TwinpackVsix.vsix'), '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
       end;
     end;
   end;
-
 end;
 
 function InstallVsixThroughVsixInstaller(): Boolean;
@@ -274,77 +279,126 @@ begin
   end  
 end;
 
-procedure OpenTwinpackDiscussionOnClick(Sender: TObject);
-begin
-  ShellExec('', 'https://github.com/Zeugwerk/Twinpack/discussions', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
-end;
-
-procedure ShowByeByeMessageWithCallToAction;
-var
-  Form: TForm;
-  Label1: TLabel;
-  LinkLabel: TNewStaticText;
-  OKButton: TButton;
-begin
-  Form := CreateCustomForm;
-  Form.ClientWidth := ScaleX(350);
-  Form.ClientHeight := ScaleY(110);
-  Form.Caption := 'ByeBye Twinpack User';
-
-  Label1 := TLabel.Create(Form);
-  Label1.Parent := Form;
-  Label1.Left := ScaleX(10);
-  Label1.Top := ScaleY(10);
-  Label1.Width := Form.ClientWidth - 20;
-  Label1.Height := Form.ClientHeight - 20 - CustomButtonHeight;
-  //Label1.AutoSize := True;
-  //Label1.WordWrap := True;
-  Label1.Caption := 'It was nice having you here!' #13 #10 
-                    'Thanks for using Twinpack, please leave us some Feedback on:';
-
-  OKButton := TButton.Create(Form);
-  OKButton.Parent := Form;
-  OKButton.ModalResult := mrOK;
-  OKButton.Height := CustomButtonHeight;
-  OKButton.Width := CustomButtonWidth;  
-  OKButton.Left := (Form.ClientWidth - OKButton.Width) div 2;
-  OKButton.Top := Form.ClientHeight - OKButton.Height - ScaleY(10);
-  OKButton.Caption := 'Goodbye!';
-
-  LinkLabel := TNewStaticText.Create(Form);
-  LinkLabel.Parent := Form;
-  LinkLabel.Left := ScaleX(10);
-  LinkLabel.Top := Form.ClientHeight - OKButton.Height - ScaleY(30);
-  LinkLabel.Width := Form.ClientWidth - 20;
-  LinkLabel.Height := 30;
-  //LinkLabel.AutoSize := True;
-  LinkLabel.Cursor := crHand;
-  LinkLabel.Font.Color := clBlue;
-  LinkLabel.Caption := 'https://github.com/Zeugwerk/Twinpack/discussions';
-  LinkLabel.OnClick := @OpenTwinpackDiscussionOnClick;
-
-  Form.ShowModal;
-end;
-
 function InitializeUninstall(): Boolean;
 begin
-  Result := True;
-end;
+  ExecWithResult(ExpandConstant('{#TcXaeShellExtensionsFolder}Zeugwerk\\Twinpack\\vswhere.exe'), '-all -products * -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput);
 
-procedure DeinitializeUninstall();
-begin
-  ShowByeByeMessageWithCallToAction;
+  DisplayNames := VsWhereValue('displayName', VsWhereOutput);
+  InstallationPaths := VsWhereValue('installationPath', VsWhereOutput);   
+
+  Result := True;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   ReturnCode : Integer;
 begin
+  TwinpackVsixGuid := 'TwinpackVsix.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23';
+
   case CurUninstallStep of
     usUninstall:
       begin
-        CustomButtonHeight := UninstallProgressForm.CancelButton.Height;
-        CustomButtonWidth := UninstallProgressForm.CancelButton.Width;      
+        for i:= 0 to DisplayNames.Count-1 do
+        begin
+          ShellExec('', InstallationPaths[i] + '\Common7\IDE\VSIXInstaller.exe', '/u:'+TwinpackVsixGuid+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);  
+        end;        
       end;
+    usPostUninstall:
+      begin
+        // ...insert code to perform post-uninstall tasks here...
+      end;
+  end;
+end;
+
+// --------------------------------------------------------------------------------------------------------------------------
+// Uninstall Behavior
+// --------------------------------------------------------------------------------------------------------------------------
+procedure UpdateUninstallWizard;
+begin
+  UninstallButton.Caption := 'Uninstall';
+  // Make the "Uninstall" button break the ShowModal loop
+  UninstallButton.ModalResult := mrOK;
+end;  
+
+procedure UninstallButtonClick(Sender: TObject);
+begin
+    UninstallButton.Visible := False;
+    UpdateUninstallWizard;
+end;
+
+procedure InitializeUninstallProgressForm();
+var
+  UninstallText: TNewStaticText;
+  UserPageOpenDiscussionText: TNewStaticText;
+  PageNameLabel: string;
+  PageDescriptionLabel: string;
+  CancelButtonEnabled: Boolean;
+  CancelButtonModalResult: Integer;
+begin
+  if not UninstallSilent then
+  begin
+    // Create the first page and make it active
+    UninstallFirstPage := TNewNotebookPage.Create(UninstallProgressForm);
+    UninstallFirstPage.Notebook := UninstallProgressForm.InnerNotebook;
+    UninstallFirstPage.Parent := UninstallProgressForm.InnerNotebook;
+    UninstallFirstPage.Align := alClient;
+  
+    UninstallText := TNewStaticText.Create(UninstallProgressForm);
+    UninstallText.Parent := UninstallFirstPage;
+    UninstallText.Top := UninstallProgressForm.StatusLabel.Top;
+    UninstallText.Left := UninstallProgressForm.StatusLabel.Left;
+    UninstallText.Width := UninstallProgressForm.StatusLabel.Width;
+    UninstallText.Height := 300; //UninstallProgressForm.StatusLabel.Height;
+    UninstallText.AutoSize := False;
+    UninstallText.ShowAccelChar := False;
+    UninstallText.Caption := 'It was nice having you here!' #13 #10 
+                        'Thanks for using Twinpack, please leave us some Feedback on:';
+
+    UserPageOpenDiscussionText := TNewStaticText.Create(UninstallProgressForm);
+    UserPageOpenDiscussionText.Parent := UninstallFirstPage;
+    UserPageOpenDiscussionText.Top := UninstallProgressForm.StatusLabel.Top + ScaleY(50);
+    UserPageOpenDiscussionText.Left := UninstallProgressForm.StatusLabel.Left;
+    UserPageOpenDiscussionText.Width := UninstallProgressForm.StatusLabel.Width;
+    UserPageOpenDiscussionText.Height := 300; //UninstallProgressForm.StatusLabel.Height;
+    UserPageOpenDiscussionText.AutoSize := FALSE;
+    UserPageOpenDiscussionText.Caption := 'https://github.com/Zeugwerk/Twinpack/discussions';
+    UserPageOpenDiscussionText.OnClick := @OpenDiscussionPage;
+    UserPageOpenDiscussionText.Font.Style := UserPageOpenDiscussionText.Font.Style + [fsUnderline];
+    UserPageOpenDiscussionText.Font.Color := clBlue;
+    UserPageOpenDiscussionText.Cursor := crHand; 
+    
+    UninstallProgressForm.InnerNotebook.ActivePage := UninstallFirstPage;
+
+    PageNameLabel := UninstallProgressForm.PageNameLabel.Caption;
+    PageDescriptionLabel := UninstallProgressForm.PageDescriptionLabel.Caption;
+  
+    UninstallButton := TNewButton.Create(UninstallProgressForm);
+    UninstallButton.Parent := UninstallProgressForm;
+    UninstallButton.Left := UninstallProgressForm.CancelButton.Left - UninstallProgressForm.CancelButton.Width - ScaleX(10);
+    UninstallButton.Top := UninstallProgressForm.CancelButton.Top;
+    UninstallButton.Width := UninstallProgressForm.CancelButton.Width;
+    UninstallButton.Height := UninstallProgressForm.CancelButton.Height;
+    UninstallButton.OnClick := @UninstallButtonClick;
+    UninstallButton.TabOrder := UninstallButton.TabOrder + 1;
+
+    UninstallProgressForm.CancelButton.TabOrder := UninstallButton.TabOrder + 1;
+
+    // Run our wizard pages 
+    UpdateUninstallWizard;
+    CancelButtonEnabled := UninstallProgressForm.CancelButton.Enabled
+    UninstallProgressForm.CancelButton.Enabled := True;
+    CancelButtonModalResult := UninstallProgressForm.CancelButton.ModalResult;
+    UninstallProgressForm.CancelButton.ModalResult := mrCancel;
+
+    if UninstallProgressForm.ShowModal = mrCancel then Abort;
+
+    // Restore the standard page payout
+    UninstallProgressForm.CancelButton.Enabled := CancelButtonEnabled;
+    UninstallProgressForm.CancelButton.ModalResult := CancelButtonModalResult;
+
+    UninstallProgressForm.PageNameLabel.Caption := PageNameLabel;
+    UninstallProgressForm.PageDescriptionLabel.Caption := PageDescriptionLabel;
+
+    UninstallProgressForm.InnerNotebook.ActivePage := UninstallProgressForm.InstallingPage;
   end;
 end;
