@@ -53,7 +53,9 @@
         <StackPanel Grid.Row="1" Grid.Column="2" Margin="50 15 50 0"  IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
             <TextBlock Text="{Binding PackageName}" d:Text="Zeugwerk.Core"
                        HorizontalAlignment="Center" Margin="0" FontSize="18" FontWeight="SemiBold"/>
-
+            <TextBlock Text="{Binding PackageTitle}" d:Text="ZCore"
+                       HorizontalAlignment="Center" Margin="0" FontWeight="SemiBold"/>
+            
             <Image RenderOptions.BitmapScalingMode="HighQuality" 
                    Source="{Binding IconImage}" Width="128" Height="128" Margin="0,10,0,10"/>
 
@@ -62,7 +64,7 @@
                     HorizontalAlignment="Center" VerticalAlignment="Top"
                     Visibility="{Binding IsConfigured, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <StackPanel Orientation="Horizontal">
-                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="File" Height="12"/>
+                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="File" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Change Icon</TextBlock>
                 </StackPanel>
             </Button>
@@ -124,7 +126,7 @@
                     </Grid.RowDefinitions>                    
                     <TextBox Grid.Row="0" Text="{Binding LicenseFile}" Margin="0" IsReadOnly="True"/>
                     <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Visibility="{Binding HasLicenseBinary, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="CheckSquare" Height="12"/>
+                        <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="CheckSquare" Height="12"/>
                         <TextBlock Margin="5 0 0 0">File uploaded</TextBlock>
                         <Button Click="ShowLicenseButton_Click" Margin="5 -1 0 0" BorderThickness="0" FontWeight="SemiBold"
                                         Content="Show" VerticalAlignment="Top"/>
@@ -214,8 +216,8 @@
                     <TextBlock.LayoutTransform>
                         <RotateTransform Angle="90"></RotateTransform>
                     </TextBlock.LayoutTransform>
-                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Users" Margin="0 0 5 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
-                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="UserSecret" Margin="0 0 5 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"></fa:ImageAwesome>
+                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Users" Margin="0 0 5 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
+                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="UserSecret" Margin="0 0 5 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"></fa:ImageAwesome>
                     <Run Text="Advanced"></Run>
                 </TextBlock>
             </Expander.Header>
@@ -235,7 +237,7 @@
                                         <ColumnDefinition Width="auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="CodeFork" Height="12"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="CodeFork" Height="12"/>
                                     <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding}"></TextBlock>
                                     <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Public"/>
                                 </Grid>
@@ -254,8 +256,8 @@
                                         <ColumnDefinition Width="auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding Name}"></TextBlock>
                                     <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -276,8 +278,8 @@
                                         <ColumnDefinition Width="auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding Name}"></TextBlock>
                                     <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -297,7 +299,7 @@
                                     <ColumnDefinition Width="auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="FileCodeOutline" Height="12"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="FileCodeOutline" Height="12"/>
                                 <TextBlock Margin="5 0 0 0" Grid.Column="1" Text=".library"></TextBlock>
                             </Grid>
                         </ComboBoxItem>
@@ -308,7 +310,7 @@
                                     <ColumnDefinition Width="auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="FileArchiveOutline" Height="12"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="FileArchiveOutline" Height="12"/>
                                 <TextBlock Margin="5 0 0 0" Grid.Column="1" Text=".compiled-library"></TextBlock>
                             </Grid>
                         </ComboBoxItem>
@@ -326,8 +328,8 @@
                                         <ColumnDefinition Width="auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Unlock" Height="12" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <fa:ImageAwesome Margin="2 0 0 0" Grid.Column="0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Lock" Height="12" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <TextBlock Margin="5 0 0 0" Grid.Column="1" Text="{Binding Name}"></TextBlock>
                                     <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Public" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <TextBlock Margin="20 0 0 0" HorizontalAlignment="Right" Grid.Column="2" Text="Private" Visibility="{Binding IsPrivate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -341,7 +343,7 @@
                         <StackPanel Orientation="Vertical" Margin="5,0,5,5">
                             <TextBox x:Name="txbLicenseFile" Text="{Binding LicenseTmcFile, ElementName=wndParent}" IsReadOnly="True" Width="176" Margin="0"/>
                             <StackPanel Orientation="Horizontal" Visibility="{Binding HasLicenseTmcBinary, ElementName=wndParent, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="CheckSquare" Height="12"/>
+                                <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="CheckSquare" Height="12"/>
                                 <TextBlock Margin="5 0 0 0">File uploaded</TextBlock>
                                 <Button Click="ShowLicenseTmcButton_Click" Margin="5 -1 0 0" BorderThickness="0" FontWeight="SemiBold"
                                         Content="Show" VerticalAlignment="Top"/>
@@ -360,7 +362,7 @@
                     IsEnabled="{Binding IsNewPackageVersion}"
                     Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <StackPanel Orientation="Horizontal">
-                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Upload" Height="12"/>
+                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Upload" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Publish</TextBlock>
                 </StackPanel>                
             </Button>
@@ -369,13 +371,13 @@
                     IsEnabled="{Binding IsNewPackageVersion, Converter={StaticResource BooleanToInverseBooleanConverter}}"
                     Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
                 <StackPanel Orientation="Horizontal">
-                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Edit" Height="12"/>
+                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Edit" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Modify</TextBlock>
                 </StackPanel>
             </Button>
             <Button HorizontalAlignment="Right" Width="80" Margin="5" Click="Close_Click" IsCancel="True">
                 <StackPanel Orientation="Horizontal">
-                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Close" Height="12"/>
+                    <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Close" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Close</TextBlock>
                 </StackPanel>                
             </Button>
@@ -386,7 +388,7 @@
                      d:Visibility="Hidden"
                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Spinner" Spin="True" Height="12"/>
+                <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Spinner" Spin="True" Height="12"/>
                 <TextBlock Text="{Binding LoadingText}" d:Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
             </StackPanel>
         </Grid>
@@ -397,49 +399,49 @@
             <StackPanel VerticalAlignment="Center" Margin="15 60 15 0">
 
                 <TextBlock  Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" TextWrapping="Wrap" Margin="0 0 0 0">
-                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Check" Margin="0 0 5 0"></fa:ImageAwesome>
+                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Check" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">Known Distributor</Run>
                     <LineBreak></LineBreak>
                     <Run>You already uploaded one or more packages to the Twinpack Server and setup your are distribution name.</Run>
                 </TextBlock>
 
                 <TextBlock  Visibility="{Binding IsNewUser, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" Margin="0 0 0 0">
-                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Plus" Margin="0 0 5 0"></fa:ImageAwesome>
+                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Plus" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">New Distributor</Run>
                     <LineBreak></LineBreak>
                     <Run>You have not uploaded any packages to the Twinpack server. Please use a unique "Distributor name", which is then used for all of your packages. This property is linked to your user account and can not be changed.</Run>
                 </TextBlock>
 
                 <TextBlock TextWrapping="Wrap" Margin="0 15 0 0"  Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
-                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Check" Margin="0 0 5 0"></fa:ImageAwesome>
+                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Check" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">Known Package</Run>
                     <LineBreak></LineBreak>
                     <Run>There are versions of this package available on the Twinpack Server. You may upload additional versions of this package or apply limited changes to the selected package.</Run>
                 </TextBlock>
 
                 <TextBlock TextWrapping="Wrap" Margin="0 15 0 0"  Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}}">
-                     <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Plus" Margin="0 0 5 0"></fa:ImageAwesome>
+                     <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Plus" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">New Package</Run>
                     <LineBreak></LineBreak>
                     <Run>The package is not known on the Twinpack Server yet!</Run>
                 </TextBlock>
 
                 <TextBlock  TextWrapping="Wrap" Margin="0 15 0 0" Visibility="{Binding IsConfigured, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
-                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Warning" Margin="0 0 5 0"></fa:ImageAwesome>
+                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Warning" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">Missing configuration</Run>
                     <LineBreak></LineBreak>
                     <Run>Certain properties can not be edited, because the package's configuration can not be found.</Run>
                 </TextBlock>
 
                 <TextBlock TextWrapping="Wrap" Margin="0 15 0 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="Users" Margin="0 0 5 0"></fa:ImageAwesome>
+                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Users" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">Public</Run>
                     <LineBreak></LineBreak>
                     <Run>This package is visible publically.</Run>
                 </TextBlock>
 
                 <TextBlock TextWrapping="Wrap" Margin="0 15 0 0" Visibility="{Binding IsPublic, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
-                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowButtonActiveGlyphBrushKey}}" Icon="UserSecret" Margin="0 0 5 0"></fa:ImageAwesome>
+                    <fa:ImageAwesome Height="12" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="UserSecret" Margin="0 0 5 0"></fa:ImageAwesome>
                     <Run FontWeight="SemiBold">Private</Run>
                     <LineBreak></LineBreak>
                     <Run>This package has restriction so it is only visible to a limited audience.</Run>

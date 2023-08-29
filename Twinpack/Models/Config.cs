@@ -72,7 +72,7 @@ namespace Twinpack.Models
         public string Repository { get; set; }
         [JsonPropertyName("name")]
         public string Name { get; set; }
-        
+
         [DefaultValue("main")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("branch")]
@@ -188,6 +188,8 @@ namespace Twinpack.Models
 
         [JsonPropertyName("name")]
         public string Name { get; set; }
+        [JsonPropertyName("title")]
+        public string Title { get; set; }
 
         [JsonPropertyName("type")]
         public string Type { get; set; }

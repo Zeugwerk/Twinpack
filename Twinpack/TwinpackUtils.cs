@@ -105,7 +105,7 @@ namespace Twinpack
                 writer.WriteStartElement("TreeItem");
                 writer.WriteStartElement("IECProjectDef");
                 writer.WriteStartElement("ProjectInfo");
-                writer.WriteElementString("Title", plcConfig.Name);
+                writer.WriteElementString("Title", plcConfig.Title);
                 writer.WriteElementString("Version", (new Version(plcConfig.Version)).ToString());
                 writer.WriteElementString("Company", plcConfig.DistributorName);
                 writer.WriteEndElement();     // ProjectInfo
@@ -117,10 +117,10 @@ namespace Twinpack
 
         public static void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion)
         {
-            libManager.UninstallLibrary("System", packageVersion.Name, packageVersion.Version, packageVersion.DistributorName);
+            libManager.UninstallLibrary("System", packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
             foreach(var dependency in packageVersion.Dependencies)
             {
-                libManager.UninstallLibrary("System", dependency.Name, dependency.Version, dependency.DistributorName);
+                libManager.UninstallLibrary("System", dependency.Title, dependency.Version, dependency.DistributorName);
             }
         }
 
@@ -128,7 +128,8 @@ namespace Twinpack
         {
             foreach (ITcPlcLibrary r in libManager.ScanLibraries())
             {
-                if (r.Name == package.Name && r.Distributor == package.DistributorName)
+                if (string.Equals(r.Name, package.Title, StringComparison.InvariantCultureIgnoreCase) &&
+                    string.Equals(r.Distributor, package.DistributorName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return true;
                 }
@@ -147,7 +148,9 @@ namespace Twinpack
             {
                 foreach (ITcPlcLibrary r in libManager.ScanLibraries())
                 {
-                    if (r.Name == packageVersion.Name && r.Version == packageVersion.Version && r.Distributor == packageVersion.DistributorName)
+                    if (string.Equals(r.Name, packageVersion.Title, StringComparison.InvariantCultureIgnoreCase) && 
+                        string.Equals(r.Distributor, packageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
+                        r.Version == packageVersion.Version)
                     {
                         referenceFound = true;
                         break;
@@ -156,13 +159,13 @@ namespace Twinpack
 
                 if (referenceFound)
                 {
-                    _logger.Info($"Skipping download for {packageVersion.Name} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}), it already exists on the system");
+                    _logger.Info($"Skipping download for {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}), it already exists on the system");
                 }
             }
 
             if (!referenceFound || forceDownload)
             {
-                _logger.Info($"Downloading {packageVersion.Name} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName})");
+                _logger.Info($"Downloading {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName})");
 
                 downloadedPackageVersions.Add(await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId,
                                     includeBinary: true, cachePath: cachePath));
