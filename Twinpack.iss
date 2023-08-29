@@ -77,6 +77,13 @@ begin
   ShellExec('open', 'https://github.com/Zeugwerk/Twinpack/blob/main/PRIVACY_POLICY.md', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
 end;
 
+procedure OpenDiscussionPage(Sender : TObject);
+var
+  ErrorCode : Integer;
+begin
+  ShellExec('open', 'https://github.com/Zeugwerk/Twinpack/discussions', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
+end;
+
 // Exec with output stored in result.
 // ResultString will only be altered if True is returned.
 function ExecWithResult(Filename, Params, WorkingDir: String; ShowCmd: Integer; Wait: TExecWait; var ResultCode: Integer; var ResultString: String): Boolean;
@@ -110,8 +117,10 @@ var
   DisplayNames: TStringList;
   ErrorCode: integer;
   i : integer; 
-  VsWhereOutput : string; 
   TwinpackVsixGuid : string;
+  VsWhereOutput : string;
+  UninstallFirstPage: TNewNotebookPage;
+  UninstallButton: TNewButton;
 
 function ValidateEmail(strEmail : String) : boolean;
 var
@@ -298,5 +307,98 @@ begin
       begin
         // ...insert code to perform post-uninstall tasks here...
       end;
+  end;
+end;
+
+// --------------------------------------------------------------------------------------------------------------------------
+// Uninstall Behavior
+// --------------------------------------------------------------------------------------------------------------------------
+procedure UpdateUninstallWizard;
+begin
+  UninstallButton.Caption := 'Uninstall';
+  // Make the "Uninstall" button break the ShowModal loop
+  UninstallButton.ModalResult := mrOK;
+end;  
+
+procedure UninstallButtonClick(Sender: TObject);
+begin
+    UninstallButton.Visible := False;
+    UpdateUninstallWizard;
+end;
+
+procedure InitializeUninstallProgressForm();
+var
+  UninstallText: TNewStaticText;
+  UserPageOpenDiscussionText: TNewStaticText;
+  PageNameLabel: string;
+  PageDescriptionLabel: string;
+  CancelButtonEnabled: Boolean;
+  CancelButtonModalResult: Integer;
+begin
+  if not UninstallSilent then
+  begin
+    // Create the first page and make it active
+    UninstallFirstPage := TNewNotebookPage.Create(UninstallProgressForm);
+    UninstallFirstPage.Notebook := UninstallProgressForm.InnerNotebook;
+    UninstallFirstPage.Parent := UninstallProgressForm.InnerNotebook;
+    UninstallFirstPage.Align := alClient;
+  
+    UninstallText := TNewStaticText.Create(UninstallProgressForm);
+    UninstallText.Parent := UninstallFirstPage;
+    UninstallText.Top := UninstallProgressForm.StatusLabel.Top;
+    UninstallText.Left := UninstallProgressForm.StatusLabel.Left;
+    UninstallText.Width := UninstallProgressForm.StatusLabel.Width;
+    UninstallText.Height := 300; //UninstallProgressForm.StatusLabel.Height;
+    UninstallText.AutoSize := False;
+    UninstallText.ShowAccelChar := False;
+    UninstallText.Caption := 'It was nice having you here!' #13 #10 
+                        'Thanks for using Twinpack, please leave us some Feedback on:';
+
+    UserPageOpenDiscussionText := TNewStaticText.Create(UninstallProgressForm);
+    UserPageOpenDiscussionText.Parent := UninstallFirstPage;
+    UserPageOpenDiscussionText.Top := UninstallProgressForm.StatusLabel.Top + ScaleY(50);
+    UserPageOpenDiscussionText.Left := UninstallProgressForm.StatusLabel.Left;
+    UserPageOpenDiscussionText.Width := UninstallProgressForm.StatusLabel.Width;
+    UserPageOpenDiscussionText.Height := 300; //UninstallProgressForm.StatusLabel.Height;
+    UserPageOpenDiscussionText.AutoSize := FALSE;
+    UserPageOpenDiscussionText.Caption := 'https://github.com/Zeugwerk/Twinpack/discussions';
+    UserPageOpenDiscussionText.OnClick := @OpenDiscussionPage;
+    UserPageOpenDiscussionText.Font.Style := UserPageOpenDiscussionText.Font.Style + [fsUnderline];
+    UserPageOpenDiscussionText.Font.Color := clBlue;
+    UserPageOpenDiscussionText.Cursor := crHand; 
+    
+    UninstallProgressForm.InnerNotebook.ActivePage := UninstallFirstPage;
+
+    PageNameLabel := UninstallProgressForm.PageNameLabel.Caption;
+    PageDescriptionLabel := UninstallProgressForm.PageDescriptionLabel.Caption;
+  
+    UninstallButton := TNewButton.Create(UninstallProgressForm);
+    UninstallButton.Parent := UninstallProgressForm;
+    UninstallButton.Left := UninstallProgressForm.CancelButton.Left - UninstallProgressForm.CancelButton.Width - ScaleX(10);
+    UninstallButton.Top := UninstallProgressForm.CancelButton.Top;
+    UninstallButton.Width := UninstallProgressForm.CancelButton.Width;
+    UninstallButton.Height := UninstallProgressForm.CancelButton.Height;
+    UninstallButton.OnClick := @UninstallButtonClick;
+    UninstallButton.TabOrder := UninstallButton.TabOrder + 1;
+
+    UninstallProgressForm.CancelButton.TabOrder := UninstallButton.TabOrder + 1;
+
+    // Run our wizard pages 
+    UpdateUninstallWizard;
+    CancelButtonEnabled := UninstallProgressForm.CancelButton.Enabled
+    UninstallProgressForm.CancelButton.Enabled := True;
+    CancelButtonModalResult := UninstallProgressForm.CancelButton.ModalResult;
+    UninstallProgressForm.CancelButton.ModalResult := mrCancel;
+
+    if UninstallProgressForm.ShowModal = mrCancel then Abort;
+
+    // Restore the standard page payout
+    UninstallProgressForm.CancelButton.Enabled := CancelButtonEnabled;
+    UninstallProgressForm.CancelButton.ModalResult := CancelButtonModalResult;
+
+    UninstallProgressForm.PageNameLabel.Caption := PageNameLabel;
+    UninstallProgressForm.PageDescriptionLabel.Caption := PageDescriptionLabel;
+
+    UninstallProgressForm.InnerNotebook.ActivePage := UninstallProgressForm.InstallingPage;
   end;
 end;
