@@ -123,12 +123,16 @@ namespace Twinpack.Models
                 return null;
 
             config.Fileversion = 1;
-
+            config.WorkingDirectory = path;
+            
             if(solutions.Any())
             {
                 config.Solution = Path.GetFileName(solutions.First());
-                config.FilePath = Path.GetDirectoryName(solutions.First()) + @"\.Zeugwerk\config.json";
-                config.WorkingDirectory = path;                
+                config.FilePath = Path.GetDirectoryName(solutions.First()) + @"\.Zeugwerk\config.json";         
+            }
+            else
+            {
+                config.FilePath = @"\.Zeugwerk\config.json"; 
             }
 
             var project = new ConfigProject();
