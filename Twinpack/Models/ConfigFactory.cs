@@ -124,7 +124,7 @@ namespace Twinpack.Models
 
             config.Fileversion = 1;
             config.WorkingDirectory = path;
-            
+
             if(solutions.Any())
             {
                 config.Solution = Path.GetFileName(solutions.First());
@@ -132,7 +132,7 @@ namespace Twinpack.Models
             }
             else
             {
-                config.FilePath = @"\.Zeugwerk\config.json"; 
+                config.FilePath = $@"{Environment.CurrentDirectory}\.Zeugwerk\config.json";
             }
 
             var project = new ConfigProject();
