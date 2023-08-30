@@ -112,20 +112,24 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateAsync(string path = ".")
+        public static async Task<Config> CreateAsync(string path = ".", bool continueWithoutSolution = false)
         {
             Config config = new Config();
             var solutions = Directory.GetFiles(path, "*.sln", SearchOption.AllDirectories);
 
             if (solutions.Count() > 1)
                 _logger.Warn("There is more than 1 solution present in the current directory, only the first one is considered!");
-            else if (solutions.Any() == false)
+            else if (solutions.Any() == false && continueWithoutSolution == false)
                 return null;
 
             config.Fileversion = 1;
-            config.Solution = Path.GetFileName(solutions.First());
-            config.FilePath = Path.GetDirectoryName(solutions.First()) + @"\.Zeugwerk\config.json";
-            config.WorkingDirectory = path;
+
+            if(solutions.Any())
+            {
+                config.Solution = Path.GetFileName(solutions.First());
+                config.FilePath = Path.GetDirectoryName(solutions.First()) + @"\.Zeugwerk\config.json";
+                config.WorkingDirectory = path;                
+            }
 
             var project = new ConfigProject();
             project.Name = config.Solution?.Split('.').First();
