@@ -514,7 +514,6 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 var config = await WritePlcConfigToConfigAsync(_plcConfig);
                 await LoadInstalledPackagesAsync();
-                await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 UpdateCatalog();
 
                 _logger.Info($"Successfully removed {PackageVersion.Name} from {_plc.Name} references");
@@ -552,7 +551,6 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 var config = await WritePlcConfigToConfigAsync(_plcConfig);
                 await LoadInstalledPackagesAsync();
-                await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 UpdateCatalog();
 
                 _logger.Info($"Successfully added {PackageVersion.Name} to {_plc.Name} references");
@@ -620,7 +618,6 @@ namespace Twinpack.Dialogs
             {
                 var config = await WritePlcConfigToConfigAsync(_plcConfig);
                 await LoadInstalledPackagesAsync();
-                await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 SelectPackageVersionFilter(PackageVersion);
                 UpdateCatalog();
 
@@ -683,7 +680,6 @@ namespace Twinpack.Dialogs
             { 
                 var config = await WritePlcConfigToConfigAsync(_plcConfig);
                 await LoadInstalledPackagesAsync();
-                await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 UpdateCatalog();
 
                 _logger.Info($"Successfully updated {items?.Count()} references to their latest version");
@@ -797,6 +793,11 @@ namespace Twinpack.Dialogs
 
             // update config
             _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != PackageVersion.Name).ToList();
+            var p = _availablePackages.FirstOrDefault(x => x.PackageId == PackageVersion.PackageId);
+            if(p != null)
+            {
+                p.Installed = null;
+            }
         }
 
         public bool IsLicenseDialogRequired(ITcPlcLibraryManager libManager, Models.PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
