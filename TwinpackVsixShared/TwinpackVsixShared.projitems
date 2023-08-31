@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>0fdb9f73-33c4-4cc7-9813-8d9a4bebbc0e</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>TwinpackVsixShared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\CatalogCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\Command.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\ICommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\ModifyCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\PublishCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\TwinpackMenuCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Authentication.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\CatalogWindow.xaml.cs">
+      <DependentUpon>CatalogWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\BooleanToInverseBooleanConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\BooleanToVisibilityConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\IntToVisibilityConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\NullToVisibilityConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\UrlToImageConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\VisibilityToInverseVisibilityConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\InputDialog.xaml.cs">
+      <DependentUpon>InputDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\LicenseWindow.xaml.cs">
+      <DependentUpon>LicenseWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\PackageVersionWindow.xaml.cs">
+      <DependentUpon>PackageVersionWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)IconCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Logger\VsOutputWindowTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Panels\CatalogPane.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TwinpackPackage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsixManifest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="$(MSBuildThisFileDirectory)Dialogs\CatalogWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Dialogs\InputDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Dialogs\LicenseWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Dialogs\PackageVersionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)app.config" />
+  </ItemGroup>
+</Project>

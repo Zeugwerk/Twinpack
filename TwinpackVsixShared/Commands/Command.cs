@@ -29,18 +29,6 @@ namespace Twinpack.Commands
         {
             get { return _menuCommand; }
         }
-
-        /// <summary>
-        /// Gets the service provider from the owner package.
-        /// </summary>
-        private IAsyncServiceProvider ServiceProvider
-        {
-            get
-            {
-                return this._package;
-            }
-        }
-
         public void PackageReady()
         {
             // package is initialized, enable functions of the command
