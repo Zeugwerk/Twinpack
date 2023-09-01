@@ -128,6 +128,6 @@
     </ItemGroup>
   </Target>
   <Target Name="SetVersionForNuSpec" BeforeTargets="BeforeBuild">
-    <XmlPoke XmlInputPath="Twinpack.nuspec" Value="$(Version.Split('.')[0]).$(Version.Split('.')[1]).$(Version.Split('.')[2])" Query="/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='version']" />
+    <XmlPoke XmlInputPath="Twinpack.15.nuspec" Value="$(Version.Split('.')[0]).$(Version.Split('.')[1]).$(Version.Split('.')[2])" Query="/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='version']" />
   </Target>
 </Project>

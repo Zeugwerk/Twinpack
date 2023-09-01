@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package>
   <metadata>
-    <id>Twinpack</id>
+    <id>Twinpack.17</id>
     <version>1.0.0</version>
     <authors>Zeugwerk</authors>
     <description>Twinpack is a package manager for PLC libraries. This package contains the business logic.</description>

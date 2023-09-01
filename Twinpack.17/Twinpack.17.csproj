@@ -118,4 +118,22 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\TwinpackShared\TwinpackShared.projitems" Label="Shared" />
+  <Target Name="BeforeBuild">
+    <ItemGroup>
+      <AssemblyAttributes Include="AssemblyVersion">
+        <_Parameter1>$(Version)</_Parameter1>
+      </AssemblyAttributes>
+      <AssemblyAttributes Include="AssemblyFileVersion">
+        <_Parameter1>$(Version)</_Parameter1>
+      </AssemblyAttributes>
+    </ItemGroup>
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteCodeFragment Language="C#" OutputFile="$(IntermediateOutputPath)Version.cs" AssemblyAttributes="@(AssemblyAttributes)" />
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)Version.cs" />
+    </ItemGroup>
+  </Target>
+  <Target Name="SetVersionForNuSpec" BeforeTargets="BeforeBuild">
+    <XmlPoke XmlInputPath="Twinpack.17.nuspec" Value="$(Version.Split('.')[0]).$(Version.Split('.')[1]).$(Version.Split('.')[2])" Query="/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='version']" />
+  </Target>
 </Project>
