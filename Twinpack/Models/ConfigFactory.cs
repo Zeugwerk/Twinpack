@@ -87,7 +87,10 @@ namespace Twinpack.Models
 
             foreach (EnvDTE.Project prj in solution.Projects)
             {
-                ITcSysManager2 systemManager = prj.Object as ITcSysManager2;
+                ITcSysManager2 systemManager = prj?.Object as ITcSysManager2;
+                if (systemManager == null)
+                    continue;
+
                 var project = new ConfigProject();
                 project.Name = prj.Name;
 
