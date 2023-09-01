@@ -6,12 +6,13 @@
              xmlns:platform="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"      
              xmlns:fa="http://schemas.fontawesome.io/icons/"        
              xmlns:local="clr-namespace:Twinpack.Dialogs"
+             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+             toolkit:Themes.UseVsTheme="True"
              mc:Ignorable="d" 
              ResizeMode="NoResize"
              WindowStartupLocation="CenterScreen"
              Title="License Agreement" Height="600" Width="800">
-    <!--xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
-             toolkit:Themes.UseVsTheme="True"-->
+
     <Window.Resources>
         <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>

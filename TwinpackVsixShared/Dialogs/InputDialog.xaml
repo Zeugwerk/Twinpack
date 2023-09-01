@@ -5,12 +5,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:platform="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"     
              xmlns:local="clr-namespace:Twinpack.Dialogs"
+             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+             toolkit:Themes.UseVsTheme="True"
              ResizeMode="NoResize"
              WindowStartupLocation="CenterScreen"
              mc:Ignorable="d"
              Width="250" Height="100" Margin="5">
-    <!--xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
-             toolkit:Themes.UseVsTheme="True"-->
     <Grid>
         <StackPanel>
             <Label Content="Enter the URL where you icon is located:" />

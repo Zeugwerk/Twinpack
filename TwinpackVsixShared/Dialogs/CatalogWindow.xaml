@@ -6,12 +6,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:platform="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
              xmlns:fa="http://schemas.fontawesome.io/icons/"
+             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+             toolkit:Themes.UseVsTheme="True"
              xmlns:local="clr-namespace:Twinpack.Dialogs"
              xmlns:models="clr-namespace:Twinpack.Models"
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="1000">
-    <!--xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
-             toolkit:Themes.UseVsTheme="True"-->
     <UserControl.Resources>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <local:VisibilityToInverseVisibilityConverter x:Key="VisibilityToInverseVisibilityConverter"/>

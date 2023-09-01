@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="TwinpackVsix17.7d604a28-ac0a-4af4-8ffa-885aca14b5bb" Version="1.0.0.0" Language="en-US" Publisher="Zeugwerk GmbH" />
+        <Identity Id="TwinpackVsix17.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23" Version="1.0.0.0" Language="en-US" Publisher="Zeugwerk GmbH" />
         <DisplayName>TwinpackVsix17</DisplayName>
         <Description xml:space="preserve">Zeugwerk Twinpack</Description>
     </Metadata>
