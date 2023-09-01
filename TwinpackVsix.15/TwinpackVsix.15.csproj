@@ -126,7 +126,7 @@
     <COMReference Include="TCatSysManagerLib">
       <Guid>{3C49D6C3-93DC-11D0-B162-00A0248C244B}</Guid>
       <VersionMajor>3</VersionMajor>
-      <VersionMinor>4</VersionMinor>
+      <VersionMinor>3</VersionMinor>
       <Lcid>0</Lcid>
       <WrapperTool>tlbimp</WrapperTool>
       <Isolated>False</Isolated>
