@@ -15,6 +15,8 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "TwinpackShared", "TwinpackS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twinpack.17", "Twinpack.17\Twinpack.17.csproj", "{9607F8B7-E76A-452C-87F0-E804BAE4E92F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackCli", "TwinpackCli\TwinpackCli.csproj", "{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,14 @@ Global
 		{9607F8B7-E76A-452C-87F0-E804BAE4E92F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9607F8B7-E76A-452C-87F0-E804BAE4E92F}.Release|x86.ActiveCfg = Release|Any CPU
 		{9607F8B7-E76A-452C-87F0-E804BAE4E92F}.Release|x86.Build.0 = Release|Any CPU
+		{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}.Debug|x86.Build.0 = Debug|Any CPU
+		{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}.Release|x86.ActiveCfg = Release|Any CPU
+		{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
