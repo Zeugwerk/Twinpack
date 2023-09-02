@@ -5,9 +5,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:platform="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+             xmlns:fa="http://schemas.fontawesome.io/icons/"
              xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
              toolkit:Themes.UseVsTheme="True"
-             xmlns:fa="http://schemas.fontawesome.io/icons/"
              xmlns:local="clr-namespace:Twinpack.Dialogs"
              xmlns:models="clr-namespace:Twinpack.Models"
              mc:Ignorable="d"
@@ -29,20 +29,16 @@
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <Image RenderOptions.BitmapScalingMode="HighQuality" 
-                   Grid.Column="0" Height="50" Source="Images/Twinpack.png"
-                   HorizontalAlignment="Center" VerticalAlignment="Center"></Image>
-            <TextBlock Grid.Column="1" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontWeight="DemiBold" Text="Twinpack Catalog"/>
 
             <Button Grid.Column="2" Click="UpdateAvailableButton_Click" Margin="0" BorderThickness="0" 
-                    FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Top"
+                    FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Top" d:Visibility="Collapsed"
                     Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
                     <TextBlock Margin="0 0 0 0" VerticalAlignment="Top">
