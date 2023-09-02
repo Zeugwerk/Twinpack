@@ -3,11 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:platform="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
-             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
-             toolkit:Themes.UseVsTheme="True"          
+             xmlns:platform="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"   
              xmlns:fa="http://schemas.fontawesome.io/icons/"                
              xmlns:local="clr-namespace:Twinpack.Dialogs" d:DataContext="{d:DesignInstance Type=local:PackageVersionWindow}"
+             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+             toolkit:Themes.UseVsTheme="True"
              mc:Ignorable="d"
              ResizeMode="NoResize"
              x:Name="wndParent"
@@ -34,20 +34,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
-        <Grid Grid.Row="0" Grid.ColumnSpan="6">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"></RowDefinition>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
-            <Image Grid.Column="0" Height="50" RenderOptions.BitmapScalingMode="HighQuality" 
-                   Source="Images/Twinpack.png" HorizontalAlignment="Center" VerticalAlignment="Center"></Image>
-            <TextBlock Grid.Column="1" Text="Twinpack Edit Package" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontWeight="DemiBold"/>
-            <TextBlock Grid.Column="1" Text="Twinpack Publish Package" Visibility="{Binding IsNewPackage, Converter={StaticResource BooleanToVisibilityConverter}}" TextWrapping="Wrap" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" FontWeight="DemiBold"/>
-        </Grid>
 
         <!-- General Data -->
         <StackPanel Grid.Row="1" Grid.Column="2" Margin="50 15 50 0"  IsEnabled="{Binding IsGeneralDataReadOnly, Converter={StaticResource BooleanToInverseBooleanConverter}}">
