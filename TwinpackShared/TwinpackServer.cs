@@ -62,119 +62,6 @@ namespace Twinpack
             request.Headers.Add("twinpack-client-version", ClientVersion.ToString());
         }
 
-        public async Task PullAsync(string configuration, string branch, string target, string cachePath = null)
-        {
-            var config = ConfigFactory.Load();
-
-            _logger.Info($"Pulling from Twinpack Server");
-            var plcs = config.Projects.SelectMany(x => x.Plcs);
-
-            var exceptions = new List<Exception>();
-            foreach (var plc in plcs)
-            {
-                foreach (var package in plc.Packages ?? new List<ConfigPlcPackage>())
-                {
-                    try
-                    {
-                        await GetPackageVersionAsync(package.DistributorName, package.Name, package.Version, configuration, branch, target, true, cachePath: cachePath);
-                    }
-                    catch(Exception ex)
-                    {
-                        _logger.Warn($"{package.Name}: {ex.Message}");
-                        exceptions.Add(ex);
-                    }
-                }
-            }
-
-            if(exceptions.Any())
-            {
-                throw new GetException($"Pulling for Twinpack Server failed for {exceptions.Count()} dependencies!");
-            }         
-        }
-
-        public async Task PushAsync(string configuration, string branch, string target, string notes, bool compiled, string cachePath = null)
-        {
-            var config = ConfigFactory.Load();
-
-            _logger.Info($"Pushing to Twinpack Server");
-
-            var suffix = compiled ? "compiled-library" : "library";
-            var plcs = config.Projects.SelectMany(x => x.Plcs)
-                                         .Where(x => x.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary ||
-                                                x.PlcType == ConfigPlcProject.PlcProjectType.Library);
-            // check if all requested files are present
-            foreach (var plc in plcs)
-            {
-                var fileName = $@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}";
-                if (!File.Exists(fileName))
-                    throw new LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{fileName}'");
-
-                if (!string.IsNullOrEmpty(plc.LicenseFile) && !File.Exists(plc.LicenseFile))
-                {
-                    _logger.Warn($"Could not find license file '{plc.LicenseFile}'");
-                    //    throw new LibraryNotFoundException(plc.Name, plc.Version, $"Could not find license file '{plc.LicenseFile}'");
-                }
-            }
-
-            var exceptions = new List<Exception>();
-            foreach (var plc in plcs)
-            {
-                try
-                {
-                    suffix = compiled ? "compiled-library" : "library";
-                    string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
-                    string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
-                    string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
-                    string iconBinary = (!File.Exists(plc.IconFile) || string.IsNullOrEmpty(plc.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.IconFile));
-
-                    var packageVersion = new PackageVersionPostRequest()
-                    {
-                        Name = plc.Name,
-                        Version = plc.Version,
-                        Target = target,
-                        License = plc.License,
-                        Description = plc.Description,
-                        DistributorName = plc.DistributorName,
-                        Authors = plc.Authors,
-                        Entitlement = plc.Entitlement,
-                        ProjectUrl = plc.ProjectUrl,
-                        DisplayName = plc.DisplayName,
-                        Branch = branch,
-                        Configuration = configuration,
-                        Compiled = compiled ? 1 : 0,
-                        Notes = notes,
-                        IconFilename = Path.GetFileName(plc.IconFile),
-                        IconBinary = iconBinary,
-                        LicenseBinary = licenseBinary,
-                        LicenseTmcBinary = licenseTmcBinary,
-                        Binary = binary,
-                        Dependencies = plc.Packages?.Select(x => new PackageVersionDependencyPostRequest
-                        {
-                            Repository = x.Repository,
-                            DistributorName = x.DistributorName,
-                            Name = x.Name,
-                            Version = x.Version,
-                            Branch = x.Branch,
-                            Target = x.Target,
-                            Configuration = x.Configuration
-                        })
-                    };
-
-                    await PostPackageVersionAsync(packageVersion);
-                }
-                catch(Exception ex)
-                {
-                    _logger.Warn($"{plc.Name}: {ex.Message}");
-                    exceptions.Add(ex);
-                }
-            }
-
-            if(exceptions.Any())
-            {
-                throw new PostException($"Pushing to Twinpack Server failed for {exceptions.Count()} packages!");
-            }
-        }
-
         public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion)
         {
             _logger.Info($"Uploading Package '{packageVersion.Name}' (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration}, version: {packageVersion.Version}");
@@ -291,12 +178,15 @@ namespace Twinpack
                                             $"&configuration={HttpUtility.UrlEncode(configuration)}", page, perPage);
         }
 
-        public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library)
+        public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget=null, string preferredConfiguration=null, string preferredBranch=null)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-resolve" +
                 $"?distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
                 $"&name={HttpUtility.UrlEncode(library.Name)}" +
-                $"&version={HttpUtility.UrlEncode(library.Version)}"));
+                $"&version={HttpUtility.UrlEncode(library.Version)}" +
+                $"&target={HttpUtility.UrlEncode(preferredTarget)}" +
+                $"&configuration={HttpUtility.UrlEncode(preferredConfiguration)}" +
+                $"&branch={HttpUtility.UrlEncode(preferredBranch)}"));
 
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
             AddHeaders(request);
