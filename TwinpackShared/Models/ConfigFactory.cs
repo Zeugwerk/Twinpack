@@ -115,7 +115,7 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateAsync(string path = ".", bool continueWithoutSolution = false)
+        public static async Task<Config> CreateAsync(string path = ".", bool continueWithoutSolution = false, TwinpackServer twinpackServer = null)
         {
             Config config = new Config();
             var solutions = Directory.GetFiles(path, "*.sln", SearchOption.AllDirectories);
@@ -144,7 +144,7 @@ namespace Twinpack.Models
 
             foreach (var plcpath in Directory.GetFiles(path, "*.plcproj", SearchOption.AllDirectories))
             {
-                project.Plcs.Add(await ConfigPlcProjectFactory.CreateAsync(plcpath));
+                project.Plcs.Add(await ConfigPlcProjectFactory.CreateAsync(plcpath, twinpackServer));
             }
 
             config.Projects = new List<ConfigProject>();
