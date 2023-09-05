@@ -19,15 +19,6 @@ namespace Twinpack
 
             [Option('p', "password", Required = true, Default = null, HelpText = "Password for Twinpack Server")]
             public string Password { get; set; }
-
-            [Option('t', "target", Required = false, Default = "TC3.1", HelpText = "Package Target")]
-            public string Target { get; set; }
-
-            [Option('c', "configuration", Required = false, Default = "Release", HelpText = "Package Configuration (Release, Debug, ...)")]
-            public string Configuration { get; set; }
-
-            [Option('b', "branch", Required = false, Default = "main", HelpText = "Package Branch")]
-            public string Branch { get; set; }
         }
 
         [Verb("push", HelpText = "Pushes libraries to a Twinpack Server")]
@@ -146,7 +137,7 @@ namespace Twinpack
             }
         }
 
-        public static async Task PullAsync(string configuration, string branch, string target, string cachePath = null)
+        public static async Task PullAsync(string cachePath = null)
         {
             _logger.Info($"Loading configuration file");
             var config = ConfigFactory.Load();
@@ -164,7 +155,7 @@ namespace Twinpack
 
                     try
                     {
-                        var pv = await _twinpackServer.GetPackageVersionAsync(package.DistributorName, package.Name, package.Version, configuration, branch, target, true, cachePath: cachePath);
+                        var pv = await _twinpackServer.GetPackageVersionAsync(package.DistributorName, package.Name, package.Version, package.Configuration, package.Branch, package.Target, true, cachePath: cachePath);
                         downloaded.Add(package);
 
                         if (pv?.PackageVersionId == null)
