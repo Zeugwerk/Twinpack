@@ -187,7 +187,7 @@ namespace Twinpack
                     (PullOptions opts) =>
                     {
                         Login(opts.Username, opts.Password);
-                        PullAsync(opts.Configuration, opts.Branch, opts.Target).Wait();
+                        PullAsync().Wait();
                         return 0;
                     },
                     (PushOptions opts) =>
