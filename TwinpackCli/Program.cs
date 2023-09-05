@@ -145,18 +145,31 @@ namespace Twinpack
             _logger.Info($"Pulling from Twinpack Server");
             var plcs = config.Projects.SelectMany(x => x.Plcs);
             var exceptions = new List<Exception>();
-            var downloaded = new List<ConfigPlcPackage>();
+            var handled = new List<ConfigPlcPackage>();
             foreach (var plc in plcs)
             {
+                handled.Add(new ConfigPlcPackage
+                { 
+                    Name = plc.Name, 
+                    Version = plc.Version, 
+                    DistributorName = plc.DistributorName,
+                    Target = null,
+                    Configuration = null,
+                    Branch = null
+                });
+
                 foreach (var package in plc.Packages ?? new List<ConfigPlcPackage>())
                 {
-                    if (downloaded.Any(x => x?.Name == package?.Name && x?.Version == package?.Version && x?.Target == package?.Target && x?.Configuration == package?.Configuration && x?.Branch == package?.Branch))
+                    if (handled.Any(x => x?.Name == package?.Name && x?.Version == package?.Version && 
+                                    (x.Target == null || x?.Target == package?.Target) &&
+                                    (x.Configuration == null || x?.Configuration == package?.Configuration) &&
+                                    (x.Branch == null || x?.Branch == package?.Branch)))
                         continue;
 
                     try
                     {
                         var pv = await _twinpackServer.GetPackageVersionAsync(package.DistributorName, package.Name, package.Version, package.Configuration, package.Branch, package.Target, true, cachePath: cachePath);
-                        downloaded.Add(package);
+                        handled.Add(package);
 
                         if (pv?.PackageVersionId == null)
                             throw new Exceptions.GetException("Package not available");

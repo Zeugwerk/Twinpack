@@ -236,7 +236,7 @@ namespace Twinpack
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
 
-            if (includeBinary)
+            if (includeBinary && result.PackageId != null)
             {
                 var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{result.Target}";
                 Directory.CreateDirectory(filePath);
@@ -267,7 +267,6 @@ namespace Twinpack
             var response = await _client.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
- 
             PackageVersionGetResponse result = null;
             try
             {
@@ -282,7 +281,7 @@ namespace Twinpack
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
                
-            if (includeBinary)
+            if (includeBinary && result.PackageId != null)
             {
                 var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{result.Target}";
                 Directory.CreateDirectory(filePath);                
