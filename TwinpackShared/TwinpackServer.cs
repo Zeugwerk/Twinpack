@@ -287,7 +287,7 @@ namespace Twinpack
                 var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{result.Target}";
                 Directory.CreateDirectory(filePath);                
                 var extension = result.Compiled == 1 ? "compiled-library" : "library";
-                File.WriteAllText($@"{filePath}\{result.Name}_{result.Version}.{extension}", Encoding.ASCII.GetString(Convert.FromBase64String(result.Binary)));
+                File.WriteAllBytes($@"{filePath}\{result.Name}_{result.Version}.{extension}", Convert.FromBase64String(result.Binary));
             }
 
             return result;
