@@ -281,11 +281,11 @@ namespace Twinpack
             
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
-
-            var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}";
-                
+               
             if (includeBinary)
             {
+                var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{result.Target}";
+                Directory.CreateDirectory(filePath);                
                 var extension = result.Compiled == 1 ? "compiled-library" : "library";
                 File.WriteAllText($@"{filePath}\{result.Name}_{result.Version}.{extension}", Encoding.ASCII.GetString(Convert.FromBase64String(result.Binary)));
             }
