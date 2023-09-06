@@ -111,28 +111,29 @@
 
             <Label Content="License File:" HorizontalAlignment="Left" Margin="0"/>
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"></ColumnDefinition>
-                    <ColumnDefinition Width="auto"></ColumnDefinition>
-                </Grid.ColumnDefinitions>
-                <Grid Margin="0,0,5,5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid Margin="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"></ColumnDefinition>
-                        <ColumnDefinition Width="auto"></ColumnDefinition>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto"></RowDefinition>
-                        <RowDefinition Height="auto"></RowDefinition>
-                    </Grid.RowDefinitions>                    
                     <TextBox Grid.Row="0" Text="{Binding LicenseFile}" Margin="0" IsReadOnly="True"/>
-                    <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Visibility="{Binding HasLicenseBinary, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="CheckSquare" Height="12"/>
-                        <TextBlock Margin="5 0 0 0">File uploaded</TextBlock>
-                        <Button Click="ShowLicenseButton_Click" Margin="5 -1 0 0" BorderThickness="0" FontWeight="SemiBold"
-                                        Content="Show" VerticalAlignment="Top"/>
-                    </StackPanel>
+                    <Button Margin="5 0 0 0" Grid.Column="1" Click="ChangeLicense_Click" Content="..." HorizontalAlignment="Center" VerticalAlignment="Top"/>
                 </Grid>
-                <Button Grid.Column="1" Click="ChangeLicense_Click" Content="..." HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                <Grid Margin="0 5 0 0" Grid.Row="1" Visibility="{Binding HasLicenseBinary, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        <ColumnDefinition Width="*"></ColumnDefinition>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <fa:ImageAwesome Grid.Column="0" Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="CheckSquare" Height="12"/>
+                    <TextBlock Grid.Column="1" Margin="5 0 0 0">File uploaded</TextBlock>
+                    <Button Grid.Column="2" Click="ShowLicenseButton_Click" Margin="5 -1 0 0" BorderThickness="0" FontWeight="SemiBold"
+                                        Content="Show" VerticalAlignment="Top"/>
+                </Grid>
             </Grid>
         </StackPanel>
 
@@ -171,7 +172,7 @@
             </StackPanel>
         </Grid>
 
-        <Expander Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" Margin="0 20 0 0" Padding="5" Grid.RowSpan="5" HorizontalAlignment="Right" VerticalAlignment="Top" IsEnabled="{Binding HasDependencies, Mode=OneWay}" ExpandDirection="Left" Grid.ColumnSpan="4" IsExpanded="False">
+        <Expander Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" Margin="0 5 0 0" Padding="5" Grid.RowSpan="5" HorizontalAlignment="Right" VerticalAlignment="Top" IsEnabled="{Binding HasDependencies, Mode=OneWay}" ExpandDirection="Left" Grid.ColumnSpan="4" IsExpanded="False">
             <Expander.Header>
                 <TextBlock>
                     <TextBlock.LayoutTransform>
@@ -210,7 +211,7 @@
             </Grid>
         </Expander>
 
-        <Expander Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" Margin="0 170 0 0" Padding="5" Grid.RowSpan="5" HorizontalAlignment="Right" VerticalAlignment="Top" ExpandDirection="Left" Grid.ColumnSpan="4" IsExpanded="False">
+        <Expander Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" Margin="0 150 0 0" Padding="5" Grid.RowSpan="5" HorizontalAlignment="Right" VerticalAlignment="Top" ExpandDirection="Left" Grid.ColumnSpan="4" IsExpanded="False">
             <Expander.Header>
                 <TextBlock>
                     <TextBlock.LayoutTransform>
@@ -222,7 +223,6 @@
                 </TextBlock>
             </Expander.Header>
             <StackPanel>
-
                 <StackPanel Orientation="Vertical" DataContext="{Binding UserInfo}" IsEnabled="{Binding IsPublishMode, ElementName=wndParent}">
                     <TextBlock Visibility="{Binding Visibility, ElementName=BranchesView}" Text="Branch" Margin="5,0,5,5"></TextBlock>
                     <ComboBox IsEnabled="{Binding IsNewPackageVersion}" x:Name="BranchesView" 
@@ -339,17 +339,26 @@
                     </ComboBox>
 
                     <TextBlock Text="Runtime License" Margin="5,0,5,5"/>
-                    <StackPanel Orientation="Horizontal" IsEnabled="{Binding HasLicenseTmcCapability}">
-                        <StackPanel Orientation="Vertical" Margin="5,0,5,5">
-                            <TextBox x:Name="txbLicenseFile" Text="{Binding LicenseTmcFile, ElementName=wndParent}" IsReadOnly="True" Width="176" Margin="0"/>
-                            <StackPanel Orientation="Horizontal" Visibility="{Binding HasLicenseTmcBinary, ElementName=wndParent, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="CheckSquare" Height="12"/>
-                                <TextBlock Margin="5 0 0 0">File uploaded</TextBlock>
-                                <Button Click="ShowLicenseTmcButton_Click" Margin="5 -1 0 0" BorderThickness="0" FontWeight="SemiBold"
+                    <StackPanel Margin="5 0 0 0" Orientation="Vertical" IsEnabled="{Binding HasLicenseTmcCapability}">
+                        <Grid Margin="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"></ColumnDefinition>
+                                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Width="170" x:Name="txbLicenseFile" Text="{Binding LicenseTmcFile, ElementName=wndParent}" IsReadOnly="True"/>
+                            <Button Grid.Column="1"  Click="ChangeLicenseTmc_Click" Content="..." Margin="5 0 5 0" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                        </Grid>
+                        <Grid Margin="0 5 5 0" Visibility="{Binding HasLicenseTmcBinary, ElementName=wndParent, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                <ColumnDefinition Width="*"></ColumnDefinition>
+                                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <fa:ImageAwesome Grid.Column="0" Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="CheckSquare" Height="12"/>
+                            <TextBlock Grid.Column="1" Margin="5 0 0 0">File uploaded</TextBlock>
+                            <Button Grid.Column="2" Click="ShowLicenseTmcButton_Click" Margin="5 -1 0 0" BorderThickness="0" FontWeight="SemiBold"
                                         Content="Show" VerticalAlignment="Top"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <Button Click="ChangeLicenseTmc_Click" Content="..." Margin="0 0 5 0" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                        </Grid>
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
@@ -358,7 +367,6 @@
         <!-- Publish Button -->
         <StackPanel Grid.Row="4" Grid.ColumnSpan="4" HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Bottom">
             <Button HorizontalAlignment="Right" Margin="5" Click="Publish_Click" 
-                    Width="80"
                     IsEnabled="{Binding IsNewPackageVersion}"
                     Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <StackPanel Orientation="Horizontal">
@@ -367,7 +375,6 @@
                 </StackPanel>                
             </Button>
             <Button HorizontalAlignment="Right" Margin="5" Click="Apply_Click" 
-                    Width="80"
                     IsEnabled="{Binding IsNewPackageVersion, Converter={StaticResource BooleanToInverseBooleanConverter}}"
                     Visibility="{Binding IsPublishMode, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
                 <StackPanel Orientation="Horizontal">
@@ -375,7 +382,7 @@
                     <TextBlock Margin="5 0 0 0">Modify</TextBlock>
                 </StackPanel>
             </Button>
-            <Button HorizontalAlignment="Right" Width="80" Margin="5" Click="Close_Click" IsCancel="True">
+            <Button HorizontalAlignment="Right" Margin="5" Click="Close_Click" IsCancel="True">
                 <StackPanel Orientation="Horizontal">
                     <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Close" Height="12"/>
                     <TextBlock Margin="5 0 0 0">Close</TextBlock>
