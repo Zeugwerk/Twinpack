@@ -805,8 +805,8 @@ namespace Twinpack.Dialogs
 
                 IsEnabled = false;
                 IsLoading = true;
-                LoadingText = "Checking all objects ...";
 
+                LoadingText = "Checking all objects ...";
                 var path = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\{target}\{_plcConfig.Name}_{_plcConfig.Version}.library";
                 var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
                 var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
@@ -818,10 +818,7 @@ namespace Twinpack.Dialogs
                     if (!iec.CheckAllObjects())
                     {
                         if (TwinpackUtils.BuildErrorCount(_context.Dte) > 0)
-                        {
-                            _logger.Error($"{_plcConfig.Name} does not compile!");
-                            return;
-                        }
+                           throw new Exceptions.PostException($"{_plcConfig.Name} does not compile! Check all objects for your PLC failed. Please fix the errors in order to publish your library.");
                     }
 
                     _logger.Info($"Saving and installing library to {path}");
