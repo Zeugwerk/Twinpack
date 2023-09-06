@@ -133,7 +133,7 @@ namespace Twinpack.Dialogs
                     {      
                         if (!IsPublishMode)
                         {
-                            MessageBox.Show($"The package '{_plcConfig.Name}' is not published yet. Please publish your package before modifying it!", "Package not published", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show($"The package '{_plcConfig.Name}' is not distributed by '{_twinpackServer.Username}'. Please publish your package before modifying it!", "Package not published", MessageBoxButton.OK, MessageBoxImage.Error);
                             Close();
                             return;
                         }  
@@ -440,8 +440,16 @@ namespace Twinpack.Dialogs
             set
             {
                 _iconFile = value;
-                 if(_plcConfig != null && !string.IsNullOrEmpty(_iconFile))
-                    _plcConfig.IconFile = Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _iconFile);
+                try
+                {
+                    if (_plcConfig != null && !string.IsNullOrEmpty(_iconFile))
+                        _plcConfig.IconFile = Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, _iconFile);
+                }
+                catch (ArgumentException ex)
+                {
+                    _logger.Trace(ex);
+                }
+
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconFile)));
             }
         }
@@ -571,8 +579,15 @@ namespace Twinpack.Dialogs
                 try
                 {
                     _licenseFile = value;
-                    if (_plcConfig != null)
-                        _plcConfig.LicenseFile = value == null ? null : Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
+                    try
+                    {
+                        if (_plcConfig != null)
+                            _plcConfig.LicenseFile = value == null ? null : Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        _logger.Trace(ex);
+                    }
 
                     if(_packageVersion != null)
                         _packageVersion.LicenseBinary = _licenseFile == null ? _packageVersion.LicenseBinary : Convert.ToBase64String(File.ReadAllBytes(value));
@@ -596,10 +611,17 @@ namespace Twinpack.Dialogs
                 try
                 {
                     _licenseTmcFile = value;
-                    if (_plcConfig != null)
-                        _plcConfig.LicenseTmcFile = value == null ? null : Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
+                    try
+                    {
+                        if (_plcConfig != null)
+                            _plcConfig.LicenseTmcFile = value == null ? null : Extensions.DirectoryExtension.RelativePath(_plcConfig.RootPath, value);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        _logger.Trace(ex);
+                    }
 
-                    if(_packageVersion != null)
+                    if (_packageVersion != null)
                         _packageVersion.LicenseTmcBinary = _licenseTmcFile == null ? _packageVersion.LicenseTmcBinary : Convert.ToBase64String(File.ReadAllBytes(value));
 
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseTmcFile)));
