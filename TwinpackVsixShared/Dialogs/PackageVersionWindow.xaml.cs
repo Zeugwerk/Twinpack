@@ -888,10 +888,14 @@ namespace Twinpack.Dialogs
                 catch (Exceptions.LoginException ex)
                 {
                     MessageBox.Show(ex.Message, "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
                 }
                 catch (Exceptions.PostException ex)
                 {
                     MessageBox.Show(ex.Message, "Push failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
                 }
                 catch (Exception ex)
                 {
