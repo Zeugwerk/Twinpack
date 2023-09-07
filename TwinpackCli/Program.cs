@@ -14,10 +14,10 @@ namespace Twinpack
         [Verb("pull", HelpText = "Downloads packages that are references in .Zeugwerk/config.json to .Zeugwerk/libraries, you can use RepTool.exe to install them into the TwinCAT library repository.")]
         public class PullOptions
         {
-            [Option('u', "username", Required = true, Default = null, HelpText = "Username for Twinpack Server")]
+            [Option('u', "username", Required = false, Default = null, HelpText = "Username for Twinpack Server")]
             public string Username { get; set; }
 
-            [Option('p', "password", Required = true, Default = null, HelpText = "Password for Twinpack Server")]
+            [Option('p', "password", Required = false, Default = null, HelpText = "Password for Twinpack Server")]
             public string Password { get; set; }
         }
 
@@ -51,6 +51,10 @@ namespace Twinpack
 
         static void Login(string username, string password)
         {
+            // no need to login without credentials
+            if(username == null || password == null)
+                return;
+            
             _twinpackServer.LoginAsync(username, password).Wait();
             if (!_twinpackServer.LoggedIn)
                 throw new Exception("Login to Twinpack Server failed!");
