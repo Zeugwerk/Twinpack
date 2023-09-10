@@ -269,11 +269,15 @@
                     Users are advised to use packages at their own discretion and risk.
             </TextBlock>
 
-            <Grid Grid.Row="0" d:Visibility="Hidden" Visibility="{Binding IsCatalogLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Grid Grid.Row="0" d:Visibility="Collapsed" Background="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxBackgroundBrushKey}}" Visibility="{Binding IsCatalogLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"></RowDefinition>
+                        <RowDefinition Height="Auto"></RowDefinition>
+                    </Grid.RowDefinitions>
                     <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Spinner" Spin="True" Height="12"/>
-                    <TextBlock Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
-                </StackPanel>
+                    <TextBlock Grid.Row="1" Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+                </Grid>
             </Grid>
 
             <GridSplitter Grid.Column="1" Grid.RowSpan="5" Width="5" HorizontalAlignment="Stretch"></GridSplitter>
