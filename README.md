@@ -16,7 +16,7 @@ With TwinCAT 3.1.4026, Beckhoff introduced a package manager which emphasizes th
 To use the Twinpack Package Manager, follow these steps:
 
 1. [Download](https://github.com/Zeugwerk/Twinpack/releases/latest) the latest installer.
-2. In the installation process you will be asked to optionally register yourself for publishing your own packages. Type in a valid email address to get your login information right after the installation of Twinpack
+2. In the installation process you will be asked to optionally register yourself for publishing your own packages. Type in a valid email address to get your login information into your mailbox right after the installation of Twinpack. This is needed for publishing libraries later on.
 3. Twinpack supports multiple versions of Visual Studio and TwinCAT XAE Shell. Select the IDEs, which Twinpack should be installed for.
 4. Click on "Install".
 5. Follow the on-screen instructions to complete the installation.
@@ -33,8 +33,8 @@ To install a package from the Twinpack Server, follow these steps:
 4. Browse or search for the desired package.
 5. Click on the package to view details.
 6. Click on the "Add" button to install this package and add it to the referenced libraries.
-7. Wait for the installation process to complete. If you are installing packages for the first time and they come with a license you will be asked to confirm their license agreement in order to advance.
-8. Twinpack automatically installed the package on your System and added it as a reference to your PLC.
+7. Wait for the installation process to complete. If you are installing packages from a contributor for the first time and these packages come with a license you will be asked to confirm their license agreement in order to advance.
+8. Twinpack automatically installs the package on your System and adds it as a reference to your PLC, including all depending libraries.
 9. Follow the library documentation or instructions to incorporate its functionality into your project.
 
 ## Sharing a Package
@@ -50,11 +50,13 @@ To share your own TwinCAT library as a package with the TwinCAT community, pleas
    - Version (mandatory): This is the initial version of your package. Once you publish your package for the first time, you have the flexibility to release newer versions in the future.
    - The Advanced menu is specifically designed for enterprise users of Twinpack. It enables them to configure packages for private usage by controlling the audience that can access and download the package (i.e. employees of a company). [Contact us](mailto:info@zeugwerk.at) if you are interested in this feature.
    - Other information is optional and self-explanatory. However, note that all information, except for 'notes', is linked to a package rather than a specific version of a package. The latter may be used to give a short changelog so users know what changed since the previous release.
+   - if you have a library icon, make sure to integrate this in the PLC-project in order not to loose it. The recommendation for the library icon is square size, png file-type and pixel-size should be 256x256. However, the icon can also be of larger size, it will be scaled automatically. If no icon is chosen, we will generate a randomized icon figure.
 5. Click publish to make Twinpack
    - Check all objects of your library
    - Upload the library as a package to the Twinpack server making it available for the community
   
-After the initial upload of your library as a package, you may publish newer versions of your library. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
+After the initial upload of your library as a package, you may publish newer versions of your library or you can also modify the current version by clicking on modify package. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
 
 Please note that your package should meet certain standards and guidelines to ensure its quality and compatibility with TwinCAT. If you don't have any guidelines yet, [here](https://doc.zeugwerk.dev/contribute/contribute_code.html) are some suggestions.
 
+Make sure to follow this project by leaving a star or simply follow us, to always get notified if a newer version of Twinpack is released.
