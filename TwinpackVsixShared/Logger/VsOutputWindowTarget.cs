@@ -68,10 +68,14 @@ namespace Twinpack
                 _outputPane.OutputStringThreadSafe(message + Environment.NewLine);
         }
 
-        protected override Task WriteAsyncTask(LogEventInfo logEvent, CancellationToken cancellationToken)
+        protected override async Task WriteAsyncTask(LogEventInfo logEvent, CancellationToken cancellationToken)
         {
             string logMessage = Layout.Render(logEvent);
-            return LogToOutputWindowAsync(logMessage);
+
+            if (logEvent.Level == LogLevel.Error)
+                await ActivateAsync(clear: false);
+
+            await LogToOutputWindowAsync(logMessage);
         }
     }
 }
