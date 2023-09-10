@@ -10,6 +10,7 @@ With TwinCAT 3.1.4026, Beckhoff introduced a package manager which emphasizes th
 - [Using a Package](#using-a-package)
 - [Sharing a Package](#sharing-a-package)
 - [Disclaimer](#disclaimer)
+- [Further information](#further-information)
 
 ## Installation
 
@@ -59,4 +60,9 @@ After the initial upload of your library as a package, you may publish newer ver
 
 Please note that your package should meet certain standards and guidelines to ensure its quality and compatibility with TwinCAT. If you don't have any guidelines yet, [here](https://doc.zeugwerk.dev/contribute/contribute_code.html) are some suggestions.
 
-Make sure to follow this project by leaving a star or simply follow us, to always get notified if a newer version of Twinpack is released.
+## Further information
+
+🌟 Make sure to follow this project by leaving a star or simply follow us, to always get notified if a newer version of Twinpack is released.
+
+📺 We have also created a short introductionary video on how to install and use Twinpack (more to come):
+- [Share TwinCAT libraries with Twinpack](https://youtu.be/xvJG9BRN610?si=RMMIPcdtMAoHkyGW)
