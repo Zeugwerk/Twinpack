@@ -31,6 +31,10 @@ namespace Twinpack.Dialogs
                 if (!_twinpackServer.LoggedIn)
                     await _twinpackServer.LoginAsync();
             }
+            catch (TimeoutException ex)
+            {
+                throw ex;
+            }
             catch (Exception)
             { }
 

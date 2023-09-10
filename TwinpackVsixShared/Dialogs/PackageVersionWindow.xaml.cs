@@ -114,6 +114,10 @@ namespace Twinpack.Dialogs
                         IsConfigured = _plcConfig != null;
                     }
                 }
+                catch(TimeoutException ex)
+                {
+                    throw ex;
+                }
                 catch (Exception ex)
                 {
                     IsConfigured = false;
@@ -185,6 +189,10 @@ namespace Twinpack.Dialogs
                     catch (Exceptions.GetException ex)
                     {
                         MessageBox.Show(ex.Message, "Retrieving Package failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    catch (TimeoutException ex)
+                    {
+                        throw ex;
                     }
                     catch (Exception ex)
                     {
@@ -262,6 +270,12 @@ namespace Twinpack.Dialogs
                 
                 ValidateNewPackageVersion();
                 ValidateVisibility();
+            }
+            catch (TimeoutException ex)
+            {
+                MessageBox.Show(ex.Message, "Timeout", MessageBoxButton.OK, MessageBoxImage.Error);
+                Close();
+                return;
             }
             catch (Exception ex)
             {
@@ -765,6 +779,10 @@ namespace Twinpack.Dialogs
             catch (Exceptions.LoginException ex)
             {
                 MessageBox.Show(ex.Message, "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (TimeoutException ex)
+            {
+                MessageBox.Show(ex.Message, "Timeout", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
