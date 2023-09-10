@@ -393,16 +393,14 @@ namespace Twinpack.Dialogs
             try
             {
                 IsCatalogLoading = true;
+                cmbTwinpackServer.Items.Clear();
+                cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrlBase);
+                cmbTwinpackServer.SelectedIndex = 0;
                 _plc = TwinpackUtils.ActivePlc(_context.Dte);
 
                 await _auth.LoginAsync(onlyTry: true);
 
-                cmbTwinpackServer.Items.Clear();
-                cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrlBase);
-                cmbTwinpackServer.SelectedIndex = 0;
-
                 _isBrowsingAvailablePackages = true;
-
                 await LoadPlcConfigAsync();
                 await LoadAvailablePackagesAsync();
                 await LoadInstalledPackagesAsync();
