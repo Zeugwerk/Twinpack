@@ -389,27 +389,13 @@ namespace Twinpack.Dialogs
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            IsCatalogLoading = true;
-
+            
             try
             {
-                await _auth.LoginAsync(onlyTry: true);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
-            {
-                IsUpdateAvailable = _twinpackServer.IsClientUpdateAvailable == true;
-                btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
-                btnRegister.Visibility = _twinpackServer.LoggedIn ? Visibility.Collapsed : Visibility.Visible;
-            }
-
-            try
-            {
+                IsCatalogLoading = true;
                 _plc = TwinpackUtils.ActivePlc(_context.Dte);
+
+                await _auth.LoginAsync(onlyTry: true);
 
                 cmbTwinpackServer.Items.Clear();
                 cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrlBase);
@@ -426,6 +412,13 @@ namespace Twinpack.Dialogs
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
+            }
+            finally
+            {
+                IsCatalogLoading = false;
+                IsUpdateAvailable = _twinpackServer.IsClientUpdateAvailable == true;
+                btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
+                btnRegister.Visibility = _twinpackServer.LoggedIn ? Visibility.Collapsed : Visibility.Visible;
             }
         }
 
@@ -489,9 +482,17 @@ namespace Twinpack.Dialogs
 
             _twinpackServer.InvalidateCache();
 
-            await LoadInstalledPackagesAsync();
-            await LoadAvailablePackagesAsync(SearchTextBox.Text);
-            UpdateCatalog();
+            try
+            {
+                await LoadInstalledPackagesAsync();
+                await LoadAvailablePackagesAsync(SearchTextBox.Text);
+                UpdateCatalog();
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
         }
 
         public async void UninstallPackageButton_Click(object sender, RoutedEventArgs e)
@@ -583,7 +584,10 @@ namespace Twinpack.Dialogs
                 IsRestoreAllEnabled = false;
                 IsPackageVersionPanelEnabled = false;
 
-                await _semaphorePackages.WaitAsync();
+                var locked = await _semaphorePackages.WaitAsync(10000);
+                if (!locked)
+                    throw new TimeoutException("Timeout occured while waiting for Twinpack server!");
+
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 await _context?.Logger?.ActivateAsync(clear: true);
                 _logger.Info("Restoring all packages");
@@ -645,7 +649,10 @@ namespace Twinpack.Dialogs
                 IsPackageVersionPanelEnabled = false;
                 IsUpdateAllEnabled = false;
 
-                await _semaphorePackages.WaitAsync();
+                var locked = await _semaphorePackages.WaitAsync(10000);
+                if (!locked)
+                    throw new TimeoutException("Timeout occured while waiting for Twinpack server!");
+
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 await _context?.Logger?.ActivateAsync(clear: true);
                 _logger.Info("Updating all packages");
@@ -729,7 +736,7 @@ namespace Twinpack.Dialogs
                 }
                 UpdateCatalog();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
@@ -1027,7 +1034,10 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                await _semaphorePackages.WaitAsync();
+                var locked = await _semaphorePackages.WaitAsync(10000);
+                if (!locked)
+                    throw new TimeoutException("Timeout occured while waiting for Twinpack server!");
+
                 IsFetchingAvailablePackages = true;
 
                 if (reset)
@@ -1076,7 +1086,9 @@ namespace Twinpack.Dialogs
             {
                 IsFetchingInstalledPackages = true;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _semaphorePackages.WaitAsync();
+                var locked = await _semaphorePackages.WaitAsync(10000);
+                if (!locked)
+                    throw new TimeoutException("Timeout occured while waiting for Twinpack server!");
 
                 if (_plcConfig != null)
                 {
@@ -1155,7 +1167,9 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await _semaphorePackages.WaitAsync();
+                var locked = await _semaphorePackages.WaitAsync(10000);
+                if (!locked)
+                    throw new TimeoutException("Timeout occured while waiting for Twinpack server!");
 
                 IsPackageLoading = true;
                 IsPackageVersionLoading = true;
@@ -1269,6 +1283,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                IsCatalogLoading = true;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 await _context?.Logger?.ActivateAsync(clear: true);
                 _logger.Info("Reloading catalog");
@@ -1281,6 +1296,9 @@ namespace Twinpack.Dialogs
                 _twinpackServer.InvalidateCache();
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
+                if(!IsConfigured)
+                    await LoadPlcConfigAsync();
+
                 await LoadInstalledPackagesAsync();
                 await LoadAvailablePackagesAsync(SearchTextBox.Text);
                 UpdateCatalog();
@@ -1289,6 +1307,10 @@ namespace Twinpack.Dialogs
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
+            }
+            finally
+            {
+                IsCatalogLoading = false;
             }
         }
 
@@ -1334,7 +1356,6 @@ namespace Twinpack.Dialogs
                     await LoadPlcConfigAsync();
                     await LoadInstalledPackagesAsync();
                 }
-
             }
             catch (Exception ex)
             {
