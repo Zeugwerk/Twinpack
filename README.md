@@ -35,7 +35,7 @@ To install a package from the Twinpack Server, follow these steps:
 5. Click on the package to view details.
 6. Click on the "Add" button to install this package and add it to the referenced libraries.
 7. Wait for the installation process to complete. If you are installing packages from a contributor for the first time and these packages come with a license you will be asked to confirm their license agreement in order to advance.
-8. Twinpack automatically installs the package on your System and adds it as a reference to your PLC, including all depending libraries.
+8. Twinpack automatically installs the package, including all depending libraries, on your System and adds it as a reference to your PLC.
 9. Follow the library documentation or instructions to incorporate its functionality into your project.
 
 ## Sharing a Package
