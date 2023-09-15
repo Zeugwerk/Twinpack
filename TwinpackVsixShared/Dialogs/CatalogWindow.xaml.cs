@@ -94,7 +94,7 @@ namespace Twinpack.Dialogs
                 _isFetchingAvailablePackages = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFetchingAvailablePackages)));
 
-                if (_isBrowsingAvailablePackages || _isBrowsingUpdatablePackages)
+                if (IsBrowsingAvailablePackages || IsBrowsingUpdatablePackages)
                 {
                     if (_isFetchingAvailablePackages)
                         IsCatalogLoading = true;
@@ -122,7 +122,7 @@ namespace Twinpack.Dialogs
                 _isFetchingInstalledPackages = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFetchingInstalledPackages)));
 
-                if (_isBrowsingInstalledPackages)
+                if (IsBrowsingInstalledPackages)
                 {
                     if (_isFetchingInstalledPackages)
                         IsCatalogLoading = true;
@@ -361,12 +361,40 @@ namespace Twinpack.Dialogs
             }
         }
 
+        public bool IsBrowsingInstalledPackages
+        {
+            get { return _isBrowsingInstalledPackages; }
+            set
+            {
+                _isBrowsingInstalledPackages = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBrowsingInstalledPackages)));
+            }
+        }
+
+        public bool IsBrowsingAvailablePackages
+        {
+            get { return _isBrowsingAvailablePackages; }
+            set
+            {
+                _isBrowsingAvailablePackages = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBrowsingAvailablePackages)));
+            }
+        }
+
+        public bool IsBrowsingUpdatablePackages
+        {
+            get { return _isBrowsingUpdatablePackages; }
+            set
+            {
+                _isBrowsingUpdatablePackages = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBrowsingUpdatablePackages)));
+            }
+        }
+
         public CatalogWindow(PackageContext context)
         {
             _auth = new Authentication(_twinpackServer);
             _context = context;
-
-            _isBrowsingAvailablePackages = true;
 
             IsUpdateAllEnabled = true;
             IsRestoreAllEnabled = true;
@@ -399,11 +427,23 @@ namespace Twinpack.Dialogs
                 _plc = TwinpackUtils.ActivePlc(_context.Dte);
 
                 await _auth.LoginAsync(onlyTry: true);
-
-                _isBrowsingAvailablePackages = true;
                 await LoadPlcConfigAsync();
-                await LoadAvailablePackagesAsync();
-                await LoadInstalledPackagesAsync();
+
+                if(!IsConfigured)
+                {
+                    IsBrowsingInstalledPackages = false;
+                    IsBrowsingAvailablePackages = true;
+                    await LoadAvailablePackagesAsync();
+                    await LoadInstalledPackagesAsync();
+                }
+                else
+                {
+                    IsBrowsingInstalledPackages = true;
+                    IsBrowsingAvailablePackages = false;
+                    await LoadInstalledPackagesAsync();
+                    await LoadAvailablePackagesAsync();
+                }
+
                 UpdateCatalog();
             }
             catch (Exception ex)
@@ -705,25 +745,25 @@ namespace Twinpack.Dialogs
 
         public void ShowUpdateablePackages_Click(object sender, RoutedEventArgs e)
         {
-            _isBrowsingAvailablePackages = false;
-            _isBrowsingUpdatablePackages = true;
-            _isBrowsingInstalledPackages = false;
+            IsBrowsingAvailablePackages = false;
+            IsBrowsingUpdatablePackages = true;
+            IsBrowsingInstalledPackages = false;
             UpdateCatalog();
         }
 
         public void ShowInstalledPackages_Click(object sender, RoutedEventArgs e)
         {
-            _isBrowsingAvailablePackages = false;
-            _isBrowsingUpdatablePackages = false;
-            _isBrowsingInstalledPackages = true;
+            IsBrowsingAvailablePackages = false;
+            IsBrowsingUpdatablePackages = false;
+            IsBrowsingInstalledPackages = true;
             UpdateCatalog();
         }
 
         public async void ShowCatalog_Click(object sender, RoutedEventArgs e)
         {
-            _isBrowsingAvailablePackages = true;
-            _isBrowsingUpdatablePackages = false;
-            _isBrowsingInstalledPackages = false;
+            IsBrowsingAvailablePackages = true;
+            IsBrowsingUpdatablePackages = false;
+            IsBrowsingInstalledPackages = false;
 
             try
             {
@@ -744,7 +784,7 @@ namespace Twinpack.Dialogs
         public void UpdateCatalog()
         {
             var text = SearchTextBox.Text;
-            if (_isBrowsingAvailablePackages)
+            if (IsBrowsingAvailablePackages)
             {
                 Catalog = _availablePackages.Where(x =>
                      x.DisplayName.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
@@ -752,7 +792,7 @@ namespace Twinpack.Dialogs
                      x.Name.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
                 IsCatalogLoading = IsFetchingAvailablePackages || _isLoadingPlcConfig;
             }
-            else if (_isBrowsingInstalledPackages)
+            else if (IsBrowsingInstalledPackages)
             {
                 Catalog = _installedPackages.Where(x =>
                      x.DisplayName.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
@@ -760,7 +800,7 @@ namespace Twinpack.Dialogs
                      x.Name.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
                 IsCatalogLoading = IsFetchingInstalledPackages || _isLoadingPlcConfig;
             }
-            else if (_isBrowsingUpdatablePackages)
+            else if (IsBrowsingUpdatablePackages)
             {
                 Catalog = _installedPackages.Where(x => x.IsUpdateable &&
                     (x.DisplayName.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
@@ -769,8 +809,8 @@ namespace Twinpack.Dialogs
                 IsCatalogLoading = IsFetchingInstalledPackages || _isLoadingPlcConfig;
             }
 
-            IsUpdateAllVisible = _isBrowsingUpdatablePackages && Catalog.Any();
-            IsRestoreAllVisible = _isBrowsingInstalledPackages && Catalog.Any();
+            IsUpdateAllVisible = IsBrowsingUpdatablePackages && Catalog.Any();
+            IsRestoreAllVisible = IsBrowsingInstalledPackages && Catalog.Any();
         }
 
         public async Task UninstallPackageAsync()
@@ -1376,7 +1416,7 @@ namespace Twinpack.Dialogs
         {
             var text = ((TextBox)sender).Text;
 
-            if (_isBrowsingAvailablePackages)
+            if (IsBrowsingAvailablePackages)
             {
                 _searchText = text;
                 await Task.Delay(250);

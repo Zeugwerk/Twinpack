@@ -19,6 +19,7 @@
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
         <local:IntToVisibilityConverter x:Key="IntToVisibilityConverter"/>
+        <local:BooleanToBorderThicknessConverter x:Key="BooleanToBorderThicknessConverter"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -55,13 +56,13 @@
                 <ColumnDefinition Width="auto"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <Button Background="Transparent" Grid.Column="0" Click="ShowCatalog_Click" Padding="15 5 15 5" Margin="50 0 0 0" BorderThickness="0" FontSize="14" FontWeight="SemiBold">Browse</Button>
-            <Button Background="Transparent" Grid.Column="1"  Click="ShowInstalledPackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" BorderThickness="0" FontSize="14" FontWeight="SemiBold">
+            <Button BorderThickness="{Binding IsBrowsingAvailablePackages, Converter={StaticResource BooleanToBorderThicknessConverter}}" Background="Transparent" Grid.Column="0" Click="ShowCatalog_Click" Padding="15 5 15 5" Margin="50 0 0 0" FontSize="14" FontWeight="SemiBold">Browse</Button>
+            <Button BorderThickness="{Binding IsBrowsingInstalledPackages, Converter={StaticResource BooleanToBorderThicknessConverter}}" Background="Transparent" Grid.Column="1"  Click="ShowInstalledPackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" FontSize="14" FontWeight="SemiBold">
                 <TextBlock>
                     <Run>Installed (</Run><Run Text="{Binding InstalledPackagesCount}"></Run><Run>)</Run>
                 </TextBlock>
             </Button>
-            <Button Background="Transparent" Grid.Column="2"  Click="ShowUpdateablePackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" BorderThickness="0" FontSize="14" FontWeight="SemiBold">
+            <Button BorderThickness="{Binding IsBrowsingUpdatablePackages, Converter={StaticResource BooleanToBorderThicknessConverter}}" Background="Transparent" Grid.Column="2"  Click="ShowUpdateablePackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" FontSize="14" FontWeight="SemiBold">
                 <TextBlock>
                     <Run>Updates (</Run><Run Text="{Binding UpdateablePackagesCount}"></Run><Run>)</Run>
                 </TextBlock>
