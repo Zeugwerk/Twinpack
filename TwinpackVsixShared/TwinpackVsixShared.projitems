@@ -20,6 +20,7 @@
       <DependentUpon>CatalogWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\BooleanToInverseBooleanConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\BooleanToBorderThicknessConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\BooleanToVisibilityConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\IntToVisibilityConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\NullToVisibilityConverter.cs" />
