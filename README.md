@@ -6,11 +6,17 @@ With TwinCAT 3.1.4026, Beckhoff introduced a package manager which emphasizes th
 
 ## Table of Contents
 
+- [Quicklinks](#quicklinks)
 - [Installation](#installation)
 - [Using a Package](#using-a-package)
 - [Sharing a Package](#sharing-a-package)
-- [Disclaimer](#disclaimer)
 - [Further information](#further-information)
+
+## Quicklinks
+- [Installer](https://github.com/Zeugwerk/Twinpack/releases/latest)
+- [Registration](https://zeugwerk.dev/wp-login.php?action=register) (optional, only for publishing)
+- [Password reset](https://zeugwerk.dev/wp-login.php?action=lostpassword) (optional)
+- [Contact us](mailto:info@zeugwerk.at)
 
 ## Installation
 
