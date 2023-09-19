@@ -36,7 +36,7 @@ namespace Twinpack.Models
                     usedPrefix = p;
                     config = new Config();
                     config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    config.WorkingDirectory = path;
+                    config.WorkingDirectory = Path.GetDirectoryName($@"{path}\{config.Solution}");
                     config.FilePath = $@"{path}\{p}config.json";
 
                     int projectIndex = 0;
