@@ -20,7 +20,7 @@ namespace Twinpack.Models
         }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public String WorkingDirectory { get; set; }
+        public string WorkingDirectory { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public string FilePath { get; set; }
@@ -29,7 +29,7 @@ namespace Twinpack.Models
         public int Fileversion { get; set; }
 
         [JsonPropertyName("solution")]
-        public String Solution { get; set; }
+        public string Solution { get; set; }
 
         [JsonPropertyName("projects")]
         public List<ConfigProject> Projects { get; set; }
@@ -125,9 +125,7 @@ namespace Twinpack.Models
         public ConfigPlcProject()
         {
             Version = "1.0.0.0";
-            Frameworks = new ConfigFrameworks();
             References = new Dictionary<string, List<string>>();
-            Repositories = new List<string>();
             Packages = new List<ConfigPlcPackage>();
             Bindings = new Dictionary<string, List<string>>();
             Patches = new ConfigPatches();
@@ -151,13 +149,13 @@ namespace Twinpack.Models
         }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public String RootPath { get; set; }
+        public string RootPath { get; set; }
         
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public String ProjectName { get; set; }
+        public string ProjectName { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public String FilePath { get; set; }
+        public string FilePath { get; set; }
         
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public PlcProjectType PlcType {
@@ -194,20 +192,14 @@ namespace Twinpack.Models
         [JsonPropertyName("type")]
         public string Type { get; set; }
 
-        [JsonPropertyName("frameworks")]
-        public ConfigFrameworks Frameworks { get; set; }
-
         [JsonPropertyName("packages")]
         public IEnumerable<ConfigPlcPackage> Packages { get; set; }
 
         [JsonPropertyName("references")]
-        public Dictionary<String, List<String>> References { get; set; }
-
-        [JsonPropertyName("repositories")]
-        public List<String> Repositories { get; set; }
+        public Dictionary<string, List<string>> References { get; set; }
 
         [JsonPropertyName("bindings")]
-        public Dictionary<String, List<String>> Bindings { get; set; }
+        public Dictionary<string, List<string>> Bindings { get; set; }
 
         [JsonPropertyName("patches")]
         public ConfigPatches Patches { get; set; }
@@ -310,55 +302,5 @@ namespace Twinpack.Models
 
             return null;
         }
-    }
-
-    public class ConfigFrameworks : Dictionary<string, ConfigFramework>
-    {
-        public ConfigFrameworks() : base() { }
-        public ConfigFrameworks(IDictionary<string, ConfigFramework> frameworks) : base(frameworks) { }
-        public ConfigFramework Zeugwerk
-        {
-            get
-            {
-                if (ContainsKey("zeugwerk"))
-                    return this["zeugwerk"];
-
-                var Zeugwerk = new ConfigFramework();
-                Zeugwerk.Repositories = new List<String> { ConfigFactory.DefaultRepository };
-
-                return null;
-            }
-            set
-            {
-                this["zeugwerk"] = value;
-            }
-        }
-    }
-
-    public class ConfigFramework
-    {
-        public ConfigFramework()
-        {
-            Version = "";
-            References = new List<string>();
-            Repositories = new List<string>();
-            Hide = false;
-            QualifiedOnly = true;
-        }
-
-        [JsonPropertyName("version")]
-        public String Version { get; set; }
-
-        [JsonPropertyName("references")]
-        public List<String> References { get; set; }
-
-        [JsonPropertyName("repositories")]
-        public List<String> Repositories { get; set; }
-
-        [JsonPropertyName("hide")]
-        public bool Hide { get; set; }
-
-        [JsonPropertyName("qualified-only")]
-        public bool QualifiedOnly { get; set; }
     }
 }

@@ -342,14 +342,8 @@ namespace Twinpack.Models
                     references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
             }
 
-            var sysref = new List<PlcLibrary>();
-            var packages = new List<ConfigPlcPackage>();
-
-            plc.Frameworks = plc.Frameworks ?? new ConfigFrameworks();
-            plc.Frameworks.Zeugwerk = plc.Frameworks.Zeugwerk ?? new ConfigFramework();
-            plc.Frameworks.Zeugwerk.References = new List<string>();
-            plc.Frameworks.Zeugwerk.Hide = false;
-            
+            var localPackages = new List<PlcLibrary>();
+            var remotePackages = new List<ConfigPlcPackage>();            
             foreach (var r in references)
             {
                 // check if we find this on Twinpack
@@ -362,7 +356,7 @@ namespace Twinpack.Models
                         var packageVersion = await twinpackServer.ResolvePackageVersionAsync(r);
                         if(isTwinpackPackage = packageVersion.Repository != null && packageVersion.Name != null && packageVersion.DistributorName != null)
                         {
-                            packages.Add(new ConfigPlcPackage
+                            remotePackages.Add(new ConfigPlcPackage
                             {
                                 DistributorName = packageVersion.DistributorName,
                                 Repository = packageVersion.Repository,
@@ -374,34 +368,25 @@ namespace Twinpack.Models
                             });
                         }
                     }
-                    catch (Exception) { }
+                    catch (Exception)
+                    {
+                        isTwinpackPackage = false;
+                    }
                 }
 
 
-                if (r.DistributorName.Contains("Zeugwerk GmbH")) // needed for backwards compability for now (devkit release/1.2)
+                if(!isTwinpackPackage)
                 {
-                    plc.Frameworks.Zeugwerk.References.Add(r.Name);
-                    plc.Frameworks.Zeugwerk.Version = r.Version;
-                }
-                else if(!isTwinpackPackage)
-                {
-                    sysref.Add(r);
+                    localPackages.Add(r);
                 }
             }
 
-            plc.Packages = packages;
-            plc.Frameworks.Zeugwerk.References = plc.Frameworks.Zeugwerk.References.Distinct().ToList();
-
-            if (plc.Frameworks.Zeugwerk.Repositories.Count == 0)
-                plc.Frameworks.Zeugwerk.Repositories = new List<string> { ConfigFactory.DefaultRepository };
-
-
+            plc.Packages = remotePackages;
             plc.Bindings = plc.Bindings ?? new Dictionary<string, List<string>>();
-            plc.Repositories = plc.Repositories ?? new List<string>();
             plc.Patches = plc.Patches ?? new ConfigPatches();
             plc.References = new Dictionary<string, List<string>>();
             plc.References["*"] = new List<string>();
-            foreach (var r in sysref.Distinct())
+            foreach (var r in localPackages.Distinct())
             {
                 plc.References["*"].Add($"{r.Name}={r.Version}");
             }
