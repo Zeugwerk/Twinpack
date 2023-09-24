@@ -475,7 +475,7 @@ namespace Twinpack.Dialogs
                         _plcConfig = Models.ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, _plc);
                         IsCreateConfigVisible = false;
                         IsMigrateConfigVisible = false;
-                        IsMigrateConfigVisible = _plcConfig?.Packages?.Any() == false;
+                        IsMigrateConfigVisible = _plcConfig?.Packages?.Any() == false && _plcConfig.Frameworks?.Zeugwerk?.References?.Any() == true;
                     }
                     else
                     {
