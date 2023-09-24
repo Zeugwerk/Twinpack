@@ -19,6 +19,9 @@ namespace Twinpack
 
             [Option('p', "password", Required = false, Default = null, HelpText = "Password for Twinpack Server")]
             public string Password { get; set; }
+
+            [Option('P', "provided", Required = false, Default = false, HelpText = "Also pull packages that are provided by the package definition")]
+            public bool Provided { get; set; }            
         }
 
         [Verb("push", HelpText = "Pushes libraries to a Twinpack Server")]
@@ -35,6 +38,7 @@ namespace Twinpack
 
             [Option('t', "target", Required = false, Default = "TC3.1", HelpText = "Package Target")]
             public string Target { get; set; }
+            
             [Option('b', "branch", Required = false, Default = "main", HelpText = "Package Branch")]
             public string Branch { get; set; }
 
@@ -141,7 +145,7 @@ namespace Twinpack
             }
         }
 
-        public static async Task PullAsync(string cachePath = null)
+        public static async Task PullAsync(bool provided=false, string cachePath = null)
         {
             _logger.Info($"Loading configuration file");
             var config = ConfigFactory.Load();
@@ -152,15 +156,18 @@ namespace Twinpack
             var handled = new List<ConfigPlcPackage>();
             foreach (var plc in plcs)
             {
-                handled.Add(new ConfigPlcPackage
-                { 
-                    Name = plc.Name, 
-                    Version = plc.Version, 
-                    DistributorName = plc.DistributorName,
-                    Target = null,
-                    Configuration = null,
-                    Branch = null
-                });
+                if(!provided)
+                {
+                    handled.Add(new ConfigPlcPackage
+                    { 
+                        Name = plc.Name, 
+                        Version = plc.Version, 
+                        DistributorName = plc.DistributorName,
+                        Target = null,
+                        Configuration = null,
+                        Branch = null
+                    });                    
+                }
 
                 foreach (var package in plc.Packages ?? new List<ConfigPlcPackage>())
                 {
@@ -204,7 +211,7 @@ namespace Twinpack
                     (PullOptions opts) =>
                     {
                         Login(opts.Username, opts.Password);
-                        PullAsync().Wait();
+                        PullAsync(opts.Provided).Wait();
                         return 0;
                     },
                     (PushOptions opts) =>
