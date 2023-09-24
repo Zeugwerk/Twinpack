@@ -912,7 +912,11 @@ namespace Twinpack.Dialogs
 
             var downloadPackageVersion = await TwinpackUtils.DownloadPackageVersionAndDependenciesAsync(libManager, packageVersion, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
             await TwinpackUtils.InstallPackageVersionsAsync(libManager, downloadPackageVersion, cachePath: cachePath);
-            await TwinpackUtils.AddReferenceAsync(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
+
+            await Task.Run(() =>
+            {
+                TwinpackUtils.AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
+            });
             IsNewReference = false;
 
             // update config
