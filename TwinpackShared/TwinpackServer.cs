@@ -458,6 +458,140 @@ namespace Twinpack
             }
         }
 
+        public async Task PushAsync(string configuration, string branch, string target, string notes, bool compiled, string rootPath = ".", string cachePath = null)
+        {
+            var config = ConfigFactory.Load(rootPath);
+
+            _logger.Info($"Pushing to Twinpack Server");
+
+            var suffix = compiled ? "compiled-library" : "library";
+            var plcs = config.Projects.SelectMany(x => x.Plcs)
+                                         .Where(x => x.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary ||
+                                                x.PlcType == ConfigPlcProject.PlcProjectType.Library);
+            // check if all requested files are present
+            foreach (var plc in plcs)
+            {
+                var fileName = $@"{cachePath ?? TwinpackServer.DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}";
+                if (!File.Exists(fileName))
+                    throw new LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{fileName}'");
+
+                if (!string.IsNullOrEmpty(plc.LicenseFile) && !File.Exists(plc.LicenseFile))
+                    _logger.Warn($"Could not find license file '{plc.LicenseFile}'");
+            }
+
+            var exceptions = new List<Exception>();
+            foreach (var plc in plcs)
+            {
+                try
+                {
+                    suffix = compiled ? "compiled-library" : "library";
+                    string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? TwinpackServer.DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
+                    string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
+                    string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
+                    string iconBinary = (!File.Exists(plc.IconFile) || string.IsNullOrEmpty(plc.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.IconFile));
+
+                    var packageVersion = new PackageVersionPostRequest()
+                    {
+                        Name = plc.Name,
+                        Version = plc.Version,
+                        Target = target,
+                        License = plc.License,
+                        Description = plc.Description,
+                        DistributorName = plc.DistributorName,
+                        Authors = plc.Authors,
+                        Entitlement = plc.Entitlement,
+                        ProjectUrl = plc.ProjectUrl,
+                        DisplayName = plc.DisplayName,
+                        Branch = branch,
+                        Configuration = configuration,
+                        Compiled = compiled ? 1 : 0,
+                        Notes = notes,
+                        IconFilename = Path.GetFileName(plc.IconFile),
+                        IconBinary = iconBinary,
+                        LicenseBinary = licenseBinary,
+                        LicenseTmcBinary = licenseTmcBinary,
+                        Binary = binary,
+                        Dependencies = plc.Packages?.Select(x => new PackageVersionDependencyPostRequest
+                        {
+                            Repository = x.Repository,
+                            DistributorName = x.DistributorName,
+                            Name = x.Name,
+                            Version = x.Version,
+                            Branch = x.Branch,
+                            Target = x.Target,
+                            Configuration = x.Configuration
+                        })
+                    };
+
+                    await PostPackageVersionAsync(packageVersion);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"{plc.Name}: {ex.Message}");
+                    exceptions.Add(ex);
+                }
+            }
+
+            if (exceptions.Any())
+            {
+                throw new PostException($"Pushing to Twinpack Server failed for {exceptions.Count()} packages!");
+            }
+        }
+
+        public async Task PullAsync(bool skipInternalPackages = false, string rootPath = ".", string cachePath = null)
+        {
+            var config = ConfigFactory.Load(path: rootPath);
+
+            _logger.Info($"Pulling from Twinpack Server");
+            var plcs = config.Projects.SelectMany(x => x.Plcs);
+            var exceptions = new List<Exception>();
+            var handled = new List<ConfigPlcPackage>();
+            foreach (var plc in plcs)
+            {
+                // skip packages that are provided according to the config file
+                if (!skipInternalPackages)
+                {
+                    handled.Add(new ConfigPlcPackage
+                    {
+                        Name = plc.Name,
+                        Version = plc.Version,
+                        DistributorName = plc.DistributorName,
+                        Target = null,
+                        Configuration = null,
+                        Branch = null
+                    });
+                }
+
+                foreach (var package in plc.Packages ?? new List<ConfigPlcPackage>())
+                {
+                    if (handled.Any(x => x?.Name == package?.Name && x?.Version == package?.Version &&
+                                    (x.Target == null || x?.Target == package?.Target) &&
+                                    (x.Configuration == null || x?.Configuration == package?.Configuration) &&
+                                    (x.Branch == null || x?.Branch == package?.Branch)))
+                        continue;
+
+                    try
+                    {
+                        var pv = await GetPackageVersionAsync(package.DistributorName, package.Name, package.Version, package.Configuration, package.Branch, package.Target, true, cachePath: cachePath);
+                        handled.Add(package);
+
+                        if (pv?.PackageVersionId == null)
+                            throw new GetException("Package not available");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warn($"{package.Name}: {ex.Message}");
+                        exceptions.Add(ex);
+                    }
+                }
+            }
+
+            if (exceptions.Any())
+            {
+                throw new Exceptions.GetException($"Pulling for Twinpack Server failed for {exceptions.Count()} dependencies!");
+            }
+        }
+
         private void DeleteCredential()
         {
             UserInfo = new LoginPostResponse();
