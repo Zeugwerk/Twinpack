@@ -57,8 +57,8 @@ namespace Twinpack
 
         public void AddHeaders(System.Net.Http.HttpRequestMessage request)
         {
-            request.Headers.Add("zgwk-username", Username);
-            request.Headers.Add("zgwk-password", Password);
+            request.Headers.Add("zgwk-username", Username ?? Environment.GetEnvironmentVariable("ZGWK_TWINPACK_USER"));
+            request.Headers.Add("zgwk-password", Password ?? Environment.GetEnvironmentVariable("ZGWK_TWINPACK_PWD"));
             request.Headers.Add("twinpack-client-version", ClientVersion.ToString());
         }
 
