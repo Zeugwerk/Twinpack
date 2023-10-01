@@ -167,10 +167,9 @@ namespace Twinpack.Models
             if (!Directory.Exists(Path.GetDirectoryName(config.FilePath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(config.FilePath));
 
-            var path = Path.Combine(config.FilePath, ".Zeugwerk", "config.json");
-            File.WriteAllText(path, json);
+            File.WriteAllText(config.FilePath, json);
 
-            return path;
+            return config.FilePath;
         }
 
         public static void UpdatePlcProject(Config config, ConfigPlcProject plcConfig)
