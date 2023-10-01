@@ -167,7 +167,7 @@ namespace Twinpack.Models
             if (!Directory.Exists(Path.GetDirectoryName(config.FilePath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(config.FilePath));
 
-            var path = Path.Combine(config.WorkingDirectory, ".Zeugwerk", "config.json");
+            var path = Path.Combine(config.FilePath, ".Zeugwerk", "config.json");
             File.WriteAllText(path, json);
 
             return path;
