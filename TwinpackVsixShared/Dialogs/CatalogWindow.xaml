@@ -409,14 +409,19 @@
                                     <RowDefinition Height="auto"></RowDefinition>
                                     <RowDefinition Height="auto"></RowDefinition>
                                     <RowDefinition Height="auto"></RowDefinition>
+                                    <RowDefinition Height="auto"></RowDefinition>
+                                    <RowDefinition Height="auto"></RowDefinition>
                                 </Grid.RowDefinitions>
                                 <CheckBox Grid.Row="0" IsChecked="{Binding ForcePackageVersionDownload}">
-                                    <TextBlock TextWrapping="Wrap">Force package download on add and update</TextBlock>
+                                    <TextBlock>Force package download</TextBlock>
                                 </CheckBox>
-                                <CheckBox Grid.Row="1" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding ForceShowLicense}" Margin="0 5 0 0">
+                                <CheckBox Grid.Row="1" Margin="0 5 0 0" IsChecked="{Binding AddDependenciesAsReferences}">
+                                    <TextBlock>Add depenencies as references</TextBlock>
+                                </CheckBox>
+                                <CheckBox Grid.Row="2" Margin="0 5 0 0" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding ForceShowLicense}">
                                     <TextBlock>Confirm license of already installed packages</TextBlock>
                                 </CheckBox>
-                                <CheckBox Grid.Row="2" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding UninstallDeletes}" Margin="0 5 0 0">
+                                <CheckBox Grid.Row="3" Margin="0 5 0 0" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding UninstallDeletes}">
                                     <TextBlock>Remove deletes library from system</TextBlock>
                                 </CheckBox>
                             </Grid>

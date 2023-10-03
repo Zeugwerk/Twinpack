@@ -70,6 +70,7 @@ namespace Twinpack.Dialogs
         private string _installedPackageVersion;
 
         private bool _forcePackageVersionDownload;
+        private bool _addDependenciesAsReferences;
         private bool _forceShowLicense;
         private bool _uninstallDeletes;
 
@@ -211,6 +212,17 @@ namespace Twinpack.Dialogs
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ForcePackageVersionDownload)));
             }
         }
+
+        public bool AddDependenciesAsReferences
+        {
+            get { return _addDependenciesAsReferences; }
+            set
+            {
+                _addDependenciesAsReferences = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AddDependenciesAsReferences)));
+            }
+        }
+        
 
         public bool ForceShowLicense
         {
@@ -400,6 +412,8 @@ namespace Twinpack.Dialogs
             IsRestoreAllEnabled = true;
             InstalledPackagesCount = 0;
             UpdateablePackagesCount = 0;
+            ForcePackageVersionDownload = true;
+            AddDependenciesAsReferences = true;
             Catalog = new List<Models.CatalogItem>();
             DataContext = this;
 
@@ -916,21 +930,48 @@ namespace Twinpack.Dialogs
             await Task.Run(() =>
             {
                 TwinpackUtils.AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
+
+                if(AddDependenciesAsReferences)
+                {
+                    foreach (var dependency in packageVersion.Dependencies)
+                    {
+                        TwinpackUtils.AddReference(libManager, dependency.Title, dependency.Title, dependency.Version, dependency.DistributorName);
+                    }
+                }
+
             });
             IsNewReference = false;
 
             // update config
             _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != packageVersion.Name)
-                                                        .Append(new Models.ConfigPlcPackage
-                                                        {
-                                                            Name = packageVersion.Name,
-                                                            Repository = packageVersion.Repository,
-                                                            Branch = packageVersion.Branch,
-                                                            Configuration = packageVersion.Configuration,
-                                                            Target = packageVersion.Target,
-                                                            Version = packageVersion.Version,
-                                                            DistributorName = packageVersion.DistributorName
-                                                        }).ToList();
+                                                     .Append(new Models.ConfigPlcPackage
+                                                     {
+                                                          Name = packageVersion.Name,
+                                                          Repository = packageVersion.Repository,
+                                                          Branch = packageVersion.Branch,
+                                                          Configuration = packageVersion.Configuration,
+                                                          Target = packageVersion.Target,
+                                                          Version = packageVersion.Version,
+                                                          DistributorName = packageVersion.DistributorName
+                                                     }).ToList();
+
+            if (AddDependenciesAsReferences)
+            {
+                foreach (var dependency in packageVersion.Dependencies)
+                {
+                    _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != dependency.Name)
+                                                             .Append(new Models.ConfigPlcPackage
+                                                             {
+                                                                 Name = dependency.Name,
+                                                                 Repository = dependency.Repository,
+                                                                 Branch = dependency.Branch,
+                                                                 Configuration = dependency.Configuration,
+                                                                 Target = dependency.Target,
+                                                                 Version = dependency.Version,
+                                                                 DistributorName = dependency.DistributorName
+                                                             }).ToList();
+                }
+            }
         }
 
         public async Task<Models.Config> WritePlcConfigToConfigAsync(Models.ConfigPlcProject plcConfig)
