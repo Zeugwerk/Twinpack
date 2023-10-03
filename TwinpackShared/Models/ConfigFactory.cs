@@ -19,7 +19,7 @@ namespace Twinpack.Models
 
         public const string DefaultRepository = "https://framework.zeugwerk.dev/Distribution";
         public static readonly string ZeugwerkVendorName = "Zeugwerk GmbH";
-        public static readonly List<String> DefaultLocations = new List<String> { $@".\", $@".\.Zeugwerk\" };
+        public static readonly List<String> DefaultLocations = new List<String> { $@"", $@".Zeugwerk\" };
 
         public static Config Load(string path = ".")
         {
@@ -80,7 +80,7 @@ namespace Twinpack.Models
             Config config = new Config();
 
             config.Fileversion = 1;
-            config.Solution = solution.FileName;
+            config.Solution = Path.GetFileName(solution.FileName);
             config.FilePath = Path.GetDirectoryName(solution.FullName) + @"\.Zeugwerk\config.json";
             config.WorkingDirectory = Path.GetDirectoryName(solution.FullName);
             config.Projects = new List<ConfigProject>();
