@@ -75,6 +75,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="AdysTech.CredentialManager">
+      <Version>2.6.0</Version>
+    </PackageReference>
     <PackageReference Include="Community.VisualStudio.Toolkit.17">
       <Version>17.0.507</Version>
     </PackageReference>
@@ -83,9 +86,6 @@
     </PackageReference>
     <PackageReference Include="Jdenticon.Wpf">
       <Version>3.1.2</Version>
-    </PackageReference>
-    <PackageReference Include="Meziantou.Framework.Win32.CredentialManager">
-      <Version>1.4.2</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
       <Version>7.0.0</Version>
