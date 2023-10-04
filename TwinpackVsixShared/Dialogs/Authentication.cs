@@ -1,4 +1,4 @@
-﻿using Meziantou.Framework.Win32;
+﻿using AdysTech.CredentialManager;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -47,16 +47,20 @@ namespace Twinpack.Dialogs
                 var message = "";
                 try
                 {
-                    var credentials = CredentialManager.PromptForCredentials(
-                        messageText: $"Login to your Twinpack Server account. Logging in will give you access to additional features. " +
+                    bool save=true;
+                    var credentials = CredentialManager.PromptForCredentials(_twinpackServer.TwinpackUrlBase, ref save,
+                        message: $"Login to your Twinpack Server account. Logging in will give you access to additional features. " +
                         $"It enables you to intall packages that are maintained by you, but not yet released. It also allows you to upload a new package into your Twinpack repository.",
-                        captionText: "Twinpack Server login", saveCredential: CredentialSaveOption.Hidden);
+                        caption: "Twinpack Server login");
 
                     if (credentials != null)
                         await _twinpackServer.LoginAsync(credentials.UserName, credentials.Password);
 
                     if (!_twinpackServer.LoggedIn)
                         throw new Exceptions.LoginException("Login was not successful!");
+
+                    if (!save)
+                        CredentialManager.RemoveCredentials(_twinpackServer.TwinpackUrlBase);
                 }
                 catch (Exceptions.LoginException ex)
                 {
