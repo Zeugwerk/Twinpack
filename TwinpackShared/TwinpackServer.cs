@@ -11,8 +11,8 @@ using System.Threading.Tasks;
 using System.Web;
 using Twinpack.Models;
 using Twinpack.Exceptions;
-using Meziantou.Framework.Win32;
 using System.Reflection;
+using AdysTech.CredentialManager;
 
 namespace Twinpack
 {
@@ -413,7 +413,7 @@ namespace Twinpack
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null)
         {
-            var credentials = CredentialManager.ReadCredential(TwinpackUrlBase);
+            var credentials = CredentialManager.GetCredentials(TwinpackUrlBase);
 
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/login"));
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
@@ -443,7 +443,7 @@ namespace Twinpack
                 UserInfo = result;
 
                 if(!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
-                    CredentialManager.WriteCredential(TwinpackUrlBase, Username, Password, CredentialPersistence.LocalMachine);
+                    CredentialManager.SaveCredentials(TwinpackUrlBase, new System.Net.NetworkCredential(Username, Password));
 
                 if(IsClientUpdateAvailable)
                     _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Download and install the lastest version at {UserInfo.UpdateUrl}");
@@ -599,7 +599,7 @@ namespace Twinpack
             Password = "";
             try
             {
-                CredentialManager.DeleteCredential(TwinpackUrlBase);
+                CredentialManager.RemoveCredentials(TwinpackUrlBase);
             }
             catch { }
         }
@@ -614,7 +614,7 @@ namespace Twinpack
 
             try
             {
-                CredentialManager.DeleteCredential(TwinpackUrlBase);
+                CredentialManager.RemoveCredentials(TwinpackUrlBase);
             }
             catch (Exception) { }
         }
