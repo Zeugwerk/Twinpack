@@ -76,7 +76,7 @@ namespace Twinpack
                     (PullOptions opts) =>
                     {
                         Login(opts.Username, opts.Password);
-                        _twinpackServer.PullAsync(opts.Provided).Wait();
+                        _twinpackServer.PullAsync(skipInternalPackages: !opts.Provided).Wait();
                         return 0;
                     },
                     (PushOptions opts) =>
