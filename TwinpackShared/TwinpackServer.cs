@@ -542,7 +542,7 @@ namespace Twinpack
         {
             var config = ConfigFactory.Load(path: rootPath);
 
-            _logger.Info($"Pulling from Twinpack Server");
+            _logger.Info($"Pulling from Twinpack Server (Skipping internal packages: {skipInternalPackages})");
             var plcs = config.Projects.SelectMany(x => x.Plcs);
             var exceptions = new List<Exception>();
             var handled = new List<ConfigPlcPackage>();
@@ -551,6 +551,7 @@ namespace Twinpack
                 // skip packages that are provided according to the config file
                 if (!skipInternalPackages)
                 {
+                    _logger.Info($"Package {plc.Name} {plc.Version} is provided");
                     handled.Add(new ConfigPlcPackage
                     {
                         Name = plc.Name,
