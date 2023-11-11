@@ -26,6 +26,7 @@ namespace Twinpack
 {
     public class TwinpackUtils
     {
+        private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
         public static string LicensesPath = @"C:\TwinCAT\3.1\CustomConfig\Licenses";
@@ -72,6 +73,48 @@ namespace Twinpack
             }
 
             return null;
+        }
+
+        public static void CloseAllPackageRelatedWindows(DTE2 dte, PackageVersionGetResponse packageVersion)
+        {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+
+            // Close all windows that have been opened with a library manager
+            foreach (Window window in dte.Windows)
+            {
+                try
+                {
+                    var obj = (window as dynamic).Object;
+                    if (obj == null)
+                        continue;
+
+                    if (obj.EditorViewFactoryGuid == _libraryManagerGuid)
+                    {
+                        window.Close(vsSaveChanges.vsSaveChangesNo);
+                        continue;
+                    }
+                    
+                    if (!(obj.FileName as string).StartsWith("["))
+                        continue;
+
+                    if (Regex.Match(obj.FileName, $@"\[{packageVersion.Name}.*?\({packageVersion.DistributorName}\)\].*", RegexOptions.IgnoreCase).Success)
+                    {
+                        window.Close(vsSaveChanges.vsSaveChangesNo);
+                        continue;
+                    }
+
+                    foreach (var dependency in packageVersion.Dependencies)
+                    {
+                        if (Regex.Match(obj.FileName, $@"\[{dependency.Name}.*?\({dependency.DistributorName}\)\].*", RegexOptions.IgnoreCase).Success)
+                        {
+                            window.Close(vsSaveChanges.vsSaveChangesNo);
+                            break;
+                        }
+                    }
+                    
+                }
+                catch { }
+            }
         }
 
         public static int BuildErrorCount(DTE2 dte)
@@ -166,14 +209,14 @@ namespace Twinpack
             if (!referenceFound || forceDownload)
             {
                 _logger.Info($"Downloading {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName})");
-
-                downloadedPackageVersions.Add(await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId,
-                                    includeBinary: true, cachePath: cachePath));
+                var pk = await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId, includeBinary: true, cachePath: cachePath);
+                downloadedPackageVersions.Add(pk);
             }
 
             foreach (var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
             {
-                downloadedPackageVersions.AddRange(await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, server, forceDownload, cachePath));
+                var pk = await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, server, forceDownload, cachePath);
+                downloadedPackageVersions.AddRange(pk);
             }
 
             return downloadedPackageVersions;
@@ -184,8 +227,7 @@ namespace Twinpack
             foreach(var packageVersion in packageVersions)
             {
                 var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-
-                await Task.Run( () => { libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true);  });
+                await Task.Run(() => { libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true); });
             }
         }
 
@@ -250,7 +292,6 @@ namespace Twinpack
 
         public static void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName, bool addAsPlaceholder = true)
         {
-
             distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
             RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
 
