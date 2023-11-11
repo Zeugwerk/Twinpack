@@ -125,6 +125,8 @@ namespace Twinpack.Models
         public string Description { get; set; }
         [JsonPropertyName("entitlement")]
         public string Entitlement { get; set; }
+        [JsonPropertyName("framework")]
+        public string Framework { get; set; }
         [JsonPropertyName("project-url")]
         public string ProjectUrl { get; set; }
         [JsonPropertyName("icon-url")]
@@ -143,6 +145,8 @@ namespace Twinpack.Models
         public List<string> Configurations { get; set; }
         [JsonPropertyName("targets")]
         public List<string> Targets { get; set; }
+        [JsonPropertyName("downloads")]
+        public int Downloads { get; set; }
 
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]

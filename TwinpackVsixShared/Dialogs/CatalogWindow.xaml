@@ -474,6 +474,12 @@
                                 <TextBlock Text="{Binding Entitlement}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
+                            <StackPanel Visibility="{Binding Framework, Converter={StaticResource NullToVisibilityConverter}}"
+                                        Orientation="Horizontal" Margin="10,5,0,0">
+                                <TextBlock Text="Framework: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock Text="{Binding Framework}" TextWrapping="Wrap"></TextBlock>
+                            </StackPanel>
+
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Version: " FontWeight="SemiBold"  ></TextBlock>
                                 <TextBlock Text="{Binding Version}" TextWrapping="Wrap"></TextBlock>
