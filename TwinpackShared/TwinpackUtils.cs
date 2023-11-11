@@ -301,7 +301,7 @@ namespace Twinpack
                         if(!Directory.Exists(LicensesPath))
                             Directory.CreateDirectory(LicensesPath);
 
-                        File.WriteAllText(Path.Combine(LicensesPath, BitConverter.ToString(md5.ComputeHash(Convert.FromBase64String($"{packageVersion.DistributorName}{packageVersion.Name}"))).Replace("-", "") + ".tmc"),
+                        File.WriteAllText(Path.Combine(LicensesPath, BitConverter.ToString(md5.ComputeHash(Encoding.ASCII.GetBytes($"{packageVersion.DistributorName}{packageVersion.Name}"))).Replace("-", "") + ".tmc"),
                                           packageVersion.LicenseTmcText);
 
                     }
