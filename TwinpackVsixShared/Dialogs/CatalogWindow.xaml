@@ -279,6 +279,7 @@
 
             <GridSplitter Grid.Column="1" Grid.RowSpan="5" Width="5" HorizontalAlignment="Stretch"></GridSplitter>
             <ScrollViewer Grid.RowSpan="6" x:Name="PackageVersionView" Visibility="{Binding PackageVersion, Converter={StaticResource NullToVisibilityConverter}}" Margin="5,0,0,0" 
+                          IsEnabled="{Binding IsPackageVersionPanelEnabled, ElementName=This}"
                           Grid.Column="2" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <Grid>
                     <Grid.RowDefinitions>

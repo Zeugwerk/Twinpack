@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
+using EnvDTE;
 using Microsoft.VisualStudio.Threading;
 using TCatSysManagerLib;
 
@@ -29,6 +29,7 @@ namespace Twinpack.Dialogs
         private List<Models.CatalogItem> _availablePackages = new List<Models.CatalogItem>();
         private List<Models.CatalogItem> _installedPackages = new List<Models.CatalogItem>();
         private SemaphoreSlim _semaphorePackages = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim _semaphoreAction = new SemaphoreSlim(1, 1);
         private List<Models.PackageVersionGetResponse> _packageVersions;
 
         private Models.CatalogItem _item = null;
@@ -468,6 +469,7 @@ namespace Twinpack.Dialogs
             finally
             {
                 IsCatalogLoading = false;
+                IsPackageVersionPanelEnabled = _plcConfig != null;
                 IsUpdateAvailable = _twinpackServer.IsClientUpdateAvailable == true;
                 btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
                 btnRegister.Visibility = _twinpackServer.LoggedIn ? Visibility.Collapsed : Visibility.Visible;
@@ -545,12 +547,17 @@ namespace Twinpack.Dialogs
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
+            finally
+            {
+                IsPackageVersionPanelEnabled = _plcConfig != null;
+            }
         }
 
         public async void UninstallPackageButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
+                _semaphoreAction.Wait();
                 IsPackageVersionPanelEnabled = false;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 await _context?.Logger?.ActivateAsync(clear: true);
@@ -583,6 +590,7 @@ namespace Twinpack.Dialogs
             finally
             {
                 IsPackageVersionPanelEnabled = true;
+                _semaphoreAction.Release();
             }
         }
 
@@ -590,6 +598,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _semaphoreAction.Wait();
                 IsPackageVersionPanelEnabled = false;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 await _context?.Logger?.ActivateAsync(clear: true);
@@ -620,6 +629,7 @@ namespace Twinpack.Dialogs
             finally
             {
                 IsPackageVersionPanelEnabled = true;
+                _semaphoreAction.Release();
             }
         }
 
@@ -633,6 +643,7 @@ namespace Twinpack.Dialogs
             IEnumerable<Models.CatalogItem> items = new List<Models.CatalogItem>();
             try
             {
+                _semaphoreAction.Wait();
                 IsRestoreAllEnabled = false;
                 IsPackageVersionPanelEnabled = false;
 
@@ -690,6 +701,7 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = true;
                 IsRestoreAllEnabled = true;
+                _semaphoreAction.Release();
             }
         }
 
@@ -698,6 +710,8 @@ namespace Twinpack.Dialogs
             IEnumerable<Models.CatalogItem> items = new List<Models.CatalogItem>();
             try
             {
+                _semaphoreAction.Wait();
+
                 IsPackageVersionPanelEnabled = false;
                 IsUpdateAllEnabled = false;
 
@@ -754,6 +768,7 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = true;
                 IsUpdateAllEnabled = true;
+                _semaphoreAction.Release();
             }
         }
 
@@ -831,8 +846,6 @@ namespace Twinpack.Dialogs
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            IsPackageVersionPanelEnabled = false;
-
             if (PackageVersion.PackageVersionId == null)
                 throw new Exception("No packages is selected that could be uninstalled!");
 
@@ -841,6 +854,7 @@ namespace Twinpack.Dialogs
             var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
 
             _context.Dte.ExecuteCommand("File.SaveAll");
+            TwinpackUtils.CloseAllPackageRelatedWindows(_context.Dte, PackageVersion);
             TwinpackUtils.RemoveReference(libManager, Package.Title, Package.Title, PackageVersion.Version, _package.DistributorName);
             _context.Dte.ExecuteCommand("File.SaveAll");
 
@@ -922,9 +936,13 @@ namespace Twinpack.Dialogs
                 }
             }
 
-            _logger.Info($"Installing package {packageVersion.Name} ...");
-
             var downloadPackageVersion = await TwinpackUtils.DownloadPackageVersionAndDependenciesAsync(libManager, packageVersion, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath);
+
+            // Close Library Manager and all windows that are related to the library. These windows cause race conditions
+            TwinpackUtils.CloseAllPackageRelatedWindows(_context.Dte, packageVersion);
+            TwinpackUtils.RemoveReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
+
+            _logger.Info($"Installing package {packageVersion.Name} ...");
             await TwinpackUtils.InstallPackageVersionsAsync(libManager, downloadPackageVersion, cachePath: cachePath);
 
             await Task.Run(() =>
@@ -1021,7 +1039,7 @@ namespace Twinpack.Dialogs
         }
         public void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(_twinpackServer.RegisterUrl);
+            System.Diagnostics.Process.Start(_twinpackServer.RegisterUrl);
         }
 
         public async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -1202,7 +1220,6 @@ namespace Twinpack.Dialogs
                 }
 
                 IsNewReference = PackageVersion.PackageVersionId == null || !_installedPackages.Any(x => x.PackageId == PackageVersion.PackageId);
-                IsPackageVersionPanelEnabled = _plcConfig != null;
                 InstalledPackagesCount = _installedPackages.Count();
                 UpdateablePackagesCount = _installedPackages.Where(x => x.IsUpdateable).Count();
             }
@@ -1393,6 +1410,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
+                IsPackageVersionPanelEnabled = _plcConfig != null;
                 IsCatalogLoading = false;
             }
         }
@@ -1422,7 +1440,7 @@ namespace Twinpack.Dialogs
                         $"in {config.FilePath} for your TwinCAT solution, do you want to " +
                         $"review and/or edit it?", "Configuration", MessageBoxButton.YesNo))
                     {
-                        Process process = new Process
+                        var process = new System.Diagnostics.Process
                         {
                             StartInfo = new ProcessStartInfo
                             {
@@ -1445,33 +1463,45 @@ namespace Twinpack.Dialogs
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
+            finally
+            {
+                IsPackageVersionPanelEnabled = _plcConfig != null;
+            }
         }
 
         public void ShowProjectUrl_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(PackageVersion.ProjectUrl);
+            System.Diagnostics.Process.Start(PackageVersion.ProjectUrl);
         }
 
         public void UpdateAvailableButton_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(_twinpackServer?.UserInfo?.UpdateUrl);
+            System.Diagnostics.Process.Start(_twinpackServer?.UserInfo?.UpdateUrl);
         }
 
         public async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var text = ((TextBox)sender).Text;
-
-            if (IsBrowsingAvailablePackages)
+            try
             {
-                _searchText = text;
-                await Task.Delay(250);
+                var text = ((TextBox)sender).Text;
 
-                if(_searchText == text)
-                    await LoadAvailablePackagesAsync(text);
+                if (IsBrowsingAvailablePackages)
+                {
+                    _searchText = text;
+                    await Task.Delay(250);
+
+                    if (_searchText == text)
+                        await LoadAvailablePackagesAsync(text);
+                }
+                else
+                {
+                    UpdateCatalog();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                UpdateCatalog();
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
     }
