@@ -29,7 +29,8 @@ namespace Twinpack
         private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
-        public static string LicensesPath = @"C:\TwinCAT\3.1\CustomConfig\Licenses";
+        public static string TwincatPath { get { return Environment.GetEnvironmentVariable("TWINCAT3DIR") ?? @"C:\TwinCAT\3.1\"; } }
+        public static string LicensesPath = TwincatPath + @"CustomConfig\Licenses";
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
