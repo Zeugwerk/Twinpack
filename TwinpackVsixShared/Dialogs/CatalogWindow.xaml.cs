@@ -453,8 +453,8 @@ namespace Twinpack.Dialogs
                 }
                 else
                 {
-                    IsBrowsingInstalledPackages = true;
-                    IsBrowsingAvailablePackages = false;
+                    IsBrowsingInstalledPackages = _plcConfig?.Packages?.Any() == true;
+                    IsBrowsingAvailablePackages = !IsBrowsingInstalledPackages;
                     await LoadInstalledPackagesAsync();
                     await LoadAvailablePackagesAsync();
                 }
