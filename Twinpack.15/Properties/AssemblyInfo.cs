@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // Attribute gesteuert. Ändern Sie diese Attributwerte, um die Informationen zu ändern,
 // die einer Assembly zugeordnet sind.
 [assembly: AssemblyTitle("Twinpack")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Package manager for TwinCAT libraries")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Zeugwerk GmbH")]
 [assembly: AssemblyProduct("Twinpack")]
-[assembly: AssemblyCopyright("Copyright ©  2023")]
+[assembly: AssemblyCopyright("Copyright © Zeugwerk GmbH 2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: AssemblyKeyFile("Twinpack.15.snk")]
