@@ -39,6 +39,7 @@ InfoBeforeFile=DISCLAIMER
 [Files]
 Source: "TwinpackVsix.15\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder15}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell15;
 Source: "TwinpackVsix.17\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder17}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell17;
+Source: "TwinpackCli\bin\{#MyConfiguration}\*"; DestDir: "C:\Program Files (x86)\{#MyAppPublisher}\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallCliInProgramFiles;
 Source: "TwinpackVsix.15\bin\{#MyConfiguration}\TwinpackVsix.15.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
 Source: "TwinpackVsix.17\bin\{#MyConfiguration}\TwinpackVsix.17.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
 Source: "vswhere.exe"; DestDir: "{commonpf}\Zeugwerk\Twinpack"; Flags: ignoreversion;
@@ -252,6 +253,10 @@ begin
   else
     VisualStudioOptionsPage.CheckListBox.ItemEnabled[1] := false;
 	
+  VisualStudioOptionsPage.Add('Twinpack Cli');
+  VisualStudioOptionsPage.CheckListBox.Checked[2] := true
+  VisualStudioOptionsPage.CheckListBox.ItemEnabled[2] := true;
+
   DisplayNames15 := VsWhereValue('displayName', VsWhereOutput15);
   InstallationPaths15 := VsWhereValue('installationPath', VsWhereOutput15); 
 
@@ -274,6 +279,11 @@ end;
 function InstallVsixInTcXaeShell15(): Boolean;
 begin
   Result := VisualStudioOptionsPage.CheckListBox.Checked[0] = True;
+end;
+
+function InstallCliInProgramFiles(): Boolean;
+begin
+  Result := VisualStudioOptionsPage.CheckListBox.Checked[2] = True;
 end;
 
 function InstallVsixInTcXaeShell17(): Boolean;
