@@ -200,8 +200,8 @@ begin
   TwinpackVsixGuid17 := 'TwinpackVsix.17.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23';
 
   ExtractTemporaryFile('vswhere.exe');
-  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput15);
-  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -version [17.0,18.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput17);
+  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput15);
+  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [17.0,18.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput17);
   
   { Create the pages }
   
@@ -314,8 +314,8 @@ end;
 
 function InitializeUninstall(): Boolean;
 begin
-  ExecWithResult(ExpandConstant('{#TcXaeShellExtensionsFolder15}Zeugwerk\\Twinpack\\vswhere.exe'), '-all -products * -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput15);
-  ExecWithResult(ExpandConstant('{#TcXaeShellExtensionsFolder17}Zeugwerk\\Twinpack\\vswhere.exe'), '-all -products * -version [17.0,18.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput17);
+  ExecWithResult(ExpandConstant('{#TcXaeShellExtensionsFolder15}Zeugwerk\\Twinpack\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput15);
+  ExecWithResult(ExpandConstant('{#TcXaeShellExtensionsFolder17}Zeugwerk\\Twinpack\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [17.0,18.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput17);
 
   DisplayNames15 := VsWhereValue('displayName', VsWhereOutput15);
   InstallationPaths15 := VsWhereValue('installationPath', VsWhereOutput15);   
