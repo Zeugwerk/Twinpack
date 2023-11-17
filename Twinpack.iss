@@ -39,16 +39,16 @@ InfoBeforeFile=DISCLAIMER
 [Files]
 Source: "TwinpackVsix.15\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder15}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell15;
 Source: "TwinpackVsix.17\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder17}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell17;
-Source: "TwinpackCli\bin\{#MyConfiguration}\*"; DestDir: "C:\Program Files (x86)\{#MyAppPublisher}\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallCliInProgramFiles;
+Source: "TwinpackCli\bin\{#MyConfiguration}\*"; DestDir: "{commonpf}\{#MyAppPublisher}\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallCliInProgramFiles;
 Source: "TwinpackVsix.15\bin\{#MyConfiguration}\TwinpackVsix.15.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
 Source: "TwinpackVsix.17\bin\{#MyConfiguration}\TwinpackVsix.17.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
-Source: "vswhere.exe"; DestDir: "C:\Program Files (x86)\{#MyAppPublisher}\Utils"; Flags: ignoreversion;
+Source: "vswhere.exe"; DestDir: "{commonpf}\{#MyAppPublisher}\Utils"; Flags: ignoreversion;
 
 [Dirs]
-Name: "C:\Program Files (x86)\Beckhoff\TcXaeShell\Common7\IDE\Extensions\Zeugwerk\Twinpack"
+Name: "{commonpf}\Beckhoff\TcXaeShell\Common7\IDE\Extensions\Zeugwerk\Twinpack"
 Name: "C:\Program Files\Beckhoff\TcXaeShell\Common7\IDE\Extensions\Zeugwerk\Twinpack"
-Name: "C:\Program Files (x86)\{#MyAppPublisher}\Twinpack"
-Name: "C:\Program Files (x86)\{#MyAppPublisher}\Utils"
+Name: "{commonpf}\{#MyAppPublisher}\Twinpack"
+Name: "{commonpf}\{#MyAppPublisher}\Utils"
 
 [InstallDelete]
 Type: filesandordirs; Name: "{#TcXaeShellExtensionsFolder15}Zeugwerk\Twinpack\*"
@@ -325,8 +325,8 @@ end;
 
 function InitializeUninstall(): Boolean;
 begin
-  ExecWithResult(ExpandConstant('C:\Program Files (x86)\\{#MyAppPublisher}\\Utils\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput15);
-  ExecWithResult(ExpandConstant('C:\Program Files (x86)\\{#MyAppPublisher}\\Utils\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [17.0,18.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput17);
+  ExecWithResult(ExpandConstant('{commonpf}\\{#MyAppPublisher}\\Utils\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput15);
+  ExecWithResult(ExpandConstant('{commonpf}\\{#MyAppPublisher}\\Utils\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [17.0,18.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput17);
 
   DisplayNames15 := VsWhereValue('displayName', VsWhereOutput15);
   InstallationPaths15 := VsWhereValue('installationPath', VsWhereOutput15);   
