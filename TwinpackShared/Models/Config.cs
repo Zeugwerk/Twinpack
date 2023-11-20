@@ -188,7 +188,10 @@ namespace Twinpack.Models
 
         [JsonPropertyName("name")]
         public string Name { get; set; }
+        
         [JsonPropertyName("title")]
+        [DefaultValue(null)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Title { get; set; }
 
         [JsonPropertyName("type")]
@@ -213,29 +216,48 @@ namespace Twinpack.Models
         public ConfigPatches Patches { get; set; }
 
         [JsonPropertyName("description")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Description { get; set; }
 
         [JsonPropertyName("icon-file")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string IconFile { get; set; }        
 
         [JsonPropertyName("project-url")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string ProjectUrl { get; set; } 
         
         [JsonPropertyName("display-name")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string DisplayName { get; set; }  
 
         [JsonPropertyName("authors")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Authors { get; set; }
 
         [JsonPropertyName("entitlement")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Entitlement { get; set; }
 
         [JsonPropertyName("license")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string License { get; set; }
 
         [JsonPropertyName("license-file")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string LicenseFile { get; set; }
+        
         [JsonPropertyName("license-tmc-file")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string LicenseTmcFile { get; set; }
     }
 
