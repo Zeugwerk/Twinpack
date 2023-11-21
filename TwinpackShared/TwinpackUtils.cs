@@ -30,7 +30,7 @@ namespace Twinpack
         private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
-        public static string LicensesPath = TwincatPath() + @"\CustomConfig\Licenses";
+        public static string LicensesPath { get { return(TwincatPath() + @"\CustomConfig\Licenses"); } }
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -53,7 +53,7 @@ namespace Twinpack
                     }
                 }
             }
-            catch (Exception ex)  //just for demonstration...it's always best to handle specific exceptions
+            catch (Exception ex)
             {
                 return null;
             }
