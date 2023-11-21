@@ -37,9 +37,11 @@ namespace Twinpack
                 try
                 {
                     using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))
-                    {
-                        Object o = key?.GetValue("BootDir");
-                        return o == null ? null : Directory.GetParent(o.ToString());
+                    {                        
+                        Object bootDir = key?.GetValue("BootDir");
+
+                        // need to do GetParent twice because of the trailing \
+                        return bootDir == null ? null : Directory.GetParent(Directory.GetParent(bootDir.ToString())).ToString();
                     }
                 }
                 catch
