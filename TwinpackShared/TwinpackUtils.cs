@@ -30,9 +30,7 @@ namespace Twinpack
         private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
-        // Twincat Path is different for 4024 and 4026 versions
-        // The only way to find (for now) is to get the BootData folder in the registry and get the parent folder of this one
-        public static string LicensesPath 
+        public static string TwincatPath 
         { 
             get 
             {
@@ -40,18 +38,11 @@ namespace Twinpack
                 {
                     using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))
                     {
-                        if (key != null)
-                        {
-                            Object o = key.GetValue("BootDir");
-                            if (o != null)
-                            {
-                                DirectoryInfo BootFolder = Directory.GetParent(o.ToString());
-                                return (Directory.GetParent(BootFolder.ToString()).ToString() + @"\CustomConfig\Licenses");
-                            }
-                        }
+                        Object o = key?.GetValue("BootDir");
+                        return o == null ? null : Directory.GetParent(o.ToString());
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
                     return null;
                 }
@@ -59,10 +50,11 @@ namespace Twinpack
                 return null; 
             } 
         }
+        
+        public static string LicensesPath = TwincatPath + @"\CustomConfig\Licenses";
+        public static string BootFolderPath = TwincatPath + @"\Boot";        
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-
-
 
         public static ITcSysManager SystemManager(Solution solution, ConfigPlcProject plcConfig)
         {
