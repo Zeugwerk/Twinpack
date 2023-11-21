@@ -41,7 +41,7 @@ namespace Twinpack
                         var bootDir = key?.GetValue("BootDir") as string;
 
                         // need to do GetParent twice because of the trailing \
-                        return bootDir == null ? null : new DirectoryInfo(bootDir).Parent.Parent.FullName;
+                        return bootDir == null ? null : new DirectoryInfo(bootDir)?.Parent?.Parent?.FullName;
                     }
                 }
                 catch
