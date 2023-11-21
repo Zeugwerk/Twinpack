@@ -21,6 +21,7 @@ using Twinpack.Exceptions;
 using EnvDTE80;
 using System.Windows.Media.Imaging;
 using System.Security.Cryptography;
+using Microsoft.Win32;
 
 namespace Twinpack
 {
@@ -29,8 +30,31 @@ namespace Twinpack
         private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
-        public static string TwincatPath { get { return Environment.GetEnvironmentVariable("TWINCAT3DIR") ?? @"C:\TwinCAT\3.1\"; } }
-        public static string LicensesPath = TwincatPath + @"CustomConfig\Licenses";
+        public static string TwincatPath 
+        { 
+            get 
+            {
+                try
+                {
+                    using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))
+                    {                        
+                        var bootDir = key?.GetValue("BootDir") as string;
+
+                        // need to do GetParent twice because of the trailing \
+                        return bootDir == null ? null : new DirectoryInfo(bootDir)?.Parent?.FullName;
+                    }
+                }
+                catch
+                {
+                    return null;
+                }
+
+                return null; 
+            } 
+        }
+        
+        public static string LicensesPath = TwincatPath + @"\CustomConfig\Licenses";
+        public static string BootFolderPath = TwincatPath + @"\Boot";        
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
