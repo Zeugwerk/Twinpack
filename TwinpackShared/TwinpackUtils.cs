@@ -21,6 +21,7 @@ using Twinpack.Exceptions;
 using EnvDTE80;
 using System.Windows.Media.Imaging;
 using System.Security.Cryptography;
+using Microsoft.Win32;
 
 namespace Twinpack
 {
@@ -29,10 +30,36 @@ namespace Twinpack
         private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
-        public static string TwincatPath { get { return Environment.GetEnvironmentVariable("TWINCAT3DIR") ?? @"C:\TwinCAT\3.1\"; } }
-        public static string LicensesPath = TwincatPath + @"CustomConfig\Licenses";
+        public static string LicensesPath = TwincatPath() + @"\CustomConfig\Licenses";
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
+        // Twincat Path is different for 4024 and 4026 versions
+        // The only way to find (for now) is to get the BootData folder in the registry and get the parent folder of this one
+        public static string TwincatPath()
+        {
+            try
+            {
+                using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))
+                {
+                    if (key != null)
+                    {
+                        Object o = key.GetValue("BootDir");
+                        if (o != null)
+                        {
+                            DirectoryInfo BootFolder = Directory.GetParent(o.ToString());
+                            return(Directory.GetParent(BootFolder.ToString()).ToString());
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)  //just for demonstration...it's always best to handle specific exceptions
+            {
+                return null;
+            }
+
+            return null;
+        }
 
         public static ITcSysManager SystemManager(Solution solution, ConfigPlcProject plcConfig)
         {
