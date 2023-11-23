@@ -13,12 +13,14 @@ using Microsoft.Win32;
 using System.Text.RegularExpressions;
 using Jdenticon.Wpf;
 using Jdenticon.Rendering;
+using System.Threading;
 
 namespace Twinpack.Dialogs
 {
     public partial class PackageVersionWindow : Window, INotifyPropertyChanged
     {
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+        private CancellationTokenSource _cancellationTokenSource;
 
         private PackageContext _context;
         private EnvDTE.Project _plc;
@@ -51,6 +53,17 @@ namespace Twinpack.Dialogs
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+        private CancellationToken Token
+        {
+            get
+            {
+                if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
+                    _cancellationTokenSource = new CancellationTokenSource();
+
+                return _cancellationTokenSource.Token;
+            }
+        }
+
         public PackageVersionWindow(bool publishMode, PackageContext context, EnvDTE.Project plc = null, int? packageId = null, int? packageVersionId = null, string username = "", string password = "")
         {
             _auth = new Authentication(_twinpackServer);
@@ -69,9 +82,9 @@ namespace Twinpack.Dialogs
             InitializeComponent();
         }
 
-        private async Task LoginAsync()
+        private async Task LoginAsync(CancellationToken cancellationToken)
         {
-            await _auth.LoginAsync();
+            await _auth.LoginAsync(onlyTry: false, cancellationToken: cancellationToken);
             if (!_twinpackServer.LoggedIn)
             {
                 Close();
@@ -85,13 +98,13 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
                 IsEnabled = false;
                 IsLoading = true;
                 LoadingText = "Loading ...";
-                await LoginAsync();
+                await LoginAsync(Token);
 
                 IsGeneralDataReadOnly = false;
 
@@ -108,7 +121,7 @@ namespace Twinpack.Dialogs
                         else
                         {
                             LoadingText = "Creating temporary package configuration ...";
-                            _plcConfig = await Models.ConfigPlcProjectFactory.CreateAsync(_context.Solution, _plc, _twinpackServer);
+                            _plcConfig = await Models.ConfigPlcProjectFactory.CreateAsync(_context.Solution, _plc, _twinpackServer, Token);
                         }
 
                         IsConfigured = _plcConfig != null;
@@ -131,7 +144,7 @@ namespace Twinpack.Dialogs
                 if (_plcConfig != null)
                 {
                     if(!string.IsNullOrEmpty(UserInfo?.DistributorName) && !string.IsNullOrEmpty(_plcConfig?.Name))
-                        _package = await _twinpackServer.GetPackageAsync(UserInfo?.DistributorName, _plcConfig.Name);
+                        _package = await _twinpackServer.GetPackageAsync(UserInfo?.DistributorName, _plcConfig.Name, Token);
 
                     if(_package.PackageId == null)
                     {      
@@ -142,7 +155,7 @@ namespace Twinpack.Dialogs
                             return;
                         }  
                     
-                        var resolvedPackage = await _twinpackServer.ResolvePackageVersionAsync(new Models.PlcLibrary { Name = _plcConfig.Name, Version = "*" });
+                        var resolvedPackage = await _twinpackServer.ResolvePackageVersionAsync(new Models.PlcLibrary { Name = _plcConfig.Name, Version = "*" }, cancellationToken: Token);
                         if(resolvedPackage.PackageId != null)
                         {
                             MessageBox.Show($"The package name '{resolvedPackage.Name}' is already taken by '{resolvedPackage.DistributorName}'. Each package on the Twinpack Server must have a unique name. To publish your package, please choose an alternative name that hasn't been used by any other distributor. This can be done by renaming your PLC.", "Package name not available", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -155,7 +168,7 @@ namespace Twinpack.Dialogs
                 }
 
                 if (_plcConfig == null && _package.PackageId != null)
-                    _package = await _twinpackServer.GetPackageAsync((int)_package.PackageId);
+                    _package = await _twinpackServer.GetPackageAsync((int)_package.PackageId, Token);
 
                 Branches = _package.PackageId != null ? _package.Branches : new List<string> { "main" };
 
@@ -164,13 +177,13 @@ namespace Twinpack.Dialogs
                 {
                     // try to get the specific version
                     IsNewPackageVersion = false;
-                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_package.DistributorName, _package.Name, _packageVersion.Version, null, null, null, false, null);
+                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_package.DistributorName, _package.Name, _packageVersion.Version, null, null, null, false, null, Token);
 
                     // fallback to the latest available version
                     if (_packageVersion.PackageVersionId == null)
                     {
                         IsNewPackageVersion = true;
-                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync((int)_package.PackageId, 1, 1)).Item1?.FirstOrDefault()?.PackageVersionId;
+                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync((int)_package.PackageId, 1, 1, Token)).Item1?.FirstOrDefault()?.PackageVersionId;
                     }
                 }
                 else if (_plcConfig != null)
@@ -182,8 +195,8 @@ namespace Twinpack.Dialogs
                 {
                     try
                     {
-                        _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false);
-                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(_packageVersion.DistributorName, _packageVersion.Name, null, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target);
+                        _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false, cancellationToken: Token);
+                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(_packageVersion.DistributorName, _packageVersion.Name, null, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target, cancellationToken: Token);
                         Dependencies = _packageVersion.Dependencies;
                     }
                     catch (Exceptions.GetException ex)
@@ -739,7 +752,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        private async Task<bool> PatchPackageAsync()
+        private async Task<bool> PatchPackageAsync(CancellationToken cancellationToken)
         {
             if (_package.PackageId == null)
                 return false;
@@ -761,8 +774,8 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await LoginAsync();
-                var packageResult = await _twinpackServer.PutPackageAsync(package);
+                await LoginAsync(cancellationToken);
+                var packageResult = await _twinpackServer.PutPackageAsync(package, cancellationToken);
 
                 DisplayName = packageResult.DisplayName;
                 Description = packageResult.Description;
@@ -792,7 +805,7 @@ namespace Twinpack.Dialogs
             return true;
         }
 
-        private async Task<bool> PatchPackageVersionAsync()
+        private async Task<bool> PatchPackageVersionAsync(CancellationToken cancellationToken)
         {
             if (_packageVersion.PackageVersionId == null)
                 return false;
@@ -805,8 +818,8 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await LoginAsync();
-                var packageVersionResult = await _twinpackServer.PutPackageVersionAsync(packageVersion);
+                await LoginAsync(cancellationToken);
+                var packageVersionResult = await _twinpackServer.PutPackageVersionAsync(packageVersion, cancellationToken);
 
                 Authors = packageVersionResult.Authors;
                 License = packageVersionResult.License;
@@ -833,8 +846,8 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _context?.Logger?.ActivateAsync(clear: true);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
                 _logger.Info("Publishing package");
 
                 var branch = BranchesView.SelectedItem as string;
@@ -869,7 +882,7 @@ namespace Twinpack.Dialogs
 
                 try
                 {
-                    await LoginAsync();
+                    await LoginAsync(Token);
                     _logger.Info("Uploading to Twinpack ...");
                     LoadingText = "Uploading to Twinpack ...";
 
@@ -909,7 +922,7 @@ namespace Twinpack.Dialogs
                         })
                     };
 
-                    _packageVersion = await _twinpackServer.PostPackageVersionAsync(packageVersion);
+                    _packageVersion = await _twinpackServer.PostPackageVersionAsync(packageVersion, Token);
                     _package = _packageVersion;
                     _packageVersionLatest.Version = _packageVersion.Version;
 
@@ -918,7 +931,7 @@ namespace Twinpack.Dialogs
                     IsPublishMode = false;
                     LatestVersion = _packageVersion.Version;
 
-                    await WritePlcConfigToConfigAsync(_plcConfig);
+                    await WritePlcConfigToConfigAsync(_plcConfig, Token);
 
                     _twinpackServer.InvalidateCache();
 
@@ -964,14 +977,14 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                await _context?.Logger?.ActivateAsync(clear: true);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
                 _logger.Info("Modifying package");
 
                 IsEnabled = false;
-                if (await PatchPackageAsync())
-                    await PatchPackageVersionAsync();
+                if (await PatchPackageAsync(Token))
+                    await PatchPackageVersionAsync(Token);
 
-                await WritePlcConfigToConfigAsync(_plcConfig);
+                await WritePlcConfigToConfigAsync(_plcConfig, Token);
             }
             catch(Exception ex)
             {
@@ -1059,9 +1072,9 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async Task<Models.Config> WritePlcConfigToConfigAsync(Models.ConfigPlcProject plcConfig)
+        public async Task<Models.Config> WritePlcConfigToConfigAsync(Models.ConfigPlcProject plcConfig, CancellationToken cancellationToken)
         {
-            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             var config = Models.ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
 
             if (config != null)

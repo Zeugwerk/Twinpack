@@ -25,9 +25,9 @@ namespace Twinpack
         private static Guid OutputPaneGuid = new Guid("E12CEAA1-6466-4841-8A69-9D4E96638CD8");
         private IVsOutputWindowPane _outputPane;
 
-        public async Task ActivateAsync(bool clear)
+        public async Task ActivateAsync(bool clear, CancellationToken cancellationToken = default)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             if (clear)
                 _outputPane?.Clear();
@@ -41,9 +41,9 @@ namespace Twinpack
             frame?.Show();
         }
 
-        public async Task LogToOutputWindowAsync(string message)
+        public async Task LogToOutputWindowAsync(string message, CancellationToken cancellationToken = default)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             if (_outputPane == null)
             {
@@ -75,7 +75,7 @@ namespace Twinpack
             if (logEvent.Level == LogLevel.Error)
                 await ActivateAsync(clear: false);
 
-            await LogToOutputWindowAsync(logMessage);
+            await LogToOutputWindowAsync(logMessage, cancellationToken);
         }
     }
 }

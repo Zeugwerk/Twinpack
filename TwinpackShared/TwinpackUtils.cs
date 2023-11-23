@@ -22,6 +22,8 @@ using EnvDTE80;
 using System.Windows.Media.Imaging;
 using System.Security.Cryptography;
 using Microsoft.Win32;
+using System.Threading;
+using Microsoft.VisualStudio.Threading;
 
 namespace Twinpack
 {
@@ -48,8 +50,6 @@ namespace Twinpack
                 {
                     return null;
                 }
-
-                return null; 
             } 
         }
         
@@ -183,7 +183,7 @@ namespace Twinpack
             (plc as ITcSmTreeItem).ConsumeXml(stringWriter.ToString());
         }
 
-        public static void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion)
+        public static void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, CancellationToken cancellationToken = default)
         {
             libManager.UninstallLibrary("System", packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
             foreach(var dependency in packageVersion.Dependencies)
@@ -206,7 +206,7 @@ namespace Twinpack
             return false;
         }
 
-        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null)
+        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
         {
             var downloadedPackageVersions = new List<PackageVersionGetResponse> { };
 
@@ -234,25 +234,26 @@ namespace Twinpack
             if (!referenceFound || forceDownload)
             {
                 _logger.Info($"Downloading {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName})");
-                var pk = await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId, includeBinary: true, cachePath: cachePath);
+                var pk = await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId, includeBinary: true, cachePath: cachePath, cancellationToken: cancellationToken);
                 downloadedPackageVersions.Add(pk);
             }
 
             foreach (var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
             {
-                var pk = await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, server, forceDownload, cachePath);
+                var pk = await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, server, forceDownload, cachePath, cancellationToken: cancellationToken);
                 downloadedPackageVersions.AddRange(pk);
             }
 
             return downloadedPackageVersions;
         }
 
-        public static async Task InstallPackageVersionsAsync(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null)
+        public static async Task InstallPackageVersionsAsync(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null, CancellationToken cancellationToken = default)
         {
             foreach(var packageVersion in packageVersions)
             {
                 var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                await Task.Run(() => { libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true); });
+                await Task.Run(() => { libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true); })
+                          .WithCancellation(cancellationToken);
             }
         }
 
