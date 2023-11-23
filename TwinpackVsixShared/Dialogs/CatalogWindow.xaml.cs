@@ -12,6 +12,7 @@ using System.Windows.Controls;
 using EnvDTE;
 using Microsoft.VisualStudio.Threading;
 using TCatSysManagerLib;
+using Twinpack.Models;
 
 namespace Twinpack.Dialogs
 {
@@ -812,6 +813,26 @@ namespace Twinpack.Dialogs
 
         public void UpdateCatalog()
         {
+            // synchronize the list of installed packages with the list of available packages
+            var zipped =
+            _availablePackages.GroupJoin(_installedPackages,
+                item1 => item1.PackageId,
+                item2 => item2.PackageId, (item1, matchingItems) => new { Available = item1, Installed = matchingItems.FirstOrDefault() }).
+            Union(
+            _installedPackages.GroupJoin(_availablePackages,
+                item2 => item2.PackageId,
+                item1 => item1.PackageId, (item2, matchingItems) => new { Available = matchingItems.FirstOrDefault(), Installed = item2 })
+            );
+
+            foreach(var package in zipped)
+            {
+                if(package.Installed != null && package.Available != null)
+                {
+                    package.Available.Installed = package.Installed.Installed;
+                    package.Available.Update = package.Installed.Update;
+                }
+            }
+
             var text = SearchTextBox.Text;
             if (IsBrowsingAvailablePackages)
             {
@@ -1153,18 +1174,7 @@ namespace Twinpack.Dialogs
                 }
                 foreach (var item in results.Item1)
                 {
-
-                    var installedPackage = _installedPackages.FirstOrDefault(x => x.PackageId == item.PackageId);
-                    var catalogItem = installedPackage == null ? new Models.CatalogItem(item) : new Models.CatalogItem(installedPackage.Installed);
-
-                    if (installedPackage != null)
-                    {
-                        catalogItem.Update = installedPackage.Update;
-                        catalogItem.Installed = installedPackage.Installed;
-                    }
-                    catalogItem.Downloads = item.Downloads;
-
-                    _availablePackages.Add(catalogItem);
+                    _availablePackages.Add(new CatalogItem(item));
                 }
 
                 _currentCatalogPage++;
@@ -1196,24 +1206,11 @@ namespace Twinpack.Dialogs
                     _installedPackages.Clear();
                     foreach (var item in _plcConfig.Packages)
                     {
-                        Models.CatalogItem catalogItem = new Models.CatalogItem(item);
+                        CatalogItem catalogItem = new CatalogItem(item);
                         var packageVersion = await _twinpackServer.GetPackageVersionAsync(item.DistributorName, item.Name, null, item.Configuration, item.Branch, item.Target);
 
                         if (packageVersion.PackageVersionId != null)
-                        {
-                            catalogItem = new Models.CatalogItem(packageVersion);
-                            catalogItem.Update = packageVersion;
-                            catalogItem.Installed = new Models.PackageVersionGetResponse(packageVersion);
-                            catalogItem.Installed.Version = item.Version;
-                        }
-
-                        var availablePackage = _availablePackages.FirstOrDefault(x => x.PackageId == packageVersion.PackageId);
-                        if (availablePackage != null)
-                        {
-                            availablePackage.Installed = catalogItem.Installed;
-                            availablePackage.Update = packageVersion;
-                            catalogItem.Downloads = availablePackage.Downloads;
-                        }
+                            catalogItem = new CatalogItem(packageVersion, item.Version);
 
                         _installedPackages.Add(catalogItem);
                     }
