@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -20,7 +21,7 @@ namespace Twinpack.Dialogs
         }
 
 
-        public async Task LoginAsync(bool onlyTry = false)
+        public async Task LoginAsync(bool onlyTry = false, CancellationToken cancellationToken = default)
         {
             if (_twinpackServer.LoggedIn)
                 return;
@@ -29,7 +30,7 @@ namespace Twinpack.Dialogs
             try
             {
                 if (!_twinpackServer.LoggedIn)
-                    await _twinpackServer.LoginAsync();
+                    await _twinpackServer.LoginAsync(null, null, cancellationToken);
             }
             catch (TimeoutException ex)
             {
@@ -54,7 +55,7 @@ namespace Twinpack.Dialogs
                         caption: "Twinpack Server login");
 
                     if (credentials != null)
-                        await _twinpackServer.LoginAsync(credentials.UserName, credentials.Password);
+                        await _twinpackServer.LoginAsync(credentials.UserName, credentials.Password, cancellationToken);
 
                     if (!_twinpackServer.LoggedIn)
                         throw new Exceptions.LoginException("Login was not successful!");

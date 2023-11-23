@@ -13,6 +13,7 @@ using Twinpack.Models;
 using Twinpack.Exceptions;
 using System.Reflection;
 using AdysTech.CredentialManager;
+using System.Threading;
 
 namespace Twinpack
 {
@@ -62,7 +63,7 @@ namespace Twinpack
             request.Headers.Add("twinpack-client-version", ClientVersion.ToString());
         }
 
-        public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion)
+        public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
         {
             _logger.Info($"Uploading Package '{packageVersion.Name}' (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration}, version: {packageVersion.Version}");
 
@@ -75,7 +76,7 @@ namespace Twinpack
             request.Content = new StreamContent(
                 new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-            var response = await _client.SendAsync(request);
+            var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             PackageVersionGetResponse result = null;
@@ -98,7 +99,7 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<Tuple<IEnumerable<T>, bool>> QueryWithPagination<T>(string endpoint, int page = 1, int perPage = 5)
+        public async Task<Tuple<IEnumerable<T>, bool>> QueryWithPaginationAsync<T>(string endpoint, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             var results = new List<T>();
             var uri = new Uri(TwinpackUrl + $"/{endpoint}?page={page}&per_page={perPage}");
@@ -111,7 +112,7 @@ namespace Twinpack
                 _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
                 AddHeaders(request);
 
-                var response = await _client.SendAsync(request);
+                var response = await _client.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();
 
                 var data = await response.Content.ReadAsStringAsync();            
@@ -157,28 +158,28 @@ namespace Twinpack
             return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination.Next != null);
         }
 
-        public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5)
+        public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
-            return await QueryWithPagination<CatalogItemGetResponse>($"catalog" +
-                                                $"?search={HttpUtility.UrlEncode(search)}", page, perPage);
+            return await QueryWithPaginationAsync<CatalogItemGetResponse>($"catalog" +
+                                                $"?search={HttpUtility.UrlEncode(search)}", page, perPage, cancellationToken);
         }
 
-        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(int packageId, int page = 1, int perPage = 5)
+        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(int packageId, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
-            return await QueryWithPagination<PackageVersionGetResponse>($"package-versions" +
-                                            $"?id={packageId}", page, perPage);
+            return await QueryWithPaginationAsync<PackageVersionGetResponse>($"package-versions" +
+                                            $"?id={packageId}", page, perPage, cancellationToken);
         }
 
-        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(int packageId, string branch, string configuration, string target, int page = 1, int perPage = 5)
+        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(int packageId, string branch, string configuration, string target, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
-            return await QueryWithPagination<PackageVersionGetResponse>($"package-versions" +
+            return await QueryWithPaginationAsync<PackageVersionGetResponse>($"package-versions" +
                                             $"?id={packageId}" +
                                             $"&branch={HttpUtility.UrlEncode(branch)}" +
                                             $"&target={HttpUtility.UrlEncode(target)}" +
-                                            $"&configuration={HttpUtility.UrlEncode(configuration)}", page, perPage);
+                                            $"&configuration={HttpUtility.UrlEncode(configuration)}", page, perPage, cancellationToken);
         }
 
-        public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget=null, string preferredConfiguration=null, string preferredBranch=null)
+        public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget=null, string preferredConfiguration=null, string preferredBranch=null, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-resolve" +
                 $"?distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
@@ -191,7 +192,7 @@ namespace Twinpack
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
             AddHeaders(request);
 
-            var response = await _client.SendAsync(request);
+            var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             PackageVersionGetResponse result = null;
@@ -211,7 +212,7 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(int packageVersionId, bool includeBinary, string cachePath = null)
+        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(int packageVersionId, bool includeBinary, string cachePath = null, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-version" +
                 $"?id={packageVersionId}&include-binary={(includeBinary ? 1 : 0)}"));
@@ -219,7 +220,7 @@ namespace Twinpack
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
             AddHeaders(request);
 
-            var response = await _client.SendAsync(request);
+            var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             PackageVersionGetResponse result = null;
@@ -247,7 +248,7 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string distributorName, string name, string version, string configuration, string branch, string target, bool includeBinary = false, string cachePath = null)
+        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string distributorName, string name, string version, string configuration, string branch, string target, bool includeBinary = false, string cachePath = null, CancellationToken cancellationToken = default)
         {
             if(includeBinary)
                 _logger.Info($"Downloading Package '{name}' (version: {version}, configuration: {configuration}, branch: {branch}, target: {target})");
@@ -264,7 +265,7 @@ namespace Twinpack
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             AddHeaders(request);
-            var response = await _client.SendAsync(request);
+            var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             PackageVersionGetResponse result = null;
@@ -292,7 +293,7 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName)
+        public async Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package" +
                 $"?distributor-name={HttpUtility.UrlEncode(distributorName)}" +
@@ -301,7 +302,7 @@ namespace Twinpack
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             AddHeaders(request);
-            var response = await _client.SendAsync(request);
+            var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             PackageGetResponse result = null;
@@ -321,14 +322,14 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<PackageGetResponse> GetPackageAsync(int packageId)
+        public async Task<PackageGetResponse> GetPackageAsync(int packageId, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package?id={packageId}"));
 
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
             AddHeaders(request);
-            var response = await _client.SendAsync(request);
+            var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             PackageGetResponse result = null;
@@ -348,7 +349,7 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package)
+        public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package, CancellationToken cancellationToken = default)
         {
             _logger.Info("Updating package version");
             var requestBodyJson = JsonSerializer.Serialize(package);
@@ -359,7 +360,7 @@ namespace Twinpack
             request.Content = new StreamContent(
                 new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-            var response = await _client.SendAsync(request);
+            var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             PackageVersionGetResponse result = null;
@@ -379,7 +380,7 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package)
+        public async Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package, CancellationToken cancellationToken = default)
         {
             _logger.Info("Updating general package");
             var requestBodyJson = JsonSerializer.Serialize(package);
@@ -391,7 +392,7 @@ namespace Twinpack
             request.Content = new StreamContent(
                 new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
 
-            var response = await _client.SendAsync(request);
+            var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             PackageGetResponse result = null;
@@ -411,7 +412,7 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null)
+        public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
             var credentials = CredentialManager.GetCredentials(TwinpackUrlBase);
 
@@ -421,7 +422,7 @@ namespace Twinpack
             Username = username ?? credentials?.UserName;
             Password = password ?? credentials?.Password;
             AddHeaders(request);
-            var response = await _client.SendAsync(request);
+            var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             try
@@ -458,7 +459,7 @@ namespace Twinpack
             }
         }
 
-        public async Task PushAsync(string configuration, string branch, string target, string notes, bool compiled, string rootPath = ".", string cachePath = null)
+        public async Task PushAsync(string configuration, string branch, string target, string notes, bool compiled, string rootPath = ".", string cachePath = null, CancellationToken cancellationToken = default)
         {
             var config = ConfigFactory.Load(rootPath);
 
@@ -523,7 +524,7 @@ namespace Twinpack
                         })
                     };
 
-                    await PostPackageVersionAsync(packageVersion);
+                    await PostPackageVersionAsync(packageVersion, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -538,7 +539,7 @@ namespace Twinpack
             }
         }
 
-        public async Task PullAsync(bool skipInternalPackages = false, string rootPath = ".", string cachePath = null)
+        public async Task PullAsync(bool skipInternalPackages = false, string rootPath = ".", string cachePath = null, CancellationToken cancellationToken = default)
         {
             var config = ConfigFactory.Load(path: rootPath);
 
@@ -573,7 +574,7 @@ namespace Twinpack
 
                     try
                     {
-                        var pv = await GetPackageVersionAsync(package.DistributorName, package.Name, package.Version, package.Configuration, package.Branch, package.Target, true, cachePath: cachePath);
+                        var pv = await GetPackageVersionAsync(package.DistributorName, package.Name, package.Version, package.Configuration, package.Branch, package.Target, true, cachePath: cachePath, cancellationToken: cancellationToken);
                         handled.Add(package);
 
                         if (pv?.PackageVersionId == null)
