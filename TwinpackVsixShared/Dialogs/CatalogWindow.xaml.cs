@@ -102,6 +102,14 @@ namespace Twinpack.Dialogs
             }
         }
 
+        public bool IsBusy
+        {
+            get
+            {
+                return IsFetchingAvailablePackages || IsFetchingInstalledPackages || IsCatalogLoading || IsPackageLoading || IsPackageVersionLoading;
+            }
+        }
+
         public bool IsFetchingAvailablePackages
         {
             get { return _isFetchingAvailablePackages; }
@@ -109,6 +117,7 @@ namespace Twinpack.Dialogs
             {
                 _isFetchingAvailablePackages = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFetchingAvailablePackages)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBusy)));
 
                 if (IsBrowsingAvailablePackages || IsBrowsingUpdatablePackages)
                 {
@@ -137,6 +146,7 @@ namespace Twinpack.Dialogs
             {
                 _isFetchingInstalledPackages = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFetchingInstalledPackages)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBusy)));
 
                 if (IsBrowsingInstalledPackages)
                 {
@@ -188,7 +198,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public Models.PackageGetResponse Package
+        public PackageGetResponse Package
         {
             get { return _package; }
             set
@@ -198,7 +208,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public Models.PackageVersionGetResponse PackageVersion
+        public PackageVersionGetResponse PackageVersion
         {
             get { return _packageVersion; }
             set
@@ -208,7 +218,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public List<Models.PackageVersionGetResponse> Versions
+        public List<PackageVersionGetResponse> Versions
         {
             get { return _packageVersions; }
             set
@@ -266,6 +276,7 @@ namespace Twinpack.Dialogs
             {
                 _isCatalogLoading = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCatalogLoading)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBusy)));
             }
         }
 
@@ -276,6 +287,7 @@ namespace Twinpack.Dialogs
             {
                 _isPackageLoading = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPackageLoading)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBusy)));
             }
         }
         public bool IsPackageVersionLoading
@@ -285,6 +297,7 @@ namespace Twinpack.Dialogs
             {
                 _isPackageVersionLoading = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPackageVersionLoading)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBusy)));
             }
         }
 
@@ -477,6 +490,7 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
+                IsBrowsingAvailablePackages = true;
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
@@ -537,6 +551,8 @@ namespace Twinpack.Dialogs
                 IsMigrateConfigVisible = false;
                 IsConfigured = false;
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
         }
         public async void EditPackageButton_Click(object sender, RoutedEventArgs e)
         {
@@ -596,8 +612,6 @@ namespace Twinpack.Dialogs
             }
             catch (Exception ex)
             {
-                _logger.Info("Failed\n");
-
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
@@ -633,10 +647,15 @@ namespace Twinpack.Dialogs
                 _logger.Info("Finished\n");
 
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                Package = new PackageGetResponse();
+                PackageVersion = new PackageVersionGetResponse();
+            }
             catch (Exception ex)
             {
-                _logger.Info("Failed\n");
-
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
@@ -684,11 +703,17 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                Package = new PackageGetResponse();
+                PackageVersion = new PackageVersionGetResponse();
+            }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
-                _logger.Info("Failed\n");
             }
             finally
             {
@@ -709,7 +734,6 @@ namespace Twinpack.Dialogs
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
-                _logger.Info("Failed\n");
             }
             finally
             {
@@ -752,11 +776,17 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                Package = new PackageGetResponse();
+                PackageVersion = new PackageVersionGetResponse();
+            }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
-                _logger.Info("Failed\n");
             }
             finally
             {
@@ -764,7 +794,8 @@ namespace Twinpack.Dialogs
             }
 
             try
-            { 
+            {
+                Token.ThrowIfCancellationRequested();
                 var config = await WritePlcConfigToConfigAsync(_plcConfig, cancellationToken: Token);
                 await LoadInstalledPackagesAsync(cancellationToken: Token);
                 UpdateCatalog();
@@ -776,7 +807,6 @@ namespace Twinpack.Dialogs
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
-                _logger.Info("Failed\n");
             }
             finally
             {
@@ -905,6 +935,8 @@ namespace Twinpack.Dialogs
             {
                 p.Installed = null;
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         public bool IsLicenseDialogRequired(ITcPlcLibraryManager libManager, Models.PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
@@ -971,6 +1003,7 @@ namespace Twinpack.Dialogs
             }
 
             var downloadPackageVersion = await TwinpackUtils.DownloadPackageVersionAndDependenciesAsync(libManager, packageVersion, _twinpackServer, forceDownload: ForcePackageVersionDownload, cachePath: cachePath, cancellationToken: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
             // Close Library Manager and all windows that are related to the library. These windows cause race conditions
             TwinpackUtils.CloseAllPackageRelatedWindows(_context.Dte, packageVersion);
@@ -978,6 +1011,7 @@ namespace Twinpack.Dialogs
 
             _logger.Info($"Installing package {packageVersion.Name} ...");
             await TwinpackUtils.InstallPackageVersionsAsync(libManager, downloadPackageVersion, cachePath: cachePath, cancellationToken: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
             await Task.Run(() =>
             {
@@ -992,6 +1026,7 @@ namespace Twinpack.Dialogs
                 }
 
             });
+            cancellationToken.ThrowIfCancellationRequested();
             IsNewReference = false;
 
             // update config
@@ -1024,6 +1059,8 @@ namespace Twinpack.Dialogs
                                                              }).ToList();
                 }
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         public async Task<Models.Config> WritePlcConfigToConfigAsync(ConfigPlcProject plcConfig, CancellationToken cancellationToken)
@@ -1041,6 +1078,7 @@ namespace Twinpack.Dialogs
                 _logger.Warn($"The solution doesn't have a package configuration");
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             return config;
         }
 
@@ -1126,6 +1164,7 @@ namespace Twinpack.Dialogs
                 return;
 
             await LoadNextPackageVersionsPageAsync((int)packageId, branch, configuration, target, true, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         private async Task LoadNextPackageVersionsPageAsync(int packageId, string branch, string configuration, string target, bool reset = false, CancellationToken cancellationToken = default)
@@ -1159,11 +1198,14 @@ namespace Twinpack.Dialogs
             finally
             {
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         private async Task LoadAvailablePackagesAsync(string text = "", CancellationToken cancellationToken = default)
         {
             await LoadNextCatalogPageAsync(text, true, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         private async Task LoadNextCatalogPageAsync(string text = "", bool reset = false, CancellationToken cancellationToken = default)
@@ -1180,6 +1222,7 @@ namespace Twinpack.Dialogs
                     _currentCatalogPage = 1;
 
                 var results = await _twinpackServer.GetCatalogAsync(text, _currentCatalogPage, _itemsPerPage, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
                 IsAvailablePackageAvailable = results.Item2;
 
                 if (reset)
@@ -1204,6 +1247,8 @@ namespace Twinpack.Dialogs
                 _semaphorePackages.Release();
                 IsFetchingAvailablePackages = false;
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
         }
         private async Task LoadInstalledPackagesAsync(CancellationToken cancellationToken)
         {
@@ -1234,6 +1279,13 @@ namespace Twinpack.Dialogs
                 InstalledPackagesCount = _installedPackages.Count();
                 UpdateablePackagesCount = _installedPackages.Where(x => x.IsUpdateable).Count();
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                Package = new PackageGetResponse();
+                throw ex;
+            }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
@@ -1244,6 +1296,8 @@ namespace Twinpack.Dialogs
                 _semaphorePackages.Release();
                 IsFetchingInstalledPackages = false;
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         private async void ShowMoreAvailablePackagesButton_Click(object sender, RoutedEventArgs e)
@@ -1259,7 +1313,19 @@ namespace Twinpack.Dialogs
             var branch = BranchesView.SelectedItem as string;
             var configuration = ConfigurationsView.SelectedItem as string;
             var target = TargetsView.SelectedItem as string;
-            await LoadNextPackageVersionsPageAsync((int)PackageVersion.PackageId, branch, configuration, target, cancellationToken: Token);
+
+            try
+            {
+                await LoadNextPackageVersionsPageAsync((int)PackageVersion.PackageId, branch, configuration, target, cancellationToken: Token);
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
+            finally
+            {
+            }
         }
 
         private void SelectPackageVersionFilter(Models.PackageVersionGetResponse installed)
@@ -1284,6 +1350,7 @@ namespace Twinpack.Dialogs
 
                 IsPackageLoading = true;
                 IsPackageVersionLoading = true;
+                InstalledPackageVersion = "";
 
                 // check if the plc already contains the selected package
                 _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _item.Name);
@@ -1294,18 +1361,14 @@ namespace Twinpack.Dialogs
                     Package = await _twinpackServer.GetPackageAsync(_item.DistributorName, _item.Name, Token);
 
                 var index = 0;
-                if (PackageVersion.PackageVersionId != null && PackageVersion.PackageId == Package.PackageId)
+                if (PackageVersion?.PackageVersionId != null && PackageVersion?.PackageId == Package.PackageId)
                 {
                     InstalledPackageVersion = PackageVersion.Version ?? "";
-                    index = _packageVersions.IndexOf(_packageVersions.FirstOrDefault(x => x.PackageVersionId == PackageVersion.PackageVersionId));
+                    index = _packageVersions.IndexOf(_packageVersions.FirstOrDefault(x => x.PackageVersionId == PackageVersion?.PackageVersionId));
                 }
                 else if (_packageConfig != null)
                 {
                     InstalledPackageVersion = _packageConfig.Version ?? "";
-                }
-                else
-                {
-                    InstalledPackageVersion = "";
                 }
 
                 BranchesView.Visibility = Package?.Branches.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
@@ -1313,6 +1376,13 @@ namespace Twinpack.Dialogs
                 ConfigurationsView.Visibility = Package?.Configurations.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
 
                 SelectPackageVersionFilter(_item?.Installed);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                Package = new PackageGetResponse();
+                PackageVersion = new PackageVersionGetResponse();
             }
             catch (Exception ex)
             {
@@ -1349,6 +1419,13 @@ namespace Twinpack.Dialogs
 
                 VersionsView.SelectedIndex = string.IsNullOrEmpty(_item?.Installed?.Version) ? 0 : index;
             }
+            catch (OperationCanceledException ex)
+            {
+                Package = new PackageGetResponse();
+                PackageVersion = new PackageVersionGetResponse();
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
@@ -1378,6 +1455,12 @@ namespace Twinpack.Dialogs
 
                 IsNewReference = PackageVersion.PackageVersionId == null || !_installedPackages.Any(x => x.PackageId == Package.PackageId);
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+                PackageVersion = new PackageVersionGetResponse();
+            }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
@@ -1401,8 +1484,8 @@ namespace Twinpack.Dialogs
 
                 _item = null;
                 IsPackageLoading = false;
-                Package = new Models.PackageGetResponse();
-                PackageVersion = new Models.PackageVersionGetResponse();
+                Package = new PackageGetResponse();
+                PackageVersion = new PackageVersionGetResponse();
 
                 _twinpackServer.InvalidateCache();
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -1429,6 +1512,11 @@ namespace Twinpack.Dialogs
         public async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             _cancellationTokenSource?.Cancel();
+            IsFetchingAvailablePackages = false;
+            IsFetchingInstalledPackages = false;
+            IsCatalogLoading = false;
+            IsPackageLoading = false;
+            IsPackageVersionLoading = false;
         }
 
         public async void CreateConfig_Click(object sender, RoutedEventArgs e)

@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Runtime.Caching; // Add a reference to System.Runtime.Caching.dll
+using System.Threading;
 using System.Threading.Tasks;
 
 public class CachedHttpClient : HttpClient
@@ -14,7 +15,7 @@ public class CachedHttpClient : HttpClient
         _cache = MemoryCache.Default;
     }
 
-    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, TimeSpan? cacheDuration=null)
+    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default, TimeSpan? cacheDuration = null)
     {
         try
         {
@@ -34,7 +35,7 @@ public class CachedHttpClient : HttpClient
                 return _cache.Get(url) as HttpResponseMessage;
             }
 
-            var response = await base.SendAsync(request);
+            var response = await base.SendAsync(request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             var cacheItemPolicy = new CacheItemPolicy
@@ -44,8 +45,11 @@ public class CachedHttpClient : HttpClient
             _cache.Set(url, response, cacheItemPolicy);
             return response;
         }
-        catch (TaskCanceledException)
+        catch (TaskCanceledException ex)
         {
+            if (cancellationToken.IsCancellationRequested)
+                throw ex;
+
             throw new TimeoutException($"Timed out during request to {request.RequestUri.Scheme}://{request.RequestUri.Host}\nTwinpack Server is unresponsive! There might be no internet connection or the server may be temporarily down! " +
                     "Please check your connection or try again later.");
         }
