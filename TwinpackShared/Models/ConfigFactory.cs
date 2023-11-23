@@ -374,6 +374,10 @@ namespace Twinpack.Models
                             });
                         }
                     }
+                    catch (OperationCanceledException ex)
+                    {
+                        throw ex;
+                    }
                     catch (Exception) { }
                 }
 
