@@ -11,7 +11,6 @@ public class CachedHttpClient : HttpClient
 
     public CachedHttpClient() : base()
     {
-        Timeout = new TimeSpan(0, 0, 10);
         _cache = MemoryCache.Default;
     }
 
