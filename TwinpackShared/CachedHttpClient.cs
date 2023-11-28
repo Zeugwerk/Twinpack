@@ -23,7 +23,7 @@ public class CachedHttpClient : HttpClient
 
             if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head)
             {
-                return (await base.SendAsync(request)).EnsureSuccessStatusCode();
+                return (await base.SendAsync(request, cancellationToken)).EnsureSuccessStatusCode();
             }
 
             cacheDuration = cacheDuration ?? TimeSpan.FromHours(12);
