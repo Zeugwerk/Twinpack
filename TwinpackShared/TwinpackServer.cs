@@ -14,6 +14,7 @@ using Twinpack.Exceptions;
 using System.Reflection;
 using AdysTech.CredentialManager;
 using System.Threading;
+using System.Net.PeerToPeer;
 
 namespace Twinpack
 {
@@ -32,6 +33,13 @@ namespace Twinpack
         public string Password { get; set; }
         public LoginPostResponse UserInfo { get; set; }
         public bool LoggedIn { get { return UserInfo?.User != null; } }
+
+        public TwinpackServer()
+        {
+            var credentials = CredentialManager.GetCredentials(TwinpackUrlBase);
+            Username = credentials?.UserName;
+            Password = credentials?.Password;
+        }
 
         public Version ClientVersion
         {
@@ -414,6 +422,7 @@ namespace Twinpack
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
+            _client.Invalidate(); // clear the cache
             var credentials = CredentialManager.GetCredentials(TwinpackUrlBase);
 
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/login"));
