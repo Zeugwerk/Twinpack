@@ -73,7 +73,7 @@ namespace Twinpack
 
         public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
         {
-            _logger.Info($"Uploading Package '{packageVersion.Name}' (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration}, version: {packageVersion.Version}");
+            _logger.Info($"Uploading Package '{packageVersion.Name}' (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration}, version: {packageVersion.Version})");
 
             var requestBodyJson = JsonSerializer.Serialize(packageVersion);
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(TwinpackUrl + "/package-version"));
@@ -256,7 +256,7 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string distributorName, string name, string version, string configuration, string branch, string target, bool includeBinary = false, string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string distributorName, string name, string version, string configuration="Release", string branch="main", string target="TC3.1", bool includeBinary = false, string cachePath = null, CancellationToken cancellationToken = default)
         {
             if(includeBinary)
                 _logger.Info($"Downloading Package '{name}' (version: {version}, configuration: {configuration}, branch: {branch}, target: {target})");
