@@ -24,7 +24,7 @@ To use the Twinpack Package Manager, follow these steps:
 
 <img align="center" src="/images/twinpack_catalog.png" width="800" />
 
-To install a package from the Twinpack Server, follow these steps:
+To install a package, follow these steps:
 
 1. Open a TwinCAT solution and navigate to a PLC.
 2. Right click the References item of your PLC
@@ -36,21 +36,33 @@ To install a package from the Twinpack Server, follow these steps:
 8. Twinpack automatically installs the package, including all depending libraries, on your System and adds it as a reference to your PLC.
 9. Follow the library documentation or instructions to incorporate its functionality into your project.
 
+
 ## Sharing a Package
+
+There are multiple ways to publish a package on Twinpack. Please note that your package should meet certain standards and guidelines to ensure its quality and compatibility with TwinCAT.
+
+
+### With the Twinpack Registry
+
+The most straight forward way to publish a package, which you release on GitHub is to use the [Twinpack Registry](https://github.com/Zeugwerk/Twinpack-Registry). Create a Pull Request in which you add your repository to the `repositories.txt` file, similarily to this [commit](https://github.com/Zeugwerk/Twinpack-Registry/commit/ecafd41cbc2c97f647bd4512a14d69293f5cc82f). There is a workflow in the twinpack-registry repository, which automatically uploads any new release, which contains a .library file to Twinpack.
+
+
 
 ### With a GitHub workflow
 
-It is possible to create a GitHub workflow for your repository to automate publishing a package. See [twinpack-action](https://github.com/Zeugwerk/twinpack-action) for details.
-Note that it is also possible to combine this with other actions provided by Zeugwerk to achieve CI/CD for TwinCAT PLCs. 
+If you have a CI/CD environment it can be benefical to you to upload your package by using the Twinpack Commandline interface (see the `TwinpackCli` project in Twinpack). For GitHub, we tried to streamline this process as much as possible by providing a GitHub action, which will do this for you, see [twinpack-action](https://github.com/Zeugwerk/twinpack-action) for details.
+
+Note, if you don't have your own CI/CD environment, this [action](https://github.com/Zeugwerk/zkbuild-action) can be used to implement CI/CD on the Zeugwerk CI/CD environment, unlike Twinpack we can only provide this environment free of charge in a limited amount (at the moment 30 buildactions / month)
 
 ![image](https://github.com/Zeugwerk/Twinpack/assets/84121166/2340aac9-b06f-402b-99a4-2aa79173376d)
+
 
 
 ### In TwinCAT XAE Shell or Visual Studio
 
 <img align="center" src="/images/twinpack_publish.png" width="800" />
 
-To share your own TwinCAT library as a package with the TwinCAT community, please follow these guidelines:
+This is the most straight forward way to publish a package if you want to publish your library manually.
 
 1. Open a TwinCAT solution and navigate to the PLC library you want to share with the community. It is recommended to have a TwinCAT library created in a TwinCAT PLC (-only) project instead of a TwinCAT XAE project.
 2. Right click the PLC item and click 'Twinpack' -> 'Publish ...'
@@ -66,7 +78,6 @@ To share your own TwinCAT library as a package with the TwinCAT community, pleas
   
 After the initial upload of your library as a package, you may publish newer versions of your library or you can also modify the current version by right clicking on the PLC item and then on 'Twinpack' -> 'Modify...'. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
 
-Please note that your package should meet certain standards and guidelines to ensure its quality and compatibility with TwinCAT. If you don't have any guidelines yet, [here](https://doc.zeugwerk.dev/contribute/contribute_code.html) are some suggestions.
 
 
 ## Configuration file (.Zeugwerk/config.json)
