@@ -43,6 +43,9 @@ To install a package from the Twinpack Server, follow these steps:
 It is possible to create a GitHub workflow for your repository to automate publishing a package. See [twinpack-action](https://github.com/Zeugwerk/twinpack-action) for details.
 Note that it is also possible to combine this with other actions provided by Zeugwerk to achieve CI/CD for TwinCAT PLCs. 
 
+![image](https://github.com/Zeugwerk/Twinpack/assets/84121166/2340aac9-b06f-402b-99a4-2aa79173376d)
+
+
 ### In TwinCAT XAE Shell or Visual Studio
 
 <img align="center" src="/images/twinpack_publish.png" width="800" />
