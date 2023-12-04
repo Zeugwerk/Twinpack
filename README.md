@@ -1,6 +1,6 @@
-# Twinpack - The Library Package Manager for TwinCAT
+# Twinpack 
 
-The Twinpack Package Manager is a powerful and user-friendly package management tool for TwinCAT libraries. It is designed to empower the TwinCAT community by enabling seamless sharing and distribution of libraries, fostering collaboration, and facilitating the exchange of specialized components among developers. It acts as a versatile platform akin to NuGet, allowing users to efficiently manage and deploy their custom-built modules.
+The Twinpack Package Manager is a powerful and user-friendly package management tool for TwinCAT libraries. It is designed to empower the TwinCAT community by enabling sharing and distribution of libraries. It acts as a versatile platform similarly to NuGet (but with a PLC touch), allowing users to efficiently manage and deploy their custom-built modules.
 
 With TwinCAT 3.1.4026, Beckhoff introduced a package manager which emphasizes the installation and maintenance of the TwinCAT Integrated Development Environment (IDE) and other software components tightly integrated with Beckhoff's proprietary offerings. While Twinpack and Beckhoff's package manager contribute to the advancement of TwinCAT technology, Twinpack stands out for its community-driven ethos, encouraging innovation, customization, and knowledge exchange among users, while Beckhoff's package manager centers on providing a streamlined experience for their official software installations.
 
