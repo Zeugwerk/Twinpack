@@ -31,7 +31,8 @@ namespace Twinpack
 {
     public class LibraryPropertyReader
     {
-        public class LibraryInfo {
+        public class LibraryInfo
+        {
             public string Name { get; set; }
             public string Description { get; set; }
             public string Author { get; set; }
@@ -40,10 +41,10 @@ namespace Twinpack
         }
 
         const string ProjectInfoGuid = @"$11c0fc3a-9bcf-4dd8-ac38-efb93363e521";
-        public static LibraryInfo Read(string libraryFile)
+        public static LibraryInfo Read(byte[] libraryBinary)
         {  
             var libraryInfo = new LibraryInfo(); 
-            List<string> properties = getPropertyList(libraryFile); 
+            List<string> properties = getPropertyList(libraryBinary); 
             libraryInfo.Name = getPropertyFromList("DefaultNameSpace", properties); 
             libraryInfo.Description = getPropertyFromList("Description", properties); 
             libraryInfo.Author = getPropertyFromList("Author", properties);
@@ -52,7 +53,7 @@ namespace Twinpack
             return libraryInfo; 
         }
         
-        public static string getPropertyFromList(string propertyName, List<string> propertyList) 
+        private static string getPropertyFromList(string propertyName, List<string> propertyList) 
         { 
             int index = propertyList.FindIndex(p => String.Equals(p, propertyName, StringComparison.OrdinalIgnoreCase)) + 1;
             if (index > 0 && index < propertyList.Count) 
@@ -63,12 +64,11 @@ namespace Twinpack
             { 
                 return "";
             } 
-        } 
-        
-        public static List<string> getPropertyList(string libraryFile)
+        }
+
+        private static List<string> getPropertyList(byte[] libraryBinary)
         {
-            byte[] fileData = File.ReadAllBytes(libraryFile); 
-            string fileText = Encoding.ASCII.GetString(fileData); 
+            string fileText = Encoding.ASCII.GetString(libraryBinary); 
             int filePosition = fileText.IndexOf(ProjectInfoGuid) - 1; 
             
             if (filePosition < 0) 
@@ -80,9 +80,9 @@ namespace Twinpack
             int valueLength = 0; 
             int index = -1; 
             int nextIndex = 0;
-            while (filePosition < fileData.Length - 1) 
+            while (filePosition < libraryBinary.Length - 1) 
             { 
-                nextIndex = parseNumber(fileData, ref filePosition); 
+                nextIndex = parseNumber(libraryBinary, ref filePosition); 
                 if (index + 1 != nextIndex) 
                 { 
                     break; 
@@ -90,17 +90,17 @@ namespace Twinpack
                 
                 index = nextIndex; 
                 
-                valueLength = parseNumber(fileData, ref filePosition); 
-                if (filePosition + valueLength < fileData.Length) 
+                valueLength = parseNumber(libraryBinary, ref filePosition); 
+                if (filePosition + valueLength < libraryBinary.Length) 
                 { 
-                    properties.Add(Encoding.UTF8.GetString(fileData, filePosition, valueLength)); 
+                    properties.Add(Encoding.UTF8.GetString(libraryBinary, filePosition, valueLength)); 
                     filePosition += valueLength; 
                 } 
             }
             return properties; 
-        } 
-        
-        public static int parseNumber(byte[] buffer, ref int filePosition)       
+        }
+
+        private static int parseNumber(byte[] buffer, ref int filePosition)       
         {           
             int value = buffer[filePosition++];           
         

@@ -437,9 +437,9 @@ namespace Twinpack
 
         public static IEnumerable<ConfigPlcProject> PlcProjectsFromPath(string rootPath = ".")
         {
-            foreach(var file in Directory.GetFiles(rootPath, "*.library"))
+            foreach(var libraryFile in Directory.GetFiles(rootPath, "*.library"))
             {
-                var libraryInfo = LibraryPropertyReader.Read(file);
+                var libraryInfo = LibraryPropertyReader.Read(File.ReadAllBytes(libraryFile));
                 var plc = new ConfigPlcProject()
                 {
                     Name = libraryInfo.Name,
@@ -448,7 +448,7 @@ namespace Twinpack
                     Authors = libraryInfo.Author,
                     DistributorName = libraryInfo.Company,
                     Version = libraryInfo.Version,
-                    FilePath = file
+                    FilePath = libraryFile
                 };
 
                 yield return plc;
