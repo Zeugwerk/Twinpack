@@ -410,5 +410,49 @@ namespace Twinpack
 
             return result;
         }
+
+        public static IEnumerable<ConfigPlcProject> PlcProjectsFromConfig(bool compiled, string target, string rootPath = ".", string cachePath = null)
+        {
+            var config = ConfigFactory.Load(rootPath);
+
+            _logger.Info($"Pushing to Twinpack Server");
+
+            var suffix = compiled ? "compiled-library" : "library";
+            var plcs = config.Projects.SelectMany(x => x.Plcs)
+                                      .Where(x => x.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary ||
+                                             x.PlcType == ConfigPlcProject.PlcProjectType.Library);
+            // check if all requested files are present
+            foreach (var plc in plcs)
+            {
+                plc.FilePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}";
+                if (!File.Exists(plc.FilePath))
+                    throw new LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{plc.FilePath}'");
+
+                if (!string.IsNullOrEmpty(plc.LicenseFile) && !File.Exists(plc.LicenseFile))
+                    _logger.Warn($"Could not find license file '{plc.LicenseFile}'");
+
+                yield return plc;
+            }
+        }
+
+        public static IEnumerable<ConfigPlcProject> PlcProjectsFromPath(string rootPath = ".")
+        {
+            foreach(var file in Directory.GetFiles(rootPath, "*.library"))
+            {
+                var libraryInfo = LibraryPropertyReader.Read(file);
+                var plc = new ConfigPlcProject()
+                {
+                    Name = libraryInfo.Name,
+                    DisplayName = libraryInfo.Name,
+                    Description = libraryInfo.Description,
+                    Authors = libraryInfo.Author,
+                    DistributorName = libraryInfo.Company,
+                    Version = libraryInfo.Version,
+                    FilePath = file
+                };
+
+                yield return plc;
+            }
+        }
     }
 }

@@ -468,34 +468,14 @@ namespace Twinpack
             }
         }
 
-        public async Task PushAsync(string configuration, string branch, string target, string notes, bool compiled, string rootPath = ".", string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task PushAsync(IEnumerable<ConfigPlcProject> plcs, string configuration, string branch, string target, string notes, bool compiled, CancellationToken cancellationToken = default)
         {
-            var config = ConfigFactory.Load(rootPath);
-
-            _logger.Info($"Pushing to Twinpack Server");
-
-            var suffix = compiled ? "compiled-library" : "library";
-            var plcs = config.Projects.SelectMany(x => x.Plcs)
-                                         .Where(x => x.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary ||
-                                                x.PlcType == ConfigPlcProject.PlcProjectType.Library);
-            // check if all requested files are present
-            foreach (var plc in plcs)
-            {
-                var fileName = $@"{cachePath ?? TwinpackServer.DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}";
-                if (!File.Exists(fileName))
-                    throw new LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{fileName}'");
-
-                if (!string.IsNullOrEmpty(plc.LicenseFile) && !File.Exists(plc.LicenseFile))
-                    _logger.Warn($"Could not find license file '{plc.LicenseFile}'");
-            }
-
             var exceptions = new List<Exception>();
             foreach (var plc in plcs)
             {
                 try
                 {
-                    suffix = compiled ? "compiled-library" : "library";
-                    string binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath ?? TwinpackServer.DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}"));
+                    string binary = Convert.ToBase64String(File.ReadAllBytes(plc.FilePath));
                     string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
                     string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
                     string iconBinary = (!File.Exists(plc.IconFile) || string.IsNullOrEmpty(plc.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.IconFile));
