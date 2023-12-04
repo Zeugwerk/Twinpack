@@ -40,25 +40,25 @@ To install a package, follow these steps:
 9. Follow the library documentation or instructions to incorporate its functionality into your project.
 
 
-## Sharing a Package
+## Share a Package ...
 
-There are multiple ways to publish a package on Twinpack. Please note that your package should meet certain standards and guidelines to ensure its quality and compatibility with TwinCAT.
+There are multiple ways to publish a package on Twinpack and you can chose how you want to publish your packages depending on how you want to create releases.
 
 
-### With the Twinpack Registry
+### with the Twinpack Registry
 
 The most straight forward way to publish a package, which you release on GitHub is to use the [Twinpack Registry](https://github.com/Zeugwerk/Twinpack-Registry). Create a Pull Request in which you add your repository to the `repositories.txt` file, similarily to this [commit](https://github.com/Zeugwerk/Twinpack-Registry/commit/ecafd41cbc2c97f647bd4512a14d69293f5cc82f). There is a workflow in the twinpack-registry repository, which automatically uploads any new release, which contains a .library file to Twinpack.
 
 
 
-### With a GitHub workflow
+### with a GitHub workflow
 
 If you have a CI/CD environment it can be benefical to you to upload your package by using the Twinpack Commandline interface (see the `TwinpackCli` project in Twinpack). For GitHub, we tried to streamline this process as much as possible by providing a GitHub action, which will do this for you, see [twinpack-action](https://github.com/Zeugwerk/twinpack-action) for details.
 
 Note, if you don't have your own CI/CD environment, this [action](https://github.com/Zeugwerk/zkbuild-action) can be used to implement CI/CD on the Zeugwerk CI/CD environment, unlike Twinpack we can only provide this environment free of charge in a limited amount (at the moment 30 buildactions / month)
 
 
-### In TwinCAT XAE Shell or Visual Studio
+### manually in your IDE
 
 This is the most straight forward way to publish a package if you want to publish your library directly from your IDE
 
