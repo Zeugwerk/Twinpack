@@ -21,7 +21,7 @@ namespace Twinpack
             public string Password { get; set; }
 
             [Option('P', "provided", Required = false, Default = false, HelpText = "Also pull packages that are provided by the package definition")]
-            public bool Provided { get; set; }            
+            public bool Provided { get; set; }
         }
 
         [Verb("push", HelpText = "Pushes libraries to a Twinpack Server")]
@@ -47,6 +47,12 @@ namespace Twinpack
 
             [Option('C', "compiled", Required = false, Default = false, HelpText = "The package is a compiled-library")]
             public bool Compiled { get; set; }
+
+            [Option('c', "without-config", Required = false, Default = false, HelpText = "Don't use a config.json file, but use the information where to find libraries from the other arguments")]
+            public bool WithoutConfig { get; set; }
+
+            [Option('p', "library-path", Required = false, Default = ".", HelpText = "Only valid when without-config is used, path where .library files are located")]
+            public string LibraryPath { get; set; }
         }
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
@@ -76,13 +82,22 @@ namespace Twinpack
                     (PullOptions opts) =>
                     {
                         Login(opts.Username, opts.Password);
-                        _twinpackServer.PullAsync(skipInternalPackages: !opts.Provided).Wait();
+                        _twinpackServer.PullAsync(skipInternalPackages: !opts.Provided).GetAwaiter().GetResult();
                         return 0;
                     },
                     (PushOptions opts) =>
                     {
                         Login(opts.Username, opts.Password);
-                        _twinpackServer.PushAsync(opts.Configuration, opts.Branch, opts.Target, opts.Notes, opts.Compiled).Wait();
+
+                        _twinpackServer.PushAsync(
+                            opts.WithoutConfig ? 
+                                TwinpackUtils.PlcProjectsFromPath(opts.LibraryPath) : 
+                                TwinpackUtils.PlcProjectsFromConfig(opts.Compiled, opts.Target),
+                            opts.Configuration, 
+                            opts.Branch, 
+                            opts.Target, 
+                            opts.Notes, 
+                            opts.Compiled).GetAwaiter().GetResult();
                         return 0;
                     },
                     errs => 1);
