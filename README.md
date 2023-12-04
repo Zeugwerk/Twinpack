@@ -4,14 +4,6 @@ The Twinpack Package Manager is a powerful and user-friendly package management 
 
 With TwinCAT 3.1.4026, Beckhoff introduced a package manager which emphasizes the installation and maintenance of the TwinCAT Integrated Development Environment (IDE) and other software components tightly integrated with Beckhoff's proprietary offerings. While Twinpack and Beckhoff's package manager contribute to the advancement of TwinCAT technology, Twinpack stands out for its community-driven ethos, encouraging innovation, customization, and knowledge exchange among users, while Beckhoff's package manager centers on providing a streamlined experience for their official software installations.
 
-## Table of Contents
-
-- [Quicklinks](#quicklinks)
-- [Installation](#installation)
-- [Using a Package](#using-a-package)
-- [Sharing a Package](#sharing-a-package)
-- [Further information](#further-information)
-
 ## Quicklinks
 - [Installer](https://github.com/Zeugwerk/Twinpack/releases/latest)
 - [Registration](https://zeugwerk.dev/wp-login.php?action=register) (optional, only for publishing)
@@ -46,6 +38,13 @@ To install a package from the Twinpack Server, follow these steps:
 
 ## Sharing a Package
 
+### With a GitHub workflow
+
+It is possible to create a GitHub workflow for your repository to automate publishing a package. See [twinpack-action](https://github.com/Zeugwerk/twinpack-action) for details.
+Note that it is also possible to combine this with other actions provided by Zeugwerk to achieve CI/CD for TwinCAT PLCs. 
+
+### In TwinCAT XAE Shell or Visual Studio
+
 <img align="center" src="/images/twinpack_publish.png" width="800" />
 
 To share your own TwinCAT library as a package with the TwinCAT community, please follow these guidelines:
@@ -65,6 +64,7 @@ To share your own TwinCAT library as a package with the TwinCAT community, pleas
 After the initial upload of your library as a package, you may publish newer versions of your library or you can also modify the current version by right clicking on the PLC item and then on 'Twinpack' -> 'Modify...'. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
 
 Please note that your package should meet certain standards and guidelines to ensure its quality and compatibility with TwinCAT. If you don't have any guidelines yet, [here](https://doc.zeugwerk.dev/contribute/contribute_code.html) are some suggestions.
+
 
 ## Configuration file (.Zeugwerk/config.json)
 
