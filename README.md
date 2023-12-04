@@ -15,14 +15,17 @@ With TwinCAT 3.1.4026, Beckhoff introduced a package manager which emphasizes th
 To use the Twinpack Package Manager, follow these steps:
 
 1. [Download](https://github.com/Zeugwerk/Twinpack/releases/latest) the latest installer.
-2. In the installation process you will be asked to optionally register yourself for publishing your own packages. Type in a valid email address to get your login information into your mailbox right after the installation of Twinpack. This is needed for publishing libraries later on.
-3. Twinpack supports multiple versions of Visual Studio and TwinCAT XAE Shell. Select the IDEs, which Twinpack should be installed for.
-4. Click on "Install".
-5. Follow the on-screen instructions to complete the installation.
+2. Select the IDEs, which Twinpack should be installed for.
+3. Click on "Install".
+4. Follow the on-screen instructions to complete the installation.
 
 ## Using a Package
 
-<img align="center" src="/images/twinpack_catalog.png" width="800" />
+<p float="left">
+<img src="/images/twinpack_contextmenu.png" width="300" hspace="80" />
+<img src="/images/twinpack_catalog.png" width="500" />
+</p>
+
 
 To install a package, follow these steps:
 
@@ -54,82 +57,28 @@ If you have a CI/CD environment it can be benefical to you to upload your packag
 
 Note, if you don't have your own CI/CD environment, this [action](https://github.com/Zeugwerk/zkbuild-action) can be used to implement CI/CD on the Zeugwerk CI/CD environment, unlike Twinpack we can only provide this environment free of charge in a limited amount (at the moment 30 buildactions / month)
 
-![image](https://github.com/Zeugwerk/Twinpack/assets/84121166/2340aac9-b06f-402b-99a4-2aa79173376d)
-
-
 
 ### In TwinCAT XAE Shell or Visual Studio
 
-<img align="center" src="/images/twinpack_publish.png" width="800" />
+This is the most straight forward way to publish a package if you want to publish your library directly from your IDE
 
-This is the most straight forward way to publish a package if you want to publish your library manually.
-
-1. Open a TwinCAT solution and navigate to the PLC library you want to share with the community. It is recommended to have a TwinCAT library created in a TwinCAT PLC (-only) project instead of a TwinCAT XAE project.
+1. Open a TwinCAT solution and navigate to the PLC library you want to share with the community.
 2. Right click the PLC item and click 'Twinpack' -> 'Publish ...'
 3. In the dialog, which opens, fill in the information describing your package.
    - Distributor (mandatory): The name you enter here will be exclusively associated with your Twinpack Account, and it will serve as a unique identifier for all your upcoming packages.
    - Version (mandatory): This is the initial version of your package. Once you publish your package for the first time, you have the flexibility to release newer versions in the future.
-   - The Advanced menu is specifically designed for enterprise users of Twinpack. It enables them to configure packages for private usage by controlling the audience that can access and download the package (i.e. employees of a company). [Contact us](mailto:info@zeugwerk.at) if you are interested in this feature.
-   - Other information is optional and self-explanatory. However, note that all information, except for 'notes', is linked to a package rather than a specific version of a package. The latter may be used to give a short changelog so users know what changed since the previous release.
-   - if you have a library icon, make sure to integrate this in the PLC-project as a standard file in order not to loose it. The recommendation for the library icon is square size, png file-type and pixel-size should be 256x256. However, the icon can also be of larger size, it will be scaled automatically. If no icon is chosen, Twinpack will generate a randomized icon figure.
-5. Click publish to make Twinpack
+   - Other fields are optional
+4. Click publish to make Twinpack
    - Check all objects of your library
    - Upload the library as a package to the Twinpack server making it available for the community
-  
+
+<p float="left">
+<img src="/images/twinpack_contextmenu2.png" width="350" hspace="80" />   
+<img src="/images/twinpack_publish.png" width="450" />
+</p>
+
 After the initial upload of your library as a package, you may publish newer versions of your library or you can also modify the current version by right clicking on the PLC item and then on 'Twinpack' -> 'Modify...'. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
 
-
-
-## Configuration file (.Zeugwerk/config.json)
-
-Twinpack is designed to work out-of-the-box. By default Twinpack will parse your plcproj file everytime do open the [Twinpack Catalog](#using-a-package) or [publish a package](#sharing-a-package), for every reference that you have in our plcproj it will check if there is an appropriate package available on Twinpack. If no, it will simply ignore this reference, if yes, it will list it in the Catalog in the "Installed" tab.
-
-Parsing and resolving packages everytime is a bit slow and so, to enhance the performance of Twinpack it is possible to let Twinpack create a configuration file for you, which will be placed in the folder `.Zeugwerk\config.json`. The file itself contains meta project for your solution (name of the PLC, Version of the PLC, used Twinpack Packages).
-
-To generate the config file, navigate to the [Twinpack Catalog](#using-a-package) and click the `Create` button. The configuration file will give you the following benefits
-
-- Opening the Twinpack Catalog is much faster
-- Integration with [zkbuild](https://github.com/Zeugwerk/zkbuild-action) for automatically building your project and optionally creating a TwinCAT library whenever you commit to GitHub
-- Your TwinCAT Solution can directly be used with [zkdoc](https://github.com/Zeugwerk/zkdoc-action) to create a documentation for your PLC right on GitHub (or any other target), for instance see [here](https://stefanbesler.github.io/struckig/).
-
-A typcial configuration file for a solution with 1 PLC looks like this (Twinpack generates this for you automatically)
-
-```json
-{
-  "fileversion": 1,
-  "solution": "TwinCAT Project1.sln",
-  "projects": [
-    {
-      "name": "TwinCAT Project1",
-      "plcs": [
-        {
-          "version": "1.0.0.0",
-          "name": "Untitled1",
-          "type": "Application",
-          "packages": [
-            {
-              "version": "1.2.19.0",
-              "repository": "bot",
-              "name": "ZCore",
-              "branch": "release/1.2",
-              "target": "TC3.1",
-              "configuration": "Distribution",
-              "distributor-name": "Zeugwerk GmbH"
-            }
-          ],
-          "references": {
-            "*": [
-              "Tc2_Standard=*",
-              "Tc2_System=*",
-              "Tc3_Module=*"
-            ]
-          }
-        }
-      ]
-    }
-  ]
-}
-```
 
 ## Further information
 
