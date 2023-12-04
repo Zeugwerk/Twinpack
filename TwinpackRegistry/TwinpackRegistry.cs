@@ -84,14 +84,11 @@ namespace Twinpack
             };
 
             var target = "TC3.1";
-            var suffix = "library";
-            var registry = new GitHubClient(_header);
-            var repositories = Encoding.ASCII.GetString(await registry.Repository.Content.GetRawContent(repositoryOwner, repositoryName, "repositories.txt")).Trim();
+            var client = new GitHubClient(_header);
+            var repositories = Encoding.ASCII.GetString(await client.Repository.Content.GetRawContent(repositoryOwner, repositoryName, "repositories.txt")).Trim();
 
-            // todo: foreach async
             foreach(var repoUrl in repositories.Split('\n'))
             {
-                var client = new GitHubClient(_header);
                 var (owner, repo) = ParseGitHubRepoUrl(repoUrl);
                 var latestRelease = await client.Repository.Release.GetLatest(owner, repo);
                 
@@ -103,39 +100,47 @@ namespace Twinpack
                         var library = await DownloadAsync(asset.BrowserDownloadUrl);
                         var libraryInfo = LibraryPropertyReader.Read(library);
                         var filePath = $@"{TwinpackServer.DefaultLibraryCachePath}\{target}";
-                        var libraryFileName = $@"{filePath}\{libraryInfo.Name}_{libraryInfo.Version}.{suffix}";
-                        var licenseFileName = $@"{filePath}\LICENSE_{libraryInfo.Name}_{libraryInfo.Version}.{suffix}";
+                        var iconFileName = $@"{filePath}\{libraryInfo.Name}_{libraryInfo.Version}.png";
+                        var libraryFileName = $@"{filePath}\{libraryInfo.Name}_{libraryInfo.Version}.library";
+                        var licenseFileName = $@"{filePath}\{libraryInfo.Name}_{libraryInfo.Version}.license";
 
-                        config.Projects.Add(new ConfigProject()
+                        var plc = new ConfigPlcProject()
                         {
                             Name = libraryInfo.Name,
-                            Plcs = new List<ConfigPlcProject> ()
+                            Version = libraryInfo.Version,
+                            //References =
+                            //Packages =
+                            Description = libraryInfo.Description,
+                            //IconFile =
+                            DisplayName = libraryInfo.Name,
+                            DistributorName = libraryInfo.Company,
+                            ProjectUrl = repoUrl,
+                            Authors = libraryInfo.Author,
+                            License = "LICENSE",
+                            LicenseFile = licenseFileName,
+                            IconFile = iconFileName,
+                            Type = ConfigPlcProject.PlcProjectType.Library.ToString()
+                        };
+
+                        // only upload if the package is not published on Twinpack yet
+                        var packageVersion = await _twinpackServer.GetPackageVersionAsync(plc.DistributorName, plc.Name, plc.Version);
+                        if (packageVersion?.PackageVersionId == null)
+                        {
+                            config.Projects.Add(new ConfigProject()
                             {
-                                new ConfigPlcProject()
-                                {
-                                    Name = libraryInfo.Name,
-                                    Version = libraryInfo.Version,
-                                    //References =
-                                    //Packages =
-                                    Description = libraryInfo.Description,
-                                    //IconFile =
-                                    DisplayName = libraryInfo.Name,
-                                    DistributorName = libraryInfo.Company,
-                                    ProjectUrl = repoUrl,
-                                    Authors = libraryInfo.Author,
-                                    License = "LICENSE",
-                                    LicenseFile = licenseFileName,
-                                    Type = ConfigPlcProject.PlcProjectType.Library.ToString()
-                                }
-                            }
-                        });
+                                Name = libraryInfo.Name,
+                                Plcs = new List<ConfigPlcProject>() { plc }
+                            });
 
-                        Directory.CreateDirectory(new FileInfo(libraryFileName).DirectoryName);
-                        if(File.Exists(libraryFileName))
-                            throw new Exception($"{libraryFileName} already exists");
-
-                        File.WriteAllText(licenseFileName, license);
-                        File.WriteAllBytes(libraryFileName, library);
+                            Directory.CreateDirectory(new FileInfo(libraryFileName).DirectoryName);
+                            File.WriteAllBytes(iconFileName, IconUtils.GenerateIdenticon(libraryInfo.Name));
+                            File.WriteAllText(licenseFileName, license);
+                            File.WriteAllBytes(libraryFileName, library);
+                        }
+                        else
+                        {
+                            _logger.Info($"Skipping already published package '{plc.Name}' (distributor: {plc.DistributorName}, version: {plc.Version})'");
+                        }
                     }
                     catch (Exception ex)
                     {
