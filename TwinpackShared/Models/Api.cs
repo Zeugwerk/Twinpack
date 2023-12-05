@@ -178,6 +178,8 @@ namespace Twinpack.Models
             Compiled = packageVersion.Compiled;
             Notes = packageVersion.Notes;
             Binary = packageVersion.Binary;
+            BinaryDownloadUrl = packageVersion.BinaryDownloadUrl;
+            BinarySha256 = packageVersion.BinarySha256;
             Dependencies = new List<PackageVersionGetResponse>(packageVersion.Dependencies);
         }
 
@@ -197,6 +199,10 @@ namespace Twinpack.Models
         public string Notes { get; set; }
         [JsonPropertyName("binary")]
         public string Binary { get; set; }
+        [JsonPropertyName("binary-download-url")]
+        public string BinaryDownloadUrl { get; set; }
+        [JsonPropertyName("binary-sha256")]
+        public string BinarySha256 { get; set; }        
         [JsonPropertyName("dependencies")]
         public IEnumerable<PackageVersionGetResponse> Dependencies { get; set; }
 
