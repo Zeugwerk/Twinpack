@@ -119,6 +119,7 @@ namespace Twinpack
                             License = "LICENSE",
                             LicenseFile = licenseFileName,
                             IconFile = iconFileName,
+                            BinaryDownloadUrl = asset.BrowserDownloadUrl,
                             Type = ConfigPlcProject.PlcProjectType.Library.ToString()
                         };
 
