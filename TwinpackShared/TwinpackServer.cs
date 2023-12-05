@@ -498,6 +498,7 @@ namespace Twinpack
                         Notes = notes,
                         IconFilename = Path.GetFileName(plc.IconFile),
                         IconBinary = iconBinary,
+                        BinaryDownloadUrl = plc.BinaryDownloadUrl,
                         LicenseBinary = licenseBinary,
                         LicenseTmcBinary = licenseTmcBinary,
                         Binary = binary,
