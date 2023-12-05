@@ -76,7 +76,7 @@ This is the most straight forward way to publish a package if you want to publis
    - Upload the library as a package to the Twinpack server making it available for the community
 
 <p float="left">
-<img src="/images/twinpack_contextmenu2.png" width="350" hspace="80" />   
+<img src="/images/twinpack_contextmenu2.png" width="320" hspace="80" />   
 <img src="/images/twinpack_publish.png" width="450" />
 </p>
 
