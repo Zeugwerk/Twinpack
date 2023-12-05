@@ -233,9 +233,8 @@ namespace Twinpack
 
             if (!referenceFound || forceDownload)
             {
-                _logger.Info($"Downloading {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName})");
-                var pk = await server.GetPackageVersionAsync((int)packageVersion.PackageVersionId, includeBinary: true, cachePath: cachePath, cancellationToken: cancellationToken);
-                downloadedPackageVersions.Add(pk);
+                await server.DownloadPackageVersionAsync(packageVersion, checksumMode: TwinpackServer.ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                downloadedPackageVersions.Add(packageVersion);
             }
 
             foreach (var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())

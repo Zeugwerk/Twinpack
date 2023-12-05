@@ -177,7 +177,7 @@ namespace Twinpack.Dialogs
                 {
                     // try to get the specific version
                     IsNewPackageVersion = false;
-                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_package.DistributorName, _package.Name, _packageVersion.Version, null, null, null, false, null, Token);
+                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_package.DistributorName, _package.Name, _packageVersion.Version, configuration: null, branch: null, target: null, Token);
 
                     // fallback to the latest available version
                     if (_packageVersion.PackageVersionId == null)
@@ -195,7 +195,7 @@ namespace Twinpack.Dialogs
                 {
                     try
                     {
-                        _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, includeBinary: false, cancellationToken: Token);
+                        _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, cancellationToken: Token);
                         _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(_packageVersion.DistributorName, _packageVersion.Name, null, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target, cancellationToken: Token);
                         Dependencies = _packageVersion.Dependencies;
                     }

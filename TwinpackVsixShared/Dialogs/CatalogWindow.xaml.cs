@@ -1450,7 +1450,7 @@ namespace Twinpack.Dialogs
                 {
                     PackageVersion = await _twinpackServer.GetPackageVersionAsync(item.DistributorName,
                         item.Name, item.Version, item.Configuration, item.Branch, item.Target,
-                        includeBinary: false, cachePath: null, cancellationToken: Token);
+                        cancellationToken: Token);
                 }
 
                 IsNewReference = PackageVersion.PackageVersionId == null || !_installedPackages.Any(x => x.PackageId == Package.PackageId);

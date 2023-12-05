@@ -36,9 +36,9 @@ namespace Twinpack.Dialogs
             {
                 throw ex;
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
-                throw ex;
+                throw;
             }
             catch (Exception)
             { }
