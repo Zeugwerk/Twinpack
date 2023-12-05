@@ -325,6 +325,8 @@ namespace Twinpack.Models
         public string DistributorName { get; set; }
         [JsonPropertyName("icon-filename")]
         public string IconFilename { get; set; }
+        [JsonPropertyName("binary-download-url")]
+        public string BinaryDownloadUrl { get; set; }        
         [JsonPropertyName("license-tmc-binary")]
         public string LicenseTmcBinary { get; set; }
         [JsonPropertyName("license-binary")]
