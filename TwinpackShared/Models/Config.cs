@@ -259,6 +259,11 @@ namespace Twinpack.Models
         [DefaultValue("")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string LicenseTmcFile { get; set; }
+
+        [JsonPropertyName("binary-download-url")]
+        [DefaultValue("")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public string BinaryDownloadUrl { get; set; }     
     }
 
     public class ConfigPatches
