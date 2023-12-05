@@ -66,4 +66,13 @@ namespace Twinpack
         {
         }
     }
+
+    public class ChecksumException : Exception
+    {
+        public ChecksumException(string message, string expected, string actual) : base($"{message}, expected={expected}, actual={actual}")
+        {
+        }
+    }
+
+    
 }

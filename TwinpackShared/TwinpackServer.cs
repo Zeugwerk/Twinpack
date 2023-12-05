@@ -15,6 +15,7 @@ using System.Reflection;
 using AdysTech.CredentialManager;
 using System.Threading;
 using System.Net.PeerToPeer;
+using System.Security.Cryptography;
 
 namespace Twinpack
 {
@@ -33,6 +34,13 @@ namespace Twinpack
         public string Password { get; set; }
         public LoginPostResponse UserInfo { get; set; }
         public bool LoggedIn { get { return UserInfo?.User != null; } }
+
+        public enum ChecksumMode
+        {
+            IgnoreMismatch,
+            IgnoreMismatchAndFallack,
+            Throw
+        }
 
         public TwinpackServer()
         {
@@ -92,7 +100,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonException ex)
+            catch (JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PostException("Response could not be parsed");
@@ -220,10 +228,137 @@ namespace Twinpack
             return result;
         }
 
-        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(int packageVersionId, bool includeBinary, string cachePath = null, CancellationToken cancellationToken = default)
+        private string Checksum(string fp)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            using (var fileStream = File.OpenRead(fp))
+            {
+                byte[] hashBytes = sha256.ComputeHash(fileStream);
+                return BitConverter.ToString(hashBytes).Replace("-", "");
+            }
+        }
+
+        private async Task<bool> DownloadPackageVersionFromDownloadUrlAsync(PackageVersionGetResponse packageVersion, string fileName, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                _logger.Info($"Downloading {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}) (from {packageVersion.BinaryDownloadUrl})");
+
+                var responseDownload = await _client.GetAsync(packageVersion.BinaryDownloadUrl, cancellationToken);
+                responseDownload.EnsureSuccessStatusCode();
+
+                using (var fileStream = File.Create(fileName))
+                {
+                    var binaryStream = await responseDownload.Content.ReadAsStreamAsync();
+                    await binaryStream.CopyToAsync(fileStream);
+                }
+
+                var chk = Checksum(fileName);
+                if (packageVersion.BinarySha256 != null && !string.Equals(chk, packageVersion.BinarySha256, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    if (ChecksumMode.IgnoreMismatch == checksumMode)
+                    {
+                        _logger.Warn("Checksum mismatch is ignored");
+                        return true;
+                    }
+                    else
+                    {
+                        throw new ChecksumException($"Checksum of downloaded file is mismatching, library was changed after its release!", packageVersion.BinarySha256, chk);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (ChecksumException)
+            {
+                return false;
+            }
+            catch
+            {
+                _logger.Warn($"Download failed {packageVersion.BinaryDownloadUrl}");
+                return false;
+            }
+
+            return true;
+        }
+
+        public async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
+        {
+            var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
+            var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
+            var fileName = $@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}";
+            Directory.CreateDirectory(filePath);
+
+            // first try to download from a url
+            if (!string.IsNullOrEmpty(packageVersion.BinaryDownloadUrl))
+            {
+                try
+                {
+                    var downloadOk = await DownloadPackageVersionFromDownloadUrlAsync(packageVersion, fileName, checksumMode, cachePath, cancellationToken);
+                    if(downloadOk)
+                        return;
+                }
+                catch (ChecksumException)
+                {
+                    if (ChecksumMode.IgnoreMismatchAndFallack != checksumMode)
+                        throw;
+                }
+            }
+
+
+            // if this doesn't succeed download from Twinpack
+            _logger.Info($"Downloading {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}) (from {TwinpackUrlBase})");
+
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-version" +
+                $"?id={packageVersion.PackageVersionId}&include-binary=1"));
+
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
+            AddHeaders(request);
+
+            var response = await _client.SendAsync(request, cancellationToken);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            PackageVersionGetResponse result;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            }
+            catch
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new GetException("Response could not be parsed");
+            }
+
+            if (result.Meta?.Message != null)
+                throw new GetException(result.Meta.Message.ToString());
+
+            if (result.PackageId != null)
+            {
+                File.WriteAllBytes(fileName, Convert.FromBase64String(result.Binary));
+
+                var chk = Checksum(fileName);
+                if (packageVersion.BinarySha256 != null && !string.Equals(chk, packageVersion.BinarySha256, StringComparison.InvariantCultureIgnoreCase))
+                {
+
+                    if (ChecksumMode.IgnoreMismatch == checksumMode)
+                    {
+                        _logger.Warn("Checksum mismatch is ignored");
+                        return;
+                    }
+                    else
+                    {
+                        throw new ChecksumException($"Checksum of downloaded file is mismatching, library was changed after its release!", packageVersion.BinarySha256, chk);
+                    }
+                }
+            }
+        }
+
+        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(int packageVersionId, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-version" +
-                $"?id={packageVersionId}&include-binary={(includeBinary ? 1 : 0)}"));
+                $"?id={packageVersionId}"));
 
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
             AddHeaders(request);
@@ -244,31 +379,19 @@ namespace Twinpack
             
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
-
-            if (includeBinary && result.PackageId != null)
-            {
-                var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{result.Target}";
-                Directory.CreateDirectory(filePath);
-                var extension = result.Compiled == 1 ? "compiled-library" : "library";
-                File.WriteAllBytes($@"{filePath}\{result.Name}_{result.Version}.{extension}", Convert.FromBase64String(result.Binary));
-            }
             
             return result;
         }
 
-        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string distributorName, string name, string version, string configuration="Release", string branch="main", string target="TC3.1", bool includeBinary = false, string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string distributorName, string name, string version, string configuration="Release", string branch="main", string target="TC3.1", CancellationToken cancellationToken = default)
         {
-            if(includeBinary)
-                _logger.Info($"Downloading Package '{name}' (version: {version}, configuration: {configuration}, branch: {branch}, target: {target})");
-
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-version" +
                 $"?distributor-name={HttpUtility.UrlEncode(distributorName)}" +
                 $"&name={HttpUtility.UrlEncode(name)}" +
                 $"&version={HttpUtility.UrlEncode(version)}" +
                 $"&configuration={HttpUtility.UrlEncode(configuration)}" +
                 $"&branch={HttpUtility.UrlEncode(branch)}" +
-                $"&target={HttpUtility.UrlEncode(target)}" +
-                $"&include-binary={(includeBinary ? 1 : 0)}"));
+                $"&target={HttpUtility.UrlEncode(target)}"));
 
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
@@ -281,7 +404,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonException ex)
+            catch
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -289,14 +412,6 @@ namespace Twinpack
             
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
-               
-            if (includeBinary && result.PackageId != null)
-            {
-                var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{result.Target}";
-                Directory.CreateDirectory(filePath);                
-                var extension = result.Compiled == 1 ? "compiled-library" : "library";
-                File.WriteAllBytes($@"{filePath}\{result.Name}_{result.Version}.{extension}", Convert.FromBase64String(result.Binary));
-            }
 
             return result;
         }
@@ -564,11 +679,13 @@ namespace Twinpack
 
                     try
                     {
-                        var pv = await GetPackageVersionAsync(package.DistributorName, package.Name, package.Version, package.Configuration, package.Branch, package.Target, true, cachePath: cachePath, cancellationToken: cancellationToken);
+                        var packageVersion = await GetPackageVersionAsync(package.DistributorName, package.Name, package.Version, package.Configuration, package.Branch, package.Target);
                         handled.Add(package);
 
-                        if (pv?.PackageVersionId == null)
+                        if (packageVersion?.PackageVersionId == null)
                             throw new GetException("Package not available");
+
+                        await DownloadPackageVersionAsync(packageVersion, checksumMode: ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
                     }
                     catch (Exception ex)
                     {
