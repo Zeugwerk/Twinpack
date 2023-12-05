@@ -21,8 +21,8 @@ To use the Twinpack Package Manager, follow these steps:
 ## Using a Package
 
 <p float="left">
-<img src="/images/twinpack_contextmenu.png" width="250" hspace="80" />
-<img src="/images/twinpack_catalog.png" width="450" />
+<img src="/images/twinpack_contextmenu.png" width="220" hspace="80" />
+<img src="/images/twinpack_catalog.png" width="420" />
 </p>
 
 
@@ -75,8 +75,8 @@ This is the most straight forward way to publish a package if you want to publis
    - Upload the library as a package to the Twinpack server making it available for the community
 
 <p float="left">
-<img src="/images/twinpack_contextmenu2.png" width="300" hspace="80" />   
-<img src="/images/twinpack_publish.png" width="400" />
+<img src="/images/twinpack_contextmenu2.png" width="270" hspace="80" />   
+<img src="/images/twinpack_publish.png" width="370" />
 </p>
 
 After the initial upload of your library as a package, you may publish newer versions of your library or you can also modify the current version by right clicking on the PLC item and then on 'Twinpack' -> 'Modify...'. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
