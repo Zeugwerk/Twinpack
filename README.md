@@ -3,9 +3,10 @@
 The Twinpack Package Manager is a powerful and user-friendly package management tool for TwinCAT libraries. It is designed to empower the TwinCAT community by enabling sharing and distribution of libraries. It acts as a versatile platform similarly to NuGet (but with a PLC touch), allowing users to efficiently manage and deploy their custom-built modules.
 
 ## Quicklinks
-- [Installer](https://github.com/Zeugwerk/Twinpack/releases/latest)
-- [Registration](https://zeugwerk.dev/wp-login.php?action=register) (optional, only needed for `twinpack push`)
-- [Password reset](https://zeugwerk.dev/wp-login.php?action=lostpassword) (optional)
+- [Download latest Release](https://github.com/Zeugwerk/Twinpack/releases/latest)
+- [Twinpack-Registry](https://github.com/Zeugwerk/Twinpack-Registry) for automatic publishing of your library on Twinpack by "pulling" them from your GitHub releases
+- [Registration](https://zeugwerk.dev/wp-login.php?action=register), only needed to "push" package, i.e. if you want to publish packages manually or with CI
+  - [Password reset](https://zeugwerk.dev/wp-login.php?action=lostpassword) (optional)
 - [Contact us](mailto:info@zeugwerk.at)
 
 ## Installation
