@@ -47,7 +47,10 @@ There are multiple ways to publish a package on Twinpack and you can chose how y
 
 ### with the Twinpack Registry
 
-The most straight forward way to publish a package, which you release on GitHub is to use the [Twinpack Registry](https://github.com/Zeugwerk/Twinpack-Registry). Create a Pull Request in which you add your repository to the `repositories.txt` file, similarily to this [commit](https://github.com/Zeugwerk/Twinpack-Registry/commit/ecafd41cbc2c97f647bd4512a14d69293f5cc82f). There is a workflow in the twinpack-registry repository, which automatically uploads any new release, which contains a .library file to Twinpack.
+The most straight forward way to publish a package, which you release on GitHub anyway, is to use the [Twinpack Registry](https://github.com/Zeugwerk/Twinpack-Registry).
+
+- Create a Pull Request in which you add your repository to the `repositories.txt` file, similarily to this [commit](https://github.com/Zeugwerk/Twinpack-Registry/commit/ecafd41cbc2c97f647bd4512a14d69293f5cc82f).
+- No other action is needed, there is a workflow in the twinpack-registry repository, which automatically uploads all libraries found in the latest release for all repositories on this list.
 
 
 
