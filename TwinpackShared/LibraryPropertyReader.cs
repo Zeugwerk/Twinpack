@@ -55,10 +55,6 @@ namespace Twinpack
         static List<string> _identifiers = new List<string> () { 
             "DefaultNamespace", "Project", "Company", "Title", "Description",
             "Author", "Version", "Placeholder", "Released" };
-
-        const string ProjectInformationGuid = @"11c0fc3a-9bcf-4dd8-ac38-efb93363e521";
-        const string LibraryManagerGuid = @"adb5cb65-8e1d-4a00-b70a-375ea27582f3";
-        const string ProjectSettings = @"6470a90f-b7cb-43ac-9ae5-94b2338b4573";
         public static LibraryInfo Read(byte[] libraryBinary)
         {
             var values = new List<string>();
@@ -88,27 +84,19 @@ namespace Twinpack
                         // now we know the number of strings and can iterate over them, storing them in a list of strings
                         // todo: buffer[0] is sufficent to get the data we need,
                         var objects = buffer[0] - 1;
-                        long passedGuids = -1;
                         while (true)
                         {
                             byte length = reader.ReadByte();
                             string val = Encoding.ASCII.GetString(reader.ReadBytes(length));
-
-                            // ugly heuristics to not have to read to the end 
-                            if (string.Equals(val, ProjectInformationGuid, StringComparison.InvariantCultureIgnoreCase))
-                                passedGuids = 0;
-
-                            if (passedGuids >= 0 && Guid.TryParse(val, out _))
-                                passedGuids++;
-
-                            if (passedGuids > 10)
-                                break;
-
-                            if (string.Equals(val, ProjectSettings, StringComparison.InvariantCultureIgnoreCase))
-                                break;
-
                             values.Add(val);
-                            index = reader.ReadByte();
+                            
+                            var nextIndex = reader.ReadByte();
+
+                            // we reached the last string?
+                            if (nextIndex - 1 != index)
+                                break;
+
+                            index = nextIndex;
                         }
 
                     }
