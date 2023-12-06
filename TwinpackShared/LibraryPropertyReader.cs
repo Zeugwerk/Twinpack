@@ -25,11 +25,13 @@
 using NLog;
 using NLog.LayoutRenderers;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Text.RegularExpressions;
 using Twinpack.Models;
@@ -59,36 +61,36 @@ namespace Twinpack
         {
             var values = new List<string>();
 
+            int ReadLength(BinaryReader reader)
+            {
+                byte lengthByte = reader.ReadByte();
+                int length = lengthByte;
+                if (length > 128) // check if last bit is set
+                {
+                    lengthByte = reader.ReadByte();
+                    length = (length - 128) + lengthByte * 128;
+                }
+
+                return length;
+            }
+
             using (var memoryStream = new MemoryStream(libraryBinary))
             using(var zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
             {
                 var stream = zipArchive.Entries.Where(x => x.Name == "__shared_data_storage_string_table__.auxiliary")?.FirstOrDefault().Open();
-                byte index = 0;
 
                 try
                 {
                     using (var reader = new BinaryReader(stream))
                     {
-                        var buffer = new List<byte>();
-
-                        // read until we find index=0, which indicates we found the first string
-                        while (true)
+                        int objects = ReadLength(reader);
+                        var index = reader.ReadByte();
+                        while (index < objects && index < 128)
                         {
-                            var b = reader.ReadByte();
-                            if (b == 0)
-                                break;
-
-                            buffer.Add(b);
-                        }
-
-                        // now we know the number of strings and can iterate over them, storing them in a list of strings
-                        // todo: buffer[0] is sufficent to get the data we need,
-                        var objects = buffer[0] - 1;
-                        while (true)
-                        {
-                            byte length = reader.ReadByte();
-                            string val = Encoding.ASCII.GetString(reader.ReadBytes(length));
-                            values.Add(val);
+                            var length = ReadLength(reader);
+                            byte[] data = reader.ReadBytes(length);
+                            string str = Encoding.UTF8.GetString(data);
+                            values.Add(str);
                             
                             var nextIndex = reader.ReadByte();
 
