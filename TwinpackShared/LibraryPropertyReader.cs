@@ -22,94 +22,127 @@
  * 
  */
 
+using NLog;
+using NLog.LayoutRenderers;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
+using Twinpack.Models;
+using static Microsoft.VisualStudio.Shell.RegistrationAttribute;
 
 namespace Twinpack
 {
     public class LibraryPropertyReader
     {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
         public class LibraryInfo
         {
-            public string Name { get; set; }
+            public string DefaultNamespace { get; set; }
+            public string Title { get; set; }
             public string Description { get; set; }
             public string Author { get; set; }
             public string Company { get; set; }
             public string Version { get; set; }
+            public List<PlcLibrary> Dependencies { get; set; }
         }
 
-        const string ProjectInfoGuid = @"$11c0fc3a-9bcf-4dd8-ac38-efb93363e521";
+        static List<string> _identifiers = new List<string> () { 
+            "DefaultNamespace", "Project", "Company", "Title", "Description",
+            "Author", "Version", "Placeholder", "Released" };
+
+        // const string ProjectInformationGuid = @"11c0fc3a-9bcf-4dd8-ac38-efb93363e5212";
+        // const string LibraryManagerGuid1 = @"819ad2d9-1a81-479e-9d6e-0ee9b989a9f2";
+        // const string LibraryManagerGuid2 = @"adb5cb65-8e1d-4a00-b70a-375ea27582f3";
+        const string ProjectSettings = @"6470a90f-b7cb-43ac-9ae5-94b2338b4573";
         public static LibraryInfo Read(byte[] libraryBinary)
-        {  
-            var libraryInfo = new LibraryInfo(); 
-            List<string> properties = getPropertyList(libraryBinary); 
-            libraryInfo.Name = getPropertyFromList("DefaultNameSpace", properties); 
-            libraryInfo.Description = getPropertyFromList("Description", properties); 
-            libraryInfo.Author = getPropertyFromList("Author", properties);
-            libraryInfo.Company = getPropertyFromList("Company", properties); 
-            libraryInfo.Version = getPropertyFromList("Version", properties); 
-            return libraryInfo; 
-        }
-        
-        private static string getPropertyFromList(string propertyName, List<string> propertyList) 
-        { 
-            int index = propertyList.FindIndex(p => String.Equals(p, propertyName, StringComparison.OrdinalIgnoreCase)) + 1;
-            if (index > 0 && index < propertyList.Count) 
-            {
-                return propertyList[index]; 
-            } 
-            else
-            { 
-                return "";
-            } 
-        }
-
-        private static List<string> getPropertyList(byte[] libraryBinary)
         {
-            string fileText = Encoding.ASCII.GetString(libraryBinary); 
-            int filePosition = fileText.IndexOf(ProjectInfoGuid) - 1; 
-            
-            if (filePosition < 0) 
-            { 
-                throw new Exception($"Unable to locate Project Info GUID {ProjectInfoGuid} in library file"); 
+            var values = new List<string>();
+
+            using (var memoryStream = new MemoryStream(libraryBinary))
+            using(var zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
+            {
+                var stream = zipArchive.Entries.Where(x => x.Name == "__shared_data_storage_string_table__.auxiliary")?.FirstOrDefault().Open();
+                byte index = 0;
+
+                try
+                {
+                    using (var reader = new BinaryReader(stream))
+                    {
+                        var buffer = new List<byte>();
+
+                        // read until we find index=0, which indicates we found the first string
+                        while (true)
+                        {
+                            var b = reader.ReadByte();
+                            if (b == 0)
+                                break;
+
+                            buffer.Add(b);
+                        }
+
+                        // now we know the number of strings and can iterate over them, storing them in a list of strings
+                        // todo: buffer[0] is sufficent to get the data we need,
+                        var objects = buffer[0] - 1;
+                        while (true)
+                        {
+                            byte length = reader.ReadByte();
+                            string val = Encoding.ASCII.GetString(reader.ReadBytes(length));
+
+                            if (string.Equals(val, ProjectSettings, StringComparison.InvariantCultureIgnoreCase))
+                                break;
+
+                            values.Add(val);
+                            index = reader.ReadByte();
+                        }
+
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _logger.Trace(ex);
+                    _logger.Warn(ex.Message);
+                }
+
             }
-            
-            List<string> properties = new List<string>();
-            int valueLength = 0; 
-            int index = -1; 
-            int nextIndex = 0;
-            while (filePosition < libraryBinary.Length - 1) 
-            { 
-                nextIndex = parseNumber(libraryBinary, ref filePosition); 
-                if (index + 1 != nextIndex) 
-                { 
-                    break; 
-                } 
-                
-                index = nextIndex; 
-                
-                valueLength = parseNumber(libraryBinary, ref filePosition); 
-                if (filePosition + valueLength < libraryBinary.Length) 
-                { 
-                    properties.Add(Encoding.UTF8.GetString(libraryBinary, filePosition, valueLength)); 
-                    filePosition += valueLength; 
-                } 
+
+            var dependencies = values.Select(x => Regex.Match(x, @"^(.*?),\s*(.*?)\s*\((.*)\)$"))
+                                     .Where(x => x.Success)
+                                     .Select(x => new PlcLibrary() { Name = x.Groups[1].Value, Version = x.Groups[2].Value, DistributorName = x.Groups[3].Value })
+                                     .ToList();
+
+            // yes, this is needed ... not sure how Codesys parses this stuff
+            var title = Value(values, "Title");
+            if(Guid.TryParse(title, out _) || _identifiers.Contains(title))
+            {
+                title = Value(values, "Placeholder");
+                if (Guid.TryParse(title, out _) || _identifiers.Contains(title))
+                {
+                    title = Value(values, "DefaultNamespace");
+                }
             }
-            return properties; 
+
+            return new LibraryInfo()
+            {
+                DefaultNamespace = Value(values, "DefaultNamespace"),
+                Company = Value(values, "Company"),
+                Version = Value(values, "Version"),
+                Title = title,
+                Description = Value(values, "Description"),
+                Author = Value(values, "Author"),
+                Dependencies = dependencies
+            };
         }
 
-        private static int parseNumber(byte[] buffer, ref int filePosition)       
-        {           
-            int value = buffer[filePosition++];           
-        
-            if(value >= 128)            
-            {                
-                value += 128 * (buffer[filePosition++] - 1);            
-            }           
-    
-            return value;        
-        }                      
+        private static string Value(List<string> values, string key)
+        {
+            var idx = values.FindIndex(x => string.Equals(x, key, StringComparison.CurrentCultureIgnoreCase));
+            return idx < 0 ? "" : values[idx+1];
+        }
     }
 }

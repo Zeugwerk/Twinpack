@@ -3,13 +3,8 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
@@ -17,9 +12,7 @@ using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Models;
-using Twinpack.Exceptions;
 using EnvDTE80;
-using System.Windows.Media.Imaging;
 using System.Security.Cryptography;
 using Microsoft.Win32;
 using System.Threading;
@@ -441,8 +434,8 @@ namespace Twinpack
                 var libraryInfo = LibraryPropertyReader.Read(File.ReadAllBytes(libraryFile));
                 var plc = new ConfigPlcProject()
                 {
-                    Name = libraryInfo.Name,
-                    DisplayName = libraryInfo.Name,
+                    Name = libraryInfo.Title,
+                    DisplayName = libraryInfo.Title,
                     Description = libraryInfo.Description,
                     Authors = libraryInfo.Author,
                     DistributorName = libraryInfo.Company,

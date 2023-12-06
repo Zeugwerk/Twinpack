@@ -14,7 +14,6 @@ using Twinpack.Exceptions;
 using System.Reflection;
 using AdysTech.CredentialManager;
 using System.Threading;
-using System.Net.PeerToPeer;
 using System.Security.Cryptography;
 
 namespace Twinpack

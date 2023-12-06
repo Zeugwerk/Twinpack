@@ -74,5 +74,11 @@ namespace Twinpack
         }
     }
 
-    
+    public class LibraryFileInvalidException : Exception
+    {
+        public LibraryFileInvalidException(string message) : base(message)
+        {
+        }
+    }
+ 
 }
