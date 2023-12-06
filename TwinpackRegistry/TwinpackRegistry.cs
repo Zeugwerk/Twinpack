@@ -100,19 +100,19 @@ namespace Twinpack
                         var library = await DownloadAsync(asset.BrowserDownloadUrl);
                         var libraryInfo = LibraryPropertyReader.Read(library);
                         var filePath = $@"{TwinpackServer.DefaultLibraryCachePath}\{target}";
-                        var iconFileName = $@"{filePath}\{libraryInfo.Name}_{libraryInfo.Version}.png";
-                        var libraryFileName = $@"{filePath}\{libraryInfo.Name}_{libraryInfo.Version}.library";
-                        var licenseFileName = $@"{filePath}\{libraryInfo.Name}_{libraryInfo.Version}.license";
+                        var iconFileName = $@"{filePath}\{libraryInfo.Title}_{libraryInfo.Version}.png";
+                        var libraryFileName = $@"{filePath}\{libraryInfo.Title}_{libraryInfo.Version}.library";
+                        var licenseFileName = $@"{filePath}\{libraryInfo.Title}_{libraryInfo.Version}.license";
 
                         var plc = new ConfigPlcProject()
                         {
-                            Name = libraryInfo.Name,
+                            Name = libraryInfo.Title,
                             Version = libraryInfo.Version,
                             //References =
                             //Packages =
                             Description = libraryInfo.Description,
                             //IconFile =
-                            DisplayName = libraryInfo.Name,
+                            DisplayName = libraryInfo.Title,
                             DistributorName = libraryInfo.Company,
                             ProjectUrl = repoUrl,
                             Authors = libraryInfo.Author,
@@ -129,12 +129,12 @@ namespace Twinpack
                         {
                             config.Projects.Add(new ConfigProject()
                             {
-                                Name = libraryInfo.Name,
+                                Name = libraryInfo.Title,
                                 Plcs = new List<ConfigPlcProject>() { plc }
                             });
 
                             Directory.CreateDirectory(new FileInfo(libraryFileName).DirectoryName);
-                            File.WriteAllBytes(iconFileName, IconUtils.GenerateIdenticon(libraryInfo.Name));
+                            File.WriteAllBytes(iconFileName, IconUtils.GenerateIdenticon(libraryInfo.Title));
                             File.WriteAllText(licenseFileName, license);
                             File.WriteAllBytes(libraryFileName, library);
                         }
