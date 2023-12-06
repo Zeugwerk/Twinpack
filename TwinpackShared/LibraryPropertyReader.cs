@@ -56,9 +56,8 @@ namespace Twinpack
             "DefaultNamespace", "Project", "Company", "Title", "Description",
             "Author", "Version", "Placeholder", "Released" };
 
-        // const string ProjectInformationGuid = @"11c0fc3a-9bcf-4dd8-ac38-efb93363e5212";
-        // const string LibraryManagerGuid1 = @"819ad2d9-1a81-479e-9d6e-0ee9b989a9f2";
-        // const string LibraryManagerGuid2 = @"adb5cb65-8e1d-4a00-b70a-375ea27582f3";
+        const string ProjectInformationGuid = @"11c0fc3a-9bcf-4dd8-ac38-efb93363e521";
+        const string LibraryManagerGuid = @"adb5cb65-8e1d-4a00-b70a-375ea27582f3";
         const string ProjectSettings = @"6470a90f-b7cb-43ac-9ae5-94b2338b4573";
         public static LibraryInfo Read(byte[] libraryBinary)
         {
@@ -89,10 +88,21 @@ namespace Twinpack
                         // now we know the number of strings and can iterate over them, storing them in a list of strings
                         // todo: buffer[0] is sufficent to get the data we need,
                         var objects = buffer[0] - 1;
+                        long passedGuids = -1;
                         while (true)
                         {
                             byte length = reader.ReadByte();
                             string val = Encoding.ASCII.GetString(reader.ReadBytes(length));
+
+                            // ugly heuristics to not have to read to the end 
+                            if (string.Equals(val, ProjectInformationGuid, StringComparison.InvariantCultureIgnoreCase))
+                                passedGuids = 0;
+
+                            if (passedGuids >= 0 && Guid.TryParse(val, out _))
+                                passedGuids++;
+
+                            if (passedGuids > 10)
+                                break;
 
                             if (string.Equals(val, ProjectSettings, StringComparison.InvariantCultureIgnoreCase))
                                 break;
@@ -111,17 +121,17 @@ namespace Twinpack
 
             }
 
-            var dependencies = values.Select(x => Regex.Match(x, @"^(.*?),\s*(.*?)\s*\((.*)\)$"))
+            var dependencies = values.Select(x => Regex.Match(x, @"^([A-Za-z].*?),\s*(.*?)\s*\(([A-Za-z].*)\)$"))
                                      .Where(x => x.Success)
                                      .Select(x => new PlcLibrary() { Name = x.Groups[1].Value, Version = x.Groups[2].Value, DistributorName = x.Groups[3].Value })
                                      .ToList();
 
             // yes, this is needed ... not sure how Codesys parses this stuff
             var title = Value(values, "Title");
-            if(Guid.TryParse(title, out _) || _identifiers.Contains(title))
+            if(string.IsNullOrEmpty(title) || Guid.TryParse(title, out _) || _identifiers.Contains(title))
             {
                 title = Value(values, "Placeholder");
-                if (Guid.TryParse(title, out _) || _identifiers.Contains(title))
+                if (string.IsNullOrEmpty(title) || Guid.TryParse(title, out _) || _identifiers.Contains(title))
                 {
                     title = Value(values, "DefaultNamespace");
                 }
