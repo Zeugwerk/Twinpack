@@ -56,7 +56,7 @@ namespace Twinpack
 
         public static List<string> ReadStringTable(ZipArchive archive, string dumpFilenamePrefix = null)
         {
-            _logger.Info("Reading string table");
+            _logger.Trace("Reading string table");
 
             var stringTable = new List<string>();
             var stream = archive.Entries.Where(x => x.Name == "__shared_data_storage_string_table__.auxiliary")?.FirstOrDefault().Open();
@@ -68,9 +68,9 @@ namespace Twinpack
                 using (var reader = new BinaryReader(stream))
                 {
                     objects = ReadLength(reader);
-                    _logger.Info($"String table contains {objects} strings");
+                    _logger.Trace($"String table contains {objects} strings");
                     index = reader.ReadByte();
-                    while (index < objects-1 && index < 128)
+                    while (index < objects - 1 && index < 128)
                     {
                         var length = ReadLength(reader);
                         byte[] data = reader.ReadBytes(length);
@@ -90,7 +90,7 @@ namespace Twinpack
 
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Trace(ex);
                 _logger.Warn(ex.Message);
@@ -119,7 +119,7 @@ namespace Twinpack
             if (entry == null)
                 return null;
 
-            _logger.Info("Reading Project Information from xml");
+            _logger.Trace("Reading Project Information from xml");
 
             var stream = entry.Open();
             if (dumpFilenamePrefix != null)
@@ -150,10 +150,10 @@ namespace Twinpack
         public static LibraryInfo ReadProjectInformationBin(ZipArchive archive, List<string> stringTable, string dumpFilenamePrefix)
         {
             var entry = archive.Entries.Where(x => x.Name == "11c0fc3a-9bcf-4dd8-ac38-efb93363e521.object")?.FirstOrDefault();
-            if(entry == null )
+            if (entry == null)
                 return null;
 
-            _logger.Info("Reading Project Information from binary");
+            _logger.Trace("Reading Project Information from binary");
 
             var stream = entry.Open();
             if (dumpFilenamePrefix != null)
@@ -164,8 +164,8 @@ namespace Twinpack
 
                 stream = entry.Open();
             }
-            
-            var properties = new Dictionary<string,string>();
+
+            var properties = new Dictionary<string, string>();
             using (var reader = new BinaryReader(stream))
             {
 
@@ -178,59 +178,107 @@ namespace Twinpack
                 var section_header = reader.ReadBytes(7);
                 _logger.Trace($"Read section " + BitConverter.ToString(header));
 
-                while (true)
+                using (var libcatWriter = dumpFilenamePrefix == null ? null : new StreamWriter(dumpFilenamePrefix + ".libcat"))
                 {
-                    var nameIdx = reader.ReadByte();
-                    var name = stringTable[nameIdx];
-                    var type = reader.ReadByte();
-
-                    if ((PropertyType)type == PropertyType.Eof)
+                    while (true)
                     {
-                        _logger.Trace("EOF");
-                        break;
-                    }
+                        var nameIdx = reader.ReadByte();
+                        var name = stringTable[nameIdx];
+                        var type = reader.ReadByte();
 
-                    _logger.Trace($"Reading property '{name}' (type: {(Enum.IsDefined(typeof(PropertyType), (Int32)type) ? ((PropertyType)type).ToString() : type.ToString())})");
-                    switch ((PropertyType)type)
-                    {
-                        case PropertyType.Boolean:
-                            properties[name] = (reader.ReadByte() > 0).ToString();
+                        if ((PropertyType)type == PropertyType.Eof)
+                        {
+                            _logger.Trace("EOF");
                             break;
-                        //case PropertyType.Number:
-                        //    properties[name] = reader.ReadUInt16().ToString();
-                        //    break;
-                        case PropertyType.Text:
-                            properties[name] = stringTable[reader.ReadByte()];
-                            break;
-                        case PropertyType.Version:
-                            var parts = reader.ReadByte() + 1; // not sure what this is
-                            properties[name] = stringTable[reader.ReadByte()];
-                            break;
+                        }
 
-                        // here is still something wrong ...
-                        case PropertyType.LibraryCategories:
+                        _logger.Trace($"Reading property '{name}' (type: {(Enum.IsDefined(typeof(PropertyType), (Int32)type) ? ((PropertyType)type).ToString() : type.ToString())})");
+                        switch ((PropertyType)type)
+                        {
+                            case PropertyType.Boolean:
+                                properties[name] = (reader.ReadByte() > 0).ToString();
+                                break;
+                            //case PropertyType.Number:
+                            //    properties[name] = reader.ReadUInt16().ToString();
+                            //    break;
+                            case PropertyType.Text:
+                                properties[name] = stringTable[reader.ReadByte()];
+                                break;
+                            case PropertyType.Version:
+                                var parts = reader.ReadByte() + 1; // not sure what this is
+                                properties[name] = stringTable[reader.ReadByte()];
+                                break;
 
-                            var guid = stringTable[reader.ReadByte()]; // For LibraryCategories this is System.Guid
-                            var count = reader.ReadByte();
+                            // here is still something wrong ...
+                            case PropertyType.LibraryCategories:
 
-                            // this is weird, but kinda works ...
-                            if(guid == "System.Guid")
-                            {
-                                var pad2 = reader.ReadBytes(2);
-                                var libCatGuidIndices = reader.ReadBytes(count); // sequence of guids to the libcats
-                            }
-                            else
-                            {
-                                var pad2 = reader.ReadBytes(4);
-                                var pad3 = reader.ReadBytes(7 * count);
-                            }
+                                var guid = stringTable[reader.ReadByte()]; // For LibraryCategories this is System.Guid
+                                var count = reader.ReadByte();
 
-                            break;
+                                libcatWriter?.WriteLine("GUID:" + guid);
+                                libcatWriter?.WriteLine("Library Categories:" + count);
+
+                                // this is weird, but kinda works ...
+                                if (guid == "System.Guid")
+                                {
+                                    var pad2 = reader.ReadBytes(2);
+                                    var libCatGuidIndices = reader.ReadBytes(count); // sequence of guids to the libcats
+
+                                    libcatWriter?.WriteLine($"{pad2[0].ToString("X")}");
+                                    libcatWriter?.WriteLine($"{pad2[1].ToString("X")} - {stringTable[pad2[1]]}");
+                                    for (var i = 0; i < count; ++i)
+                                    {
+                                        libcatWriter?.WriteLine($"GUID: {stringTable[libCatGuidIndices[i]]}");
+                                    }
+                                    libcatWriter?.WriteLine("---------------------------------------------------");
+                                }
+                                else
+                                {
+                                    // there is some header - no idea what it doesn, but it contains 2 guids
+                                    var pad2 = reader.ReadBytes(4);
+
+                                    // the next bytes contain the following information for every library category
+                                    // only the last one is special, it has 3 bytes less
+                                    // - default name
+                                    // - some guid, probably related to the library catalog
+                                    // - some number
+                                    // - version
+                                    // - some number
+                                    // - guidn - guid that is related to some kind of chaining, probably a linked list
+                                    // - guidp - same here
+                                    var pad3 = reader.ReadBytes(7 * (count-1) + 4);
+
+                                    libcatWriter?.WriteLine($"{pad2[0].ToString("X")}");
+                                    libcatWriter?.WriteLine($"{pad2[1].ToString("X")}");
+                                    libcatWriter?.WriteLine($"{pad2[2].ToString("X")} - {stringTable[pad2[2]]}");
+                                    libcatWriter?.WriteLine($"{pad2[3].ToString("X")} - {stringTable[pad2[3]]}");
+
+                                    for (var j = 0; j < count; ++j)
+                                    {
+                                        libcatWriter?.WriteLine($"== {j} ==");
+                                        libcatWriter?.WriteLine($"DefaultName: {stringTable[pad3[(j * 7) + 0]]}");
+                                        libcatWriter?.WriteLine($"{pad3[(j * 7) + 1].ToString("X")} - {stringTable[pad3[(j * 7) + 1]]}");
+                                        libcatWriter?.WriteLine($"{pad3[(j * 7) + 2].ToString("X")}");
+                                        libcatWriter?.WriteLine($"Version: {stringTable[pad3[(j * 7) + 3]]}");
+
+                                        if (j < count - 1)
+                                        {
+                                            libcatWriter?.WriteLine($"{pad3[(j * 7) + 4].ToString("X")}");
+                                            libcatWriter?.WriteLine($"Id1: {stringTable[pad3[(j * 7) + 5]]}");
+                                            libcatWriter?.WriteLine($"Id2: {pad3[(j * 7) + 6].ToString("X")} - {stringTable[pad3[(j * 7) + 6]]}");
+                                        }
+                                    }
+
+                                    libcatWriter?.WriteLine("---------------------------------------------------");
+                                }
+
+                                break;
+                        }
                     }
                 }
             }
 
-            if(!properties.TryGetValue("Title", out string v) || string.IsNullOrEmpty(v))
+            if (!properties.TryGetValue("Title", out string v) || string.IsNullOrEmpty(v))
                 _logger.Warn("Title was not parsed correctly");
 
             return new LibraryInfo()
@@ -244,13 +292,13 @@ namespace Twinpack
             };
         }
 
-        public static LibraryInfo Read(byte[] libraryBinary, string dumpFilenamePrefix=null)
+        public static LibraryInfo Read(byte[] libraryBinary, string dumpFilenamePrefix = null)
         {
             using (var memoryStream = new MemoryStream(libraryBinary))
             using (var zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
             {
                 var stringTable = ReadStringTable(zipArchive, dumpFilenamePrefix);
-                var libraryInfo = ReadProjectInformationXml(zipArchive, stringTable, dumpFilenamePrefix) ?? 
+                var libraryInfo = ReadProjectInformationXml(zipArchive, stringTable, dumpFilenamePrefix) ??
                                   ReadProjectInformationBin(zipArchive, stringTable, dumpFilenamePrefix);
 
                 if (libraryInfo == null)

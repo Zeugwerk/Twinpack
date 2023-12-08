@@ -6,10 +6,9 @@
       throwExceptions="true"
       internalLogLevel="Trace" internalLogFile="c:\temp\nlog-internal.log">
 	<targets>
-		<target xsi:type="Console" name="ConsoleLogger"
-			layout="${message} ${onexception:EXCEPTION OCCURRED\:${exception:format=type,message,method:maxInnerExceptionLevel=5:innerFormat=shortType,message,method}}"/>
+		<target name="console" xsi:type="ColoredConsole" layout="${longdate} ${uppercase:${level}} ${message} ${exception:format=ToString,StackTrace}" />
 	</targets>
 	<rules>
-		<logger name="*" minlevel="Debug" writeTo="ConsoleLogger" enabled="true" />
+		<logger name="*" minlevel="Debug" writeTo="console" enabled="true" />
 	</rules>
 </nlog>

@@ -3,14 +3,21 @@
     <LibraryCategory>
         <Id>d5875a42-817d-44f3-8af7-6c59eaddc95f</Id>
         <Version>1.1.2.3</Version>
-        <DefaultName>MyParent</DefaultName>
+        <DefaultName>MyParent1</DefaultName>
     </LibraryCategory>
     <LibraryCategory>
         <Id>426a88ee-bb19-4918-8554-e1c9d24621f9</Id>
         <Version>1.1.2.4</Version>
-        <ParentCategory>
-            <Id>d5875a42-817d-44f3-8af7-6c59eaddc95f</Id>
-        </ParentCategory>
-        <DefaultName>MySub</DefaultName>
+        <DefaultName>MyParent2</DefaultName>
+    </LibraryCategory>
+    <LibraryCategory>
+        <Id>d5876a42-817d-44f3-8af7-6c59eaddc95f</Id>
+        <Version>2.1.2.3</Version>
+        <DefaultName>MyParent3</DefaultName>
+    </LibraryCategory>
+    <LibraryCategory>
+        <Id>426a88ee-bb19-4918-8554-e1d9d24621f9</Id>
+        <Version>2.1.2.4</Version>
+        <DefaultName>MyParent4</DefaultName>
     </LibraryCategory>
 </LibraryCategories>
