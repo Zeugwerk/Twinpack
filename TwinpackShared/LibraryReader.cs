@@ -1,0 +1,268 @@
+﻿using NLog;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using Twinpack.Models;
+
+namespace Twinpack
+{
+    public class LibraryReader
+    {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
+        public class LibraryInfo
+        {
+            public string DefaultNamespace { get; set; }
+            public string Title { get; set; }
+            public string Description { get; set; }
+            public string Author { get; set; }
+            public string Company { get; set; }
+            public string Version { get; set; }
+            public List<PlcLibrary> Dependencies { get; set; }
+        }
+
+        enum PropertyType
+        {
+            Eof = 0x00,
+            Boolean = 0x01,
+            //Number = 0x03,
+            //Date = ?,
+            Text = 0x0E,
+            Version = 0x0F,
+            LibraryCategories = 0x81,
+        }
+
+        static int ReadLength(BinaryReader reader)
+        {
+            return ReadLength(reader, reader.ReadByte());
+        }
+
+        static int ReadLength(BinaryReader reader, byte currentByte)
+        {
+            int length = currentByte;
+            if (length > 128) // check if last bit is set
+            {
+                currentByte = reader.ReadByte();
+                length = (length - 128) + currentByte * 128;
+            }
+
+            return length;
+        }
+
+        public static List<string> ReadStringTable(ZipArchive archive, string dumpFilenamePrefix = null)
+        {
+            _logger.Info("Reading string table");
+
+            var stringTable = new List<string>();
+            var stream = archive.Entries.Where(x => x.Name == "__shared_data_storage_string_table__.auxiliary")?.FirstOrDefault().Open();
+
+            var objects = 0;
+            var index = 0;
+            try
+            {
+                using (var reader = new BinaryReader(stream))
+                {
+                    objects = ReadLength(reader);
+                    _logger.Info($"String table contains {objects} strings");
+                    index = reader.ReadByte();
+                    while (index < objects-1 && index < 128)
+                    {
+                        var length = ReadLength(reader);
+                        byte[] data = reader.ReadBytes(length);
+                        string str = Encoding.UTF8.GetString(data);
+                        stringTable.Add(str);
+
+                        var nextIndex = reader.ReadByte();
+
+                        // we reached the last string?
+                        if (nextIndex - 1 != index)
+                        {
+                            break;
+                        }
+
+                        index = nextIndex;
+                    }
+
+                }
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Warn(ex.Message);
+            }
+
+
+            if (dumpFilenamePrefix != null)
+            {
+                using (var streamWriter = new StreamWriter(dumpFilenamePrefix + ".stringtable"))
+                {
+                    index = 0;
+                    foreach (var key in stringTable)
+                    {
+                        streamWriter.WriteLine($"{index.ToString("X")}: {key}");
+                        index++;
+                    }
+                }
+            }
+
+            return stringTable;
+        }
+
+        public static LibraryInfo ReadProjectInformationXml(ZipArchive archive, List<string> stringTable, string dumpFilenamePrefix)
+        {
+            var entry = archive.Entries.Where(x => x.Name == "projectinformations.auxiliary")?.FirstOrDefault();
+            if (entry == null)
+                return null;
+
+            _logger.Info("Reading Project Information from xml");
+
+            var stream = entry.Open();
+            if (dumpFilenamePrefix != null)
+            {
+                _logger.Trace($"Dumping project information file {entry.Name}");
+                using (var fileStream = File.Create(dumpFilenamePrefix + ".projectinfo.xml"))
+                    stream.CopyTo(fileStream);
+
+                stream = entry.Open();
+            }
+
+            var xdoc = XDocument.Load(stream);
+            var properties = xdoc.Root.Element("Properties") ?? xdoc.Root.Element("properties");
+            if (properties == null)
+                return null;
+
+            return new LibraryInfo()
+            {
+                Company = properties?.Element("Company")?.Value ?? "",
+                DefaultNamespace = properties?.Element("DefaultNamespace")?.Value ?? "",
+                Version = properties?.Element("Version")?.Value ?? "",
+                Title = properties?.Element("Title")?.Value ?? "",
+                Author = properties?.Element("Author")?.Value ?? "",
+                Description = properties?.Element("Description")?.Value ?? "",
+            };
+        }
+
+        public static LibraryInfo ReadProjectInformationBin(ZipArchive archive, List<string> stringTable, string dumpFilenamePrefix)
+        {
+            var entry = archive.Entries.Where(x => x.Name == "11c0fc3a-9bcf-4dd8-ac38-efb93363e521.object")?.FirstOrDefault();
+            if(entry == null )
+                return null;
+
+            _logger.Info("Reading Project Information from binary");
+
+            var stream = entry.Open();
+            if (dumpFilenamePrefix != null)
+            {
+                _logger.Trace($"Dumping project information file {entry.Name}");
+                using (var fileStream = File.Create(dumpFilenamePrefix + ".projectinfo.bin"))
+                    stream.CopyTo(fileStream);
+
+                stream = entry.Open();
+            }
+            
+            var properties = new Dictionary<string,string>();
+            using (var reader = new BinaryReader(stream))
+            {
+
+                var header = reader.ReadBytes(16);
+                _logger.Trace($"Read header " + BitConverter.ToString(header));
+
+                var length = ReadLength(reader);
+                _logger.Trace($"Payload contains {length} bytes");
+
+                var section_header = reader.ReadBytes(7);
+                _logger.Trace($"Read section " + BitConverter.ToString(header));
+
+                while (true)
+                {
+                    var nameIdx = reader.ReadByte();
+                    var name = stringTable[nameIdx];
+                    var type = reader.ReadByte();
+
+                    if ((PropertyType)type == PropertyType.Eof)
+                    {
+                        _logger.Trace("EOF");
+                        break;
+                    }
+
+                    _logger.Trace($"Reading property '{name}' (type: {(Enum.IsDefined(typeof(PropertyType), (Int32)type) ? ((PropertyType)type).ToString() : type.ToString())})");
+                    switch ((PropertyType)type)
+                    {
+                        case PropertyType.Boolean:
+                            properties[name] = (reader.ReadByte() > 0).ToString();
+                            break;
+                        //case PropertyType.Number:
+                        //    properties[name] = reader.ReadUInt16().ToString();
+                        //    break;
+                        case PropertyType.Text:
+                            properties[name] = stringTable[reader.ReadByte()];
+                            break;
+                        case PropertyType.Version:
+                            var parts = reader.ReadByte() + 1; // not sure what this is
+                            properties[name] = stringTable[reader.ReadByte()];
+                            break;
+
+                        // here is still something wrong ...
+                        case PropertyType.LibraryCategories:
+
+                            var guid = stringTable[reader.ReadByte()]; // For LibraryCategories this is System.Guid
+                            var count = reader.ReadByte();
+
+                            // this is weird, but kinda works ...
+                            if(guid == "System.Guid")
+                            {
+                                var pad2 = reader.ReadBytes(2);
+                                var libCatGuidIndices = reader.ReadBytes(count); // sequence of guids to the libcats
+                            }
+                            else
+                            {
+                                var pad2 = reader.ReadBytes(4);
+                                var pad3 = reader.ReadBytes(7 * count);
+                            }
+
+                            break;
+                    }
+                }
+            }
+
+            if(!properties.TryGetValue("Title", out string v) || string.IsNullOrEmpty(v))
+                _logger.Warn("Title was not parsed correctly");
+
+            return new LibraryInfo()
+            {
+                Company = properties.TryGetValue("Company", out v) ? v : "",
+                DefaultNamespace = properties.TryGetValue("DefaultNamespace", out v) ? v : "",
+                Version = properties.TryGetValue("Version", out v) ? v : "",
+                Title = properties.TryGetValue("Title", out v) ? v : (properties.TryGetValue("Placeholder", out v) ? v : ""),
+                Author = properties.TryGetValue("Author", out v) ? v : "",
+                Description = properties.TryGetValue("Description", out v) ? v : "",
+            };
+        }
+
+        public static LibraryInfo Read(byte[] libraryBinary, string dumpFilenamePrefix=null)
+        {
+            using (var memoryStream = new MemoryStream(libraryBinary))
+            using (var zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
+            {
+                var stringTable = ReadStringTable(zipArchive, dumpFilenamePrefix);
+                var libraryInfo = ReadProjectInformationXml(zipArchive, stringTable, dumpFilenamePrefix) ?? 
+                                  ReadProjectInformationBin(zipArchive, stringTable, dumpFilenamePrefix);
+
+                if (libraryInfo == null)
+                    throw new Exceptions.LibraryInvalid("Fileformat is not supported, project information could not be extracted");
+
+                var dependencies = stringTable.Select(x => Regex.Match(x, @"^([A-Za-z].*?),\s*(.*?)\s*\(([A-Za-z].*)\)$"))
+                                        .Where(x => x.Success)
+                                        .Select(x => new PlcLibrary() { Name = x.Groups[1].Value, Version = x.Groups[2].Value, DistributorName = x.Groups[3].Value })
+                                        .ToList();
+
+                return libraryInfo;
+            }
+        }
+    }
+}

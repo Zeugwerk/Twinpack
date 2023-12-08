@@ -53,7 +53,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LibraryPropertyReaderTest.cs" />
+    <Compile Include="LibraryReaderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -97,16 +97,85 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="assets\Untitled1_WithoutPlaceholder.library">
+    <Content Include="assets\Untitled1_4024_35_minimal_infos_123.library">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="assets\Untitled1_WithPlaceholder.library">
+    <Content Include="assets\Untitled1_4024_35_minimal_infos_1234.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Untitled1_4024_35_minimal_infos_123_n.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Untitled1_4024_35_minimal_infos_123_np.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Untitled1_4024_35_minimal_infos_123_npa.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Untitled1_4024_35_minimal_infos_123_npad.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Untitled1_4024_53_minimal_infos_12.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Untitled1_4024_53_minimal_infos_123.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Untitled1_4024_53_minimal_infos_1234.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\Untitled1_4026_00_minimal_infos_123.library">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="assets\Untitled1.library">
+    <Content Include="assets\Untitled1_4024_35_minimal_infos_123_rnpad.library">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\Untitled2_libcat.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\Untitled2_libcat_1234.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\Untitled2_minimal_infos_libcat_1234.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\Untitled2_minimal_infos_libcat_mine_1234.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\Untitled2_minimal_infos_libcat_mine_theirs_1234.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\Untitled2_minimal_infos_libcat_mine_theirs_yours_1234.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\Untitled1_libcat_child.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\Untitled1_libcat_child2.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\Untitled1_libcat_onlychild_selected.library">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <Import Project="..\TwinpackShared\TwinpackShared.projitems" Label="Shared" />

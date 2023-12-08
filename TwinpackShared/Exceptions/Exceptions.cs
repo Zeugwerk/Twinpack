@@ -39,6 +39,17 @@ namespace Twinpack.Exceptions
         }
     }
 
+    public class LibraryInvalid : Exception
+    {
+        public LibraryInvalid(string message) : base(message)
+        {
+        }
+
+        public LibraryInvalid(string fileName, string message) : base(fileName + ", " +message)
+        {
+        }
+    }
+
     public class LicenseFileNotFoundException : Exception
     {
         public string Reference { get; private set; }
