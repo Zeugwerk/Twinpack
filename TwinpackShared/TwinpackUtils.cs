@@ -431,7 +431,7 @@ namespace Twinpack
         {
             foreach(var libraryFile in Directory.GetFiles(rootPath, "*.library"))
             {
-                var libraryInfo = LibraryPropertyReader.Read(File.ReadAllBytes(libraryFile));
+                var libraryInfo = LibraryReader.Read(File.ReadAllBytes(libraryFile));
                 var plc = new ConfigPlcProject()
                 {
                     Name = libraryInfo.Title,

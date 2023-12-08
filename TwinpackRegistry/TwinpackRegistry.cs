@@ -75,7 +75,7 @@ namespace Twinpack
             }
         }
 
-        public async Task DownloadAsync(string repositoryOwner, string repositoryName, string cachePath = null)
+        public async Task DownloadAsync(string repositoryOwner, string repositoryName, bool dump=false)
         {
             var config = new Config()
             {
@@ -98,7 +98,7 @@ namespace Twinpack
                     {
                         var license = await RetrieveLicenseAsync(client, owner, repo);
                         var library = await DownloadAsync(asset.BrowserDownloadUrl);
-                        var libraryInfo = LibraryPropertyReader.Read(library);
+                        var libraryInfo = LibraryReader.Read(library, dumpFilenamePrefix: $"{repositoryOwner}_{repositoryName}_{asset.Name}.library");
                         var filePath = $@"{TwinpackServer.DefaultLibraryCachePath}\{target}";
                         var iconFileName = $@"{filePath}\{libraryInfo.Title}_{libraryInfo.Version}.png";
                         var libraryFileName = $@"{filePath}\{libraryInfo.Title}_{libraryInfo.Version}.library";

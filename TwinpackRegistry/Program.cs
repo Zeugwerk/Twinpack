@@ -3,6 +3,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using Twinpack.Models;
@@ -25,6 +26,19 @@ namespace Twinpack
 
             [Option('r', "name", Required = false, Default = "Twinpack-Registry", HelpText = "")]
             public string RegistryName { get; set; }
+
+            [Option('d', "dry-run", Required = false, Default = false, HelpText = "")]
+            public bool DryRun { get; set; }
+
+            [Option('D', "dump", Required = false, Default = false, HelpText = "")]
+            public bool Dump { get; set; }
+        }
+
+        [Verb("dump", HelpText = "")]
+        public class DumpOptions
+        {
+            [Option('p', "path", Required = false, Default = "Twinpack-Registry", HelpText = "")]
+            public string Path { get; set; }
         }
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
@@ -49,14 +63,31 @@ namespace Twinpack
 
             try
             {
-                return Parser.Default.ParseArguments<UpdateOptions>(args)
+                return Parser.Default.ParseArguments<UpdateOptions, DumpOptions>(args)
                     .MapResult(
                     (UpdateOptions opts) =>
                     {
                         Login(opts.Username, opts.Password);
-                        new TwinpackRegistry(_twinpackServer).DownloadAsync(opts.RegistryOwner, opts.RegistryName).GetAwaiter().GetResult();
-                        _twinpackServer.PushAsync(TwinpackUtils.PlcProjectsFromConfig(compiled: false, target: "TC3.1"), "Release", "main", "TC3.1", null, false).GetAwaiter().GetResult();
+                        new TwinpackRegistry(_twinpackServer).DownloadAsync(opts.RegistryOwner, opts.RegistryName, dump: opts.Dump).GetAwaiter().GetResult();
 
+                        if(!opts.DryRun)
+                            _twinpackServer.PushAsync(TwinpackUtils.PlcProjectsFromConfig(compiled: false, target: "TC3.1"), "Release", "main", "TC3.1", null, false).GetAwaiter().GetResult();
+
+                        return 0;
+                    },
+                    (DumpOptions opts) =>
+                    {
+                        foreach(var file in Directory.GetFiles(opts.Path))
+                        {
+                            try
+                            {
+                                using (var memoryStream = new MemoryStream(File.ReadAllBytes(file)))
+                                using (var zipArchive = new ZipArchive(memoryStream))
+                                {
+                                    var libraryInfo = LibraryReader.Read(File.ReadAllBytes(file), dumpFilenamePrefix: file);
+                                }
+                            } catch(Exception) { }
+                        }
                         return 0;
                     },
                     errs => 1);

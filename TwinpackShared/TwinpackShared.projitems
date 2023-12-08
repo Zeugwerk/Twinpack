@@ -13,7 +13,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DirectoryExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\Exceptions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)LibraryPropertyReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LibraryReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Adapter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Api.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Config.cs" />
