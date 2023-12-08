@@ -89,11 +89,22 @@ namespace Twinpack
 
             foreach(var repoUrl in repositories.Split('\n'))
             {
+                _logger.Info($"Checking '{repoUrl}' for a new release");
                 var (owner, repo) = ParseGitHubRepoUrl(repoUrl);
                 var latestRelease = await client.Repository.Release.GetLatest(owner, repo);
-                
-                foreach(var asset in latestRelease.Assets.Where(x => x.Name.EndsWith(".library")))
+
+                var assets = latestRelease.Assets.Where(x => x.Name.EndsWith(".library"));
+                if(!assets.Any())
                 {
+                    _logger.Warn($"Latest release '{latestRelease.Name} ({latestRelease.TagName})' doesn't contain any .library files");
+                    continue;
+                }
+
+                _logger.Info($"Downloading .library files of '{latestRelease.Name} ({latestRelease.TagName})'");
+                foreach (var asset in assets)
+                {
+                    _logger.Info($"Processing {asset.Name}");
+
                     try
                     {
                         var license = await RetrieveLicenseAsync(client, owner, repo);
@@ -127,6 +138,8 @@ namespace Twinpack
                         var packageVersion = await _twinpackServer.GetPackageVersionAsync(plc.DistributorName, plc.Name, plc.Version);
                         if (packageVersion?.PackageVersionId == null)
                         {
+                            _logger.Info($"This release '{latestRelease.Name} ({latestRelease.TagName})' is not yet published to Twinpack");
+
                             config.Projects.Add(new ConfigProject()
                             {
                                 Name = libraryInfo.Title,

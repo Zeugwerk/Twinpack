@@ -253,7 +253,7 @@ namespace Twinpack
                 }
 
                 var chk = Checksum(fileName);
-                if (packageVersion.BinarySha256 != null && !string.Equals(chk, packageVersion.BinarySha256, StringComparison.InvariantCultureIgnoreCase))
+                if (!string.IsNullOrEmpty(packageVersion.BinarySha256) && !string.Equals(chk, packageVersion.BinarySha256, StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (ChecksumMode.IgnoreMismatch == checksumMode)
                     {
@@ -403,10 +403,10 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch
+            catch(Exception ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
-                throw new GetException("Response could not be parsed");
+                throw new GetException($"Response could not be parsed\n{responseBody}");
             }
             
             if (result.Meta?.Message != null)
