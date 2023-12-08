@@ -205,13 +205,10 @@ namespace Twinpack
                                 properties[name] = stringTable[reader.ReadByte()];
                                 break;
                             case PropertyType.Version:
-                                var parts = reader.ReadByte() + 1; // not sure what this is
+                                var parts = reader.ReadByte(); // not sure why this is needed from codesys
                                 properties[name] = stringTable[reader.ReadByte()];
                                 break;
-
-                            // here is still something wrong ...
                             case PropertyType.LibraryCategories:
-
                                 var guid = stringTable[reader.ReadByte()]; // For LibraryCategories this is System.Guid
                                 var count = reader.ReadByte();
 
@@ -278,6 +275,7 @@ namespace Twinpack
                 }
             }
 
+            // not needed anymore
             if (!properties.TryGetValue("Title", out string v) || string.IsNullOrEmpty(v))
                 _logger.Warn("Title was not parsed correctly");
 
