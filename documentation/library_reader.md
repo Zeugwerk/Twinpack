@@ -66,7 +66,7 @@ Before, the information was stored in a, much harded ro decode, binary format ca
         are "selected" for the library.
         - Read 2 byte of unknown data
         - Read "count" bytes to get the guids of the selected categories
-     - If the text is not "System.Guid"
+      - If the text is not "System.Guid"
         - Read 4 bytes for some kind of header
         - Read "(count-1)*7+4" bytes to get the information about all library categories
           - Default name
