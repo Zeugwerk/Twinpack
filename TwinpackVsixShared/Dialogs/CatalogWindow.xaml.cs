@@ -1224,16 +1224,17 @@ namespace Twinpack.Dialogs
                 var results = await _twinpackServer.GetCatalogAsync(text, _currentCatalogPage, _itemsPerPage, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 IsAvailablePackageAvailable = results.Item2;
-
-                if (reset)
-                {
-                    _availablePackages.Clear();
-                }
+                bool newPackage = false;
                 foreach (var item in results.Item1)
                 {
-                    _availablePackages.Add(new CatalogItem(item));
+                    if(!_availablePackages.Any(x => x.PackageId == item.PackageId))
+                    {
+                        _availablePackages.Add(new CatalogItem(item));
+                        newPackage = true;
+                    }   
                 }
 
+                IsAvailablePackageAvailable &= newPackage;
                 _currentCatalogPage++;
 
             }
@@ -1262,7 +1263,6 @@ namespace Twinpack.Dialogs
 
                 if (_plcConfig != null)
                 {
-                    _installedPackages.Clear();
                     foreach (var item in _plcConfig.Packages)
                     {
                         CatalogItem catalogItem = new CatalogItem(item);
@@ -1271,7 +1271,8 @@ namespace Twinpack.Dialogs
                         if (packageVersion.PackageVersionId != null)
                             catalogItem = new CatalogItem(packageVersion, item.Version);
 
-                        _installedPackages.Add(catalogItem);
+                        if(!_installedPackages.Any(x => x.PackageId == catalogItem.PackageId))
+                            _installedPackages.Add(catalogItem);
                     }
                 }
 
@@ -1588,7 +1589,9 @@ namespace Twinpack.Dialogs
             try
             {
                 var text = ((TextBox)sender).Text;
+                UpdateCatalog();
 
+                // this will only add additional items
                 if (IsBrowsingAvailablePackages)
                 {
                     _searchText = text;
@@ -1596,10 +1599,6 @@ namespace Twinpack.Dialogs
 
                     if (_searchText == text)
                         await LoadAvailablePackagesAsync(text, Token);
-                }
-                else
-                {
-                    UpdateCatalog();
                 }
             }
             catch (Exception ex)
