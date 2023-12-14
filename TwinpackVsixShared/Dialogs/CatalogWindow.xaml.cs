@@ -1273,7 +1273,14 @@ namespace Twinpack.Dialogs
                         }
 
                         if (!_installedPackages.Any(x => x.PackageId == catalogItem.PackageId))
+                        {
                             _installedPackages.Add(catalogItem);
+                        }
+                        else
+                        {
+                            _installedPackages.RemoveAll(x => x.PackageId == catalogItem.PackageId);
+                            _installedPackages.Add(catalogItem);
+                        }
                     }
                 }
 
