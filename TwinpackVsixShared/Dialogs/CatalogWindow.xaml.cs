@@ -70,7 +70,7 @@ namespace Twinpack.Dialogs
         private bool _isUpdateAllVisible;
         private bool _isRestoreAllVisible;
         private bool _isInitializing;
-        private bool _isUpdateAllEnabled;
+        private bool _isCatalogEnabled;
         private bool _isRestoreAllEnabled;
 
         private bool _isPackageVersionPanelEnabled;
@@ -334,23 +334,13 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public bool IsUpdateAllEnabled
+        public bool IsCatalogEnabled
         {
-            get { return _isUpdateAllEnabled; }
+            get { return _isCatalogEnabled; }
             set
             {
-                _isUpdateAllEnabled = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsUpdateAllEnabled)));
-            }
-        }
-
-        public bool IsRestoreAllEnabled
-        {
-            get { return _isRestoreAllEnabled; }
-            set
-            {
-                _isRestoreAllEnabled = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRestoreAllEnabled)));
+                _isCatalogEnabled = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCatalogEnabled)));
             }
         }
 
@@ -450,8 +440,7 @@ namespace Twinpack.Dialogs
             _context = context;
 
             IsInitializing = true;
-            IsUpdateAllEnabled = true;
-            IsRestoreAllEnabled = true;
+            IsCatalogEnabled = true;
             InstalledPackagesCount = 0;
             UpdateablePackagesCount = 0;
             ForcePackageVersionDownload = true;
@@ -691,7 +680,7 @@ namespace Twinpack.Dialogs
             try
             {
                 _semaphoreAction.Wait();
-                IsRestoreAllEnabled = false;
+                IsCatalogEnabled = false;
                 IsPackageVersionPanelEnabled = false;
 
                 var locked = await _semaphorePackages.WaitAsync(10000, Token);
@@ -730,7 +719,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                _semaphoreAction.Release();
+                _semaphorePackages.Release();
             }
 
             try
@@ -750,7 +739,8 @@ namespace Twinpack.Dialogs
             finally
             {
                 IsPackageVersionPanelEnabled = true;
-                IsRestoreAllEnabled = true;
+                IsCatalogEnabled = true;
+                _semaphoreAction.Release();
             }
         }
 
@@ -762,7 +752,7 @@ namespace Twinpack.Dialogs
                 _semaphoreAction.Wait();
 
                 IsPackageVersionPanelEnabled = false;
-                IsUpdateAllEnabled = false;
+                IsCatalogEnabled = false;
 
                 var locked = await _semaphorePackages.WaitAsync(10000, Token);
                 if (!locked)
@@ -819,7 +809,8 @@ namespace Twinpack.Dialogs
             finally
             {
                 IsPackageVersionPanelEnabled = true;
-                IsUpdateAllEnabled = true;
+                IsCatalogEnabled = true;
+                _semaphoreAction.Release();
             }
         }
 
