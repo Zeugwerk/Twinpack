@@ -338,9 +338,8 @@ namespace Twinpack
                 File.WriteAllBytes(fileName, Convert.FromBase64String(result.Binary));
 
                 var chk = Checksum(fileName);
-                if (packageVersion.BinarySha256 != null && !string.Equals(chk, packageVersion.BinarySha256, StringComparison.InvariantCultureIgnoreCase))
+                if (!string.IsNullOrEmpty(packageVersion.BinarySha256) && !string.Equals(chk, packageVersion.BinarySha256, StringComparison.InvariantCultureIgnoreCase))
                 {
-
                     if (ChecksumMode.IgnoreMismatch == checksumMode)
                     {
                         _logger.Warn("Checksum mismatch is ignored");
