@@ -130,6 +130,7 @@
                       ItemsSource="{Binding Catalog}" BorderBrush="#FFcad0de"
                       BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
                       HorizontalContentAlignment="Stretch"
+                      IsEnabled="{Binding IsCatalogEnabled}"
                       ScrollViewer.CanContentScroll="True"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       ScrollViewer.VerticalScrollBarVisibility="Visible">
@@ -192,7 +193,9 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <Grid Margin="0 0 0 10" Grid.Column="0" Grid.Row="1" Visibility="{Binding IsAvailablePackageAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="0 0 0 10" Grid.Column="0" Grid.Row="1" 
+                  IsEnabled="{Binding IsCatalogEnabled}"
+                  Visibility="{Binding IsAvailablePackageAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -205,17 +208,18 @@
                         <TextBlock Margin="5 0 0 0">Load more</TextBlock>
                     </StackPanel>
                 </Button>
-                
             </Grid>
 
-            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="2" Visibility="{Binding IsRestoreAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="2" 
+                  IsEnabled="{Binding IsCatalogEnabled}"
+                  Visibility="{Binding IsRestoreAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="auto"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
                 <TextBlock Margin="5" TextWrapping="Wrap">
                     Restore all packages.</TextBlock>
-                <Button IsEnabled="{Binding IsRestoreAllEnabled}" Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="RestoreAllPackageButton_Click" VerticalAlignment="Center">
+                <Button Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="RestoreAllPackageButton_Click" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Undo" Height="12"/>
                         <TextBlock Margin="5 0 2 0">Restore All</TextBlock>
@@ -223,14 +227,16 @@
                 </Button>
             </Grid>
 
-            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="2" Visibility="{Binding IsUpdateAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="2" 
+                  IsEnabled="{Binding IsCatalogEnabled}"
+                  Visibility="{Binding IsUpdateAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="auto"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
                 <TextBlock Margin="5" TextWrapping="Wrap">
                     Update all packages to their latest version.</TextBlock>
-                <Button IsEnabled="{Binding IsUpdateAllEnabled}" Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="UpdateAllPackageButton_Click" VerticalAlignment="Center">
+                <Button Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="UpdateAllPackageButton_Click" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Bolt" Height="12"/>
                         <fa:ImageAwesome Margin="0 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Bolt" Height="12"/>
@@ -239,7 +245,9 @@
                 </Button>
             </Grid>
 
-            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="3" Visibility="{Binding IsCreateConfigVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="3" 
+                  IsEnabled="{Binding IsCatalogEnabled}"
+                  Visibility="{Binding IsCreateConfigVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -255,7 +263,9 @@
                 </Button>
             </Grid>
 
-            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="4" Visibility="{Binding IsMigrateConfigVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="4" 
+                  IsEnabled="{Binding IsCatalogEnabled}"
+                  Visibility="{Binding IsMigrateConfigVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -278,7 +288,8 @@
                     Users are advised to use packages at their own discretion and risk.
             </TextBlock>
 
-            <Grid Grid.Row="0" d:Visibility="Visible" Background="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxBackgroundBrushKey}}" Visibility="{Binding IsInitializing, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Grid Grid.Row="0" d:Visibility="Visible" Background="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxBackgroundBrushKey}}" 
+                  Visibility="{Binding IsInitializing, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"></RowDefinition>
@@ -289,7 +300,6 @@
                 </Grid>
             </Grid>
 
-            
             <GridSplitter Grid.Column="1" Grid.RowSpan="5" Width="5" HorizontalAlignment="Stretch"></GridSplitter>
             <ScrollViewer Grid.RowSpan="6" x:Name="PackageVersionView" Visibility="{Binding PackageVersion, Converter={StaticResource NullToVisibilityConverter}}" Margin="5,0,0,0" 
                           IsEnabled="{Binding IsPackageVersionPanelEnabled, ElementName=This}"
