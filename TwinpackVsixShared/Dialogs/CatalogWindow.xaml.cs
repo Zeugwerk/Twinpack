@@ -1482,6 +1482,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                IsInitializing = true;
                 IsCatalogLoading = true;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
                 await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
@@ -1511,6 +1512,7 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = _plcConfig != null;
                 IsCatalogLoading = false;
+                IsInitializing = false;
             }
         }
 
@@ -1520,6 +1522,7 @@ namespace Twinpack.Dialogs
             IsFetchingAvailablePackages = false;
             IsFetchingInstalledPackages = false;
             IsCatalogLoading = false;
+            IsInitializing = false;
             IsPackageLoading = false;
             IsPackageVersionLoading = false;
         }
