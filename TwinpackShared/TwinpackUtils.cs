@@ -25,14 +25,14 @@ namespace Twinpack
         private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
-        public static string TwincatPath 
-        { 
-            get 
+        public static string TwincatPath
+        {
+            get
             {
                 try
                 {
                     using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))
-                    {                        
+                    {
                         var bootDir = key?.GetValue("BootDir") as string;
 
                         // need to do GetParent twice because of the trailing \
@@ -43,11 +43,11 @@ namespace Twinpack
                 {
                     return null;
                 }
-            } 
+            }
         }
-        
+
         public static string LicensesPath = TwincatPath + @"\CustomConfig\Licenses";
-        public static string BootFolderPath = TwincatPath + @"\Boot";        
+        public static string BootFolderPath = TwincatPath + @"\Boot";
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -68,7 +68,7 @@ namespace Twinpack
                         string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
                         if (Path.GetFileNameWithoutExtension(projectPath) == plcConfig.Name && prj.Name == plcConfig.ProjectName)
                             return systemManager;
-                        
+
                     }
                 }
             }
@@ -84,10 +84,10 @@ namespace Twinpack
                 try
                 {
                     ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
-                    if(systemManager != null)
+                    if (systemManager != null)
                         return prj;
                 }
-                catch {}
+                catch { }
             }
 
             return null;
@@ -111,7 +111,7 @@ namespace Twinpack
                         window.Close(vsSaveChanges.vsSaveChangesNo);
                         continue;
                     }
-                    
+
                     if (!(obj.FileName as string).StartsWith("["))
                         continue;
 
@@ -129,7 +129,7 @@ namespace Twinpack
                             break;
                         }
                     }
-                    
+
                 }
                 catch { }
             }
@@ -179,7 +179,7 @@ namespace Twinpack
         public static void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, CancellationToken cancellationToken = default)
         {
             libManager.UninstallLibrary("System", packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
-            foreach(var dependency in packageVersion.Dependencies)
+            foreach (var dependency in packageVersion.Dependencies)
             {
                 libManager.UninstallLibrary("System", dependency.Title, dependency.Version, dependency.DistributorName);
             }
@@ -209,7 +209,7 @@ namespace Twinpack
             {
                 foreach (ITcPlcLibrary r in libManager.ScanLibraries())
                 {
-                    if (string.Equals(r.Name, packageVersion.Title, StringComparison.InvariantCultureIgnoreCase) && 
+                    if (string.Equals(r.Name, packageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
                         string.Equals(r.Distributor, packageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
                         r.Version == packageVersion.Version)
                     {
@@ -241,8 +241,10 @@ namespace Twinpack
 
         public static async Task InstallPackageVersionsAsync(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null, CancellationToken cancellationToken = default)
         {
-            foreach(var packageVersion in packageVersions)
+            foreach (var packageVersion in packageVersions)
             {
+                _logger.Info($"Installing package {packageVersion.Name} ...");
+
                 var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
                 await Task.Run(() => { libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true); })
                           .WithCancellation(cancellationToken);
@@ -308,6 +310,23 @@ namespace Twinpack
             }
         }
 
+        public static void AddReference(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, ref List<PlcLibrary> handledReferences, bool addDependenciesAsReferences)
+        {
+            var plcLibrary = new PlcLibrary { DistributorName = packageVersion.DistributorName, Name = packageVersion.Title, Version = packageVersion.Version };
+            if(handledReferences?.Any(x => x == plcLibrary) == false)
+            {
+                AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
+                handledReferences?.Add(plcLibrary);
+            }
+
+            if (addDependenciesAsReferences)
+            {
+                foreach (var dependency in packageVersion.Dependencies)
+                {
+                    AddReference(libManager, dependency.Title, dependency.Title, dependency.Version, dependency.DistributorName);
+                }
+            }
+        }
         public static void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName, bool addAsPlaceholder = true)
         {
             distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
@@ -327,7 +346,7 @@ namespace Twinpack
                 var xdoc = XDocument.Parse(content);
                 return xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Trace(ex);
             }
@@ -337,41 +356,51 @@ namespace Twinpack
 
         public static void CopyLicenseTmcIfNeeded(PackageVersionGetResponse packageVersion, HashSet<string> knownLicenseIds)
         {
-            if (!packageVersion.HasLicenseTmcBinary)
-                return;
-
-            try
+            if (packageVersion.HasLicenseTmcBinary)
             {
-                var licenseId = ParseLicenseId(packageVersion.LicenseTmcText);
-                if(licenseId == null)
-                    throw new InvalidDataException("The tmc file is not a valid license file!");
-
-                if (knownLicenseIds.Contains(licenseId))
+                _logger.Trace($"Copying license description file to TwinCAT for {packageVersion.Name} ...");
+                try
                 {
-                    _logger.Info($"LicenseId={licenseId} already known");
-                    return;
-                }
-                else
-                {
-                    _logger.Info($"Copying license tmc with licenseId={licenseId} to {LicensesPath}");
+                    var licenseId = ParseLicenseId(packageVersion.LicenseTmcText);
+                    if (licenseId == null)
+                        throw new InvalidDataException("The tmc file is not a valid license file!");
 
-                    using(var md5 = MD5.Create())
+                    if (knownLicenseIds.Contains(licenseId))
                     {
-                        if(!Directory.Exists(LicensesPath))
-                            Directory.CreateDirectory(LicensesPath);
-
-                        File.WriteAllText(Path.Combine(LicensesPath, BitConverter.ToString(md5.ComputeHash(Encoding.ASCII.GetBytes($"{packageVersion.DistributorName}{packageVersion.Name}"))).Replace("-", "") + ".tmc"),
-                                          packageVersion.LicenseTmcText);
-
+                        _logger.Info($"LicenseId={licenseId} already known");
+                        return;
                     }
+                    else
+                    {
+                        _logger.Info($"Copying license tmc with licenseId={licenseId} to {LicensesPath}");
 
-                    knownLicenseIds.Add(licenseId);
+                        using (var md5 = MD5.Create())
+                        {
+                            if (!Directory.Exists(LicensesPath))
+                                Directory.CreateDirectory(LicensesPath);
+
+                            File.WriteAllText(Path.Combine(LicensesPath, BitConverter.ToString(md5.ComputeHash(Encoding.ASCII.GetBytes($"{packageVersion.DistributorName}{packageVersion.Name}"))).Replace("-", "") + ".tmc"),
+                                              packageVersion.LicenseTmcText);
+
+                        }
+
+                        knownLicenseIds.Add(licenseId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex.Message);
+                    _logger.Trace(ex);
                 }
             }
-            catch (Exception ex)
+
+            foreach (var dependency in packageVersion.Dependencies)
             {
-                _logger.Error(ex.Message);
-                _logger.Trace(ex);
+                if (dependency.LicenseTmcBinary != null)
+                {
+                    _logger.Trace($"Copying license description file to TwinCAT for {dependency.Name} ...");
+                    CopyLicenseTmcIfNeeded(dependency, knownLicenseIds);
+                }
             }
         }
 
@@ -429,7 +458,7 @@ namespace Twinpack
 
         public static IEnumerable<ConfigPlcProject> PlcProjectsFromPath(string rootPath = ".")
         {
-            foreach(var libraryFile in Directory.GetFiles(rootPath, "*.library"))
+            foreach (var libraryFile in Directory.GetFiles(rootPath, "*.library"))
             {
                 var libraryInfo = LibraryReader.Read(File.ReadAllBytes(libraryFile));
                 var plc = new ConfigPlcProject()
