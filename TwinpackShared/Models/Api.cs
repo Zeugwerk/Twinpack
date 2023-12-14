@@ -163,7 +163,7 @@ namespace Twinpack.Models
 
     public class PackageVersionGetResponse : PackageGetResponse
     {
-        public PackageVersionGetResponse()
+        public PackageVersionGetResponse() : base()
         {
 
         }
@@ -177,6 +177,7 @@ namespace Twinpack.Models
             Configuration = packageVersion.Configuration;
             Compiled = packageVersion.Compiled;
             Notes = packageVersion.Notes;
+            PackageType = packageVersion.PackageType;
             Binary = packageVersion.Binary;
             BinaryDownloadUrl = packageVersion.BinaryDownloadUrl;
             BinarySha256 = packageVersion.BinarySha256;
@@ -205,6 +206,8 @@ namespace Twinpack.Models
         public string BinarySha256 { get; set; }        
         [JsonPropertyName("dependencies")]
         public IEnumerable<PackageVersionGetResponse> Dependencies { get; set; }
+        [JsonPropertyName("type")]
+        public string PackageType { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasDependencies { get { return Dependencies?.Any() == true; } }
@@ -231,9 +234,13 @@ namespace Twinpack.Models
             return !(lhs == rhs);
         }
 
-        public bool Equals(PackageVersionGetResponse o)
+        public override bool Equals(object o)
         {
-            return this == o;
+            return this == o as PackageVersionGetResponse;
+        }
+        public override int GetHashCode()
+        {
+            return PackageVersionId ?? new Random().Next();
         }
     }
 
