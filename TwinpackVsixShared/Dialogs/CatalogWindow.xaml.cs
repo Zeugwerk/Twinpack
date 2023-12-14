@@ -465,6 +465,8 @@ namespace Twinpack.Dialogs
             
             try
             {
+                _installedPackages.Clear();
+                _availablePackages.Clear();
                 IsCatalogLoading = true;
                 cmbTwinpackServer.Items.Clear();
                 cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrlBase);
@@ -568,10 +570,11 @@ namespace Twinpack.Dialogs
             var packagePublish = new PackageVersionWindow(false, _context, _plc, packageId, packageVersionId);
             packagePublish.ShowDialog();
 
-            _twinpackServer.InvalidateCache();
-
             try
             {
+                _twinpackServer.InvalidateCache();
+                _installedPackages.Clear();
+                _availablePackages.Clear();
                 await LoadInstalledPackagesAsync(Token);
                 await LoadAvailablePackagesAsync(SearchTextBox.Text, Token);
                 UpdateCatalog();
@@ -934,6 +937,7 @@ namespace Twinpack.Dialogs
                 p.Installed = null;
             }
 
+            _installedPackages.RemoveAll(x => x.PackageId == PackageVersion.PackageId);
             cancellationToken.ThrowIfCancellationRequested();
         }
 
@@ -1137,6 +1141,7 @@ namespace Twinpack.Dialogs
 
             try
             {
+                _availablePackages.Clear();
                 _twinpackServer.InvalidateCache();
                 await LoadAvailablePackagesAsync("", Token);
             }
@@ -1494,10 +1499,13 @@ namespace Twinpack.Dialogs
                 PackageVersion = new PackageVersionGetResponse();
 
                 _twinpackServer.InvalidateCache();
+                _installedPackages.Clear();
+                _availablePackages.Clear();
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
                 if(!IsConfigured)
                     await LoadPlcConfigAsync(Token);
+
 
                 await LoadInstalledPackagesAsync(Token);
                 await LoadAvailablePackagesAsync(SearchTextBox.Text, Token);
