@@ -46,6 +46,13 @@ namespace Twinpack
         }
     }
 
+    public class LicenseDeclined : Exception
+    {
+        public LicenseDeclined(string message) : base(message)
+        {
+        }
+    }
+    
     public class PushException : Exception
     {
         public PushException(string message) : base(message)

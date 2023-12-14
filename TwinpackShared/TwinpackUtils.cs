@@ -121,7 +121,7 @@ namespace Twinpack
                         continue;
                     }
 
-                    foreach (var dependency in packageVersion.Dependencies)
+                    foreach (var dependency in packageVersion.Dependencies ?? new List<PackageVersionGetResponse>())
                     {
                         if (Regex.Match(obj.FileName, $@"\[{dependency.Name}.*?\({dependency.DistributorName}\)\].*", RegexOptions.IgnoreCase).Success)
                         {
@@ -179,7 +179,7 @@ namespace Twinpack
         public static void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, CancellationToken cancellationToken = default)
         {
             libManager.UninstallLibrary("System", packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
-            foreach (var dependency in packageVersion.Dependencies)
+            foreach (var dependency in packageVersion.Dependencies ?? new List<PackageVersionGetResponse>())
             {
                 libManager.UninstallLibrary("System", dependency.Title, dependency.Version, dependency.DistributorName);
             }
@@ -199,10 +199,8 @@ namespace Twinpack
             return false;
         }
 
-        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
+        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, List<PackageVersionGetResponse> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
         {
-            var downloadedPackageVersions = new List<PackageVersionGetResponse> { };
-
             // check if we find the package on the system
             bool referenceFound = false;
             if (!forceDownload)
@@ -224,7 +222,7 @@ namespace Twinpack
                 }
             }
 
-            if (!referenceFound || forceDownload)
+            if ((!referenceFound || forceDownload) && downloadedPackageVersions.Any(x => x.PackageVersionId == packageVersion.PackageVersionId) == false)
             {
                 await server.DownloadPackageVersionAsync(packageVersion, checksumMode: TwinpackServer.ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
                 downloadedPackageVersions.Add(packageVersion);
@@ -232,8 +230,7 @@ namespace Twinpack
 
             foreach (var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
             {
-                var pk = await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, server, forceDownload, cachePath, cancellationToken: cancellationToken);
-                downloadedPackageVersions.AddRange(pk);
+                downloadedPackageVersions = await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, server, downloadedPackageVersions, forceDownload, cachePath, cancellationToken: cancellationToken);
             }
 
             return downloadedPackageVersions;
@@ -241,6 +238,7 @@ namespace Twinpack
 
         public static async Task InstallPackageVersionsAsync(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null, CancellationToken cancellationToken = default)
         {
+
             foreach (var packageVersion in packageVersions)
             {
                 _logger.Info($"Installing package {packageVersion.Name} ...");
@@ -310,21 +308,16 @@ namespace Twinpack
             }
         }
 
-        public static void AddReference(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, ref List<PlcLibrary> handledReferences, bool addDependenciesAsReferences)
+        public static void AddReferences(ITcPlcLibraryManager libManager, IEnumerable<PackageVersionGetResponse> packageVersions, bool addDependenciesAsReferences)
         {
-            var plcLibrary = new PlcLibrary { DistributorName = packageVersion.DistributorName, Name = packageVersion.Title, Version = packageVersion.Version };
-            if(handledReferences?.Any(x => x == plcLibrary) == false)
+            if(addDependenciesAsReferences)
             {
-                AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
-                handledReferences?.Add(plcLibrary);
+                packageVersions = packageVersions.Concat(packageVersions.SelectMany(x => x.Dependencies));
             }
 
-            if (addDependenciesAsReferences)
+            foreach (var packageVersion in packageVersions.Distinct())
             {
-                foreach (var dependency in packageVersion.Dependencies)
-                {
-                    AddReference(libManager, dependency.Title, dependency.Title, dependency.Version, dependency.DistributorName);
-                }
+                AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
             }
         }
         public static void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName, bool addAsPlaceholder = true)
@@ -354,54 +347,55 @@ namespace Twinpack
             return null;
         }
 
-        public static void CopyLicenseTmcIfNeeded(PackageVersionGetResponse packageVersion, HashSet<string> knownLicenseIds)
+        public static HashSet<string> CopyLicenseTmcIfNeeded(IEnumerable<PackageVersionGetResponse> packageVersions, HashSet<string> knownLicenseIds)
         {
-            if (packageVersion.HasLicenseTmcBinary)
+            // todo: flatten dependences and package versions and iterate over this
+            foreach(var packageVersion in packageVersions)
             {
-                _logger.Trace($"Copying license description file to TwinCAT for {packageVersion.Name} ...");
-                try
+                if (packageVersion.HasLicenseTmcBinary)
                 {
-                    var licenseId = ParseLicenseId(packageVersion.LicenseTmcText);
-                    if (licenseId == null)
-                        throw new InvalidDataException("The tmc file is not a valid license file!");
-
-                    if (knownLicenseIds.Contains(licenseId))
+                    _logger.Trace($"Copying license description file to TwinCAT for {packageVersion.Name} ...");
+                    try
                     {
-                        _logger.Info($"LicenseId={licenseId} already known");
-                        return;
-                    }
-                    else
-                    {
-                        _logger.Info($"Copying license tmc with licenseId={licenseId} to {LicensesPath}");
+                        var licenseId = ParseLicenseId(packageVersion.LicenseTmcText);
+                        if (licenseId == null)
+                            throw new InvalidDataException("The tmc file is not a valid license file!");
 
-                        using (var md5 = MD5.Create())
+                        if (knownLicenseIds.Contains(licenseId))
                         {
-                            if (!Directory.Exists(LicensesPath))
-                                Directory.CreateDirectory(LicensesPath);
-
-                            File.WriteAllText(Path.Combine(LicensesPath, BitConverter.ToString(md5.ComputeHash(Encoding.ASCII.GetBytes($"{packageVersion.DistributorName}{packageVersion.Name}"))).Replace("-", "") + ".tmc"),
-                                              packageVersion.LicenseTmcText);
-
+                            _logger.Trace($"LicenseId={licenseId} already known");
                         }
+                        else
+                        {
+                            _logger.Info($"Copying license tmc with licenseId={licenseId} to {LicensesPath}");
 
-                        knownLicenseIds.Add(licenseId);
+                            using (var md5 = MD5.Create())
+                            {
+                                if (!Directory.Exists(LicensesPath))
+                                    Directory.CreateDirectory(LicensesPath);
+
+                                File.WriteAllText(Path.Combine(LicensesPath, BitConverter.ToString(md5.ComputeHash(Encoding.ASCII.GetBytes($"{packageVersion.DistributorName}{packageVersion.Name}"))).Replace("-", "") + ".tmc"),
+                                                  packageVersion.LicenseTmcText);
+
+                            }
+
+                            knownLicenseIds.Add(licenseId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex.Message);
+                        _logger.Trace(ex);
                     }
                 }
-                catch (Exception ex)
+
+                if(packageVersion.Dependencies != null)
                 {
-                    _logger.Error(ex.Message);
-                    _logger.Trace(ex);
+                    knownLicenseIds = CopyLicenseTmcIfNeeded(packageVersion.Dependencies, knownLicenseIds);
                 }
             }
 
-            foreach (var dependency in packageVersion.Dependencies)
-            {
-                if (dependency.LicenseTmcBinary != null)
-                {
-                    _logger.Trace($"Copying license description file to TwinCAT for {dependency.Name} ...");
-                    CopyLicenseTmcIfNeeded(dependency, knownLicenseIds);
-                }
-            }
+            return knownLicenseIds;
         }
 
         public static HashSet<string> KnownLicenseIds()

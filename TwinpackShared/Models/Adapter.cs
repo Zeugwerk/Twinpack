@@ -18,7 +18,7 @@ namespace Twinpack.Models
             
         }
 
-        public CatalogItem(PackageVersionGetResponse packageVersion, string installedVersion)
+        public CatalogItem(PackageVersionGetResponse packageVersion)
         {
             PackageId = packageVersion.PackageId;
             Repository = packageVersion.Repository;
@@ -29,9 +29,6 @@ namespace Twinpack.Models
             DistributorName = packageVersion.DistributorName;
             RuntimeLicense = packageVersion.LicenseTmcBinary != null ? 1 : 0;
             Downloads = packageVersion.Downloads;
-            Update = packageVersion;
-            Installed = new PackageVersionGetResponse(packageVersion);
-            Installed.Version = installedVersion;
         }
 
         public CatalogItem(ConfigPlcPackage package)
