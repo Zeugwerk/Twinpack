@@ -1213,17 +1213,13 @@ namespace Twinpack.Dialogs
                 var results = await _twinpackServer.GetCatalogAsync(text, _currentCatalogPage, _itemsPerPage, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 IsAvailablePackageAvailable = results.Item2;
-                bool newPackage = false;
                 foreach (var item in results.Item1)
                 {
                     if(!_availablePackages.Any(x => x.PackageId == item.PackageId))
                     {
                         _availablePackages.Add(new CatalogItem(item));
-                        newPackage = true;
                     }   
                 }
-
-                IsAvailablePackageAvailable &= newPackage;
                 _currentCatalogPage++;
 
             }
