@@ -467,6 +467,8 @@ namespace Twinpack.Dialogs
             {
                 _installedPackages.Clear();
                 _availablePackages.Clear();
+                UpdateCatalog();
+
                 IsCatalogLoading = true;
                 cmbTwinpackServer.Items.Clear();
                 cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrlBase);
@@ -575,6 +577,7 @@ namespace Twinpack.Dialogs
                 _twinpackServer.InvalidateCache();
                 _installedPackages.Clear();
                 _availablePackages.Clear();
+                UpdateCatalog();
                 await LoadInstalledPackagesAsync(Token);
                 await LoadAvailablePackagesAsync(SearchTextBox.Text, Token);
                 UpdateCatalog();
@@ -1143,6 +1146,7 @@ namespace Twinpack.Dialogs
             {
                 _availablePackages.Clear();
                 _twinpackServer.InvalidateCache();
+                UpdateCatalog();
                 await LoadAvailablePackagesAsync("", Token);
             }
             catch (Exception ex)
@@ -1501,11 +1505,11 @@ namespace Twinpack.Dialogs
                 _twinpackServer.InvalidateCache();
                 _installedPackages.Clear();
                 _availablePackages.Clear();
+                UpdateCatalog();
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
                 if(!IsConfigured)
                     await LoadPlcConfigAsync(Token);
-
 
                 await LoadInstalledPackagesAsync(Token);
                 await LoadAvailablePackagesAsync(SearchTextBox.Text, Token);
