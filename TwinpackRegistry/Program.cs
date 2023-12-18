@@ -32,6 +32,9 @@ namespace Twinpack
 
             [Option('D', "dump", Required = false, Default = false, HelpText = "")]
             public bool Dump { get; set; }
+
+            [Option('t', "token", Required = false, Default = false, HelpText = "")]
+            public string Token { get; set; }
         }
 
         [Verb("dump", HelpText = "")]
@@ -68,7 +71,7 @@ namespace Twinpack
                     (UpdateOptions opts) =>
                     {
                         Login(opts.Username, opts.Password);
-                        new TwinpackRegistry(_twinpackServer).DownloadAsync(opts.RegistryOwner, opts.RegistryName, dump: opts.Dump).GetAwaiter().GetResult();
+                        new TwinpackRegistry(_twinpackServer).DownloadAsync(opts.RegistryOwner, opts.RegistryName, token: opts.Token).GetAwaiter().GetResult();
 
                         if(!opts.DryRun)
                             _twinpackServer.PushAsync(TwinpackUtils.PlcProjectsFromConfig(compiled: false, target: "TC3.1"), "Release", "main", "TC3.1", null, false).GetAwaiter().GetResult();

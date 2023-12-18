@@ -75,7 +75,7 @@ namespace Twinpack
             }
         }
 
-        public async Task DownloadAsync(string repositoryOwner, string repositoryName, bool dump=false)
+        public async Task DownloadAsync(string repositoryOwner, string repositoryName, string token=null)
         {
             var config = new Config()
             {
@@ -85,6 +85,9 @@ namespace Twinpack
 
             var target = "TC3.1";
             var client = new GitHubClient(_header);
+            if (token != null)
+                client.Credentials = new Credentials(token);
+
             var repositories = Encoding.ASCII.GetString(await client.Repository.Content.GetRawContent(repositoryOwner, repositoryName, "repositories.txt")).Trim();
 
             foreach(var repoUrl in repositories.Split('\n'))
