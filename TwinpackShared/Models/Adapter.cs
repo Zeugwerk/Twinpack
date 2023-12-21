@@ -51,7 +51,7 @@ namespace Twinpack.Models
             {
                 try
                 {
-                    return InstalledVersion != null && Update?.Version != null && new Version(InstalledVersion) < new Version(Update?.Version);
+                    return (Installed?.Version == null && Update?.Version != null) || (Update?.Version != null && new Version(Installed?.Version) < new Version(Update?.Version));
                 }
                 catch
                 {
