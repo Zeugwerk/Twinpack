@@ -1257,6 +1257,7 @@ namespace Twinpack.Dialogs
 
                 if (_plcConfig != null)
                 {
+                    _installedPackages.RemoveAll(x => x.PackageId == null);
                     foreach (var item in _plcConfig.Packages)
                     {
                         CatalogItem catalogItem = new CatalogItem(item);
@@ -1277,7 +1278,8 @@ namespace Twinpack.Dialogs
                             catalogItem.Update = packageVersionLatest;
                         }
 
-                        if (!_installedPackages.Any(x => x.PackageId == catalogItem.PackageId))
+                        var packageId = catalogItem.PackageId ?? packageVersionLatest.PackageId;
+                        if (packageId == null || !_installedPackages.Any(x => x.PackageId == packageId))
                         {
                             _installedPackages.Add(catalogItem);
                         }
