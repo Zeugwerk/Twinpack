@@ -324,6 +324,11 @@ namespace Twinpack.Dialogs
             }
         }
 
+        public bool IsRestoreAllEnabled
+        {
+            get { return _isRestoreAllEnabled; }
+        }
+
         public bool IsInitializing
         {
             get { return _isInitializing; }
@@ -340,7 +345,9 @@ namespace Twinpack.Dialogs
             set
             {
                 _isCatalogEnabled = value;
+                _isRestoreAllEnabled = _installedPackages.Any(x => x.PackageId == null) == false;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCatalogEnabled)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRestoreAllEnabled)));
             }
         }
 
@@ -505,6 +512,7 @@ namespace Twinpack.Dialogs
             {
                 IsInitializing = false;
                 IsCatalogLoading = false;
+                IsCatalogEnabled = true;
                 IsPackageVersionPanelEnabled = _plcConfig != null;
                 IsUpdateAvailable = _twinpackServer.IsClientUpdateAvailable == true;
                 btnLogin.Text = _twinpackServer.LoggedIn ? "Logout" : "Login";
@@ -525,17 +533,14 @@ namespace Twinpack.Dialogs
                     if (config != null)
                     {
                         _plcConfig = ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, _plc);
-                        IsCreateConfigVisible = false;
-                        IsMigrateConfigVisible = false;
-                        IsMigrateConfigVisible = _plcConfig?.Packages?.Any() == false && _plcConfig.Frameworks?.Zeugwerk?.References?.Any() == true;
                     }
                     else
                     {
-                        IsCreateConfigVisible = true;
-                        IsMigrateConfigVisible = false;
                         _plcConfig = await ConfigPlcProjectFactory.CreateAsync(_context.Solution, _plc, _twinpackServer, cancellationToken);
                     }
 
+                    IsCreateConfigVisible = config == null;
+                    IsMigrateConfigVisible = config != null && _plcConfig?.Packages?.Any() == false && _plcConfig.Frameworks?.Zeugwerk?.References?.Any() == true;
                     IsConfigured = _plcConfig != null;
                 }
                 catch (Exception ex)
@@ -589,6 +594,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
+                IsCatalogEnabled = true;
                 IsPackageVersionPanelEnabled = _plcConfig != null;
             }
         }
@@ -1270,13 +1276,16 @@ namespace Twinpack.Dialogs
                                                                                           item.Configuration, item.Branch, item.Target, 
                                                                                           cancellationToken: cancellationToken);
 
-                        // force the actual references version even if the version was not found
+                        // force the packageVersion references version even if the version was not found
                         if (packageVersion.PackageVersionId != null)
                         {
                             catalogItem = new CatalogItem(packageVersion);
                             catalogItem.Installed = packageVersion;
-                            catalogItem.Update = packageVersionLatest;
                         }
+
+                        // a package might be updateable but not available on Twinpack
+                        if (packageVersionLatest.PackageVersionId != null)
+                            catalogItem.Update = packageVersionLatest;
 
                         var packageId = catalogItem.PackageId ?? packageVersionLatest.PackageId;
                         if (packageId == null || !_installedPackages.Any(x => x.PackageId == packageId))
@@ -1526,6 +1535,7 @@ namespace Twinpack.Dialogs
             {
                 IsPackageVersionPanelEnabled = _plcConfig != null;
                 IsCatalogLoading = false;
+                IsCatalogEnabled = true;
                 IsInitializing = false;
             }
         }
@@ -1591,6 +1601,7 @@ namespace Twinpack.Dialogs
             }
             finally
             {
+                IsCatalogEnabled = true;
                 IsPackageVersionPanelEnabled = _plcConfig != null;
             }
         }
