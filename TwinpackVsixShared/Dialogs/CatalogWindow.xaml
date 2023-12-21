@@ -212,7 +212,7 @@
             </Grid>
 
             <Grid Margin="0 3 0 0" Grid.Column="0" Grid.Row="2" 
-                  IsEnabled="{Binding IsCatalogEnabled}"
+                  IsEnabled="{Binding IsRestoreAllEnabled}"
                   Visibility="{Binding IsRestoreAllVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
