@@ -539,8 +539,8 @@ namespace Twinpack.Dialogs
                         _plcConfig = await ConfigPlcProjectFactory.CreateAsync(_context.Solution, _plc, _twinpackServer, cancellationToken);
                     }
 
-                    IsCreateConfigVisible = config == null;
-                    IsMigrateConfigVisible = config != null && _plcConfig?.Packages?.Any() == false && _plcConfig.Frameworks?.Zeugwerk?.References?.Any() == true;
+                    IsCreateConfigVisible = config == null || _plcConfig == null;
+                    IsMigrateConfigVisible = config != null && _plcConfig?.Packages?.Any() == false && _plcConfig?.Frameworks?.Zeugwerk?.References?.Any() == true;
                     IsConfigured = _plcConfig != null;
                 }
                 catch (Exception ex)
