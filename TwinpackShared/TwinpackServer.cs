@@ -642,7 +642,7 @@ namespace Twinpack
             }
         }
 
-        public async Task PullAsync(bool skipInternalPackages = false, string rootPath = ".", string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task PullAsync(bool skipInternalPackages = false, List<ConfigPlcPackage> filter = null, string rootPath = ".", string cachePath = null, CancellationToken cancellationToken = default)
         {
             var config = ConfigFactory.Load(path: rootPath);
 
@@ -674,6 +674,12 @@ namespace Twinpack
                                     (x.Configuration == null || x?.Configuration == package?.Configuration) &&
                                     (x.Branch == null || x?.Branch == package?.Branch)))
                         continue;
+
+                    if (!filter.Any(x => x?.Name == package?.Name && x?.Version == package?.Version &&
+                                    (x.Target == null || x?.Target == package?.Target) &&
+                                    (x.Configuration == null || x?.Configuration == package?.Configuration) &&
+                                    (x.Branch == null || x?.Branch == package?.Branch)))
+                        continue;                    
 
                     try
                     {
