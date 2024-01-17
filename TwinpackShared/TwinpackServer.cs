@@ -642,7 +642,7 @@ namespace Twinpack
             }
         }
 
-        public async Task PullAsync(bool skipInternalPackages = false, List<ConfigPlcPackage> filter = null, string rootPath = ".", string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task PullAsync(bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string rootPath = ".", string cachePath = null, CancellationToken cancellationToken = default)
         {
             var config = ConfigFactory.Load(path: rootPath);
 
