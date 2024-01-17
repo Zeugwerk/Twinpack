@@ -675,7 +675,7 @@ namespace Twinpack
                                     (x.Branch == null || x?.Branch == package?.Branch)))
                         continue;
 
-                    if (!filter.Any(x => x?.Name == package?.Name && x?.Version == package?.Version &&
+                    if (filter != null && !filter.Any(x => x?.Name == package?.Name && x?.Version == package?.Version &&
                                     (x.Target == null || x?.Target == package?.Target) &&
                                     (x.Configuration == null || x?.Configuration == package?.Configuration) &&
                                     (x.Branch == null || x?.Branch == package?.Branch)))
