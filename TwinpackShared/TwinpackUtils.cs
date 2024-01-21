@@ -299,10 +299,9 @@ namespace Twinpack
                     itemDistributorName = plcLibrary.Distributor;
                 }
 
-                if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase) &&
-                    string.Equals(itemDistributorName, distributorName, StringComparison.InvariantCultureIgnoreCase))
+                if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    _logger.Info($"Remove reference to {placeholderName} (version: {itemVersion}, distributor: {itemDistributorName})");
+                    _logger.Info($"Remove reference {placeholderName} (version: {itemVersion}, distributor: {itemDistributorName})");
                     libManager.RemoveReference(placeholderName);
                 }
             }
