@@ -642,10 +642,8 @@ namespace Twinpack
             }
         }
 
-        public async Task PullAsync(bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string rootPath = ".", string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task PullAsync(Config config, bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string cachePath = null, CancellationToken cancellationToken = default)
         {
-            var config = ConfigFactory.Load(path: rootPath);
-
             _logger.Info($"Pulling from Twinpack Server (Skipping internal packages: {skipInternalPackages})");
             var plcs = config.Projects.SelectMany(x => x.Plcs);
             var exceptions = new List<Exception>();
