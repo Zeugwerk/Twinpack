@@ -197,6 +197,16 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\TestSolution\TestProject2\PlcLibrary1\PlcLibrary1.plcproj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="assets\TestSolution\TestProject2\PlcLibrary1\POUs\MAIN.TcPOU" />
+    <None Include="assets\TestSolution\TestProject2\PlcLibrary1\_Libraries\beckhoff automation gmbh\tc2_standard\3.3.3.0\tc2_standard.compiled-library" />
+    <None Include="assets\TestSolution\TestProject2\PlcLibrary1\_Libraries\beckhoff automation gmbh\tc2_system\3.6.2.0\tc2_system.compiled-library" />
+    <None Include="assets\TestSolution\TestProject2\PlcLibrary1\_Libraries\beckhoff automation gmbh\tc3_module\3.3.23.0\tc3_module.compiled-library" />
+    <None Include="assets\TestSolution\TestProject2\TestProject2.tspproj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="assets\TestSolution\TestProject\Plc1\Plc1.plcproj">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -211,6 +221,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="assets\TestSolution\TestProject2\PlcLibrary1\DUTs\" />
+    <Folder Include="assets\TestSolution\TestProject2\PlcLibrary1\GVLs\" />
+    <Folder Include="assets\TestSolution\TestProject2\PlcLibrary1\VISUs\" />
+    <Folder Include="assets\TestSolution\TestProject2\PlcLibrary1\_CompileInfo\" />
     <Folder Include="assets\TestSolution\TestProject\Plc1\DUTs\" />
     <Folder Include="assets\TestSolution\TestProject\Plc1\GVLs\" />
     <Folder Include="assets\TestSolution\TestProject\Plc1\VISUs\" />

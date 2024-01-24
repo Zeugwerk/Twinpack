@@ -148,6 +148,8 @@ namespace Twinpack.Models
 
             //Project("{DFBE7525-6864-4E62-8B2E-D530D69D9D96}") = "ZApplication", "ZApplication.tspproj", "{55567FAF-D581-431A-8E43-734906367EA7}"
             var projectMatches = Regex.Matches(slnContent, "Project\\(.*?\\)\\s*=\\s*\"(.*?)\"\\s*,\\s*\"(.*?ts[p]?proj)\"\\s*,.*");     
+            config.Projects = new List<ConfigProject>();
+            
             foreach(Match projectMatch in projectMatches)
             {
                 var project = new ConfigProject();
@@ -166,8 +168,9 @@ namespace Twinpack.Models
                         project.Plcs.Add(plcConfig);
                 }
 
-                config.Projects = new List<ConfigProject>();
-                config.Projects.Add(project);
+                
+                if(project.Plcs.Any())
+                    config.Projects.Add(project);
             }
 
             return config;

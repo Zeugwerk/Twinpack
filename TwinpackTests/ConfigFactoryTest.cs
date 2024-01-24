@@ -20,9 +20,9 @@ namespace TwinpackTests
             Assert.AreEqual(@"assets\TestSolution", config.WorkingDirectory);
             Assert.AreEqual(@"TestSolution.sln", config.Solution);
             Assert.AreEqual(@"assets\TestSolution\.Zeugwerk\config.json", config.FilePath);
-            Assert.AreEqual(1, config.Projects.Count);
+            Assert.AreEqual(2, config.Projects.Count);
 
-            var project = config.Projects.FirstOrDefault();
+            var project = config.Projects.Where(x => x.Name == "TestProject").FirstOrDefault();
             Assert.AreEqual(@"TestProject", project?.Name);
             Assert.AreEqual(1, project?.Plcs.Count);
 
@@ -53,8 +53,21 @@ namespace TwinpackTests
             Assert.AreEqual(1, config.Projects.Count);
 
             var project = config.Projects.FirstOrDefault();
-            Assert.AreEqual(@"TestProject", project?.Name);
-            Assert.AreEqual(0, project?.Plcs.Count);
+            Assert.AreEqual(@"TestProject2", project?.Name);
+            Assert.AreEqual(1, project?.Plcs.Count);
+
+            var plc = project.Plcs.FirstOrDefault();
+            Assert.AreEqual(@"PlcLibrary1", plc?.Name);
+            Assert.AreEqual(@"PlcLibrary1", plc?.Title);
+            Assert.AreEqual(ConfigPlcProject.PlcProjectType.Library, plc?.PlcType);
+            Assert.AreEqual(1, plc?.References.Count);
+            Assert.AreEqual("1.2.3.4", plc?.Version);
+            Assert.AreEqual(@"*", plc?.References?.FirstOrDefault().Key);
+            Assert.AreEqual(2, plc?.References?.FirstOrDefault().Value.Count);
+
+            var references = plc?.References?.FirstOrDefault().Value;
+            Assert.AreEqual(@"Tc2_Standard=*", references[0]);
+            Assert.AreEqual(@"Tc2_System=*", references[1]);
         }
 
         [TestMethod]
