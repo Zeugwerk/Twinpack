@@ -11,10 +11,10 @@ namespace TwinpackTests
         const string _loremIpsum = @"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. END";
 
         [DataTestMethod]
-        [DataRow(@"assets\LibCat1_All_selected.library", "MyCompany", "MyTitle", "1.2.3", "", "", "")]
-        [DataRow(@"assets\LibCat4_All_selected.library", "MyCompany", "MyTitle", "1.2.3", "", "", "")]
-        [DataRow(@"assets\LibCat4_MyParent_selected.library", "MyCompany", "MyTitle", "1.2.3", "", "", "")]
-        [DataRow(@"assets\LibCat4P_1_selected.library", "MyCompany", "MyTitle", "1.2.3", "", "", "")]
+        [DataRow(@"assets\LibCat1_All_selected.library", "MyCompany", "MyTitle", "1.0.2.4", "MyDefaultNamespace", "MyAuthor", "MyDescription")]
+        [DataRow(@"assets\LibCat4_All_selected.library", "MyCompany", "MyTitle", "5.5.5.5", "", "", "")]
+        [DataRow(@"assets\LibCat4_MyParent_selected.library", "MyCompany", "MyTitle", "5.5.5.5", "", "", "")]
+        [DataRow(@"assets\LibCat4P_1_selected.library", "MyCompany", "MyTitle", "1.0.2.4", "MyDefaultNamespace", "MyAuthor", "MyDescription")]
         [DataRow(@"assets\Untitled2_libcat.library", "MyCompany", "MyTitle", "1.2.3", "MyDefaultNamespace", "MyAuthor", _loremIpsum)]
         [DataRow(@"assets\Untitled2_minimal_infos_libcat_mine_theirs_yours_1234.library", "MyCompany", "MyTitle", "1.2.3", "", "", "")]
         [DataRow(@"assets\Untitled2_minimal_infos_libcat_1234.library", "MyCompany", "MyTitle", "1.2.3", "", "", "")]

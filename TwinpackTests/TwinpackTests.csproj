@@ -53,6 +53,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfigFactoryTest.cs" />
     <Compile Include="LibraryReaderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -97,6 +98,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="assets\TestSolution\TestSolution.sln">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="assets\Untitled1_4024_35_minimal_infos_123.library">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -191,6 +195,25 @@
     <Content Include="assets\LibCat4_MyParent_selected.library">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\TestSolution\TestProject\Plc1\Plc1.plcproj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="assets\TestSolution\TestProject\Plc1\PlcTask.TcTTO">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="assets\TestSolution\TestProject\Plc1\POUs\MAIN.TcPOU">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="assets\TestSolution\TestProject\TestProject.tsproj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="assets\TestSolution\TestProject\Plc1\DUTs\" />
+    <Folder Include="assets\TestSolution\TestProject\Plc1\GVLs\" />
+    <Folder Include="assets\TestSolution\TestProject\Plc1\VISUs\" />
   </ItemGroup>
   <Import Project="..\TwinpackShared\TwinpackShared.projitems" Label="Shared" />
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />

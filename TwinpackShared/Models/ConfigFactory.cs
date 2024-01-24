@@ -19,8 +19,10 @@ namespace Twinpack.Models
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         public const string DefaultRepository = "https://framework.zeugwerk.dev/Distribution";
+        
         public static readonly string ZeugwerkVendorName = "Zeugwerk GmbH";
         public static readonly List<String> DefaultLocations = new List<String> { $@"", $@".Zeugwerk\" };
+        public static readonly XNamespace TsProjectNs = "http://www.w3.org/2001/XMLSchema-instance";
 
         public static Config Load(string path = ".")
         {
@@ -60,7 +62,7 @@ namespace Twinpack.Models
                 }
             }
 
-            return null;
+            return config;
         }
 
         public static Config Create(string solutionName, List<ConfigProject> projects = null, string filepath = null)
@@ -116,8 +118,9 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateAsync(string path = ".", bool continueWithoutSolution = false, TwinpackServer twinpackServer = null, CancellationToken cancellationToken = default)
+        public static async Task<Config> CreateFromSolutionFileAsync(string path = ".", bool continueWithoutSolution = false, TwinpackServer twinpackServer = null, CancellationToken cancellationToken = default)
         {
+
             Config config = new Config();
             var solutions = Directory.GetFiles(path, "*.sln", SearchOption.AllDirectories);
 
@@ -139,17 +142,29 @@ namespace Twinpack.Models
                 config.FilePath = $@"{Environment.CurrentDirectory}\.Zeugwerk\config.json";
             }
 
-            var project = new ConfigProject();
-            project.Name = config.Solution?.Split('.').First();
-            project.Plcs = new List<ConfigPlcProject>();
+            var slnContent = File.ReadAllText(solutions.First());
 
-            foreach (var plcpath in Directory.GetFiles(path, "*.plcproj", SearchOption.AllDirectories))
+            //Project("{DFBE7525-6864-4E62-8B2E-D530D69D9D96}") = "ZApplication", "ZApplication.tspproj", "{55567FAF-D581-431A-8E43-734906367EA7}"
+            var projectMatches = Regex.Matches(slnContent, "Project\\(.*?\\)\\s*=\\s*\"(.*?)\"\\s*,\\s*\"(.*?ts[p]?proj)\"\\s*,.*");     
+            foreach(Match projectMatch in projectMatches)
             {
-                project.Plcs.Add(await ConfigPlcProjectFactory.CreateAsync(plcpath, twinpackServer, cancellationToken));
+                var project = new ConfigProject();
+                project.Name = projectMatch.Groups[1].Value;
+                project.Plcs = new List<ConfigPlcProject>();
+
+                string tsprojFilepath = $@"{path}\{projectMatch.Groups[2].Value}";
+                XDocument tsprojXml = XDocument.Load(tsprojFilepath);
+                var plcs = tsprojXml.Root.Elements("Project").Elements("Plc").Elements("Project");
+                foreach (var plc in plcs)
+                {
+                    var plcpath = $@"{new FileInfo(tsprojFilepath).Directory.FullName}\{plc.Attribute("PrjFilePath").Value}";
+                    project.Plcs.Add(await ConfigPlcProjectFactory.CreateAsync(plcpath, twinpackServer, cancellationToken));
+                }
+
+                config.Projects = new List<ConfigProject>();
+                config.Projects.Add(project);
             }
 
-            config.Projects = new List<ConfigProject>();
-            config.Projects.Add(project);
             return config;
         }
 
