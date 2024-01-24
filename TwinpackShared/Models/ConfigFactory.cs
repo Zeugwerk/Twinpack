@@ -78,7 +78,7 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, TwinpackServer twinpackServer=null, CancellationToken cancellationToken = default)
+        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, TwinpackServer twinpackServer= null, IEnumerable <ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
         {
             Config config = new Config();
 
@@ -107,8 +107,10 @@ namespace Twinpack.Models
                         var plcConfig = await ConfigPlcProjectFactory.CreateAsync(projectPath, twinpackServer, cancellationToken);
                         plcConfig.ProjectName = project.Name;
                         plcConfig.RootPath = config.WorkingDirectory;
-                        plcConfig.FilePath = ConfigPlcProjectFactory.GuessFilePath(plcConfig);                        
-                        project.Plcs.Add(plcConfig);
+                        plcConfig.FilePath = ConfigPlcProjectFactory.GuessFilePath(plcConfig);
+
+                        if (plcTypeFilter == null || plcTypeFilter.Contains(plcConfig.PlcType))
+                            project.Plcs.Add(plcConfig);
                     }
                 }
 
@@ -118,7 +120,7 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateFromSolutionFileAsync(string path = ".", bool continueWithoutSolution = false, TwinpackServer twinpackServer = null, CancellationToken cancellationToken = default)
+        public static async Task<Config> CreateFromSolutionFileAsync(string path = ".", bool continueWithoutSolution = false, TwinpackServer twinpackServer = null, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter=null, CancellationToken cancellationToken = default)
         {
 
             Config config = new Config();
@@ -158,7 +160,10 @@ namespace Twinpack.Models
                 foreach (var plc in plcs)
                 {
                     var plcpath = $@"{new FileInfo(tsprojFilepath).Directory.FullName}\{plc.Attribute("PrjFilePath").Value}";
-                    project.Plcs.Add(await ConfigPlcProjectFactory.CreateAsync(plcpath, twinpackServer, cancellationToken));
+                    var plcConfig = await ConfigPlcProjectFactory.CreateAsync(plcpath, twinpackServer, cancellationToken);
+
+                    if(plcTypeFilter == null || plcTypeFilter.Contains(plcConfig.PlcType))
+                        project.Plcs.Add(plcConfig);
                 }
 
                 config.Projects = new List<ConfigProject>();
