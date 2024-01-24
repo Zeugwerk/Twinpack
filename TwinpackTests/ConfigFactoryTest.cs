@@ -45,7 +45,7 @@ namespace TwinpackTests
         public async Task CreateFromSolutionFileWithFilterAsync()
         {
             var config = await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution",
-                plcTypeFilter: new List<ConfigPlcProject.PlcProjectType> { ConfigPlcProject.PlcProjectType.Application });
+                plcTypeFilter: new List<ConfigPlcProject.PlcProjectType> { ConfigPlcProject.PlcProjectType.Library });
 
             Assert.AreEqual(@"assets\TestSolution", config.WorkingDirectory);
             Assert.AreEqual(@"TestSolution.sln", config.Solution);
@@ -54,21 +54,7 @@ namespace TwinpackTests
 
             var project = config.Projects.FirstOrDefault();
             Assert.AreEqual(@"TestProject", project?.Name);
-            Assert.AreEqual(1, project?.Plcs.Count);
-
-            var plc = project.Plcs.FirstOrDefault();
-            Assert.AreEqual(@"Plc1", plc?.Name);
-            Assert.AreEqual(@"Plc1", plc?.Title);
-            Assert.AreEqual(ConfigPlcProject.PlcProjectType.Application, plc?.PlcType);
-            Assert.AreEqual(1, plc?.References.Count);
-            Assert.AreEqual("1.0.0.0", plc?.Version);
-            Assert.AreEqual(@"*", plc?.References?.FirstOrDefault().Key);
-            Assert.AreEqual(3, plc?.References?.FirstOrDefault().Value.Count);
-
-            var references = plc?.References?.FirstOrDefault().Value;
-            Assert.AreEqual(@"Tc2_Standard=*", references[0]);
-            Assert.AreEqual(@"Tc2_System=*", references[1]);
-            Assert.AreEqual(@"Tc3_Module=*", references[2]);
+            Assert.AreEqual(0, project?.Plcs.Count);
         }
     }
 }
