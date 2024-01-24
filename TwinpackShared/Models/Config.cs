@@ -147,7 +147,8 @@ namespace Twinpack.Models
         {
             FrameworkLibrary, // Framework Library
             Application, // Activateable PLC
-            Library // Library with a Framework independent versionnumber
+            Library, // Library with a Framework independent versionnumber
+            UnitTestApplication // Activatable PLC, which is only meant for unittests
         }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
@@ -173,6 +174,8 @@ namespace Twinpack.Models
                         case "productlibrary":
                         case "library":
                             return PlcProjectType.Library;
+                        case "unittestapplication":
+                            return PlcProjectType.UnitTestApplication;                            
                     }
                 }
 
