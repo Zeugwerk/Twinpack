@@ -56,5 +56,31 @@ namespace TwinpackTests
             Assert.AreEqual(@"TestProject", project?.Name);
             Assert.AreEqual(0, project?.Plcs.Count);
         }
+
+        [TestMethod]
+        public async Task GuessPlcTypeAsyncWithPackageAsync()
+        {
+            var config = await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution");
+            var plc = config.Projects.FirstOrDefault().Plcs.FirstOrDefault();
+
+            Assert.AreEqual(ConfigPlcProject.PlcProjectType.Application, ConfigPlcProjectFactory.GuessPlcType(plc));
+
+            plc.Packages = plc.Packages.ToList().Append(new ConfigPlcPackage { Name = "TcUnit" });
+            Assert.AreEqual(ConfigPlcProject.PlcProjectType.UnitTestApplication, ConfigPlcProjectFactory.GuessPlcType(plc));
+
+        }
+
+        [TestMethod]
+        public async Task GuessPlcTypeAsyncWithReferenceAsync()
+        {
+            var config = await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution");
+            var plc = config.Projects.FirstOrDefault().Plcs.FirstOrDefault();
+
+            Assert.AreEqual(ConfigPlcProject.PlcProjectType.Application, ConfigPlcProjectFactory.GuessPlcType(plc));
+
+            plc.References["*"] = plc.References["*"].Append("TcUnit=*").ToList();
+            Assert.AreEqual(ConfigPlcProject.PlcProjectType.UnitTestApplication, ConfigPlcProjectFactory.GuessPlcType(plc));
+
+        }
     }
 }

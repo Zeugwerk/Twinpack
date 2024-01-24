@@ -302,27 +302,35 @@ namespace Twinpack.Models
             plc.Version = plc.Version ?? xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "ProjectVersion").FirstOrDefault()?.Value;
             plc.Version = plc.Version ?? "1.0.0.0";
 
+            await SetLibraryReferencesAsync (plc, xdoc, twinpackServer);
+            plc.Type = GuessPlcType(plc).ToString();
+
+            return plc;
+        }
+
+        public static ConfigPlcProject.PlcProjectType GuessPlcType(ConfigPlcProject plc)
+        {
             // heuristics to find the plc type, if there is a task in the plc it is most likely an application, if not it is a library. Library that are coming from
             // Zeugwerk are most likely Framework Libraries
+            XDocument xdoc = XDocument.Load(GuessFilePath(plc));
             var company = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Company").FirstOrDefault()?.Value;
             var tasks = xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "Compile")
                 .Where(x => x.Attribute("Include") != null && x.Attribute("Include").Value.EndsWith("TcTTO"));
+
             if (tasks.Count() > 0)
             {
-                plc.Type = ConfigPlcProject.PlcProjectType.Application.ToString();
+                return (plc.Packages.Any(x => x.Name == "TcUnit") || plc.References["*"].Any(x => x.StartsWith("TcUnit=")))
+                    ? ConfigPlcProject.PlcProjectType.UnitTestApplication
+                    : ConfigPlcProject.PlcProjectType.Application;
             }
             else if (company == "Zeugwerk GmbH")
             {
-                plc.Type = ConfigPlcProject.PlcProjectType.FrameworkLibrary.ToString();
+                return ConfigPlcProject.PlcProjectType.FrameworkLibrary;
             }
             else
             {
-                plc.Type = ConfigPlcProject.PlcProjectType.Library.ToString();
+                return ConfigPlcProject.PlcProjectType.Library;
             }
-
-            await SetLibraryReferencesAsync (plc, xdoc, twinpackServer);
-
-            return plc;
         }
 
         public static async Task UpdateLibraryReferencesAsync(ConfigPlcProject plc, TwinpackServer twinpackServer, CancellationToken cancellationToken = default)
