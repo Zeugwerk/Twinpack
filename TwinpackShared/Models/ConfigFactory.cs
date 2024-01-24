@@ -78,7 +78,7 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, TwinpackServer twinpackServer, CancellationToken cancellationToken = default)
+        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, TwinpackServer twinpackServer=null, CancellationToken cancellationToken = default)
         {
             Config config = new Config();
 
