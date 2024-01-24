@@ -1559,7 +1559,7 @@ namespace Twinpack.Dialogs
                 await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
                 _logger.Info($"Creating package configuration");
 
-                var config = await ConfigFactory.CreateFromSolutionAsync(_context.Solution, _twinpackServer, Token);
+                var config = await ConfigFactory.CreateFromSolutionAsync(_context.Solution, _twinpackServer, cancellationToken: Token);
 
                 if (config == null)
                 {
