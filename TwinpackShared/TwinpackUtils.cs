@@ -244,7 +244,7 @@ namespace Twinpack
                 _logger.Info($"Installing package {packageVersion.Name} ...");
 
                 var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true);
+                libManager.InstallLibrary("System", Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}"), bOverwrite: true);
             }
         }
 
