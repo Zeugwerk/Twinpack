@@ -203,7 +203,7 @@ namespace Twinpack
         {
             // check if we find the package on the system
             bool referenceFound = false;
-            if (!forceDownload)
+            if (!forceDownload && libManager != null)
             {
                 foreach (ITcPlcLibrary r in libManager.ScanLibraries())
                 {
