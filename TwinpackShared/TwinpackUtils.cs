@@ -236,7 +236,7 @@ namespace Twinpack
             return downloadedPackageVersions;
         }
 
-        public static async Task InstallPackageVersionsAsync(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null, CancellationToken cancellationToken = default)
+        public static void InstallPackageVersions(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null)
         {
 
             foreach (var packageVersion in packageVersions)
@@ -244,8 +244,7 @@ namespace Twinpack
                 _logger.Info($"Installing package {packageVersion.Name} ...");
 
                 var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                await Task.Run(() => { libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true); })
-                          .WithCancellation(cancellationToken);
+                libManager.InstallLibrary("System", $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}", bOverwrite: true);
             }
         }
 

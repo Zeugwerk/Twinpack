@@ -1020,7 +1020,7 @@ namespace Twinpack.Dialogs
             }
 
             // install packages
-            await TwinpackUtils.InstallPackageVersionsAsync(libManager, downloadedPackageVersions, cachePath: cachePath, cancellationToken: cancellationToken);
+            TwinpackUtils.InstallPackageVersions(libManager, downloadedPackageVersions, cachePath: cachePath);
             cancellationToken.ThrowIfCancellationRequested();
 
             // add references
