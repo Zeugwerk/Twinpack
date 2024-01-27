@@ -1,7 +1,7 @@
-name: Pull
+name: Update Downloads
 on:
   schedule:
-    - cron: "0 13 * * *"
+    - cron: "0 1 * * 0"
   workflow_dispatch:
 jobs:
   Pull:
@@ -10,5 +10,5 @@ jobs:
       - run: |
           curl.exe -s -o twinpack-registry-latest.tar.gz https://zeugwerk.dev/Tools/twinpack-registry-latest.tar.gz
           tar -xf twinpack-registry-latest.tar.gz
-          ./twinpack-registry.exe pull --username "${{ secrets.ACTIONS_ZGWK_USERNAME }}" --password "${{ secrets.ACTIONS_ZGWK_PASSWORD }}" --token "${{ secrets.GH_TOKEN }}"
+          ./twinpack-registry.exe update-downloads --username "${{ secrets.ACTIONS_ZGWK_USERNAME }}" --password "${{ secrets.ACTIONS_ZGWK_PASSWORD }}" --token "${{ secrets.GH_TOKEN }}"
         shell: bash
