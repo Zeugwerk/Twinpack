@@ -381,6 +381,38 @@ namespace Twinpack
             return result;
         }
 
+        public async Task<PackageVersionGetResponse> PutPackageVersionDownloadsAsync(PackageVersionDownloadsPutRequest packageVersionDownloads, CancellationToken cancellationToken = default)
+        {
+            var requestBodyJson = JsonSerializer.Serialize(packageVersionDownloads);
+            var request = new HttpRequestMessage(HttpMethod.Put, new Uri(TwinpackUrl + $"/package-version/downloads"));
+
+            _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
+            
+            AddHeaders(request);
+
+            request.Content = new StreamContent(
+                new MemoryStream(Encoding.UTF8.GetBytes(requestBodyJson)));
+
+            var response = await _client.SendAsync(request, cancellationToken);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            PackageVersionGetResponse result;
+            try
+            {
+                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+            }
+            catch (JsonException ex)
+            {
+                _logger.Trace($"Unparseable response: {responseBody}");
+                throw new PutException("Response could not be parsed");
+            }
+
+            if (result.Meta?.Message != null)
+                throw new PutException(result.Meta.Message.ToString());
+
+            return result;
+        }
+
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(string distributorName, string name, string version, string configuration="Release", string branch="main", string target="TC3.1", CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(TwinpackUrl + $"/package-version" +
@@ -615,7 +647,7 @@ namespace Twinpack
                         LicenseBinary = licenseBinary,
                         LicenseTmcBinary = licenseTmcBinary,
                         Binary = binary,
-                        Dependencies = plc.Packages?.Select(x => new PackageVersionDependencyPostRequest
+                        Dependencies = plc.Packages?.Select(x => new PackageVersionDependency
                         {
                             Repository = x.Repository,
                             DistributorName = x.DistributorName,
