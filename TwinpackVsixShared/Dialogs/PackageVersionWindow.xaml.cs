@@ -910,7 +910,7 @@ namespace Twinpack.Dialogs
                         IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
                         IconBinary = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Convert.ToBase64String(File.ReadAllBytes(IconFile)) : null,
                         Binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath}\{target}\{_plcConfig.Name}_{_plcConfig.Version}.{suffix}")),
-                        Dependencies = _plcConfig.Packages?.Select(x => new Models.PackageVersionDependencyPostRequest
+                        Dependencies = _plcConfig.Packages?.Select(x => new Models.PackageVersionDependency
                         {
                             Repository = x.Repository,
                             DistributorName = x.DistributorName,

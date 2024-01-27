@@ -75,6 +75,54 @@ namespace Twinpack
             }
         }
 
+        public async Task UpdateDownloadsAsync(string repositoryOwner, string repositoryName, string token = null, bool dryRun = true)
+        {
+            var client = new GitHubClient(_header);
+            if (token != null)
+                client.Credentials = new Credentials(token);
+
+            var repositories = Encoding.ASCII.GetString(await client.Repository.Content.GetRawContent(repositoryOwner, repositoryName, "repositories.txt")).Trim();
+
+            foreach (var repoUrl in repositories.Split('\n'))
+            {
+                var (owner, repo) = ParseGitHubRepoUrl(repoUrl);
+                var releases = await client.Repository.Release.GetAll(owner, repo);
+
+                foreach(var release in releases)
+                {
+                    var assets = release.Assets.Where(x => x.Name.EndsWith(".library"));
+                    if (!assets.Any())
+                        continue;
+
+                    foreach (var asset in assets)
+                    {
+                        try
+                        {
+                            var downloads = asset.DownloadCount;
+                            var library = await DownloadAsync(asset.BrowserDownloadUrl);
+                            var libraryInfo = LibraryReader.Read(library, dumpFilenamePrefix: $"{repositoryOwner}_{repositoryName}_{asset.Name}.library");
+
+                            // only upload if the package is not published on Twinpack yet
+                            var packageVersion = await _twinpackServer.GetPackageVersionAsync(libraryInfo.Company, libraryInfo.Title, libraryInfo.Version);
+                            if (packageVersion?.PackageVersionId != null)
+                            {
+                                _logger.Info($"Updating counter of '{libraryInfo.Title}' (distributor: {libraryInfo.Company}, version: {libraryInfo.Version})' to {downloads}");
+
+                                if(!dryRun)
+                                    await _twinpackServer.PutPackageVersionDownloadsAsync(
+                                        new PackageVersionDownloadsPutRequest { PackageVersionId = packageVersion.PackageVersionId, Downloads = downloads });
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Trace(ex);
+                            _logger.Warn(ex.Message);
+                        }
+                    }
+                }
+            }
+        }
+
         public async Task DownloadAsync(string repositoryOwner, string repositoryName, string token=null)
         {
             var config = new Config()

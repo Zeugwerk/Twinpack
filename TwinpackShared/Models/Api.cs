@@ -280,7 +280,7 @@ namespace Twinpack.Models
         public string Notes { get; set; }
     }
 
-    public class PackageVersionDependencyPostRequest
+    public class PackageVersionDependency
     {
         [JsonPropertyName("repository")]
         public string Repository { get; set; }
@@ -343,7 +343,16 @@ namespace Twinpack.Models
         [JsonPropertyName("binary")]
         public string Binary { get; set; }
         [JsonPropertyName("dependencies")]
-        public IEnumerable<PackageVersionDependencyPostRequest> Dependencies { get; set; }
+        public IEnumerable<PackageVersionDependency> Dependencies { get; set; }
+    }
+
+    public class PackageVersionDownloadsPutRequest
+    {
+        [JsonPropertyName("package-version-id")]
+        public int? PackageVersionId { get; set; }
+
+        [JsonPropertyName("downloads")]
+        public int Downloads { get; set; }
     }
 
     public class LoginPostResponse : Response

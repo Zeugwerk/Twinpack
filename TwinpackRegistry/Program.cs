@@ -12,8 +12,8 @@ namespace Twinpack
 {
     class Program
     {
-        [Verb("update", HelpText = "Downloads packages that are references in .Zeugwerk/config.json to .Zeugwerk/libraries, you can use RepTool.exe to install them into the TwinCAT library repository.")]
-        public class UpdateOptions
+        [Verb("pull", HelpText = "Downloads packages that are references in .Zeugwerk/config.json to .Zeugwerk/libraries, you can use RepTool.exe to install them into the TwinCAT library repository.")]
+        public class PullOptions
         {
             [Option('u', "username", Required = false, Default = null, HelpText = "Username for Twinpack Server")]
             public string Username { get; set; }
@@ -32,6 +32,28 @@ namespace Twinpack
 
             [Option('D', "dump", Required = false, Default = false, HelpText = "")]
             public bool Dump { get; set; }
+
+            [Option('t', "token", Required = false, Default = false, HelpText = "")]
+            public string Token { get; set; }
+        }
+
+        [Verb("update-downloads", HelpText = "Downloads packages that are references in .Zeugwerk/config.json to .Zeugwerk/libraries, you can use RepTool.exe to install them into the TwinCAT library repository.")]
+        public class UpdateDownloadsOptions
+        {
+            [Option('u', "username", Required = false, Default = null, HelpText = "Username for Twinpack Server")]
+            public string Username { get; set; }
+
+            [Option('p', "password", Required = false, Default = null, HelpText = "Password for Twinpack Server")]
+            public string Password { get; set; }
+
+            [Option('r', "owner", Required = false, Default = "Zeugwerk", HelpText = "")]
+            public string RegistryOwner { get; set; }
+
+            [Option('r', "name", Required = false, Default = "Twinpack-Registry", HelpText = "")]
+            public string RegistryName { get; set; }
+
+            [Option('d', "dry-run", Required = false, Default = false, HelpText = "")]
+            public bool DryRun { get; set; }
 
             [Option('t', "token", Required = false, Default = false, HelpText = "")]
             public string Token { get; set; }
@@ -66,15 +88,22 @@ namespace Twinpack
 
             try
             {
-                return Parser.Default.ParseArguments<UpdateOptions, DumpOptions>(args)
+                return Parser.Default.ParseArguments<PullOptions, UpdateDownloadsOptions, DumpOptions>(args)
                     .MapResult(
-                    (UpdateOptions opts) =>
+                    (PullOptions opts) =>
                     {
                         Login(opts.Username, opts.Password);
                         new TwinpackRegistry(_twinpackServer).DownloadAsync(opts.RegistryOwner, opts.RegistryName, token: opts.Token).GetAwaiter().GetResult();
 
                         if(!opts.DryRun)
                             _twinpackServer.PushAsync(TwinpackUtils.PlcProjectsFromConfig(compiled: false, target: "TC3.1"), "Release", "main", "TC3.1", null, false).GetAwaiter().GetResult();
+
+                        return 0;
+                    },
+                    (UpdateDownloadsOptions opts) =>
+                    {
+                        Login(opts.Username, opts.Password);
+                        new TwinpackRegistry(_twinpackServer).UpdateDownloadsAsync(opts.RegistryOwner, opts.RegistryName, token: opts.Token, dryRun: opts.DryRun).GetAwaiter().GetResult();
 
                         return 0;
                     },
