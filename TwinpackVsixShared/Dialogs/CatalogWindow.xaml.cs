@@ -957,13 +957,10 @@ namespace Twinpack.Dialogs
                    (!string.IsNullOrEmpty(packageVersion.LicenseBinary) || (!string.IsNullOrEmpty(packageVersion.LicenseTmcBinary) && (ForceShowLicense || !shownLicenses.Contains(licenseId))));
         }
 
-        public HashSet<string> ShowLicensesIfNeeded(IEnumerable<PackageVersionGetResponse> packageVersions, HashSet<string> knownLicenseIds, bool showLicenseDialog, HashSet<string> shownLicenseIds = null)
+        public HashSet<string> ShowLicensesIfNeeded(ITcPlcLibraryManager libManager, IEnumerable<PackageVersionGetResponse> packageVersions, HashSet<string> knownLicenseIds, bool showLicenseDialog, HashSet<string> shownLicenseIds = null)
         {
             Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
 
-            var plc = _plc.Object as dynamic;
-            var sysManager = plc.SystemManager as ITcSysManager2;
-            var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
             shownLicenseIds = shownLicenseIds ?? (ForceShowLicense ? new HashSet<string>() : new HashSet<string>(knownLicenseIds));
 
             // todo: flatten dependencies and versions and iterate over this
@@ -984,7 +981,7 @@ namespace Twinpack.Dialogs
 
                 if(packageVersion.Dependencies != null)
                 {
-                    shownLicenseIds = ShowLicensesIfNeeded(packageVersion.Dependencies, knownLicenseIds, showLicenseDialog, shownLicenseIds);
+                    shownLicenseIds = ShowLicensesIfNeeded(libManager, packageVersion.Dependencies, knownLicenseIds, showLicenseDialog, shownLicenseIds);
                 }
             }
 
@@ -999,13 +996,18 @@ namespace Twinpack.Dialogs
                 throw new Exception("Invalid package(s) should be added or updated!");
 
             var cachePath = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries";
+
             var plc = _plc.Object as dynamic;
-            var sysManager = plc.SystemManager as ITcSysManager2;
-            var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
+            var libManagerItem = plc.LookupChild("References");
+            var libManager = libManagerItem as ITcPlcLibraryManager;
+
+            //var sysManager = plc.SystemManager as ITcSysManager16;
+           // var libManager = sysManager.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
+
             var knownLicenseIds = TwinpackUtils.KnownLicenseIds();
 
             // license handling
-            ShowLicensesIfNeeded(packageVersions, knownLicenseIds, showLicenseDialog);
+            ShowLicensesIfNeeded(libManager, packageVersions, knownLicenseIds, showLicenseDialog);
             TwinpackUtils.CopyLicenseTmcIfNeeded(packageVersions, knownLicenseIds);
 
             // download packages and close Library Manager and all windows that are related to the library. These windows cause race conditions
