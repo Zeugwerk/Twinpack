@@ -447,7 +447,7 @@
                                     <TextBlock>Force package download</TextBlock>
                                 </CheckBox>
                                 <CheckBox Grid.Row="1" Margin="0 5 0 0" IsChecked="{Binding AddDependenciesAsReferences}">
-                                    <TextBlock>Add depenencies as references</TextBlock>
+                                    <TextBlock>Add dependencies as references</TextBlock>
                                 </CheckBox>
                                 <CheckBox Grid.Row="2" Margin="0 5 0 0" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding ForceShowLicense}">
                                     <TextBlock>Confirm license of already installed packages</TextBlock>
