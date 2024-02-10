@@ -42,15 +42,34 @@ namespace Twinpack.Models
                     config.WorkingDirectory = Path.GetDirectoryName($@"{path}\{config.Solution}");
                     config.FilePath = $@"{path}\{p}config.json";
 
+                    var slnContent = File.ReadAllText(config.Solution);
+
                     int projectIndex = 0;
                     foreach (var project in config.Projects)
                     {
+                        //Project("{DFBE7525-6864-4E62-8B2E-D530D69D9D96}") = "ZApplication", "ZApplication.tspproj", "{55567FAF-D581-431A-8E43-734906367EA7}"
+                        XDocument tsprojXml = null;
+                        string tsprojFilepath = null;
+                        var projectMatch = Regex.Match(slnContent, $"Project\\(.*?\\)\\s*=\\s*\"({Regex.Escape(project.Name)})\"\\s*,\\s*\"(.*?ts[p]?proj)\"\\s*,.*") ;
+
+                        if(projectMatch.Success)
+                        {
+                            tsprojFilepath = $@"{path}\{projectMatch.Groups[2].Value}";
+                            tsprojXml = File.Exists(tsprojFilepath) ? XDocument.Load(tsprojFilepath) : null;
+                        }
+                        
                         int plcIndex = 0;
                         foreach (var plc in project.Plcs)
                         {
+                            var plcRelPath = tsprojXml?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")?.Where(x => x.Attribute("Name")?.Value.Contains(plc.Name) == true).FirstOrDefault();
+                            var plcpath = tsprojFilepath != null ? $@"{new FileInfo(tsprojFilepath).Directory.FullName}\{plcRelPath.Attribute("PrjFilePath").Value}" : null;
+
                             config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).RootPath = config.WorkingDirectory;
                             config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).ProjectName = project.Name;
-                            config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).FilePath = ConfigPlcProjectFactory.GuessFilePath(config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex));
+                            config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).FilePath = plcpath ?? ConfigPlcProjectFactory.GuessFilePath(config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex));
+
+                            if(!File.Exists(config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).FilePath))
+                                throw new FileNotFoundException($"Could not locate plcproj file for PLC {plc.Name} (Project {project.Name}, Solution {config.Solution})");
 
                             plcIndex++;
                         }
@@ -443,7 +462,7 @@ namespace Twinpack.Models
         }
 
 
-        public static String GuessFilePath(ConfigPlcProject plc)
+        public static string GuessFilePath(ConfigPlcProject plc)
         {
             // todo: parse sln, ts(p)proj and xti to get the path of the PLC instead of guessing
             if (!string.IsNullOrEmpty(plc.FilePath))
