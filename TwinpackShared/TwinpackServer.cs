@@ -613,13 +613,29 @@ namespace Twinpack
             }
         }
 
-        public async Task PushAsync(IEnumerable<ConfigPlcProject> plcs, string configuration, string branch, string target, string notes, bool compiled, CancellationToken cancellationToken = default)
+        public async Task PushAsync(IEnumerable<ConfigPlcProject> plcs, string configuration, string branch, string target, string notes, bool compiled, bool skipDuplicate = false, CancellationToken cancellationToken = default)
         {
             var exceptions = new List<Exception>();
             foreach (var plc in plcs)
             {
                 try
                 {
+                    // check if package version already exists and skip it
+                    var packageVersionLookup = await GetPackageVersionAsync(plc.DistributorName, plc.Name, plc.Version, configuration, branch, target, cancellationToken);
+                    if (packageVersionLookup.PackageVersionId != null)
+                    {
+                        string msg = $"Skipping already published package '{packageVersionLookup.Name}' (branch: {packageVersionLookup.Branch}, target: {packageVersionLookup.Target}, configuration: {packageVersionLookup.Configuration}, version: {packageVersionLookup.Version})";
+                        if (skipDuplicate)
+                        {
+                            _logger.Info(msg);
+                            continue;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(msg);
+                        }
+                    }
+                    
                     string binary = Convert.ToBase64String(File.ReadAllBytes(plc.FilePath));
                     string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
                     string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
