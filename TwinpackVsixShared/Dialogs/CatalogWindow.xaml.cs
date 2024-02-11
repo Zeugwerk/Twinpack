@@ -26,7 +26,7 @@ namespace Twinpack.Dialogs
         public event PropertyChangedEventHandler PropertyChanged;
 
         private PackageContext _context;
-        private Project _plc;
+        private EnvDTE.Project _plc;
 
         private ConfigPlcProject _plcConfig;
         private ConfigPlcPackage _packageConfig;

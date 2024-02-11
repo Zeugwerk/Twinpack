@@ -42,41 +42,22 @@ namespace Twinpack.Models
                     config.WorkingDirectory = Path.GetDirectoryName($@"{path}\{config.Solution}");
                     config.FilePath = $@"{path}\{p}config.json";
 
-                    // try to get meta information, e.g. the filepath of all plcprojs,
-                    // this is optional here and should not fail, with validate = false
-                    // checks are skipped
-                    string slnContent = null;
-                    if (File.Exists(config.Solution))
-                        slnContent = File.ReadAllText(config.Solution);
-                    else if (validate)
-                        throw new FileNotFoundException($"Solution {config.Solution} could not be found in workspace");
+                    var solution = new Solution();
+                    try
+                    {
+                        solution.Load($@"{path}\" + config.Solution);
+                    }
+                    catch(FileNotFoundException ex)
+                    {
+                        if(validate)
+                            throw;
+                    }
 
                     foreach (var project in config.Projects)
                     {
-                        //Project("{DFBE7525-6864-4E62-8B2E-D530D69D9D96}") = "ZApplication", "ZApplication.tspproj", "{55567FAF-D581-431A-8E43-734906367EA7}"
-                        XDocument tsprojXml = null;
-                        string tsprojFilepath = null;
-                        var projectMatch = Regex.Match(slnContent ?? "", $"Project\\(.*?\\)\\s*=\\s*\"({Regex.Escape(project.Name)})\"\\s*,\\s*\"(.*?ts[p]?proj)\"\\s*,.*") ;
-
-                        if(projectMatch.Success)
-                        {
-                            tsprojFilepath = $@"{path}\{projectMatch.Groups[2].Value}";
-                            tsprojXml = File.Exists(tsprojFilepath) ? XDocument.Load(tsprojFilepath) : null;
-                        }
-                        else if (validate)
-                        {
-                            throw new KeyNotFoundException($"project {project.Name} could not be found in {config.Solution}");
-                        }
-
                         foreach (var plc in project.Plcs)
                         {
-                            var plcRelPath = tsprojXml?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")?.Where(x => x.Attribute("Name")?.Value.Contains(plc.Name) == true).FirstOrDefault();
-                            var plcpath = tsprojFilepath != null ? $@"{new FileInfo(tsprojFilepath).Directory.FullName}\{plcRelPath.Attribute("PrjFilePath").Value}" : null;
-
-                            if(!File.Exists(plcpath) && validate)
-                            {
-                                throw new FileNotFoundException($"PLC {plc.Name} could not be located!");
-                            }
+                            var plcpath = solution.Projects.Where(x => x.Name == project.Name).FirstOrDefault()?.Plcs.Where(x => x.Name == plc.Name)?.FirstOrDefault()?.FilePath;
 
                             plc.RootPath = config.WorkingDirectory;
                             plc.ProjectName = project.Name;
@@ -170,33 +151,24 @@ namespace Twinpack.Models
                 config.FilePath = $@"{Environment.CurrentDirectory}\.Zeugwerk\config.json";
             }
 
-            var slnContent = File.ReadAllText(solutions.First());
-
-            //Project("{DFBE7525-6864-4E62-8B2E-D530D69D9D96}") = "ZApplication", "ZApplication.tspproj", "{55567FAF-D581-431A-8E43-734906367EA7}"
-            var projectMatches = Regex.Matches(slnContent, "Project\\(.*?\\)\\s*=\\s*\"(.*?)\"\\s*,\\s*\"(.*?ts[p]?proj)\"\\s*,.*");     
-            config.Projects = new List<ConfigProject>();
+            var solution = Solution.LoadFromFile(solutions.First());
             
-            foreach(Match projectMatch in projectMatches)
+            foreach(var project in solution.Projects)
             {
-                var project = new ConfigProject();
-                project.Name = projectMatch.Groups[1].Value;
-                project.Plcs = new List<ConfigPlcProject>();
+                var projectConfig = new ConfigProject();
+                projectConfig.Name = project.Name;
+                projectConfig.Plcs = new List<ConfigPlcProject>();
 
-                string tsprojFilepath = $@"{path}\{projectMatch.Groups[2].Value}";
-                XDocument tsprojXml = XDocument.Load(tsprojFilepath);
-                var plcs = tsprojXml.Root.Elements("Project").Elements("Plc").Elements("Project");
-                foreach (var plc in plcs)
+                foreach (var plc in project.Plcs)
                 {
-                    var plcpath = $@"{new FileInfo(tsprojFilepath).Directory.FullName}\{plc.Attribute("PrjFilePath").Value}";
-                    var plcConfig = await ConfigPlcProjectFactory.CreateAsync(plcpath, twinpackServer, cancellationToken);
+                    var plcConfig = await ConfigPlcProjectFactory.CreateAsync(plc.FilePath, twinpackServer, cancellationToken);
 
                     if(plcTypeFilter == null || plcTypeFilter.Contains(plcConfig.PlcType))
-                        project.Plcs.Add(plcConfig);
+                        projectConfig.Plcs.Add(plcConfig);
                 }
-
                 
-                if(project.Plcs.Any())
-                    config.Projects.Add(project);
+                if(projectConfig.Plcs.Any())
+                    config.Projects.Add(projectConfig);
             }
 
             return config;
