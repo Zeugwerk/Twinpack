@@ -17,7 +17,7 @@ namespace Twinpack.Models
                 throw new FileNotFoundException($"PLC {filepath} could not be found in workspace");
 
             Name = name;
-            FilePath = filepath;
+            FilePath = Path.GetFullPath(filepath);
         }
 
         public string Name { get; private set; } = null;
