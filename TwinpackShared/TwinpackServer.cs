@@ -624,15 +624,15 @@ namespace Twinpack
                     var packageVersionLookup = await GetPackageVersionAsync(plc.DistributorName, plc.Name, plc.Version, configuration, branch, target, cancellationToken);
                     if (packageVersionLookup.PackageVersionId != null)
                     {
-                        string msg = $"Skipping already published package '{packageVersionLookup.Name}' (branch: {packageVersionLookup.Branch}, target: {packageVersionLookup.Target}, configuration: {packageVersionLookup.Configuration}, version: {packageVersionLookup.Version})";
+                        string msg = $"already published package '{packageVersionLookup.Name}' (branch: {packageVersionLookup.Branch}, target: {packageVersionLookup.Target}, configuration: {packageVersionLookup.Configuration}, version: {packageVersionLookup.Version})";
                         if (skipDuplicate)
                         {
-                            _logger.Info(msg);
+                            _logger.Info($"Skipping " + msg);
                             continue;
                         }
                         else
                         {
-                            throw new InvalidOperationException(msg);
+                            _logger.War ($"Uploading " + msg);
                         }
                     }
                     
