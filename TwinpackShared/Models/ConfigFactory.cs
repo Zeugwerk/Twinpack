@@ -42,7 +42,7 @@ namespace Twinpack.Models
                     config.WorkingDirectory = Path.GetDirectoryName($@"{path}\{config.Solution}");
                     config.FilePath = $@"{path}\{p}config.json";
 
-                    var slnContent = null;
+                    string slnContent = null;
                     if(File.Exists(config.Solution))
                         slnContent = File.ReadAllText(config.Solution);
 
