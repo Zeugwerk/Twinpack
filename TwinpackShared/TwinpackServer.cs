@@ -632,7 +632,7 @@ namespace Twinpack
                         }
                         else
                         {
-                            _logger.War ($"Uploading " + msg);
+                            _logger.Warn($"Uploading " + msg);
                         }
                     }
                     
