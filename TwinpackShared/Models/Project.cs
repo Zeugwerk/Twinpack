@@ -20,8 +20,9 @@ namespace Twinpack.Models
             var content = XDocument.Load(filepath);
 
             Name = name;
-            Plcs = content?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project").Select(
-                x => new Plc(x.Attribute("Name")?.Value, $@"{directory}\{x.Attribute("PrjFilePath")?.Value}")).ToList();
+            Plcs = content?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")
+                .Where(x => x.Attribute("Name")?.Value != null && x.Attribute("PrjFilePath")?.Value != null)
+                .Select(x => new Plc(x.Attribute("Name")?.Value, $@"{directory}\{x.Attribute("PrjFilePath")?.Value}")).ToList();
         }
 
         public string Name { get; private set; } = null;
