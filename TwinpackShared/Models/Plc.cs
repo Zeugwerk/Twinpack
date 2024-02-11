@@ -14,7 +14,7 @@ namespace Twinpack.Models
         public Plc(string name, string filepath)
         {
             if (!File.Exists(filepath))
-                throw new FileNotFoundException($"Project {filepath} could not be found in workspace");
+                throw new FileNotFoundException($"PLC {filepath} could not be found in workspace");
 
             Name = name;
             FilePath = filepath;
