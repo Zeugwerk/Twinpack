@@ -42,6 +42,8 @@ namespace Twinpack.Models
                     config.WorkingDirectory = Path.GetDirectoryName($@"{path}\{config.Solution}");
                     config.FilePath = $@"{path}\{p}config.json";
 
+                    // try to get meta information, e.g. the filepath of all plcprojs, this is optional here and should not
+                    // fail
                     string slnContent = null;
                     if(File.Exists(config.Solution))
                         slnContent = File.ReadAllText(config.Solution);
