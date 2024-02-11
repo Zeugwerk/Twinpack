@@ -23,6 +23,23 @@ namespace Twinpack.Models
             Plcs = content?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")
                 .Where(x => x.Attribute("Name")?.Value != null && x.Attribute("PrjFilePath")?.Value != null)
                 .Select(x => new Plc(x.Attribute("Name")?.Value, $@"{directory}\{x.Attribute("PrjFilePath")?.Value}")).ToList();
+
+            var xtis = content?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")
+                .Where(x => x.Attribute("File")?.Value != null)
+                .Select(x => $"{directory}\\_Config\\PLC\\" + x.Attribute("File")?.Value).ToList();
+
+            foreach(var xti in xtis)
+            {
+                if (!File.Exists(xti))
+                    throw new FileNotFoundException($"XTI {xti} could not be found in workspace");
+
+                content = XDocument.Load(xti);
+                directory = new FileInfo(xti).Directory.FullName;
+
+                Plcs = Plcs.Concat(content?.Root?.Elements("Project")?
+                .Where(x => x.Attribute("Name")?.Value != null && x.Attribute("PrjFilePath")?.Value != null)
+                .Select(x => new Plc(x.Attribute("Name")?.Value, $@"{directory}\{x.Attribute("PrjFilePath")?.Value}"))).ToList();
+            }
         }
 
         public string Name { get; private set; } = null;
