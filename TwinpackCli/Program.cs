@@ -53,6 +53,9 @@ namespace Twinpack
 
             [Option('p', "library-path", Required = false, Default = ".", HelpText = "Only valid when without-config is used, path where .library files are located")]
             public string LibraryPath { get; set; }
+
+            [Option('d', "skip-duplicate", Required = false, Default = false, HelpText = "If a package and version already exists, skip it and continue with the next package in the push, if any")]
+            public bool SkipDuplicate { get; set; }
         }
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
@@ -98,7 +101,8 @@ namespace Twinpack
                             opts.Branch, 
                             opts.Target, 
                             opts.Notes, 
-                            opts.Compiled).GetAwaiter().GetResult();
+                            opts.Compiled,
+                            opts.SkipDuplicate).GetAwaiter().GetResult();
                         return 0;
                     },
                     errs => 1);
