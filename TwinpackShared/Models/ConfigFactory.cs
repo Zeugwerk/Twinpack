@@ -21,10 +21,10 @@ namespace Twinpack.Models
         public const string DefaultRepository = "https://framework.zeugwerk.dev/Distribution";
         
         public static readonly string ZeugwerkVendorName = "Zeugwerk GmbH";
-        public static readonly List<String> DefaultLocations = new List<String> { $@"", $@".Zeugwerk\" };
+        public static readonly List<string> DefaultLocations = new List<String> { $@"", $@".Zeugwerk\" };
         public static readonly XNamespace TsProjectNs = "http://www.w3.org/2001/XMLSchema-instance";
 
-        public static Config Load(string path = ".")
+        public static Config Load(string path = ".", bool validate=false)
         {
             Config config = null;
             var usedPrefix = "";
@@ -42,13 +42,15 @@ namespace Twinpack.Models
                     config.WorkingDirectory = Path.GetDirectoryName($@"{path}\{config.Solution}");
                     config.FilePath = $@"{path}\{p}config.json";
 
-                    // try to get meta information, e.g. the filepath of all plcprojs, this is optional here and should not
-                    // fail
+                    // try to get meta information, e.g. the filepath of all plcprojs,
+                    // this is optional here and should not fail, with validate = false
+                    // checks are skipped
                     string slnContent = null;
-                    if(File.Exists(config.Solution))
+                    if (File.Exists(config.Solution))
                         slnContent = File.ReadAllText(config.Solution);
+                    else if (validate)
+                        throw new FileNotFoundException($"Solution {config.Solution} could not be found in workspace");
 
-                    int projectIndex = 0;
                     foreach (var project in config.Projects)
                     {
                         //Project("{DFBE7525-6864-4E62-8B2E-D530D69D9D96}") = "ZApplication", "ZApplication.tspproj", "{55567FAF-D581-431A-8E43-734906367EA7}"
@@ -61,21 +63,25 @@ namespace Twinpack.Models
                             tsprojFilepath = $@"{path}\{projectMatch.Groups[2].Value}";
                             tsprojXml = File.Exists(tsprojFilepath) ? XDocument.Load(tsprojFilepath) : null;
                         }
-                        
-                        int plcIndex = 0;
+                        else if (validate)
+                        {
+                            throw new KeyNotFoundException($"project {project.Name} could not be found in {config.Solution}");
+                        }
+
                         foreach (var plc in project.Plcs)
                         {
                             var plcRelPath = tsprojXml?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")?.Where(x => x.Attribute("Name")?.Value.Contains(plc.Name) == true).FirstOrDefault();
                             var plcpath = tsprojFilepath != null ? $@"{new FileInfo(tsprojFilepath).Directory.FullName}\{plcRelPath.Attribute("PrjFilePath").Value}" : null;
 
-                            config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).RootPath = config.WorkingDirectory;
-                            config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).ProjectName = project.Name;
-                            config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex).FilePath = plcpath ?? ConfigPlcProjectFactory.GuessFilePath(config.Projects.ElementAt(projectIndex).Plcs.ElementAt(plcIndex));
+                            if(!File.Exists(plcpath) && validate)
+                            {
+                                throw new FileNotFoundException($"PLC {plc.Name} could not be located!");
+                            }
 
-                            plcIndex++;
+                            plc.RootPath = config.WorkingDirectory;
+                            plc.ProjectName = project.Name;
+                            plc.FilePath = plcpath ?? ConfigPlcProjectFactory.GuessFilePath(plc);
                         }
-
-                        projectIndex++;
                     }
 
                     return config;
