@@ -19,6 +19,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\Config.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\ConfigFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PlcLibrary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\Plc.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\Project.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)models\Solution.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TwinpackServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TwinpackUtils.cs" />
   </ItemGroup>

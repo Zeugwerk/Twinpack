@@ -51,9 +51,9 @@ namespace Twinpack
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public static ITcSysManager SystemManager(Solution solution, ConfigPlcProject plcConfig)
+        public static ITcSysManager SystemManager(EnvDTE.Solution solution, ConfigPlcProject plcConfig)
         {
-            foreach (Project prj in solution.Projects)
+            foreach (EnvDTE.Project prj in solution.Projects)
             {
                 ITcSysManager2 systemManager = prj.Object as ITcSysManager2;
                 var project = new ConfigProject();
@@ -76,11 +76,11 @@ namespace Twinpack
             return null;
         }
 
-        public static Project ActivePlc(DTE2 dte)
+        public static EnvDTE.Project ActivePlc(DTE2 dte)
         {
             if (dte?.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects?.Length > 0)
             {
-                var prj = activeSolutionProjects?.GetValue(0) as Project;
+                var prj = activeSolutionProjects?.GetValue(0) as EnvDTE.Project;
                 try
                 {
                     ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
