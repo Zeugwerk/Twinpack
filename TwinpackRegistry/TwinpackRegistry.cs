@@ -140,6 +140,9 @@ namespace Twinpack
 
             foreach(var repoUrl in repositories.Split('\n'))
             {
+                if(string.IsNullOrWhiteSpace(repoUrl))
+                    continue;
+
                 _logger.Info($"Checking '{repoUrl}' for a new release");
                 var (owner, repo) = ParseGitHubRepoUrl(repoUrl);
                 var latestRelease = await client.Repository.Release.GetLatest(owner, repo);
@@ -190,6 +193,26 @@ namespace Twinpack
                         if (packageVersion?.PackageVersionId == null)
                         {
                             _logger.Info($"This release '{latestRelease.Name} ({latestRelease.TagName})' is not yet published to Twinpack");
+
+                            foreach (var dependency in libraryInfo.Dependencies.Where(x => Version.TryParse(x.Version, out _) == true))
+                            {
+                                var resolvedDependency = await _twinpackServer.GetPackageVersionAsync(dependency.DistributorName, dependency.Name, dependency.Version);
+
+                                if (resolvedDependency.PackageVersionId != null)
+                                {
+                                    _logger.Info($"Resolved dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version})");
+                                    plc.Packages = plc.Packages.Append(
+                                        new ConfigPlcPackage()
+                                        {
+                                            Name = resolvedDependency.Name,
+                                            DistributorName = resolvedDependency.DistributorName,
+                                            Version = resolvedDependency.Version,
+                                            Configuration = resolvedDependency.Configuration,
+                                            Branch = resolvedDependency.Branch,
+                                            Target = resolvedDependency.Target
+                                        }).ToList();
+                                }
+                            }
 
                             config.Projects.Add(new ConfigProject()
                             {

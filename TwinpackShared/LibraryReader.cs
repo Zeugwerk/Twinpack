@@ -23,7 +23,7 @@ namespace Twinpack
             public string Author { get; set; }
             public string Company { get; set; }
             public string Version { get; set; }
-            public List<PlcLibrary> Dependencies { get; set; }
+            public List<PlcLibrary> Dependencies { get; set; } = new List<PlcLibrary> { };
         }
 
         enum PropertyType
@@ -302,7 +302,7 @@ namespace Twinpack
                 if (libraryInfo == null)
                     throw new Exceptions.LibraryInvalid("Fileformat is not supported, project information could not be extracted");
 
-                var dependencies = stringTable.Select(x => Regex.Match(x, @"^([A-Za-z].*?),\s*(.*?)\s*\(([A-Za-z].*)\)$"))
+                libraryInfo.Dependencies = stringTable.Select(x => Regex.Match(x, @"^([A-Za-z].*?),\s*(.*?)\s*\(([A-Za-z].*)\)$"))
                                         .Where(x => x.Success)
                                         .Select(x => new PlcLibrary() { Name = x.Groups[1].Value, Version = x.Groups[2].Value, DistributorName = x.Groups[3].Value })
                                         .ToList();
