@@ -76,7 +76,7 @@ namespace Twinpack
             return null;
         }
 
-        public static EnvDTE.Project ActivePlc(DTE2 dte)
+        public static EnvDTE.Project ActiveProject(DTE2 dte)
         {
             if (dte?.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects?.Length > 0)
             {
