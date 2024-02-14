@@ -27,7 +27,6 @@ namespace Twinpack.Dialogs
 
         private PackageContext _context;
         private EnvDTE.Project _activeProject;
-        private ITcSysManager _systemManager;
         private ITcPlcLibraryManager _libraryManager;
 
         private ConfigPlcProject _plcConfig;
@@ -483,10 +482,9 @@ namespace Twinpack.Dialogs
                 cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrlBase);
                 cmbTwinpackServer.SelectedIndex = 0;
                 _activeProject = TwinpackUtils.ActiveProject(_context.Dte);
-                _systemManager = TwinpackUtils.SystemManager(_context.Solution);
 
                 var projectItemAdapter = _activeProject?.Object as dynamic; // TwinCAT.XAE.Automation.TcProjectItemAdapter
-                _libraryManager = _systemManager?.LookupTreeItem(projectItemAdapter.PathName + "^References") as ITcPlcLibraryManager;
+                _libraryManager = projectItemAdapter?.LookupChild("References") as ITcPlcLibraryManager;
 
                 await _auth.LoginAsync(onlyTry: true, cancellationToken: Token);
                 await LoadPlcConfigAsync(Token);
