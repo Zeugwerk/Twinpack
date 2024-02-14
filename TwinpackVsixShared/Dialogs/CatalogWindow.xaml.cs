@@ -27,6 +27,8 @@ namespace Twinpack.Dialogs
 
         private PackageContext _context;
         private EnvDTE.Project _activeProject;
+        private ITcSysManager _systemManager;
+        private ITcPlcLibraryManager _libraryManager;
 
         private ConfigPlcProject _plcConfig;
         private ConfigPlcPackage _packageConfig;
@@ -466,16 +468,6 @@ namespace Twinpack.Dialogs
             Loaded += Dialog_Loaded;
         }
 
-        private ITcPlcLibraryManager LibraryManager
-        {
-            get
-            {
-                var plc = _activeProject?.Object as dynamic; // TwinCAT.XAE.Automation.TcProjectItemAdapter
-                var sysManager = plc?.SystemManager as ITcSysManager2;
-                return sysManager?.LookupTreeItem(plc.PathName + "^References") as ITcPlcLibraryManager;
-            }
-        }
-
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
@@ -491,6 +483,10 @@ namespace Twinpack.Dialogs
                 cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrlBase);
                 cmbTwinpackServer.SelectedIndex = 0;
                 _activeProject = TwinpackUtils.ActiveProject(_context.Dte);
+                _systemManager = TwinpackUtils.SystemManager(_context.Solution);
+
+                var projectItemAdapter = _activeProject?.Object as dynamic; // TwinCAT.XAE.Automation.TcProjectItemAdapter
+                _libraryManager = _systemManager?.LookupTreeItem(projectItemAdapter.PathName + "^References") as ITcPlcLibraryManager;
 
                 await _auth.LoginAsync(onlyTry: true, cancellationToken: Token);
                 await LoadPlcConfigAsync(Token);
@@ -935,13 +931,13 @@ namespace Twinpack.Dialogs
 
             _context.Dte.ExecuteCommand("File.SaveAll");
             TwinpackUtils.CloseAllPackageRelatedWindows(_context.Dte, PackageVersion);
-            TwinpackUtils.RemoveReference(LibraryManager, Package.Title, Package.Title, PackageVersion.Version, _package.DistributorName);
+            TwinpackUtils.RemoveReference(_libraryManager, Package.Title, Package.Title, PackageVersion.Version, _package.DistributorName);
             _context.Dte.ExecuteCommand("File.SaveAll");
 
             if (UninstallDeletes)
             {
                 _logger.Info($"Uninstalling package {PackageVersion.Name} from system ...");
-                TwinpackUtils.UninstallReferenceAsync(LibraryManager, _packageVersion, cancellationToken);
+                TwinpackUtils.UninstallReferenceAsync(_libraryManager, _packageVersion, cancellationToken);
             }
 
             // update config
@@ -959,7 +955,7 @@ namespace Twinpack.Dialogs
         public bool IsLicenseDialogRequired(PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
         {
             var licenseId = TwinpackUtils.ParseLicenseId(packageVersion.LicenseTmcText);
-            return (ForceShowLicense || (showLicenseDialogHint && !TwinpackUtils.IsPackageInstalled(LibraryManager, packageVersion))) &&
+            return (ForceShowLicense || (showLicenseDialogHint && !TwinpackUtils.IsPackageInstalled(_libraryManager, packageVersion))) &&
                    (!string.IsNullOrEmpty(packageVersion.LicenseBinary) || (!string.IsNullOrEmpty(packageVersion.LicenseTmcBinary) && (ForceShowLicense || !shownLicenses.Contains(licenseId))));
         }
 
@@ -974,7 +970,7 @@ namespace Twinpack.Dialogs
                 var licenseId = TwinpackUtils.ParseLicenseId(packageVersion.LicenseTmcText);
                 if (!shownLicenseIds.Any(x => x == licenseId) && IsLicenseDialogRequired(packageVersion, showLicenseDialog, shownLicenseIds))
                 {
-                    var licenseDialog = new LicenseWindow(LibraryManager, packageVersion);
+                    var licenseDialog = new LicenseWindow(_libraryManager, packageVersion);
                     if (licenseDialog.ShowLicense() == false)
                     {
                         throw new Exception($"License for {packageVersion.Name} was declined");
@@ -1011,19 +1007,19 @@ namespace Twinpack.Dialogs
             var downloadedPackageVersions = new List<PackageVersionGetResponse>();
             foreach (var packageVersion in packageVersions)
             {
-                downloadedPackageVersions = await TwinpackUtils.DownloadPackageVersionAndDependenciesAsync(LibraryManager, packageVersion, _twinpackServer, downloadedPackageVersions, forceDownload: ForcePackageVersionDownload, cachePath: cachePath, cancellationToken: cancellationToken);
+                downloadedPackageVersions = await TwinpackUtils.DownloadPackageVersionAndDependenciesAsync(_libraryManager, packageVersion, _twinpackServer, downloadedPackageVersions, forceDownload: ForcePackageVersionDownload, cachePath: cachePath, cancellationToken: cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
 
                 TwinpackUtils.CloseAllPackageRelatedWindows(_context.Dte, packageVersion);
-                TwinpackUtils.RemoveReference(LibraryManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
+                TwinpackUtils.RemoveReference(_libraryManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
             }
 
             // install packages
-            TwinpackUtils.InstallPackageVersions(LibraryManager, downloadedPackageVersions, cachePath: cachePath);
+            TwinpackUtils.InstallPackageVersions(_libraryManager, downloadedPackageVersions, cachePath: cachePath);
             cancellationToken.ThrowIfCancellationRequested();
 
             // add references
-            await Task.Run(() => { TwinpackUtils.AddReferences(LibraryManager, packageVersions, AddDependenciesAsReferences); });
+            await Task.Run((Action)(() => { TwinpackUtils.AddReferences((ITcPlcLibraryManager)this._libraryManager, packageVersions, AddDependenciesAsReferences); }));
             cancellationToken.ThrowIfCancellationRequested();
             IsNewReference = false;
 

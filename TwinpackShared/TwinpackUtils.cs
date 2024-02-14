@@ -51,26 +51,13 @@ namespace Twinpack
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public static ITcSysManager SystemManager(EnvDTE.Solution solution, ConfigPlcProject plcConfig)
+        public static ITcSysManager SystemManager(EnvDTE.Solution solution)
         {
             foreach (EnvDTE.Project prj in solution.Projects)
             {
                 ITcSysManager2 systemManager = prj.Object as ITcSysManager2;
-                var project = new ConfigProject();
-                project.Name = prj.Name;
-
-                ITcSmTreeItem plcs = systemManager.LookupTreeItem("TIPC");
-                foreach (ITcSmTreeItem9 plc in plcs)
-                {
-                    if (plc is ITcProjectRoot)
-                    {
-                        string xml = plc.ProduceXml();
-                        string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
-                        if (Path.GetFileNameWithoutExtension(projectPath) == plcConfig.Name && prj.Name == plcConfig.ProjectName)
-                            return systemManager;
-
-                    }
-                }
+                if(systemManager != null)
+                    return systemManager;
             }
 
             return null;
