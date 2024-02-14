@@ -31,7 +31,7 @@ namespace Twinpack.Dialogs
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var plc = TwinpackUtils.ActivePlc(_context.Dte);
+            var plc = TwinpackUtils.ActiveProject(_context.Dte);
 
             //if(plc != null)
             //{
