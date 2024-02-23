@@ -692,7 +692,7 @@ namespace Twinpack
 
         public async Task PullAsync(Config config, bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string cachePath = null, CancellationToken cancellationToken = default)
         {
-            _logger.Info($"Pulling from Twinpack Server (Skipping internal packages: {skipInternalPackages})");
+            _logger.Info($"Pulling from Twinpack Server (skip internal packages: {(skipInternalPackages ? "true" : "false")})");
             var plcs = config.Projects.SelectMany(x => x.Plcs);
             var exceptions = new List<Exception>();
             var handled = new List<ConfigPlcPackage>();
