@@ -24,6 +24,7 @@ namespace Twinpack
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
         private CachedHttpClient _client = new CachedHttpClient();
+        private string _token = string.Empty;
 
         public string TwinpackUrlBase = "https://twinpack.dev";
         public string TwinpackUrl = "https://twinpack.dev/index.php";
@@ -75,6 +76,7 @@ namespace Twinpack
         {
             request.Headers.Add("zgwk-username", Username ?? Environment.GetEnvironmentVariable("ZGWK_TWINPACK_USER"));
             request.Headers.Add("zgwk-password", Password ?? Environment.GetEnvironmentVariable("ZGWK_TWINPACK_PWD"));
+            request.Headers.Add("zgwk-token", UserInfo?.Token);
             request.Headers.Add("twinpack-client-version", ClientVersion.ToString());
         }
 
