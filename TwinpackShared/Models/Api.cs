@@ -401,6 +401,8 @@ namespace Twinpack.Models
 
         [JsonPropertyName("user")]
         public string User { get; set; }
+        [JsonPropertyName("token")]
+        public string Token { get; set; }
         [JsonPropertyName("distributor-name")]
         public string DistributorName { get; set; }        
         [JsonPropertyName("configurations")]
