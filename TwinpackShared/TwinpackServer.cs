@@ -15,6 +15,8 @@ using System.Reflection;
 using AdysTech.CredentialManager;
 using System.Threading;
 using System.Security.Cryptography;
+using System.Runtime.Remoting.Messaging;
+using System.Runtime.CompilerServices;
 
 namespace Twinpack
 {
@@ -24,6 +26,7 @@ namespace Twinpack
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
         private CachedHttpClient _client = new CachedHttpClient();
+        private Timer _refreshTokenTimer;
         private string _token = string.Empty;
 
         public string TwinpackUrlBase = "https://twinpack.dev";
@@ -605,6 +608,8 @@ namespace Twinpack
                 if(IsClientUpdateAvailable)
                     _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Download and install the lastest version at {UserInfo.UpdateUrl}");
 
+                _ = RefreshTokenAsync();
+
                 _logger.Info("Log in to Twinpack Server successful");
                 return UserInfo;
             }
@@ -612,6 +617,30 @@ namespace Twinpack
             {
                 DeleteCredential();
                 throw;
+            }
+        }
+
+        private async Task RefreshTokenAsync()
+        {
+            if (UserInfo?.Token == null)
+                return;
+
+            var tokenParts = UserInfo.Token.Split('.');
+            if(tokenParts.Length == 3)
+            {
+                var payload = JsonSerializer.Deserialize<JwtPayload>(Encoding.UTF8.GetString(Convert.FromBase64String(tokenParts[1])));
+                var delay = new TimeSpan(0, 0, payload.ExpirationTime).Subtract(DateTime.UtcNow - new DateTime(1970, 1, 1));
+
+                if(UserInfo?.Token != null)
+                {
+                    // make sure the server doesn't kick us if our timezone is completely off for some reason
+                    if (delay.Minutes < 0)
+                        delay = new TimeSpan(0, 1, 0);
+
+                    await Task.Delay(delay, CancellationToken.None);
+                    await LoginAsync();
+                }
+
             }
         }
 
