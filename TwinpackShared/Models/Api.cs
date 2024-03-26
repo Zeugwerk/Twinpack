@@ -7,6 +7,13 @@ using System.Xml.Linq;
 
 namespace Twinpack.Models
 {
+    public class JwtPayload
+    {
+        [JsonPropertyName("iss")]
+        public string Issuer { get; set; }
+        [JsonPropertyName("exp")]
+        public int ExpirationTime { get; set; }
+    }
     public class PaginationHeader
     {
         [JsonPropertyName("total")]
