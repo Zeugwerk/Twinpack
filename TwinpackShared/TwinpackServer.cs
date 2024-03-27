@@ -27,7 +27,6 @@ namespace Twinpack
 
         private CachedHttpClient _client = new CachedHttpClient();
         private Timer _refreshTokenTimer;
-        private string _token = string.Empty;
 
         public string TwinpackUrlBase = "https://twinpack.dev";
         public string TwinpackUrl = "https://twinpack.dev/index.php";
@@ -580,6 +579,11 @@ namespace Twinpack
 
             Username = username ?? credentials?.UserName;
             Password = password ?? credentials?.Password;
+
+            // reset token to get a new one
+            if(UserInfo?.Token != null)
+                UserInfo.Token = null;
+            
             AddHeaders(request);
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -633,10 +637,6 @@ namespace Twinpack
 
                 if(UserInfo?.Token != null)
                 {
-                    // make sure the server doesn't kick us if our timezone is completely off for some reason
-                    if (delay.Minutes < 0)
-                        delay = new TimeSpan(0, 1, 0);
-
                     await Task.Delay(delay, CancellationToken.None);
                     await LoginAsync();
                 }
