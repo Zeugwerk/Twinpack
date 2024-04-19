@@ -1017,7 +1017,7 @@ namespace Twinpack.Dialogs
             cancellationToken.ThrowIfCancellationRequested();
 
             // add references
-            await Task.Run((Action)(() => { TwinpackUtils.AddReferences((ITcPlcLibraryManager)this._libraryManager, packageVersions, AddDependenciesAsReferences); }));
+            TwinpackUtils.AddReferences(this._libraryManager, packageVersions, AddDependenciesAsReferences);
             cancellationToken.ThrowIfCancellationRequested();
             IsNewReference = false;
 

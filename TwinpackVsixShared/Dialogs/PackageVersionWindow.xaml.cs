@@ -864,21 +864,18 @@ namespace Twinpack.Dialogs
                 var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
                 var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
                 
-                await Task.Run(() =>
+                TwinpackUtils.SyncPlcProj(iec, _plcConfig);
+                _logger.Info($"Checking all objects of PLC {_plcConfig.Name}");
+                if (!iec.CheckAllObjects())
                 {
-                    TwinpackUtils.SyncPlcProj(iec, _plcConfig);
-                    _logger.Info($"Checking all objects of PLC {_plcConfig.Name}");
-                    if (!iec.CheckAllObjects())
-                    {
-                        if (TwinpackUtils.BuildErrorCount(_context.Dte) > 0)
-                           throw new Exceptions.PostException($"{_plcConfig.Name} does not compile! Check all objects for your PLC failed. Please fix the errors in order to publish your library.");
-                    }
+                    if (TwinpackUtils.BuildErrorCount(_context.Dte) > 0)
+                        throw new Exceptions.PostException($"{_plcConfig.Name} does not compile! Check all objects for your PLC failed. Please fix the errors in order to publish your library.");
+                }
 
-                    _logger.Info($"Saving and installing library to {path}");
-                    LoadingText = "Saving as library ...";
-                    Directory.CreateDirectory(new FileInfo(path).Directory.FullName);
-                    iec.SaveAsLibrary(path, false);
-                });
+                _logger.Info($"Saving and installing library to {path}");
+                LoadingText = "Saving as library ...";
+                Directory.CreateDirectory(new FileInfo(path).Directory.FullName);
+                iec.SaveAsLibrary(path, false);
 
                 try
                 {
