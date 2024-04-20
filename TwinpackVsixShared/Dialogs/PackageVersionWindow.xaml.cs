@@ -42,7 +42,7 @@ namespace Twinpack.Dialogs
         private string _licenseTmcFile;
         private BitmapImage _iconImage;
 
-        private TwinpackServer _twinpackServer = new TwinpackServer();
+        private IPackageServer _twinpackServer = new TwinpackServer();
         private Authentication _auth;
 
         private List<string> _branches;
@@ -168,7 +168,7 @@ namespace Twinpack.Dialogs
                 }
 
                 if (_plcConfig == null && _package.PackageId != null)
-                    _package = await _twinpackServer.GetPackageAsync((int)_package.PackageId, Token);
+                    _package = await _twinpackServer.GetPackageAsync(_package.DistributorName, _package.Name, Token);
 
                 Branches = _package.PackageId != null ? _package.Branches : new List<string> { "main" };
 
@@ -177,13 +177,13 @@ namespace Twinpack.Dialogs
                 {
                     // try to get the specific version
                     IsNewPackageVersion = false;
-                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(_package.DistributorName, _package.Name, _packageVersion.Version, configuration: null, branch: null, target: null, Token);
+                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _package.DistributorName, Name = _package.Name, Version = _packageVersion.Version }, branch: null, configuration: null, target: null, Token);
 
                     // fallback to the latest available version
                     if (_packageVersion.PackageVersionId == null)
                     {
                         IsNewPackageVersion = true;
-                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync((int)_package.PackageId, 1, 1, Token)).Item1?.FirstOrDefault()?.PackageVersionId;
+                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync(new Models.PlcLibrary { DistributorName = _package.DistributorName, Name = _package.Name }, 1, 1, Token)).Item1?.FirstOrDefault()?.PackageVersionId;
                     }
                 }
                 else if (_plcConfig != null)
@@ -195,8 +195,8 @@ namespace Twinpack.Dialogs
                 {
                     try
                     {
-                        _packageVersion = await _twinpackServer.GetPackageVersionAsync((int)_packageVersion.PackageVersionId, cancellationToken: Token);
-                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(_packageVersion.DistributorName, _packageVersion.Name, null, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target, cancellationToken: Token);
+                        _packageVersion = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name, Version = _packageVersion.Version }, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target, cancellationToken: Token);
+                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name }, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target, cancellationToken: Token);
                         Dependencies = _packageVersion.Dependencies;
                     }
                     catch (Exceptions.GetException ex)

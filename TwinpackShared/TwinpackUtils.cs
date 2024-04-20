@@ -211,7 +211,7 @@ namespace Twinpack
 
             if ((!referenceFound || forceDownload) && downloadedPackageVersions.Any(x => x.PackageVersionId == packageVersion.PackageVersionId) == false)
             {
-                await server.DownloadPackageVersionAsync(packageVersion, checksumMode: TwinpackServer.ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                await server.DownloadPackageVersionAsync(packageVersion, checksumMode: ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
                 downloadedPackageVersions.Add(packageVersion);
             }
 

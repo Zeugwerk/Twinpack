@@ -103,7 +103,7 @@ namespace Twinpack
                             var libraryInfo = LibraryReader.Read(library, dumpFilenamePrefix: $"{repositoryOwner}_{repositoryName}_{asset.Name}.library");
 
                             // only upload if the package is not published on Twinpack yet
-                            var packageVersion = await _twinpackServer.GetPackageVersionAsync(libraryInfo.Company, libraryInfo.Title, libraryInfo.Version);
+                            var packageVersion = await _twinpackServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = libraryInfo.Company, Name = libraryInfo.Title, Version = libraryInfo.Version }, null, null, null);
                             if (packageVersion?.PackageVersionId != null)
                             {
                                 _logger.Info($"Updating counter of '{libraryInfo.Title}' (distributor: {libraryInfo.Company}, version: {libraryInfo.Version})' to {downloads}");
@@ -189,14 +189,14 @@ namespace Twinpack
                         };
 
                         // only upload if the package is not published on Twinpack yet
-                        var packageVersion = await _twinpackServer.GetPackageVersionAsync(plc.DistributorName, plc.Name, plc.Version);
+                        var packageVersion = await _twinpackServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = plc.DistributorName, Name = plc.Name, Version = plc.Version }, null, null, null);
                         if (packageVersion?.PackageVersionId == null)
                         {
                             _logger.Info($"This release '{latestRelease.Name} ({latestRelease.TagName})' is not yet published to Twinpack");
 
                             foreach (var dependency in libraryInfo.Dependencies.Where(x => Version.TryParse(x.Version, out _) == true))
                             {
-                                var resolvedDependency = await _twinpackServer.GetPackageVersionAsync(dependency.DistributorName, dependency.Name, dependency.Version);
+                                var resolvedDependency = await _twinpackServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = dependency.DistributorName, Name = dependency.Name, Version = dependency.Version }, null, null, null);
 
                                 if (resolvedDependency.PackageVersionId != null)
                                 {

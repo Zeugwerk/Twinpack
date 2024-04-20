@@ -14,23 +14,23 @@ namespace Twinpack.Dialogs
     {
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
 
-        private TwinpackServer _twinpackServer;
-        public Authentication(TwinpackServer twinpackServer)
+        private IPackageServer _packageServer;
+        public Authentication(IPackageServer packageServer)
         {
-            _twinpackServer = twinpackServer;
+            _packageServer = packageServer;
         }
 
 
         public async Task LoginAsync(bool onlyTry = false, CancellationToken cancellationToken = default)
         {
-            if (_twinpackServer.LoggedIn)
+            if (_packageServer.LoggedIn)
                 return;
 
             // first do a silent login
             try
             {
-                if (!_twinpackServer.LoggedIn)
-                    await _twinpackServer.LoginAsync(null, null, cancellationToken);
+                if (!_packageServer.LoggedIn)
+                    await _packageServer.LoginAsync(null, null, cancellationToken);
             }
             catch (TimeoutException ex)
             {
@@ -47,25 +47,25 @@ namespace Twinpack.Dialogs
                 return;
 
             // then login with prompting if it didn't work
-            while (!_twinpackServer.LoggedIn)
+            while (!_packageServer.LoggedIn)
             {
                 var message = "";
                 try
                 {
                     bool save=true;
-                    var credentials = CredentialManager.PromptForCredentials(_twinpackServer.TwinpackUrlBase, ref save,
-                        message: $"Login to your Twinpack Server account. Logging in will give you access to additional features. " +
+                    var credentials = CredentialManager.PromptForCredentials(_packageServer.UrlBase, ref save,
+                        message: $"Login to Package Server {_packageServer.UrlBase}. Logging in will give you access to additional features. " +
                         $"It enables you to intall packages that are maintained by you, but not yet released. It also allows you to upload a new package into your Twinpack repository.",
                         caption: "Twinpack Server login");
 
                     if (credentials != null)
-                        await _twinpackServer.LoginAsync(credentials.UserName, credentials.Password, cancellationToken);
+                        await _packageServer.LoginAsync(credentials.UserName, credentials.Password, cancellationToken);
 
-                    if (!_twinpackServer.LoggedIn)
+                    if (!_packageServer.LoggedIn)
                         throw new Exceptions.LoginException("Login was not successful!");
 
                     if (!save)
-                        CredentialManager.RemoveCredentials(_twinpackServer.TwinpackUrlBase);
+                        CredentialManager.RemoveCredentials(_packageServer.UrlBase);
                 }
                 catch (Exceptions.LoginException ex)
                 {
@@ -80,11 +80,11 @@ namespace Twinpack.Dialogs
                     _logger.Error(ex.Message);
                 }
 
-                if (!_twinpackServer.LoggedIn)
+                if (!_packageServer.LoggedIn && _packageServer.UrlRegister != null)
                 {
                     if (MessageBox.Show($@"{message} Do you want to register or reset your password?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                     {
-                        Process.Start(_twinpackServer.RegisterUrl);
+                        Process.Start(_packageServer.UrlRegister);
                     }
                     else
                     {
@@ -96,7 +96,7 @@ namespace Twinpack.Dialogs
 
         public void Logout()
         {
-            _twinpackServer.Logout();
+            _packageServer.Logout();
         }
     }
 }

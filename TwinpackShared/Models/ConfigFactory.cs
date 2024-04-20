@@ -85,7 +85,12 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, TwinpackServer twinpackServer= null, IEnumerable <ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
+        public static Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, IPackageServer packageServer, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
+        {
+            return CreateFromSolutionAsync(solution, packageServer, plcTypeFilter, cancellationToken);
+        }
+
+        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, List<IPackageServer> packageServers, IEnumerable <ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
         {
             Config config = new Config();
 
@@ -111,7 +116,7 @@ namespace Twinpack.Models
                     {
                         string xml = plc.ProduceXml();
                         string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
-                        var plcConfig = await ConfigPlcProjectFactory.CreateAsync(projectPath, twinpackServer, cancellationToken);
+                        var plcConfig = await ConfigPlcProjectFactory.CreateAsync(projectPath, packageServers, cancellationToken);
                         plcConfig.ProjectName = project.Name;
                         plcConfig.RootPath = config.WorkingDirectory;
                         plcConfig.FilePath = ConfigPlcProjectFactory.GuessFilePath(plcConfig);
@@ -251,7 +256,12 @@ namespace Twinpack.Models
             return null;
         }
 
-        public static async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, TwinpackServer twinpackServer, CancellationToken cancellationToken = default)
+        public static Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, IPackageServer packageServer, CancellationToken cancellationToken = default)
+        {
+            return CreateAsync(solution, prj, new List<IPackageServer> { packageServer }, cancellationToken);
+        }
+
+        public static async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, List<IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
             ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
             var project = new ConfigProject();
@@ -271,7 +281,7 @@ namespace Twinpack.Models
             if(xml != null)
             {
                 string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
-                var plcConfig = await CreateAsync(projectPath, twinpackServer, cancellationToken);
+                var plcConfig = await CreateAsync(projectPath, packageServers, cancellationToken);
                 plcConfig.ProjectName = prj.Name;
                 plcConfig.RootPath = System.IO.Path.GetDirectoryName(solution.FullName);
                 plcConfig.FilePath = ConfigPlcProjectFactory.GuessFilePath(plcConfig);                  
@@ -281,7 +291,12 @@ namespace Twinpack.Models
             return null;
         }
 
-        public static async Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, TwinpackServer twinpackServer=null, CancellationToken cancellationToken = default)
+        public static Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, IPackageServer packageServer, CancellationToken cancellationToken = default)
+        {
+            return CreateAsync(plcProjFilepath, new List<IPackageServer> { packageServer }, cancellationToken);
+        }
+
+        public static async Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, List<IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
             var plc = new ConfigPlcProject();
             plc.FilePath = plcProjFilepath;
@@ -303,7 +318,7 @@ namespace Twinpack.Models
             plc.Version = plc.Version ?? xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "ProjectVersion").FirstOrDefault()?.Value;
             plc.Version = plc.Version ?? "1.0.0.0";
 
-            await SetLibraryReferencesAsync (plc, xdoc, twinpackServer);
+            await SyncPackagesAndReferencesAsync (plc, xdoc, packageServers, cancellationToken);
             plc.Type = GuessPlcType(plc).ToString();
 
             return plc;
@@ -334,13 +349,7 @@ namespace Twinpack.Models
             }
         }
 
-        public static async Task UpdateLibraryReferencesAsync(ConfigPlcProject plc, TwinpackServer twinpackServer, CancellationToken cancellationToken = default)
-        {
-            XDocument xdoc = XDocument.Load(GuessFilePath(plc));
-            await SetLibraryReferencesAsync(plc, xdoc, twinpackServer, cancellationToken);
-        }
-
-        private static async Task SetLibraryReferencesAsync(ConfigPlcProject plc, XDocument xdoc, TwinpackServer twinpackServer, CancellationToken cancellationToken = default)
+        private static async Task SyncPackagesAndReferencesAsync(ConfigPlcProject plc, XDocument xdoc, List<IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
             // collect references
             var references = new List<PlcLibrary>();
@@ -384,11 +393,11 @@ namespace Twinpack.Models
                 // check if we find this on Twinpack
                 bool isTwinpackPackage = false;
 
-                if(twinpackServer != null)
+                foreach(var packageServer in packageServers)
                 {
                     try
                     {
-                        var packageVersion = await twinpackServer.ResolvePackageVersionAsync(r, cancellationToken: cancellationToken);
+                        var packageVersion = await packageServer.ResolvePackageVersionAsync(r, cancellationToken: cancellationToken);
                         if(isTwinpackPackage = packageVersion.Repository != null && packageVersion.Name != null && packageVersion.DistributorName != null)
                         {
                             packages.Add(new ConfigPlcPackage
@@ -408,6 +417,9 @@ namespace Twinpack.Models
                         throw;
                     }
                     catch (Exception) { }
+
+                    if (isTwinpackPackage)
+                        break;
                 }
 
 

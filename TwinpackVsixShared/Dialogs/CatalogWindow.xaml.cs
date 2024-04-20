@@ -479,7 +479,7 @@ namespace Twinpack.Dialogs
 
                 IsCatalogLoading = true;
                 cmbTwinpackServer.Items.Clear();
-                cmbTwinpackServer.Items.Add(_twinpackServer.TwinpackUrlBase);
+                cmbTwinpackServer.Items.Add(_twinpackServer.UrlBase);
                 cmbTwinpackServer.SelectedIndex = 0;
                 _activeProject = TwinpackUtils.ActiveProject(_context.Dte);
 
@@ -1106,7 +1106,7 @@ namespace Twinpack.Dialogs
         }
         public void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Process.Start(_twinpackServer.RegisterUrl);
+            System.Diagnostics.Process.Start(_twinpackServer.UrlRegister);
         }
 
         public async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -1155,23 +1155,23 @@ namespace Twinpack.Dialogs
             }
         }
 
-        private async Task LoadFirstPackageVersionsPageAsync(int? packageId, string branch, string configuration, string target, CancellationToken cancellationToken)
+        private async Task LoadFirstPackageVersionsPageAsync(PackageGetResponse package, string branch, string configuration, string target, CancellationToken cancellationToken)
         {
-            if (packageId == null)
+            if (package.Name == null)
                 return;
 
-            await LoadNextPackageVersionsPageAsync((int)packageId, branch, configuration, target, true, cancellationToken);
+            await LoadNextPackageVersionsPageAsync(new PlcLibrary { DistributorName = package.DistributorName, Name = package.Name } , branch, configuration, target, true, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        private async Task LoadNextPackageVersionsPageAsync(int packageId, string branch, string configuration, string target, bool reset = false, CancellationToken cancellationToken = default)
+        private async Task LoadNextPackageVersionsPageAsync(PlcLibrary package, string branch, string configuration, string target, bool reset = false, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (reset)
                     _currentPackageVersionsPage = 1;
 
-                var results = await _twinpackServer.GetPackageVersionsAsync(packageId,
+                var results = await _twinpackServer.GetPackageVersionsAsync(package,
                     branch,
                     configuration,
                     target,
@@ -1262,10 +1262,10 @@ namespace Twinpack.Dialogs
                         CatalogItem catalogItem = new CatalogItem(item);
 
                         // try to get the installed package, if we can't find it at least try to resolve it
-                        var packageVersion = await _twinpackServer.GetPackageVersionAsync(item.DistributorName, item.Name, item.Version,
+                        var packageVersion = await _twinpackServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },
                                                                                           item.Configuration, item.Branch, item.Target,
                                                                                           cancellationToken: cancellationToken);
-                        var packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(item.DistributorName, item.Name, null, 
+                        var packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name },
                                                                                           item.Configuration, item.Branch, item.Target, 
                                                                                           cancellationToken: cancellationToken);
 
@@ -1334,7 +1334,7 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await LoadNextPackageVersionsPageAsync((int)PackageVersion.PackageId, branch, configuration, target, cancellationToken: Token);
+                await LoadNextPackageVersionsPageAsync(new PlcLibrary { DistributorName = PackageVersion.DistributorName, Name = PackageVersion.Name, Version = PackageVersion.Version }, branch, configuration, target, cancellationToken: Token);
             }
             catch (Exception ex)
             {
@@ -1429,7 +1429,7 @@ namespace Twinpack.Dialogs
                 var configuration = ConfigurationsView.SelectedItem as string;
                 var target = TargetsView.SelectedItem as string;
 
-                await LoadFirstPackageVersionsPageAsync((int)Package.PackageId, branch, configuration, target, Token);
+                await LoadFirstPackageVersionsPageAsync(Package, branch, configuration, target, Token);
 
                 var index = Versions?.FindIndex(x => x.Version == _item?.Installed?.Version) ?? -1;
                 if (index < 0 && _item?.Installed != null)
@@ -1466,8 +1466,7 @@ namespace Twinpack.Dialogs
 
                 if (item != null)
                 {
-                    PackageVersion = await _twinpackServer.GetPackageVersionAsync(item.DistributorName,
-                        item.Name, item.Version, item.Configuration, item.Branch, item.Target,
+                    PackageVersion = await _twinpackServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version }, item.Configuration, item.Branch, item.Target,
                         cancellationToken: Token);
                 }
 
