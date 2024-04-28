@@ -567,7 +567,7 @@ namespace Twinpack.Dialogs
             if (dialog.DialogResult == true)
             {
                 ResetServerSelection();
-                await ReloadAsync(sender, e);
+                ReloadAsync(sender, e);
             }
         }
         public async void EditPackageButton_Click(object sender, RoutedEventArgs e)
