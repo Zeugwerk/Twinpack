@@ -85,12 +85,12 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, IPackageServer packageServer, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
+        public static Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, Packaging.IPackageServer packageServer, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
         {
             return CreateFromSolutionAsync(solution, packageServer, plcTypeFilter, cancellationToken);
         }
 
-        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, List<IPackageServer> packageServers, IEnumerable <ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
+        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, List<Packaging.IPackageServer> packageServers, IEnumerable <ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
         {
             Config config = new Config();
 
@@ -132,7 +132,7 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateFromSolutionFileAsync(string path = ".", bool continueWithoutSolution = false, TwinpackServer twinpackServer = null, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter=null, CancellationToken cancellationToken = default)
+        public static async Task<Config> CreateFromSolutionFileAsync(string path = ".", bool continueWithoutSolution = false, Packaging.IPackageServer packageServer = null, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter=null, CancellationToken cancellationToken = default)
         {
 
             Config config = new Config();
@@ -166,7 +166,7 @@ namespace Twinpack.Models
 
                 foreach (var plc in project.Plcs)
                 {
-                    var plcConfig = await ConfigPlcProjectFactory.CreateAsync(plc.FilePath, twinpackServer, cancellationToken);
+                    var plcConfig = await ConfigPlcProjectFactory.CreateAsync(plc.FilePath, packageServer, cancellationToken);
 
                     if(plcTypeFilter == null || plcTypeFilter.Contains(plcConfig.PlcType))
                         projectConfig.Plcs.Add(plcConfig);
@@ -256,12 +256,12 @@ namespace Twinpack.Models
             return null;
         }
 
-        public static Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, IPackageServer packageServer, CancellationToken cancellationToken = default)
+        public static Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, Packaging.IPackageServer packageServer, CancellationToken cancellationToken = default)
         {
-            return CreateAsync(solution, prj, new List<IPackageServer> { packageServer }, cancellationToken);
+            return CreateAsync(solution, prj, new List<Packaging.IPackageServer> { packageServer }, cancellationToken);
         }
 
-        public static async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, List<IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        public static async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, List<Packaging.IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
             ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
             var project = new ConfigProject();
@@ -291,12 +291,12 @@ namespace Twinpack.Models
             return null;
         }
 
-        public static Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, IPackageServer packageServer, CancellationToken cancellationToken = default)
+        public static Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, Packaging.IPackageServer packageServer, CancellationToken cancellationToken = default)
         {
-            return CreateAsync(plcProjFilepath, new List<IPackageServer> { packageServer }, cancellationToken);
+            return CreateAsync(plcProjFilepath, new List<Packaging.IPackageServer> { packageServer }, cancellationToken);
         }
 
-        public static async Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, List<IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        public static async Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, List<Packaging.IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
             var plc = new ConfigPlcProject();
             plc.FilePath = plcProjFilepath;
@@ -349,7 +349,7 @@ namespace Twinpack.Models
             }
         }
 
-        private static async Task SyncPackagesAndReferencesAsync(ConfigPlcProject plc, XDocument xdoc, List<IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        private static async Task SyncPackagesAndReferencesAsync(ConfigPlcProject plc, XDocument xdoc, List<Packaging.IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
             // collect references
             var references = new List<PlcLibrary>();

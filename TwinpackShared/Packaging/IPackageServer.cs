@@ -18,7 +18,7 @@ using System.Security.Cryptography;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.CompilerServices;
 
-namespace Twinpack
+namespace Twinpack.Packaging
 {
     public enum ChecksumMode
     {
@@ -29,10 +29,11 @@ namespace Twinpack
 
     public interface IPackageServer
     {
-        string UrlBase { get; }
+        string ServerType { get; }
+        string Name { get; set; }
+        string UrlBase { get; set; }
         string Url { get; }
         string UrlRegister { get; }
-
         Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default);
         Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, int page = 1, int perPage = 5, CancellationToken cancellationToken = default);
         Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch, string configuration, string target, int page = 1, int perPage = 5, CancellationToken cancellationToken = default);

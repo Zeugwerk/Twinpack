@@ -42,8 +42,8 @@ namespace Twinpack.Dialogs
         private string _licenseTmcFile;
         private BitmapImage _iconImage;
 
-        private IPackageServer _twinpackServer = new TwinpackServer();
-        private Authentication _auth;
+        private Packaging.IPackageServer _twinpackServer = new Packaging.TwinpackServer();
+        private Packaging.Authentication _auth;
 
         private List<string> _branches;
         private IEnumerable<Models.PackageVersionGetResponse> _dependencies;
@@ -66,7 +66,7 @@ namespace Twinpack.Dialogs
 
         public PackageVersionWindow(bool publishMode, PackageContext context, EnvDTE.Project plc = null, int? packageId = null, int? packageVersionId = null, string username = "", string password = "")
         {
-            _auth = new Authentication(_twinpackServer);
+            _auth = new Packaging.Authentication(_twinpackServer);
             _context = context;
             _plc = plc;
             DataContext = this;

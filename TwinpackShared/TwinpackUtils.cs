@@ -186,7 +186,7 @@ namespace Twinpack
             return false;
         }
 
-        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, TwinpackServer server, List<PackageVersionGetResponse> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
+        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, List<Packaging.IPackageServer> packageServers, List<PackageVersionGetResponse> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
         {
             // check if we find the package on the system
             bool referenceFound = false;
@@ -211,13 +211,16 @@ namespace Twinpack
 
             if ((!referenceFound || forceDownload) && downloadedPackageVersions.Any(x => x.PackageVersionId == packageVersion.PackageVersionId) == false)
             {
-                await server.DownloadPackageVersionAsync(packageVersion, checksumMode: ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                foreach(var packageServer in packageServers)
+                {
+                    await packageServer.DownloadPackageVersionAsync(packageVersion, checksumMode: Packaging.ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                }
                 downloadedPackageVersions.Add(packageVersion);
             }
 
             foreach (var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
             {
-                downloadedPackageVersions = await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, server, downloadedPackageVersions, forceDownload, cachePath, cancellationToken: cancellationToken);
+                downloadedPackageVersions = await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, packageServers, downloadedPackageVersions, forceDownload, cachePath, cancellationToken: cancellationToken);
             }
 
             return downloadedPackageVersions;
@@ -426,7 +429,7 @@ namespace Twinpack
             {
                 plc.FilePath = $@"{cachePath ?? DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}";
                 if (!File.Exists(plc.FilePath))
-                    throw new LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{plc.FilePath}'");
+                    throw new Exceptions.LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{plc.FilePath}'");
 
                 if (!string.IsNullOrEmpty(plc.LicenseFile) && !File.Exists(plc.LicenseFile))
                     _logger.Warn($"Could not find license file '{plc.LicenseFile}'");

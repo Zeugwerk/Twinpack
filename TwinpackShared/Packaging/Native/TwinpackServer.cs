@@ -18,27 +18,26 @@ using System.Security.Cryptography;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.CompilerServices;
 
-namespace Twinpack
+namespace Twinpack.Packaging
 {
     public class TwinpackServer : IPackageServer
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
+        public const string DefaultUrlBase = "https://twinpack.dev";
 
         private CachedHttpClient _client = new CachedHttpClient();
-        private Timer _refreshTokenTimer;
 
-        public string UrlBase
-        {
-            get => "https://twinpack.dev";
-        }
+        public string ServerType { get; } = "Twinpack Repository";
+        public string Name { get; set; }
+        public string UrlBase { get; set; }
         public string Url
-        { 
-            get => "https://twinpack.dev/index.php";
+        {
+            get => UrlBase + "/index.php";
         }
         public string UrlRegister
         {
-            get => "https://twinpack.dev/wp-login.php";
+            get => UrlBase + "/wp-login.php";
         }
 
         public string Username { get; set; }
@@ -46,11 +45,22 @@ namespace Twinpack
         public LoginPostResponse UserInfo { get; set; }
         public bool LoggedIn { get { return UserInfo?.User != null; } }
 
-        public TwinpackServer()
+        public TwinpackServer(string name = "twinpack.dev", string url = null)
         {
-            var credentials = CredentialManager.GetCredentials(UrlBase);
-            Username = credentials?.UserName;
-            Password = credentials?.Password;
+            Name = name;
+            UrlBase = url ?? DefaultUrlBase;
+
+            try
+            {
+                var credentials = CredentialManager.GetCredentials(UrlBase);
+                Username = credentials?.UserName;
+                Password = credentials?.Password;
+            }
+            catch
+            {
+                Username = null;
+                Password = null;
+            }
         }
 
         public Version ClientVersion
@@ -61,7 +71,7 @@ namespace Twinpack
                 {
                     return Assembly.GetExecutingAssembly()?.GetName()?.Version ?? Assembly.GetEntryAssembly()?.GetName()?.Version;
                 }
-                catch (Exception) 
+                catch (Exception)
                 {
                     return new Version("0.0.0.0");
                 }
@@ -110,11 +120,11 @@ namespace Twinpack
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PostException("Response could not be parsed");
             }
-            
-            if(result.Meta?.Message != null)
+
+            if (result.Meta?.Message != null)
                 throw new PostException(result.Meta.Message.ToString());
 
-            if(result.PackageVersionId == null)
+            if (result.PackageVersionId == null)
                 throw new PostException("Error occured while pushing to the Twinpack server");
 
             return result;
@@ -136,13 +146,13 @@ namespace Twinpack
                 var response = await _client.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();
 
-                var data = await response.Content.ReadAsStringAsync();            
+                var data = await response.Content.ReadAsStringAsync();
 
                 try
                 {
                     results.AddRange(JsonSerializer.Deserialize<List<T>>(data));
                 }
-                catch(JsonException ex)
+                catch (JsonException ex)
                 {
                     _logger.Trace($"Unparseable response: {data}");
                     throw new GetException("Response could not be parsed");
@@ -157,18 +167,18 @@ namespace Twinpack
                     {
                         pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
                     }
-                    catch(JsonException ex)
+                    catch (JsonException ex)
                     {
                         _logger.Trace($"Unparseable response: {linkHeader.First()}");
                         throw new GetException("Response could not be parsed");
                     }
-                    
+
                     if (pagination.Next == null)
                     {
-                         hasNextPage = false;
+                        hasNextPage = false;
                     }
 
-                    if(pagination?.Next != null)
+                    if (pagination?.Next != null)
                         uri = new Uri(pagination.Next);
                 }
 
@@ -188,8 +198,8 @@ namespace Twinpack
         public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             return await QueryWithPaginationAsync<PackageVersionGetResponse>($"package-versions" +
-                                            $"?distributor-name={library.DistributorName}" + 
-                                            $"&name={library.Name}" + 
+                                            $"?distributor-name={library.DistributorName}" +
+                                            $"&name={library.Name}" +
                                             $"&version={library.Version}"
                                             , page, perPage, cancellationToken);
         }
@@ -198,7 +208,7 @@ namespace Twinpack
         {
             return await QueryWithPaginationAsync<PackageVersionGetResponse>($"package-versions" +
                                             $"?distributor-name={library.DistributorName}" +
-                                            $"&?name={library.Name}" +
+                                            $"&name={library.Name}" +
                                             $"&version={library.Version}" +
                                             $"&branch={HttpUtility.UrlEncode(branch)}" +
                                             $"&target={HttpUtility.UrlEncode(target)}" +
@@ -206,7 +216,7 @@ namespace Twinpack
                                             page, perPage, cancellationToken);
         }
 
-        public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget=null, string preferredConfiguration=null, string preferredBranch=null, CancellationToken cancellationToken = default)
+        public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Url + $"/package-resolve" +
                 $"?distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
@@ -227,7 +237,7 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonException ex)
+            catch (JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -308,7 +318,7 @@ namespace Twinpack
                 try
                 {
                     var downloadOk = await DownloadPackageVersionFromDownloadUrlAsync(packageVersion, fileName, checksumMode, cachePath, cancellationToken);
-                    if(downloadOk)
+                    if (downloadOk)
                         return;
                 }
                 catch (ChecksumException)
@@ -387,15 +397,15 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonException ex)
+            catch (JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
             }
-            
+
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
-            
+
             return result;
         }
 
@@ -405,7 +415,7 @@ namespace Twinpack
             var request = new HttpRequestMessage(HttpMethod.Put, new Uri(Url + $"/package-version/downloads"));
 
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
-            
+
             AddHeaders(request);
 
             request.Content = new StreamContent(
@@ -448,12 +458,12 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
             }
-            catch(JsonException ex)
+            catch (JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
             }
-            
+
             if (result.Meta?.Message != null)
                 throw new GetException(result.Meta.Message.ToString());
 
@@ -479,12 +489,12 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch(JsonException ex)
+            catch (JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PutException("Response could not be parsed");
             }
-            
+
             if (result.Meta?.Message != null)
                 throw new PutException(result.Meta.Message.ToString());
 
@@ -511,12 +521,12 @@ namespace Twinpack
             {
                 result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
             }
-            catch(JsonException ex)
+            catch (JsonException ex)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PutException("Response could not be parsed");
             }
-            
+
             if (result.Meta?.Message != null)
                 throw new PutException(result.Meta.Message.ToString());
 
@@ -535,9 +545,9 @@ namespace Twinpack
             Password = password ?? credentials?.Password;
 
             // reset token to get a new one
-            if(UserInfo?.Token != null)
+            if (UserInfo?.Token != null)
                 UserInfo.Token = null;
-            
+
             AddHeaders(request);
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -549,21 +559,21 @@ namespace Twinpack
                 {
                     result = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
                 }
-                catch(JsonException ex)
+                catch (JsonException ex)
                 {
                     _logger.Trace($"Unparseable response: {responseBody}");
                     throw new LoginException("Response could not be parsed");
                 }
-                
+
                 if (result.Meta?.Message != null)
                     throw new LoginException(result.Meta.Message.ToString());
 
                 UserInfo = result;
 
-                if(!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
                     CredentialManager.SaveCredentials(UrlBase, new System.Net.NetworkCredential(Username, Password));
 
-                if(IsClientUpdateAvailable)
+                if (IsClientUpdateAvailable)
                     _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Download and install the lastest version at {UserInfo.UpdateUrl}");
 
                 _ = RefreshTokenAsync();
@@ -584,12 +594,12 @@ namespace Twinpack
                 return;
 
             var tokenParts = UserInfo.Token.Split('.');
-            if(tokenParts.Length == 3)
+            if (tokenParts.Length == 3)
             {
                 var payload = JsonSerializer.Deserialize<JwtPayload>(Encoding.UTF8.GetString(Convert.FromBase64String(tokenParts[1])));
                 var delay = new TimeSpan(0, 0, payload.ExpirationTime).Subtract(DateTime.UtcNow - new DateTime(1970, 1, 1));
 
-                if(UserInfo?.Token != null)
+                if (UserInfo?.Token != null)
                 {
                     await Task.Delay(delay, CancellationToken.None);
                     await LoginAsync();
@@ -620,7 +630,7 @@ namespace Twinpack
                             _logger.Warn($"Uploading " + msg);
                         }
                     }
-                    
+
                     string binary = Convert.ToBase64String(File.ReadAllBytes(plc.FilePath));
                     string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
                     string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
@@ -710,11 +720,11 @@ namespace Twinpack
                                     (x.Target == null || x?.Target == package?.Target) &&
                                     (x.Configuration == null || x?.Configuration == package?.Configuration) &&
                                     (x.Branch == null || x?.Branch == package?.Branch)))
-                        continue;                    
+                        continue;
 
                     try
                     {
-                        var packageVersion = await GetPackageVersionAsync(new PlcLibrary { DistributorName = package.DistributorName, Name= package.Name, Version =package.Version }, package.Configuration, package.Branch, package.Target);
+                        var packageVersion = await GetPackageVersionAsync(new PlcLibrary { DistributorName = package.DistributorName, Name = package.Name, Version = package.Version }, package.Configuration, package.Branch, package.Target);
                         handled.Add(package);
 
                         if (packageVersion?.PackageVersionId == null)

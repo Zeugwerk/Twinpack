@@ -15,7 +15,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Commands\ModifyCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\PublishCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\TwinpackMenuCommand.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Authentication.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\CatalogWindow.xaml.cs">
       <DependentUpon>CatalogWindow.xaml</DependentUpon>
     </Compile>
@@ -35,14 +34,22 @@
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\PackageVersionWindow.xaml.cs">
       <DependentUpon>PackageVersionWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\PackagingServerDialog.cs">
+      <DependentUpon>PackagingServerDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)IconCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger\VsOutputWindowTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PackagingServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Panels\CatalogPane.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TwinpackPackage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsixManifest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="$(MSBuildThisFileDirectory)Dialogs\CatalogWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Dialogs\PackagingServerDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

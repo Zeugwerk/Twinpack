@@ -8,14 +8,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Twinpack.Dialogs
+namespace Twinpack.Packaging
 {
     public class Authentication
     {
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
 
-        private IPackageServer _packageServer;
-        public Authentication(IPackageServer packageServer)
+        private Packaging.IPackageServer _packageServer;
+        public Authentication(Packaging.IPackageServer packageServer)
         {
             _packageServer = packageServer;
         }
@@ -54,8 +54,7 @@ namespace Twinpack.Dialogs
                 {
                     bool save=true;
                     var credentials = CredentialManager.PromptForCredentials(_packageServer.UrlBase, ref save,
-                        message: $"Login to Package Server {_packageServer.UrlBase}. Logging in will give you access to additional features. " +
-                        $"It enables you to intall packages that are maintained by you, but not yet released. It also allows you to upload a new package into your Twinpack repository.",
+                        message: $"Login to Package Server {_packageServer.UrlBase}",
                         caption: "Twinpack Server login");
 
                     if (credentials != null)
@@ -80,7 +79,7 @@ namespace Twinpack.Dialogs
                     _logger.Error(ex.Message);
                 }
 
-                if (!_packageServer.LoggedIn && _packageServer.UrlRegister != null)
+                if (!_packageServer.LoggedIn && _packageServer.UrlRegister != null && _packageServer as Packaging.TwinpackServer != null)
                 {
                     if (MessageBox.Show($@"{message} Do you want to register or reset your password?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                     {
