@@ -8,6 +8,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Linq;
+using Newtonsoft.Json.Linq;
+using static System.Net.Mime.MediaTypeNames;
+using System.Threading.Tasks;
 
 namespace Twinpack.Dialogs
 {
@@ -15,13 +18,14 @@ namespace Twinpack.Dialogs
     {
         public event PropertyChangedEventHandler PropertyChanged;
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+        string _urlMem;
 
         public PackagingServerDialog()
         {
             DataContext = this;
 
-            Packaging.PackagingServerRegistry.Servers.ForEach(x =>
-                PackagingServers.Add(new Models.PackagingServer() { Connected = x.LoggedIn, Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase }));
+            Protocol.PackagingServerRegistry.Servers.ForEach(x =>
+                PackagingServers.Add(new Models.PackagingServer() { Connected = x.Connected, LoggedIn = x.LoggedIn, Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase }));
 
             InitializeComponent();
 
@@ -40,7 +44,7 @@ namespace Twinpack.Dialogs
 
         private async void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            PackagingServers.Add(new Models.PackagingServer() { Name = $"Source Repository #{PackagingServers.Count()}", Url = "https://", ServerType = Packaging.PackagingServerRegistry.ServerTypes.First() });
+            PackagingServers.Add(new Models.PackagingServer() { Name = $"Source Repository #{PackagingServers.Count()}", Url = "https://", ServerType = Protocol.PackagingServerRegistry.ServerTypes.First() });
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRemoveButtonEnabled)));
 
         }
@@ -60,13 +64,14 @@ namespace Twinpack.Dialogs
             var button = sender as Button;
             var item = FindAncestor<ListViewItem>(button);
 
-            var x = item.DataContext as Models.PackagingServer;
-            var server = Packaging.PackagingServerRegistry.CreateServer(x.ServerType, x.Name, x.Url);
-            var auth = new Packaging.Authentication(server);
+            var s = item.DataContext as Models.PackagingServer;
+            var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, s.Url);
+            var auth = new Protocol.Authentication(server);
             await auth.LoginAsync(false);
 
-            x.Connected = server.LoggedIn;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackagingServers)));
+            int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
+            PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
+            PackagingServers.ElementAt(index).Connected = server.Connected;
         }
 
         private async void LogoutButton_Click(object sender, RoutedEventArgs e)
@@ -76,13 +81,15 @@ namespace Twinpack.Dialogs
                 var button = sender as Button;
                 var item = FindAncestor<ListViewItem>(button);
 
-                var x = item.DataContext as Models.PackagingServer;
-                var server = Packaging.PackagingServerRegistry.CreateServer(x.ServerType, x.Name, x.Url);
-                var auth = new Packaging.Authentication(server);
+                var s = item.DataContext as Models.PackagingServer;
+                var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, s.Url);
+                var auth = new Protocol.Authentication(server);
                 auth.Logout();
+                await auth.LoginAsync(true); // check if connection is still possbile, so we know if connection is possible without credentials
 
-                x.Connected = server.LoggedIn;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackagingServers)));
+                int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
+                PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
+                PackagingServers.ElementAt(index).Connected = server.Connected;
             }
             catch (Exception ex)
             {
@@ -90,6 +97,37 @@ namespace Twinpack.Dialogs
                 _logger.Error(ex.Message);
             }
         }
+
+
+        private async void Url_TextChanged(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var textBox = sender as TextBox;
+                var item = FindAncestor<ListViewItem>(textBox);
+
+                _urlMem = textBox.Text;
+                await Task.Delay(300);
+
+                if (_urlMem == textBox.Text)
+                {
+                    var s = item.DataContext as Models.PackagingServer;
+                    var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, textBox.Text);
+                    var auth = new Protocol.Authentication(server);
+                    await auth.LoginAsync(true);
+
+                    int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
+                    PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
+                    PackagingServers.ElementAt(index).Connected = server.Connected;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
+        }
+        
 
         private T FindAncestor<T>(DependencyObject current) where T : DependencyObject
         {
@@ -105,22 +143,28 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                Packaging.PackagingServerRegistry.Servers.Clear();
-                foreach (var x in PackagingServers)
-                {
-                    await Packaging.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url);
-                }
+                var allConnected = PackagingServers.Any(x => !x.Connected) == false;
 
-                Packaging.PackagingServerRegistry.Save();
-                DialogResult = true;
+                if(allConnected || MessageBoxResult.Yes == MessageBox.Show("The connection to one ore more packaging servers could not be " +
+                    "established! Either the URL is incorrect or the server requires authentication, " +
+                    "continue anyway?", "Connection error", MessageBoxButton.YesNo, MessageBoxImage.Question))
+                {
+                    Protocol.PackagingServerRegistry.Servers.Clear();
+                    foreach (var x in PackagingServers)
+                    {
+                        await Protocol.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url);
+                    }
+
+                    Protocol.PackagingServerRegistry.Save();
+                    DialogResult = true;
+                    Close();
+                }
             }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
-
-            Close();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -147,6 +191,6 @@ namespace Twinpack.Dialogs
             }
         }
         public ObservableCollection<Models.PackagingServer> PackagingServers { get; } = new ObservableCollection<Models.PackagingServer>();
-        public IEnumerable<string> ServerTypes { get => Packaging.PackagingServerRegistry.ServerTypes; }
+        public IEnumerable<string> ServerTypes { get => Protocol.PackagingServerRegistry.ServerTypes; }
     }
 }

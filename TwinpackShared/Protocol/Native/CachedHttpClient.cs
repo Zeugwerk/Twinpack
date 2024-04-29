@@ -5,7 +5,7 @@ using System.Runtime.Caching; // Add a reference to System.Runtime.Caching.dll
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Twinpack.Packaging
+namespace Twinpack.Protocol
 {
     public class CachedHttpClient : HttpClient
     {

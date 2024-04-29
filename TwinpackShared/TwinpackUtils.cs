@@ -186,7 +186,7 @@ namespace Twinpack
             return false;
         }
 
-        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, List<Packaging.IPackageServer> packageServers, List<PackageVersionGetResponse> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
+        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, List<Protocol.IPackageServer> packageServers, List<PackageVersionGetResponse> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
         {
             // check if we find the package on the system
             bool referenceFound = false;
@@ -213,7 +213,7 @@ namespace Twinpack
             {
                 foreach(var packageServer in packageServers)
                 {
-                    await packageServer.DownloadPackageVersionAsync(packageVersion, checksumMode: Packaging.ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                    await packageServer.DownloadPackageVersionAsync(packageVersion, checksumMode: Protocol.ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
                 }
                 downloadedPackageVersions.Add(packageVersion);
             }

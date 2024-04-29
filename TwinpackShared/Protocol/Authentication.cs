@@ -8,14 +8,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Twinpack.Packaging
+namespace Twinpack.Protocol
 {
     public class Authentication
     {
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
 
-        private Packaging.IPackageServer _packageServer;
-        public Authentication(Packaging.IPackageServer packageServer)
+        private Protocol.IPackageServer _packageServer;
+        public Authentication(Protocol.IPackageServer packageServer)
         {
             _packageServer = packageServer;
         }
@@ -79,7 +79,7 @@ namespace Twinpack.Packaging
                     _logger.Error(ex.Message);
                 }
 
-                if (!_packageServer.LoggedIn && _packageServer.UrlRegister != null && _packageServer as Packaging.TwinpackServer != null)
+                if (!_packageServer.LoggedIn && _packageServer.UrlRegister != null && _packageServer as Protocol.TwinpackServer != null)
                 {
                     if (MessageBox.Show($@"{message} Do you want to register or reset your password?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                     {

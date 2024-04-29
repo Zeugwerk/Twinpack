@@ -11,9 +11,9 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Models\SourceRepositories.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PackagingServer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Packaging\Authentication.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Packaging\PackagingServerFactory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Packaging\Native\CachedHttpClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Authentication.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\CachedHttpClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DirectoryExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\Exceptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LibraryReader.cs" />
@@ -25,16 +25,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\Plc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Project.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)models\Solution.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Packaging\IPackageServer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Packaging\Native\TwinpackServer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Packaging\PackageServerCollection.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Packaging\PackagingServerRegistry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\IPackageServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\TwinpackServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackageServerCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TwinpackUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)app.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)Packaging\Native\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Protocol\" />
   </ItemGroup>
 </Project>

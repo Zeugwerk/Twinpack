@@ -6,23 +6,20 @@
              xmlns:platform="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
              xmlns:fa="http://schemas.fontawesome.io/icons/"
              xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
-             toolkit:Themes.UseVsTheme="True"
+             toolkit:Themes.UseVsTheme="True"        
              xmlns:local="clr-namespace:Twinpack.Dialogs"
              xmlns:models="clr-namespace:Twinpack.Models"
              mc:Ignorable="d"
-             MinHeight="250"
-             MinWidth="500"
+             Height="500"
+             Width="800"
+             WindowStartupLocation="CenterOwner"
+             ShowInTaskbar="False"
+             WindowStyle="ToolWindow"
              Name="This"
              Title="Package servers"
-             d:DesignHeight="250" d:DesignWidth="500">
+             d:DesignHeight="500" d:DesignWidth="800">
     <Window.Resources>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <local:VisibilityToInverseVisibilityConverter x:Key="VisibilityToInverseVisibilityConverter"/>
-        <local:UrlToImageConverter x:Key="UrlToImageConverter"/>
-        <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
-        <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
-        <local:IntToVisibilityConverter x:Key="IntToVisibilityConverter"/>
-        <local:BooleanToBorderThicknessConverter x:Key="BooleanToBorderThicknessConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -63,7 +60,8 @@
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
                             </Grid.ColumnDefinitions>
 
-                            <fa:ImageAwesome Margin="0 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Server" Height="24"/>
+                            <fa:ImageAwesome Icon="Link" Width="24" d:Visibility="Visible" Visibility="{Binding Path=Connected, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
+                            <fa:ImageAwesome Icon="Unlink" Width="24" d:Visibility="Hidden" Visibility="{Binding Path=Connected, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"></fa:ImageAwesome>
 
                             <Grid Grid.Column="1">
                                 <Grid.RowDefinitions>
@@ -88,19 +86,26 @@
                                               Grid.Column="2"
                                               MinWidth="110" Text="{Binding ServerType}">
                                     </ComboBox>
-
                                     <TextBlock Margin="0 2 2 0" TextAlignment="Right" Grid.Row="1" FontWeight="DemiBold" Text="URL"></TextBlock>
-                                    <TextBox Margin="0 2 5 0" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Url}"></TextBox>
+                                    <TextBox Margin="0 2 5 0" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                                             TextChanged="Url_TextChanged"
+                                             Text="{Binding Url}"></TextBox>
                                 </Grid>
-
                             </Grid>
 
                             <Grid Grid.Column="2" HorizontalAlignment="Right">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition></RowDefinition>
+                                    <RowDefinition></RowDefinition>
+                                </Grid.RowDefinitions>
                                 <StackPanel>
-                                    <Button Visibility="{Binding Connected, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" Click="LoginButton_Click">Login</Button>
-                                    <Button Visibility="{Binding Connected, Converter={StaticResource BooleanToVisibilityConverter}}" Click="LogoutButton_Click">Logout</Button>
+                                    <Button d:Visibility="Visible" Visibility="{Binding Path=LoggedIn, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"
+                                            Click="LoginButton_Click">Login</Button>
+                                    <Button d:Visibility="Hidden" Visibility="{Binding Path=LoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                            Click="LogoutButton_Click">Logout</Button>
                                 </StackPanel>
                             </Grid>
+
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

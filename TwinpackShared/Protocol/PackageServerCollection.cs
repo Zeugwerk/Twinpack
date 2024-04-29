@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Twinpack.Packaging
+namespace Twinpack.Protocol
 {
     public class PackageServerCollection : List<IPackageServer>
     {

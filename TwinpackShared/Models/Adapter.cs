@@ -11,12 +11,12 @@ namespace Twinpack.Models
 
         }
 
-        public CatalogItem(Packaging.IPackageServer packageServer, CatalogItemGetResponse package) : base(package)
+        public CatalogItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package) : base(package)
         {
             PackageServer = packageServer;
         }
 
-        public CatalogItem(Packaging.IPackageServer packageServer, PackageVersionGetResponse packageVersion)
+        public CatalogItem(Protocol.IPackageServer packageServer, PackageVersionGetResponse packageVersion)
         {
             PackageServer = packageServer;
             PackageId = packageVersion.PackageId;
@@ -38,7 +38,7 @@ namespace Twinpack.Models
             DisplayName = Name;
         }
 
-        public Packaging.IPackageServer PackageServer { get; set; }
+        public Protocol.IPackageServer PackageServer { get; set; }
         public string InstalledVersion { get { return Installed?.Version; } }
         public string InstalledBranch { get { return Installed?.Branch; } }
         public string InstalledTarget { get { return Installed?.Target; } }
@@ -75,7 +75,7 @@ namespace Twinpack.Models
         {
         }
 
-        public Packaging.IPackageServer PackageServer { get; set; }
+        public Protocol.IPackageServer PackageServer { get; set; }
 
         public PackageGetResponse Package
         {

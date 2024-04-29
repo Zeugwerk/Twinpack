@@ -1,24 +1,10 @@
-﻿using NLog;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web;
 using Twinpack.Models;
-using Twinpack.Exceptions;
-using System.Reflection;
-using AdysTech.CredentialManager;
 using System.Threading;
-using System.Security.Cryptography;
-using System.Runtime.Remoting.Messaging;
-using System.Runtime.CompilerServices;
 
-namespace Twinpack.Packaging
+namespace Twinpack.Protocol
 {
     public enum ChecksumMode
     {
@@ -49,6 +35,7 @@ namespace Twinpack.Packaging
         string Password { get; set; }
         LoginPostResponse UserInfo { get; }
         bool LoggedIn { get; }
+        bool Connected { get; }
         void Logout();
         void InvalidateCache();
     }

@@ -50,7 +50,7 @@ namespace Twinpack.Dialogs
         private bool _isFetchingAvailablePackages = false;
 
         private string _searchText = "";
-        private Packaging.PackageServerCollection _packageServers;
+        private Protocol.PackageServerCollection _packageServers;
 
         private bool _isBrowsingAvailablePackages;
         private bool _isBrowsingInstalledPackages;
@@ -425,7 +425,7 @@ namespace Twinpack.Dialogs
         public CatalogWindow(PackageContext context)
         {
             _context = context;
-            _packageServers = Packaging.PackagingServerRegistry.Servers;
+            _packageServers = Protocol.PackagingServerRegistry.Servers;
             _packageServerChange = new SelectionChangedEventHandler(ReloadAsync);
 
             IsInitializing = true;
@@ -507,7 +507,7 @@ namespace Twinpack.Dialogs
                 IsCatalogLoading = false;
                 IsCatalogEnabled = true;
                 IsPackageVersionPanelEnabled = _plcConfig != null;
-                IsUpdateAvailable = _packageServers.Any(x => (x as Packaging.TwinpackServer)?.IsClientUpdateAvailable == true);
+                IsUpdateAvailable = _packageServers.Any(x => (x as Protocol.TwinpackServer)?.IsClientUpdateAvailable == true);
             }
         }
 
@@ -562,6 +562,7 @@ namespace Twinpack.Dialogs
         public async void EditServersButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new PackagingServerDialog();
+            dialog.Owner = Application.Current.MainWindow;
             dialog.ShowDialog();
 
             if (dialog.DialogResult == true)
@@ -1219,7 +1220,7 @@ namespace Twinpack.Dialogs
                     _currentCatalogPage = 1;
 
                 // todo: parallelize
-                var packageServers = PackagingServersComboBox.SelectedIndex == 0 ? _packageServers : new List<Packaging.IPackageServer> { _packageServers.ElementAt(PackagingServersComboBox.SelectedIndex - 1) };
+                var packageServers = PackagingServersComboBox.SelectedIndex == 0 ? _packageServers : new List<Protocol.IPackageServer> { _packageServers.ElementAt(PackagingServersComboBox.SelectedIndex - 1) };
                 foreach (var packageServer in packageServers)
                 {
                     var results = await packageServer.GetCatalogAsync(text, _currentCatalogPage, _itemsPerPage, cancellationToken);
@@ -1295,14 +1296,14 @@ namespace Twinpack.Dialogs
                                 catalogItem.PackageServer = packageServer;
                             }
 
-                            var packageId = catalogItem.PackageId ?? packageVersionLatest.PackageId;
-                            if (packageId == null)
+                            var packageName = catalogItem.Name ?? packageVersionLatest.Name;
+                            if (packageName == null)
                             {
                                 _installedPackages.Add(catalogItem);
                             }
                             else
                             {
-                                _installedPackages.RemoveAll(x => x.PackageId == catalogItem.PackageId);
+                                _installedPackages.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
                                 _installedPackages.Add(catalogItem);
                             }
                         }

@@ -17,10 +17,10 @@ namespace Twinpack
     {
         readonly Logger _logger = LogManager.GetCurrentClassLogger();
         ProductHeaderValue _header = new ProductHeaderValue("Twinpack-Registry");
-        Packaging.TwinpackServer _twinpackServer;
+        Protocol.TwinpackServer _twinpackServer;
         List<string> _licenseFileHeuristics = new List<string>() { "LICENSE", "LICENSE.txt", "LICENSE.md" };
 
-        public TwinpackRegistry(Packaging.TwinpackServer twinpackServer)
+        public TwinpackRegistry(Protocol.TwinpackServer twinpackServer)
         {
             _twinpackServer = twinpackServer;
         }
@@ -164,7 +164,7 @@ namespace Twinpack
                         var license = await RetrieveLicenseAsync(client, owner, repo);
                         var library = await DownloadAsync(asset.BrowserDownloadUrl);
                         var libraryInfo = LibraryReader.Read(library, dumpFilenamePrefix: $"{repositoryOwner}_{repositoryName}_{asset.Name}.library");
-                        var filePath = $@"{Packaging.TwinpackServer.DefaultLibraryCachePath}\{target}";
+                        var filePath = $@"{Protocol.TwinpackServer.DefaultLibraryCachePath}\{target}";
                         var iconFileName = $@"{filePath}\{libraryInfo.Title}_{libraryInfo.Version}.png";
                         var libraryFileName = $@"{filePath}\{libraryInfo.Title}_{libraryInfo.Version}.library";
                         var licenseFileName = $@"{filePath}\{libraryInfo.Title}_{libraryInfo.Version}.license";

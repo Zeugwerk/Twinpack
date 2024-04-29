@@ -1,4 +1,4 @@
-﻿namespace Twinpack.Packaging
+﻿namespace Twinpack.Protocol
 {
     interface IPackagingServerFactory
     {

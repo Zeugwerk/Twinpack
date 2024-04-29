@@ -18,7 +18,7 @@ using System.Security.Cryptography;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.CompilerServices;
 
-namespace Twinpack.Packaging
+namespace Twinpack.Protocol
 {
     public class TwinpackServer : IPackageServer
     {
@@ -44,6 +44,7 @@ namespace Twinpack.Packaging
         public string Password { get; set; }
         public LoginPostResponse UserInfo { get; set; }
         public bool LoggedIn { get { return UserInfo?.User != null; } }
+        public bool Connected { get { return UserInfo?.UpdateVersion != null; } }
 
         public TwinpackServer(string name = "twinpack.dev", string url = null)
         {
