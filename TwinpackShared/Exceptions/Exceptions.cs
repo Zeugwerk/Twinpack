@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Twinpack.Exceptions
 {
@@ -45,7 +41,7 @@ namespace Twinpack.Exceptions
         {
         }
 
-        public LibraryInvalid(string fileName, string message) : base(fileName + ", " +message)
+        public LibraryInvalid(string fileName, string message) : base(fileName + ", " + message)
         {
         }
     }
@@ -95,4 +91,40 @@ namespace Twinpack.Exceptions
         {
         }
     }
+
+    public class LicenseDeclined : Exception
+    {
+        public LicenseDeclined(string message) : base(message)
+        {
+        }
+    }
+
+    public class PushException : Exception
+    {
+        public PushException(string message) : base(message)
+        {
+        }
+    }
+
+    public class ChecksumException : Exception
+    {
+        public ChecksumException(string message, string expected, string actual) : base($"{message}, expected={expected}, actual={actual}")
+        {
+        }
+    }
+
+    public class LibraryFileInvalidException : Exception
+    {
+        public LibraryFileInvalidException(string message) : base(message)
+        {
+        }
+    }
+
+    public class PackageServerTypeNotFoundException : Exception
+    {
+        public PackageServerTypeNotFoundException(string message) : base(message)
+        {
+        }
+    }
+    
 }
