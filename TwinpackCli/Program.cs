@@ -60,7 +60,7 @@ namespace Twinpack
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        private static TwinpackServer _twinpackServer = new TwinpackServer();
+        private static Protocol.TwinpackServer _twinpackServer = new Protocol.TwinpackServer();
 
         static void Login(string username, string password)
         {
