@@ -17,7 +17,9 @@ namespace Twinpack.Protocol
         public static async Task InitializeAsync()
         {
             _filePath = Environment.ExpandEnvironmentVariables(_filePath);
-            _factories = new List<IPackagingServerFactory>() { new NativePackagingServer() };
+            _factories = new List<IPackagingServerFactory>() { new NativePackagingServerFactory() };
+            _factories = new List<IPackagingServerFactory>() { new NugetPackagingServerFactory() };
+            _factories = new List<IPackagingServerFactory>() { new BeckhoffPackagingServerFactory() };
             _servers = new PackageServerCollection();
 
             try
@@ -32,6 +34,7 @@ namespace Twinpack.Protocol
             catch
             {
                 await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase);
+                await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable");
             }
         }
         public static IEnumerable<string> ServerTypes { get { return _factories.Select(x => x.ServerType); } }

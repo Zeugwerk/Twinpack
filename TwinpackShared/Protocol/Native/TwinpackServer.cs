@@ -20,6 +20,15 @@ using System.Runtime.CompilerServices;
 
 namespace Twinpack.Protocol
 {
+    class NativePackagingServerFactory : IPackagingServerFactory
+    {
+        public IPackageServer Create(string name, string uri)
+        {
+            return new TwinpackServer(name, uri);
+        }
+
+        public string ServerType { get; } = "Twinpack Repository";
+    }
     public class TwinpackServer : IPackageServer
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
