@@ -1512,9 +1512,7 @@ namespace Twinpack.Dialogs
                 UpdateCatalog();
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                if(!IsConfigured)
-                    await LoadPlcConfigAsync(Token);
-
+                await LoadPlcConfigAsync(Token);
                 await LoadInstalledPackagesAsync(Token);
                 await LoadAvailablePackagesAsync(SearchTextBox.Text, Token);
                 UpdateCatalog();
