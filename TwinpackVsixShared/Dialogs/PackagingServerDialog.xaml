@@ -139,7 +139,7 @@
             <Button Grid.Column="0" Content="Register" Margin="5" Click="RegisterButton_Click" />
             <Button Grid.Column="1" Content="Forgot Password" Margin="5" Click="ForgotPasswordButton_Click" />
             <Button Grid.Column="3" x:Name="OkButton" Content="OK" Width="80" Margin="5" Click="OkButton_Click" />
-            <Button Grid.Column="4" x:Name="CancelButton" Content="Cancel" Width="80" Margin="5" Click="CancelButton_Click" />
+            <Button Grid.Column="4" x:Name="CancelButton" Content="Cancel" IsCancel="True" Width="80" Margin="5" Click="CancelButton_Click" />
         </Grid>
     </Grid>
 </Window>
