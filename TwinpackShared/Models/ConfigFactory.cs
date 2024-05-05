@@ -90,7 +90,7 @@ namespace Twinpack.Models
             return CreateFromSolutionAsync(solution, packageServer, plcTypeFilter, cancellationToken);
         }
 
-        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, List<Protocol.IPackageServer> packageServers, IEnumerable <ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
+        public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, IEnumerable<Protocol.IPackageServer> packageServers, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
         {
             Config config = new Config();
 
@@ -261,7 +261,7 @@ namespace Twinpack.Models
             return CreateAsync(solution, prj, new List<Protocol.IPackageServer> { packageServer }, cancellationToken);
         }
 
-        public static async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, List<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        public static async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, IEnumerable<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
             ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
             var project = new ConfigProject();
@@ -296,7 +296,7 @@ namespace Twinpack.Models
             return CreateAsync(plcProjFilepath, new List<Protocol.IPackageServer> { packageServer }, cancellationToken);
         }
 
-        public static async Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, List<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        public static async Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, IEnumerable<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
             var plc = new ConfigPlcProject();
             plc.FilePath = plcProjFilepath;
@@ -349,7 +349,7 @@ namespace Twinpack.Models
             }
         }
 
-        private static async Task SyncPackagesAndReferencesAsync(ConfigPlcProject plc, XDocument xdoc, List<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        private static async Task SyncPackagesAndReferencesAsync(ConfigPlcProject plc, XDocument xdoc, IEnumerable<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
             // collect references
             var references = new List<PlcLibrary>();
@@ -358,14 +358,20 @@ namespace Twinpack.Models
             {
                 var match = re.Match(g.Value);
                 if (match.Success)
-                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
+                {
+                    var version = match.Groups[2].Value.Trim();
+                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = version == "*" ? null : version, DistributorName = match.Groups[3].Value.Trim() });
+                }
             }
 
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderReference").Elements(TcNs + "DefaultResolution"))
             {
                 var match = re.Match(g.Value);
                 if (match.Success && references.Any(x => x.Name == match.Groups[1].Value.Trim()) == false)
-                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
+                {
+                    var version = match.Groups[2].Value.Trim();
+                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = version == "*" ? null : version, DistributorName = match.Groups[3].Value.Trim() });
+                }
             }
 
             re = new Regex(@"(.*?),(.*?),(.*?)");
@@ -377,7 +383,10 @@ namespace Twinpack.Models
 
                 var match = re.Match(libraryReference);
                 if (match.Success)
-                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() });
+                {
+                    var version = match.Groups[2].Value.Trim();
+                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = version == "*" ? null : version, DistributorName = match.Groups[3].Value.Trim() });
+                }
             }
 
             var sysref = new List<PlcLibrary>();
@@ -391,14 +400,14 @@ namespace Twinpack.Models
             foreach (var r in references)
             {
                 // check if we find this on Twinpack
-                bool isTwinpackPackage = false;
+                bool isPackage = false;
 
                 foreach(var packageServer in packageServers)
                 {
                     try
                     {
                         var packageVersion = await packageServer.ResolvePackageVersionAsync(r, cancellationToken: cancellationToken);
-                        if(isTwinpackPackage = packageVersion.Repository != null && packageVersion.Name != null && packageVersion.DistributorName != null)
+                        if(isPackage = packageVersion.Name != null && packageVersion.DistributorName != null)
                         {
                             packages.Add(new ConfigPlcPackage
                             {
@@ -418,7 +427,7 @@ namespace Twinpack.Models
                     }
                     catch (Exception) { }
 
-                    if (isTwinpackPackage)
+                    if (isPackage)
                         break;
                 }
 
@@ -428,7 +437,7 @@ namespace Twinpack.Models
                     plc.Frameworks.Zeugwerk.References.Add(r.Name);
                     plc.Frameworks.Zeugwerk.Version = r.Version;
                 }
-                else if(!isTwinpackPackage)
+                else if(!isPackage)
                 {
                     sysref.Add(r);
                 }

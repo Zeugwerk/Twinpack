@@ -79,9 +79,9 @@ namespace Twinpack.Protocol
                     _logger.Error(ex.Message);
                 }
 
-                if (!_packageServer.LoggedIn && _packageServer.UrlRegister != null && _packageServer as Protocol.TwinpackServer != null)
+                if (!_packageServer.LoggedIn && _packageServer.UrlRegister != null)
                 {
-                    if (MessageBox.Show($@"{message} Do you want to register or reset your password?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                    if (MessageBox.Show($@"{message} Do you want to register?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                     {
                         Process.Start(_packageServer.UrlRegister);
                     }
@@ -93,9 +93,9 @@ namespace Twinpack.Protocol
             }
         }
 
-        public void Logout()
+        public async Task LogoutAsync()
         {
-            _packageServer.Logout();
+            await _packageServer.LogoutAsync();
         }
     }
 }

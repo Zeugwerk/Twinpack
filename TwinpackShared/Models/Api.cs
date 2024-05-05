@@ -175,6 +175,10 @@ namespace Twinpack.Models
 
         }
 
+        public PackageVersionGetResponse(PackageGetResponse package) : base(package)
+        {
+        }
+
         public PackageVersionGetResponse(PackageVersionGetResponse packageVersion) : base(packageVersion)
         {
             PackageVersionId = packageVersion.PackageVersionId;
@@ -231,6 +235,20 @@ namespace Twinpack.Models
             }
         }
 
+        string _versionText;
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public string VersionText
+        {
+            get
+            {
+                return _versionText == null ? Version : _versionText;
+            }
+            set
+            {
+                _versionText = value;
+            }
+        }
+
         public static bool operator ==(PackageVersionGetResponse lhs, PackageVersionGetResponse rhs)
         {
             return lhs?.Name == rhs?.Name && lhs?.Title == rhs?.Title && lhs?.Version == rhs?.Version && lhs?.Target == rhs?.Target && lhs?.Configuration == rhs?.Configuration && lhs?.Branch == rhs?.Branch;
@@ -247,7 +265,7 @@ namespace Twinpack.Models
         }
         public override int GetHashCode()
         {
-            return PackageVersionId ?? new Random().Next();
+            return Name?.GetHashCode() ?? new Random().Next();
         }
     }
 

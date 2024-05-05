@@ -9,9 +9,12 @@
     <Import_RootNamespace>TwinpackShared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)models\PlcVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\SourceRepositories.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PackagingServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Authentication.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\BeckhoffServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\CachedHttpClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DirectoryExtension.cs" />
@@ -33,8 +36,5 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)app.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)Protocol\" />
   </ItemGroup>
 </Project>

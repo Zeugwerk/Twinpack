@@ -20,6 +20,7 @@
         <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
         <local:IntToVisibilityConverter x:Key="IntToVisibilityConverter"/>
         <local:BooleanToBorderThicknessConverter x:Key="BooleanToBorderThicknessConverter"/>
+        <local:VersionToStringConverter x:Key="VersionToStringConverter"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -180,7 +181,7 @@
                             <Grid Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch">
                                 <TextBlock Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" FontWeight="SemiBold">
                                     <fa:ImageAwesome Icon="Bolt" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Height="12" d:Visibility="Visible" Visibility="{Binding IsUpdateable, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
-                                    <Run d:Text="1.0.0.0" Text="{Binding InstalledVersion, Mode=OneWay}"></Run>
+                                    <Run d:Text="1.0.0.0" Text="{Binding InstalledVersion, Mode=OneWay}"></Run><TextBlock Text="*" d:Visibility="Visible" Visibility="{Binding IsPlaceholder, Converter={StaticResource BooleanToVisibilityConverter}}"></TextBlock>
                                 </TextBlock>
                             </Grid>
                         </Grid>
@@ -355,8 +356,9 @@
                                        Text="Referenced"
                                        FontWeight="SemiBold"
                                        Grid.Column="0" Grid.Row="0" Margin="5,0,5,5"></TextBlock>
+                            
                             <TextBox Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" 
-                                     Text="{Binding InstalledPackageVersion, Mode=OneWay}"
+                                     Text="{Binding InstalledPackageVersion, Mode=OneWay, Converter={StaticResource VersionToStringConverter}}"
                                      Padding="3,0,0,0" IsReadOnly="True" IsEnabled="False" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="0" Margin="5,0,5,5"/>
 
                             <TextBlock Visibility="{Binding Visibility, ElementName=BranchesView}" Text="Branch" Grid.Column="0" Grid.Row="1" Margin="5,0,5,5" FontWeight="SemiBold"></TextBlock>
@@ -386,19 +388,21 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
 
-                            <TextBlock Text="Available" Grid.Column="0" Grid.Row="4" Margin="5,0,5,5" FontWeight="SemiBold"></TextBlock>
+                            <TextBlock Text="Available"
+                                       IsEnabled="{Binding ElementName=VersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}"
+                                       Grid.Column="0" Grid.Row="4" Margin="5,0,5,5" FontWeight="SemiBold"></TextBlock>
 
                             <StackPanel Grid.Column="1" Grid.Row="4" Margin="5,0,5,5">
                                 <ComboBox x:Name="VersionsView" ItemsSource="{Binding Versions}" d:ItemsSource="{d:SampleData ItemCount=3}" HorizontalContentAlignment="Stretch">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding Version}"/>
+                                            <TextBlock Text="{Binding VersionDisplayText}"/>
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
                                 <Button Click="ShowMoreAvailableVersionsButton_Click" Margin="0" BorderThickness="0" 
                                         FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Top"
-                                         Visibility="{Binding IsPackageVersionsAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        Visibility="{Binding IsPackageVersionsAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
                                         <TextBlock Margin="5 0 0 0">View previous versions</TextBlock>
                                     </StackPanel>
@@ -415,7 +419,7 @@
                             </Button>
                             <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="AddPackageButton_Click" 
                                     Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,5,5" 
-                                    IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
+                                    IsEnabled="{Binding ElementName=VersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Plus" Height="12"/>
                                     <TextBlock Margin="5 0 0 0">Add</TextBlock>
@@ -423,7 +427,7 @@
                             </Button>
                             <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="UpdatePackageButton_Click" 
                                     Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  Margin="0,0,5,5" 
-                                    IsEnabled="{Binding ElementName=PackageVersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
+                                    IsEnabled="{Binding ElementName=VersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Bolt" Height="12"/>
                                     <TextBlock Margin="5 0 2 0">Update</TextBlock>
@@ -567,6 +571,9 @@
                                                 <Run Text="{Binding Name}" FontWeight="DemiBold"/>
                                                 <Run Text="{Binding Version}"/><Run Text=","/>
                                                 <Run Text="{Binding DistributorName}"/>
+                                                <Run Text="("/><Run Text="{Binding Branch}"/><Run Text=","/>
+                                                <Run Text="{Binding Configuration}"/><Run Text=","/>
+                                                <Run Text="{Binding Target}"/><Run Text=")"/>
                                               </TextBlock>
                                             </StackPanel>
                                           </DataTemplate>

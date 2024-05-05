@@ -17,7 +17,7 @@ namespace Twinpack.Protocol
         public static async Task InitializeAsync()
         {
             _filePath = Environment.ExpandEnvironmentVariables(_filePath);
-            _factories = new List<IPackagingServerFactory>() { new NativePackagingServer() };
+            _factories = new List<IPackagingServerFactory>() { new NativePackagingServerFactory(), new NugetPackagingServerFactory(), new BeckhoffPackagingServerFactory() };
             _servers = new PackageServerCollection();
 
             try
@@ -25,13 +25,15 @@ namespace Twinpack.Protocol
                 if (!File.Exists(_filePath))
                     throw new FileNotFoundException("Configuration file not found");
 
-                var sourceRepositories = JsonSerializer.Deserialize<Models.SourceRepositories>(_filePath, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var sourceRepositories = JsonSerializer.Deserialize<Models.SourceRepositories>(File.ReadAllText(_filePath),
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 foreach(var server in sourceRepositories.PackagingServers)
                     await AddServerAsync(server.ServerType, server.Name, server.Url);
             }
             catch
             {
                 await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase);
+                await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable");
             }
         }
         public static IEnumerable<string> ServerTypes { get { return _factories.Select(x => x.ServerType); } }

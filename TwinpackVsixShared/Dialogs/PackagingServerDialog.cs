@@ -70,6 +70,21 @@ namespace Twinpack.Dialogs
 
         }
 
+        private async void ServerType_SelectionChanged(object sender, RoutedEventArgs e)
+        {
+            var comboBox = sender as ComboBox;
+            var item = FindAncestor<ListViewItem>(comboBox);
+
+            var s = item.DataContext as Models.PackagingServer;
+            var server = Protocol.PackagingServerRegistry.CreateServer(comboBox.SelectedItem as string, s.Name, s.Url);
+            var auth = new Protocol.Authentication(server);
+            await auth.LoginAsync(true);
+
+            int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
+            PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
+            PackagingServers.ElementAt(index).Connected = server.Connected;
+        }
+
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;
@@ -79,6 +94,9 @@ namespace Twinpack.Dialogs
             var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, s.Url);
             var auth = new Protocol.Authentication(server);
             await auth.LoginAsync(false);
+
+            if (server.LoggedIn)
+                MessageBox.Show("Login successful!", "Package server", MessageBoxButton.OK, MessageBoxImage.Information);
 
             int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
             PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
@@ -95,7 +113,7 @@ namespace Twinpack.Dialogs
                 var s = item.DataContext as Models.PackagingServer;
                 var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, s.Url);
                 var auth = new Protocol.Authentication(server);
-                auth.Logout();
+                await auth.LogoutAsync();
                 await auth.LoginAsync(true); // check if connection is still possbile, so we know if connection is possible without credentials
 
                 int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
@@ -154,6 +172,8 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                IsEnabled = false;
+
                 var allConnected = PackagingServers.Any(x => !x.Connected) == false;
 
                 if(allConnected || MessageBoxResult.Yes == MessageBox.Show("The connection to one ore more packaging servers could not be " +
@@ -175,6 +195,10 @@ namespace Twinpack.Dialogs
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
+            }
+            finally
+            {
+                IsEnabled = true;
             }
         }
 

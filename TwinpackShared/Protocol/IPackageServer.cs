@@ -21,8 +21,7 @@ namespace Twinpack.Protocol
         string Url { get; }
         string UrlRegister { get; }
         Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default);
-        Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, int page = 1, int perPage = 5, CancellationToken cancellationToken = default);
-        Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch, string configuration, string target, int page = 1, int perPage = 5, CancellationToken cancellationToken = default);
+        Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch = null, string configuration = null, string target = null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default);
         Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default);
         Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default);
         Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default);
@@ -36,7 +35,7 @@ namespace Twinpack.Protocol
         LoginPostResponse UserInfo { get; }
         bool LoggedIn { get; }
         bool Connected { get; }
-        void Logout();
+        Task LogoutAsync();
         void InvalidateCache();
     }
 }
