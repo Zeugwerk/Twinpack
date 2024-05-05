@@ -725,7 +725,7 @@ namespace Twinpack.Protocol
 
                     try
                     {
-                        var packageVersion = await GetPackageVersionAsync(new PlcLibrary { DistributorName = package.DistributorName, Name = package.Name, Version = package.Version }, package.Configuration, package.Branch, package.Target);
+                        var packageVersion = await GetPackageVersionAsync(new PlcLibrary { DistributorName = package.DistributorName, Name = package.Name, Version = package.Version }, package.Branch, package.Configuration, package.Target);
                         handled.Add(package);
 
                         if (packageVersion?.PackageVersionId == null)
