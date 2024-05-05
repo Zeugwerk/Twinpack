@@ -617,7 +617,7 @@ namespace Twinpack.Protocol
                 try
                 {
                     // check if package version already exists and skip it
-                    var packageVersionLookup = await GetPackageVersionAsync(new PlcLibrary { DistributorName = plc.DistributorName, Name = plc.Name, Version = plc.Version }, configuration, branch, target, cancellationToken);
+                    var packageVersionLookup = await GetPackageVersionAsync(new PlcLibrary { DistributorName = plc.DistributorName, Name = plc.Name, Version = plc.Version }, branch, configuration, target, cancellationToken);
                     if (packageVersionLookup.PackageVersionId != null)
                     {
                         string msg = $"already published package '{packageVersionLookup.Name}' (branch: {packageVersionLookup.Branch}, target: {packageVersionLookup.Target}, configuration: {packageVersionLookup.Configuration}, version: {packageVersionLookup.Version})";
