@@ -313,7 +313,7 @@ namespace Twinpack
             distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
             RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
 
-            _logger.Info($"Adding reference to {placeholderName} (version: {version}, distributor: {distributorName})");
+            _logger.Info($"Adding reference to {placeholderName} {version} [distributor: {distributorName}]");
             if (addAsPlaceholder)
                 libManager.AddPlaceholder(placeholderName, libraryName, version, distributorName);
             else
