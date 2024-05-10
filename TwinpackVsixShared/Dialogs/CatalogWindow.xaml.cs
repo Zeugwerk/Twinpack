@@ -680,7 +680,7 @@ namespace Twinpack.Dialogs
                 _logger.Info("Restoring all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                await AddOrUpdatePackageAsync(_installedPackages.Select(x => x.IsPlaceholder ? new PackageVersionGetResponse(x.Installed) { Version = null } : x.Installed), showLicenseDialog: false, cancellationToken: Token);
+                await AddOrUpdatePackageAsync(_installedPackages.Select(x => x.IsPlaceholder ? new PackageVersionGetResponse(x.Installed) { Version = null } : x.Installed).ToList(), showLicenseDialog: false, cancellationToken: Token);
 
                 var item = _installedPackages.Where(x => x.Name == _packageItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
@@ -750,7 +750,7 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 items = _installedPackages.Where(x => x.IsUpdateable);
-                await AddOrUpdatePackageAsync(items.Select(x => x.IsPlaceholder ? new PackageVersionGetResponse(x.Update) { Version = null} : x.Update), showLicenseDialog: false, cancellationToken: Token);
+                await AddOrUpdatePackageAsync(items.Select(x => x.IsPlaceholder ? new PackageVersionGetResponse(x.Update) { Version = null} : x.Update).ToList(), showLicenseDialog: false, cancellationToken: Token);
 
                 var item = items.Where(x => x.Name == _packageItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
@@ -974,7 +974,7 @@ namespace Twinpack.Dialogs
             return shownLicenseIds;
         }
 
-        public async Task AddOrUpdatePackageAsync(IEnumerable<PackageVersionGetResponse> packageVersions, bool showLicenseDialog = true, CancellationToken cancellationToken = default)
+        public async Task AddOrUpdatePackageAsync(List<PackageVersionGetResponse> packageVersions, bool showLicenseDialog = true, CancellationToken cancellationToken = default)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
