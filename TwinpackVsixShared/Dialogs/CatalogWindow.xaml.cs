@@ -1192,10 +1192,23 @@ namespace Twinpack.Dialogs
                         }
                     };
 
+                    if (_catalogItem?.Installed != null && !results.Item1.Any(x => x.Version == _catalogItem?.Installed.Version))
+                    {
+                        Versions.Insert(1, new PlcVersion
+                        {
+                            Version = _catalogItem.Installed.Version,
+                            VersionDisplayText = _catalogItem.Installed.Version
+                        });
+                    }
+
                     VersionsView.SelectedIndex = -1;
                 }
 
                 Versions = Versions.Concat(results.Item1.Select(x => new PlcVersion { Version = x.Version, VersionDisplayText = x.Version })).ToList();
+
+
+
+
                 _currentPackageVersionsPage++;
             }
             catch (Exception ex)
@@ -1462,7 +1475,7 @@ namespace Twinpack.Dialogs
                 {
 
                     var index = Versions?.FindIndex(x => x.Version == _catalogItem?.Installed?.Version) ?? -1;
-                    if (_catalogItem.IsPlaceholder || (index < 0 && _catalogItem?.Installed != null))
+                    if (_catalogItem?.IsPlaceholder == true || (index < 0 && _catalogItem?.Installed != null))
                         index = 0;
 
                     VersionsView.IsEnabled = true;
@@ -1471,7 +1484,6 @@ namespace Twinpack.Dialogs
                 else
                 {
                     VersionsView.IsEnabled = false;
-
                     VersionsView.SelectedIndex = -1;
                 }
 
