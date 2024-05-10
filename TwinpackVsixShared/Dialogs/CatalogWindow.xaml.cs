@@ -1182,14 +1182,18 @@ namespace Twinpack.Dialogs
                 IsPackageVersionsAvailable = results.Item2;
 
                 if (reset)
+                {
                     Versions = new List<PlcVersion>()
                     {
                         new PlcVersion
                         {
                             Version = null,
                             VersionDisplayText = "Latest " + (results?.Item1?.Any() == true ? "(" + results.Item1.First().Version + ")" : "" )
-                        } 
+                        }
                     };
+
+                    VersionsView.SelectedIndex = -1;
+                }
 
                 Versions = Versions.Concat(results.Item1.Select(x => new PlcVersion { Version = x.Version, VersionDisplayText = x.Version })).ToList();
                 _currentPackageVersionsPage++;

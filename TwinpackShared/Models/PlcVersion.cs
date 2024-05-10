@@ -13,7 +13,8 @@ namespace Twinpack.Models
 
         public static bool operator ==(PlcVersion lhs, PlcVersion rhs)
         {
-            return lhs?.Version == rhs?.Version;
+            return lhs?.Version == rhs?.Version &&
+                lhs?.VersionDisplayText == rhs?.VersionDisplayText;
         }
 
         public static bool operator !=(PlcVersion lhs, PlcVersion rhs)
@@ -28,7 +29,7 @@ namespace Twinpack.Models
 
         public override int GetHashCode()
         {
-            return 23 * Version?.GetHashCode() ?? 0;
+            return 23 * Version?.GetHashCode() + 48 * VersionDisplayText?.GetHashCode() ?? 0;
         }
     }
 }
