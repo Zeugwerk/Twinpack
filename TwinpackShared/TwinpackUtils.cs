@@ -386,7 +386,7 @@ namespace Twinpack
 
             RemoveReference(libManager, placeholderName);
 
-            _logger.Info($"Adding reference to {placeholderName} (version: {version}, distributor: {distributorName})");
+            _logger.Info($"Adding reference to {placeholderName} {version} [distributor: {distributorName}]");
             if (addAsPlaceholder)
                 libManager.AddPlaceholder(placeholderName, libraryName, version, distributorName);
             else
