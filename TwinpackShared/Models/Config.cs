@@ -57,8 +57,7 @@ namespace Twinpack.Models
             DistributorName = null;
             Namespace = null;
             Parameters = null;
-            QualifiedOnly = false;
-            Hide = false;
+            Options = null;
             Framework = null;
         }
         [JsonPropertyName("version")]
@@ -92,21 +91,16 @@ namespace Twinpack.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]        
         [JsonPropertyName("namespace")]
         public string Namespace { get; set; }
-        
-        [DefaultValue(false)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]        
-        [JsonPropertyName("qualified-only")]
-        public bool QualifiedOnly { get; set; }
-        
+
         [DefaultValue(null)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]        
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("parameters")]
         public Dictionary<string, string> Parameters { get; set; }
-        
-        [DefaultValue(false)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]        
-        [JsonPropertyName("hide")]
-        public bool Hide { get; set; }
+
+        [DefaultValue(null)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("options")]
+        public AddPlcLibraryOptions Options { get; set; }
         
         [DefaultValue(null)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]        
