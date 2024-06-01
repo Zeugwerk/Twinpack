@@ -318,7 +318,7 @@ namespace Twinpack.Models
             plc.Version = plc.Version ?? xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "ProjectVersion").FirstOrDefault()?.Value;
             plc.Version = plc.Version ?? "1.0.0.0";
 
-            await SyncPackagesAndReferencesAsync (plc, xdoc, packageServers, cancellationToken);
+            await SyncPackagesAndReferencesAsync(plc, xdoc, packageServers, cancellationToken);
             plc.Type = GuessPlcType(plc).ToString();
 
             return plc;
@@ -351,6 +351,22 @@ namespace Twinpack.Models
 
         private static async Task SyncPackagesAndReferencesAsync(ConfigPlcProject plc, XDocument xdoc, IEnumerable<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
+            AddPlcLibraryOptions ParseOptions(XElement element)
+            {
+                var ret = new AddPlcLibraryOptions
+                {
+                    Optional = bool.TryParse(element.Element(TcNs + "Optional")?.Value, out var optional) && optional,
+                    HideWhenReferencedAsDependency = bool.TryParse(element.Element(TcNs + "HideWhenReferencedAsDependency")?.Value, out var hideWhenReferenced) && hideWhenReferenced,
+                    PublishSymbolsInContainer = bool.TryParse(element.Element(TcNs + "PublishSymbolsInContainer")?.Value, out var publishSymbols) && publishSymbols,
+                    QualifiedOnly = bool.TryParse(element.Element(TcNs + "QualifiedOnly")?.Value, out var qualifiedOnly) && qualifiedOnly
+                };
+
+                if (ret.Optional == false && ret.PublishSymbolsInContainer == false && ret.HideWhenReferencedAsDependency == false && ret.QualifiedOnly == false)
+                    return null;
+
+                return ret;
+            }
+
             // collect references
             var references = new List<PlcLibrary>();
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
@@ -360,7 +376,12 @@ namespace Twinpack.Models
                 if (match.Success)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = version == "*" ? null : version, DistributorName = match.Groups[3].Value.Trim() });
+                    references.Add(new PlcLibrary {
+                        Name = match.Groups[1].Value.Trim(), 
+                        Version = version == "*" ? null : version, 
+                        DistributorName = match.Groups[3].Value.Trim(),
+                        Options = ParseOptions(g.Parent)
+                    });
                 }
             }
 
@@ -370,8 +391,15 @@ namespace Twinpack.Models
                 if (match.Success && references.Any(x => x.Name == match.Groups[1].Value.Trim()) == false)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = version == "*" ? null : version, DistributorName = match.Groups[3].Value.Trim() });
+                    references.Add(new PlcLibrary
+                    { 
+                        Name = match.Groups[1].Value.Trim(), 
+                        Version = version == "*" ? null : version, 
+                        DistributorName = match.Groups[3].Value.Trim(),
+                        Options = ParseOptions(g.Parent)
+                    });
                 }
+
             }
 
             re = new Regex(@"(.*?),(.*?),(.*?)");
@@ -385,11 +413,16 @@ namespace Twinpack.Models
                 if (match.Success)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    references.Add(new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = version == "*" ? null : version, DistributorName = match.Groups[3].Value.Trim() });
+                    references.Add(new PlcLibrary { 
+                        Name = match.Groups[1].Value.Trim(), 
+                        Version = version == "*" ? null : version, 
+                        DistributorName = match.Groups[3].Value.Trim(),
+                        Options = ParseOptions(g)
+                    });
                 }
             }
 
-            var sysref = new List<PlcLibrary>();
+            var systemReferences = new List<PlcLibrary>();
             var packages = new List<ConfigPlcPackage>();
 
             plc.Frameworks = plc.Frameworks ?? new ConfigFrameworks();
@@ -417,7 +450,8 @@ namespace Twinpack.Models
                                 Configuration = packageVersion.Configuration,
                                 Name = packageVersion.Name,
                                 Target = packageVersion.Target,
-                                Version = r.Version
+                                Version = r.Version,
+                                Options = r.Options
                             });
                         }
                     }
@@ -439,7 +473,7 @@ namespace Twinpack.Models
                 }
                 else if(!isPackage)
                 {
-                    sysref.Add(r);
+                    systemReferences.Add(r);
                 }
             }
 
@@ -455,7 +489,7 @@ namespace Twinpack.Models
             plc.Patches = plc.Patches ?? new ConfigPatches();
             plc.References = new Dictionary<string, List<string>>();
             plc.References["*"] = new List<string>();
-            foreach (var r in sysref.Distinct())
+            foreach (var r in systemReferences.Distinct())
             {
                 plc.References["*"].Add($"{r.Name}={r.Version}");
             }
