@@ -627,7 +627,14 @@ namespace Twinpack.Dialogs
                 _logger.Info("Adding package");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                await AddOrUpdatePackageAsync(new List<PackageVersionGetResponse> { _packageItem.PackageVersion }, showLicenseDialog: true, cancellationToken: Token);
+
+                // todo: overwrite all options
+                var options = _plcConfig.Packages.Where(x => x.Name == _packageItem.Package.Name).Select(x => x.Options);
+                options = options.Select(x => new AddPlcLibraryOptions(x) { AddDependenciesAsReferences = AddDependenciesAsReferences });
+                if (options.Any() == false)
+                    options = new List<AddPlcLibraryOptions> { new AddPlcLibraryOptions { AddDependenciesAsReferences = AddDependenciesAsReferences } };
+
+                await AddOrUpdatePackageAsync(new List<PackageVersionGetResponse> { _packageItem.PackageVersion }, options, showLicenseDialog: true, cancellationToken: Token);
                 _packageItem.Package = _packageItem.PackageVersion;
                 _packageItem.PackageVersion = _packageItem.PackageVersion;
 
@@ -680,7 +687,13 @@ namespace Twinpack.Dialogs
                 _logger.Info("Restoring all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                await AddOrUpdatePackageAsync(_installedPackages.Select(x => x.IsPlaceholder ? new PackageVersionGetResponse(x.Installed) { Version = null } : x.Installed).ToList(), showLicenseDialog: false, cancellationToken: Token);
+                var packageVersions = _installedPackages.Select(x => x.IsPlaceholder ? new PackageVersionGetResponse(x.Installed) { Version = null } : x.Installed).ToList();
+                var options = _plcConfig.Packages.Where(x => packageVersions.Any(y => x.Name == y.Name) == true).Select(x => x.Options);
+                await AddOrUpdatePackageAsync(packageVersions, options, showLicenseDialog: false, cancellationToken: Token);
+
+                var packageVersions = _installedPackages.Select(x => x.Installed);
+                var options = _plcConfig.Packages.Where(x => packageVersions.Any(y => x.Name == y.Name) == true).Select(x => x.Options);
+                await AddOrUpdatePackageAsync(packageVersions, options, showLicenseDialog: false, cancellationToken: Token);
 
                 var item = _installedPackages.Where(x => x.Name == _packageItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
@@ -750,7 +763,10 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 items = _installedPackages.Where(x => x.IsUpdateable);
-                await AddOrUpdatePackageAsync(items.Select(x => x.IsPlaceholder ? new PackageVersionGetResponse(x.Update) { Version = null} : x.Update).ToList(), showLicenseDialog: false, cancellationToken: Token);
+
+                var packageVersions = items.Select(x => x.IsPlaceholder ? new PackageVersionGetResponse(x.Update) { Version = null} : x.Update).ToList();
+                var options = _plcConfig.Packages.Where(x => packageVersions.Any(y => x.Name == y.Name) == true).Select(x => x.Options);
+                await AddOrUpdatePackageAsync(packageVersions, options, showLicenseDialog: false, cancellationToken: Token);
 
                 var item = items.Where(x => x.Name == _packageItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
@@ -974,7 +990,7 @@ namespace Twinpack.Dialogs
             return shownLicenseIds;
         }
 
-        public async Task AddOrUpdatePackageAsync(List<PackageVersionGetResponse> packageVersions, bool showLicenseDialog = true, CancellationToken cancellationToken = default)
+        public async Task AddOrUpdatePackageAsync(List<PackageVersionGetResponse> packageVersions, IEnumerable<AddPlcLibraryOptions> options, bool showLicenseDialog = true, CancellationToken cancellationToken = default)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
@@ -1007,31 +1023,49 @@ namespace Twinpack.Dialogs
             cancellationToken.ThrowIfCancellationRequested();
 
             // add references
-            TwinpackUtils.AddReferences(_libraryManager, packageVersions, AddDependenciesAsReferences);
+            TwinpackUtils.AddReferences(_libraryManager, packageVersions, options);
             cancellationToken.ThrowIfCancellationRequested();
             IsNewReference = false;
 
             // update config
-            foreach (var packageVersion in packageVersions)
+            for (int i=0; i<packageVersions.Count(); i++)
             {
                 // remove from installed packages, so the package is reloaded
                 _installedPackages.RemoveAll(x =>
                                         string.Equals(x.DistributorName, packageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
                                         string.Equals(x.Name, packageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
 
-                _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != packageVersion.Name)
-                                                     .Append(new Models.ConfigPlcPackage
-                                                     {
-                                                         Name = packageVersion.Name,
-                                                         Repository = packageVersion.Repository,
-                                                         Branch = packageVersion.Branch,
-                                                         Configuration = packageVersion.Configuration,
-                                                         Target = packageVersion.Target,
-                                                         Version = packageVersion.Version,
-                                                         DistributorName = packageVersion.DistributorName
-                                                     }).ToList();
+                var packageVersion = packageVersions.ElementAt(i);
+                var option = options.ElementAt(i);
+                var parameters = _plcConfig.Packages.FirstOrDefault(x => x.Name == packageVersion.Name)?.Parameters;
 
-                if (AddDependenciesAsReferences)
+                var packagesCopy = _plcConfig.Packages.ToList();
+                var packageIndex = packagesCopy.FindIndex(x => x.Name == packageVersion.Name);
+                var package = new ConfigPlcPackage
+                {
+                    Name = packageVersion.Name,
+                    Repository = packageVersion.Repository,
+                    Branch = packageVersion.Branch,
+                    Configuration = packageVersion.Configuration,
+                    Target = packageVersion.Target,
+                    Version = packageVersion.Version,
+                    DistributorName = packageVersion.DistributorName,
+                    Options = option,
+                    Parameters = parameters
+                };
+
+                if (packageIndex >= 0)
+                {
+                    packagesCopy[packageIndex] = package;
+                    _plcConfig.Packages = packagesCopy;
+                }
+                else
+                {
+                    _plcConfig.Packages = _plcConfig.Packages.Append(package).ToList();
+                }
+
+
+                if (option?.AddDependenciesAsReferences == true)
                 {
                     foreach (var dependency in packageVersion.Dependencies ?? new List<PackageVersionGetResponse>())
                     {
@@ -1039,17 +1073,32 @@ namespace Twinpack.Dialogs
                                                 string.Equals(x.DistributorName, dependency.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
                                                 string.Equals(x.Name, dependency.Name, StringComparison.InvariantCultureIgnoreCase));
 
-                        _plcConfig.Packages = _plcConfig.Packages.Where(x => x.Name != dependency.Name)
-                                                                 .Append(new Models.ConfigPlcPackage
-                                                                 {
-                                                                     Name = dependency.Name,
-                                                                     Repository = dependency.Repository,
-                                                                     Branch = dependency.Branch,
-                                                                     Configuration = dependency.Configuration,
-                                                                     Target = dependency.Target,
-                                                                     Version = dependency.Version,
-                                                                     DistributorName = dependency.DistributorName
-                                                                 }).ToList();
+                        var dependencyParameters = _plcConfig.Packages.FirstOrDefault(x => x.Name == dependency.Name)?.Parameters;
+
+                        packagesCopy = _plcConfig.Packages.ToList();
+                        packageIndex = packagesCopy.FindIndex(x => x.Name == dependency.Name);
+                        package = new ConfigPlcPackage
+                        {
+                            Name = dependency.Name,
+                            Repository = dependency.Repository,
+                            Branch = dependency.Branch,
+                            Configuration = dependency.Configuration,
+                            Target = dependency.Target,
+                            Version = dependency.Version,
+                            DistributorName = dependency.DistributorName,
+                            Options = option,
+                            Parameters = dependencyParameters
+                        };
+
+                        if (packageIndex >= 0)
+                        {
+                            packagesCopy[packageIndex] = package;
+                            _plcConfig.Packages = packagesCopy;
+                        }
+                        else
+                        {
+                            _plcConfig.Packages = _plcConfig.Packages.Append(package).ToList();
+                        }
                     }
                 }
 

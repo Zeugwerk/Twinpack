@@ -10,6 +10,39 @@ namespace Twinpack.Models
 {
     public class AddPlcLibraryOptions
     {
+        public AddPlcLibraryOptions()
+        {
+            AddDependenciesAsReferences = true;
+            LibraryReference = false;
+            Optional = false;
+            HideWhenReferencedAsDependency = false;
+            PublishSymbolsInContainer = false;
+            QualifiedOnly = false;
+        }
+
+        public AddPlcLibraryOptions(AddPlcLibraryOptions options)
+        {
+            if (options == null)
+                return;
+
+            AddDependenciesAsReferences = options.AddDependenciesAsReferences;
+            LibraryReference = options.LibraryReference;
+            Optional = options.Optional;
+            HideWhenReferencedAsDependency = options.HideWhenReferencedAsDependency;
+            PublishSymbolsInContainer = options.PublishSymbolsInContainer;
+            QualifiedOnly = options.QualifiedOnly;
+        }
+
+        [DefaultValue(true)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("dependency-references")]
+        public bool AddDependenciesAsReferences { get; set; }
+
+        [DefaultValue(false)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("library-reference")]
+        public bool LibraryReference { get; set; }
+
         [DefaultValue(false)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("optional")]
