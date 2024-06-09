@@ -296,28 +296,88 @@ namespace Twinpack
             }
         }
 
-        public static void AddReferences(ITcPlcLibraryManager libManager, IEnumerable<PackageVersionGetResponse> packageVersions, bool addDependenciesAsReferences)
+        public static void AddReferences(ITcPlcLibraryManager libManager, IEnumerable<PackageVersionGetResponse> packageVersions, IEnumerable<AddPlcLibraryOptions> options)
         {
-            if(addDependenciesAsReferences)
+            // add actual packages
+            var dependencies = new List<Tuple<PackageVersionGetResponse, AddPlcLibraryOptions>>();
+            for (int i = 0; i < packageVersions.Count(); i++)
             {
-                packageVersions = packageVersions.Concat(packageVersions.SelectMany(x => x.Dependencies));
+                var packageVersion = packageVersions.ElementAt(i);
+                var option = options.ElementAt(i);
+                AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName, option);
+
+                if(option.AddDependenciesAsReferences)
+                    dependencies.AddRange(packageVersion.Dependencies.Select(x => new Tuple<PackageVersionGetResponse, AddPlcLibraryOptions>(x, option)));
             }
 
-            foreach (var packageVersion in packageVersions.Distinct())
+            foreach(var dependency in dependencies.GroupBy(x => x.Item1))
             {
-                AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
+                var packageVersion = dependency.First().Item1;
+                var option = new AddPlcLibraryOptions(dependency.First().Item2) { AddDependenciesAsReferences = false };
+                AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName, option);
             }
         }
-        public static void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName, bool addAsPlaceholder = true)
+
+        public static void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName, AddPlcLibraryOptions options)
         {
             distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
             RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
 
             _logger.Info($"Adding reference to {placeholderName} {version} [distributor: {distributorName}]");
-            if (addAsPlaceholder)
-                libManager.AddPlaceholder(placeholderName, libraryName, version, distributorName);
-            else
+            if (options?.LibraryReference == true)
                 libManager.AddLibrary(libraryName, version, distributorName);
+            else
+                libManager.AddPlaceholder(placeholderName, libraryName, version, distributorName);
+
+            if(options != null)
+            {
+                var referenceItem = (libManager as ITcSmTreeItem).LookupChild(libraryName);
+                var referenceXml = referenceItem.ProduceXml(bRecursive: true);
+                var referenceDoc = XDocument.Parse(referenceXml);
+
+                if (options?.QualifiedOnly == true)
+                {
+                    var qualifiedOnlyItem = referenceDoc.Elements("TreeItem")
+                        .Elements("VSProperties")
+                        .Elements("VSProperty")
+                        .Where(x => x.Element("Name").Value == "QualifiedlAccessOnly")
+                        .Elements("Value").FirstOrDefault();
+                    qualifiedOnlyItem.Value = options?.QualifiedOnly == true ? "True" : "False";
+                }
+
+                if (options?.HideWhenReferencedAsDependency == true)
+                {
+                    var hideReferenceItem = referenceDoc.Elements("TreeItem")
+                    .Elements("VSProperties")
+                    .Elements("VSProperty")
+                    .Where(x => x.Element("Name").Value == "HideReference")
+                    .Elements("Value").FirstOrDefault();
+                    hideReferenceItem.Value = options?.HideWhenReferencedAsDependency == true ? "True" : "False";
+                }
+
+                if(options?.Optional == true)
+                {
+                    var optionalItem = referenceDoc.Elements("TreeItem")
+                        .Elements("VSProperties")
+                        .Elements("VSProperty")
+                        .Where(x => x.Element("Name").Value == "Optional")
+                        .Elements("Value").FirstOrDefault();
+                    optionalItem.Value = options?.Optional == true ? "True" : "False";
+                }
+
+                if (options?.PublishSymbolsInContainer == true)
+                {
+                    var publishSymbolsInContainerItem = referenceDoc.Elements("TreeItem")
+                    .Elements("VSProperties")
+                    .Elements("VSProperty")
+                    .Where(x => x.Element("Name").Value == "PublishAll")
+                    .Elements("Value").FirstOrDefault();
+                    publishSymbolsInContainerItem.Value = options?.PublishSymbolsInContainer == true ? "True" : "False";
+                }
+
+                referenceItem.ConsumeXml(referenceDoc.ToString());
+            }
+
         }
 
         public static string ParseLicenseId(string content)
