@@ -306,7 +306,7 @@ namespace Twinpack
                 var option = options?.ElementAt(i);
                 AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName, option);
 
-                if(option?.AddDependenciesAsReferences)
+                if(option?.AddDependenciesAsReferences == true)
                     dependencies.AddRange(packageVersion.Dependencies.Select(x => new Tuple<PackageVersionGetResponse, AddPlcLibraryOptions>(x, option)));
             }
 
