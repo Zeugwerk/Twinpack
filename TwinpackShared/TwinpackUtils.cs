@@ -303,10 +303,10 @@ namespace Twinpack
             for (int i = 0; i < packageVersions.Count(); i++)
             {
                 var packageVersion = packageVersions.ElementAt(i);
-                var option = options.ElementAt(i);
+                var option = options?.ElementAt(i);
                 AddReference(libManager, packageVersion.Title, packageVersion.Title, packageVersion.Version, packageVersion.DistributorName, option);
 
-                if(option.AddDependenciesAsReferences)
+                if(option?.AddDependenciesAsReferences)
                     dependencies.AddRange(packageVersion.Dependencies.Select(x => new Tuple<PackageVersionGetResponse, AddPlcLibraryOptions>(x, option)));
             }
 
