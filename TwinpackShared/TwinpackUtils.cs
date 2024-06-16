@@ -205,7 +205,7 @@ namespace Twinpack
 
                 if (referenceFound)
                 {
-                    _logger.Info($"Skipping download for {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}), it already exists on the system");
+                    _logger.Info($"Skipping {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}), it already exists on the system");
                 }
             }
 
@@ -231,7 +231,7 @@ namespace Twinpack
 
             foreach (var packageVersion in packageVersions)
             {
-                _logger.Info($"Installing package {packageVersion.Name} ...");
+                _logger.Info($"Installing {packageVersion.Name} {packageVersion.Version}");
 
                 var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
                 libManager.InstallLibrary("System", Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}"), bOverwrite: true);
@@ -290,7 +290,7 @@ namespace Twinpack
 
                 if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    _logger.Info($"Remove reference {placeholderName} (version: {itemVersion}, distributor: {itemDistributorName})");
+                    _logger.Info($"Removing {placeholderName} {itemVersion} (distributor: {itemDistributorName})");
                     libManager.RemoveReference(placeholderName);
                 }
             }
@@ -323,7 +323,7 @@ namespace Twinpack
             distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
             RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
 
-            _logger.Info($"Adding reference to {placeholderName} {version} [distributor: {distributorName}]");
+            _logger.Info($"Adding {placeholderName} {version} (distributor: {distributorName})");
             if (options?.LibraryReference == true)
                 libManager.AddLibrary(libraryName, version, distributorName);
             else
