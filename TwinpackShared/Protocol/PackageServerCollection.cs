@@ -77,7 +77,7 @@ namespace Twinpack.Protocol
                         }
                         catch (Exception ex)
                         {
-                            _logger.Warn($"{package.Name}: {ex.Message}");
+                            _logger.Warn($"{package.Name} {package.Version}: {ex.Message}");
                             exceptions.Add(ex);
                         }
                     }

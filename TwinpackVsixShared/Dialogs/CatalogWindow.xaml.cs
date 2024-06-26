@@ -75,7 +75,6 @@ namespace Twinpack.Dialogs
         private string _installedPackageVersion;
 
         private bool _forcePackageVersionDownload;
-        private bool _addDependenciesAsReferences;
         private bool _forceShowLicense;
         private bool _uninstallDeletes;
 
@@ -204,6 +203,17 @@ namespace Twinpack.Dialogs
             get { return _packageItem.Package; }
         }
 
+        AddPlcLibraryOptions _options;
+        public AddPlcLibraryOptions Options
+        {
+            get { return _options; }
+            set
+            {
+                _options = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Options)));
+            }
+        }
+
         public PackageVersionGetResponse PackageVersion
         {
             get { return _packageItem.PackageVersion; }
@@ -228,17 +238,6 @@ namespace Twinpack.Dialogs
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ForcePackageVersionDownload)));
             }
         }
-
-        public bool AddDependenciesAsReferences
-        {
-            get { return _addDependenciesAsReferences; }
-            set
-            {
-                _addDependenciesAsReferences = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AddDependenciesAsReferences)));
-            }
-        }
-
 
         public bool ForceShowLicense
         {
@@ -440,7 +439,6 @@ namespace Twinpack.Dialogs
             InstalledPackagesCount = 0;
             UpdateablePackagesCount = 0;
             ForcePackageVersionDownload = true;
-            AddDependenciesAsReferences = true;
             Catalog = new List<CatalogItem>();
             DataContext = this;
 
@@ -629,12 +627,10 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
                 // todo: overwrite all options
-                var options = _plcConfig.Packages.Where(x => x.Name == _packageItem.Package.Name).Select(x => x.Options);
-                options = options.Select(x => new AddPlcLibraryOptions(x) { AddDependenciesAsReferences = AddDependenciesAsReferences });
-                if (options.Any() == false)
-                    options = new List<AddPlcLibraryOptions> { new AddPlcLibraryOptions { AddDependenciesAsReferences = AddDependenciesAsReferences } };
+                var options = new List<AddPlcLibraryOptions> { Options };
 
                 await AddOrUpdatePackageAsync(new List<PackageVersionGetResponse> { _packageItem.PackageVersion }, options, showLicenseDialog: true, cancellationToken: Token);
+                _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _packageItem.PackageVersion.Name);
                 _packageItem.Package = _packageItem.PackageVersion;
                 _packageItem.PackageVersion = _packageItem.PackageVersion;
 
@@ -691,15 +687,12 @@ namespace Twinpack.Dialogs
                 var options = _plcConfig.Packages.Where(x => packageVersions.Any(y => x.Name == y.Name) == true).Select(x => x.Options);
                 await AddOrUpdatePackageAsync(packageVersions, options, showLicenseDialog: false, cancellationToken: Token);
 
-                var packageVersions = _installedPackages.Select(x => x.Installed);
-                var options = _plcConfig.Packages.Where(x => packageVersions.Any(y => x.Name == y.Name) == true).Select(x => x.Options);
-                await AddOrUpdatePackageAsync(packageVersions, options, showLicenseDialog: false, cancellationToken: Token);
-
                 var item = _installedPackages.Where(x => x.Name == _packageItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
                 {
                     _packageItem.Package = item.Update;
                     _packageItem.PackageVersion = item.Update;
+                    _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == item.Update.Name);
                 }
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -771,6 +764,7 @@ namespace Twinpack.Dialogs
                 var item = items.Where(x => x.Name == _packageItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
                 {
+                    _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == item.Update.Name);
                     _packageItem.Package = item.Update;
                     _packageItem.PackageVersion = item.Update;
                 }
@@ -1030,14 +1024,11 @@ namespace Twinpack.Dialogs
             // update config
             for (int i=0; i<packageVersions.Count(); i++)
             {
-                // remove from installed packages, so the package is reloaded
-                _installedPackages.RemoveAll(x =>
-                                        string.Equals(x.DistributorName, packageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
-                                        string.Equals(x.Name, packageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
-
                 var packageVersion = packageVersions.ElementAt(i);
                 var option = options.ElementAt(i);
                 var parameters = _plcConfig.Packages.FirstOrDefault(x => x.Name == packageVersion.Name)?.Parameters;
+
+                _installedPackages.RemoveAll(x => string.Equals(x.Name, packageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
 
                 var packagesCopy = _plcConfig.Packages.ToList();
                 var packageIndex = packagesCopy.FindIndex(x => x.Name == packageVersion.Name);
@@ -1069,10 +1060,7 @@ namespace Twinpack.Dialogs
                 {
                     foreach (var dependency in packageVersion.Dependencies ?? new List<PackageVersionGetResponse>())
                     {
-                        _installedPackages.RemoveAll(x =>
-                                                string.Equals(x.DistributorName, dependency.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
-                                                string.Equals(x.Name, dependency.Name, StringComparison.InvariantCultureIgnoreCase));
-
+                        _installedPackages.RemoveAll(x => string.Equals(x.Name, dependency.Name, StringComparison.InvariantCultureIgnoreCase));
                         var dependencyParameters = _plcConfig.Packages.FirstOrDefault(x => x.Name == dependency.Name)?.Parameters;
 
                         packagesCopy = _plcConfig.Packages.ToList();
@@ -1482,6 +1470,7 @@ namespace Twinpack.Dialogs
 
                 _packageItem.PackageServer = _catalogItem.PackageServer;
                 _packageItem.Package = package;
+                Options = _packageConfig?.Options ?? new AddPlcLibraryOptions();
 
                 BranchesView.Visibility = _packageItem.Package?.Branches.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
                 TargetsView.Visibility = _packageItem.Package?.Targets.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;

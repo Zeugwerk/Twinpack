@@ -306,7 +306,7 @@ namespace Twinpack.Protocol
                 }
             }
 
-            _logger.Info($"Downloaded {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}) (from {Url})");
+            _logger.Info($"Downloaded {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {Url})");
         }
 
         public virtual async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)

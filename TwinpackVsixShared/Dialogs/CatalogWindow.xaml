@@ -25,7 +25,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"></RowDefinition>
-            <RowDefinition Height="auto"></RowDefinition>            
+            <RowDefinition Height="auto"></RowDefinition>
             <RowDefinition Height="auto"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
@@ -115,13 +115,13 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"></RowDefinition>
-                <RowDefinition Height="auto"></RowDefinition>                
+                <RowDefinition Height="auto"></RowDefinition>
                 <RowDefinition Height="auto"></RowDefinition>
                 <RowDefinition Height="auto"></RowDefinition>
                 <RowDefinition Height="auto"></RowDefinition>
                 <RowDefinition Height="auto"></RowDefinition>
             </Grid.RowDefinitions>
-            
+
             <ListView Grid.Column="0" Grid.Row="0" x:Name="CatalogView"
                       ItemsSource="{Binding Catalog}" BorderBrush="#FFcad0de"
                       BorderThickness="1" d:ItemsSource="{d:SampleData ItemCount=3}"
@@ -150,7 +150,7 @@
                                    Visibility="{Binding IconUrl, Converter={StaticResource NullToVisibilityConverter}}"
                                    Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
 
-                            
+
                             <Image d:Source="Images/Twinpack.png" 
                                    RenderOptions.BitmapScalingMode="HighQuality" 
                                    Visibility="{Binding Visibility, ElementName=ImageIcon, Converter={StaticResource VisibilityToInverseVisibilityConverter}}"
@@ -409,7 +409,6 @@
                                 </Button>
                             </StackPanel>
 
-
                             <Button Click="UninstallPackageButton_Click"
                                     Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">
                                 <StackPanel Orientation="Horizontal">
@@ -435,26 +434,51 @@
                             </Button>
 
                             <Grid Visibility="{Binding IsPackageVersionLoading, ElementName=This, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"
-                                  Grid.Row="6" Grid.ColumnSpan="3" Margin="5 5 0 0" >
+                                  Grid.Row="6" Grid.ColumnSpan="3" Margin="5 5 0 0">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="auto"></RowDefinition>
                                     <RowDefinition Height="auto"></RowDefinition>
-                                    <RowDefinition Height="auto"></RowDefinition>
-                                    <RowDefinition Height="auto"></RowDefinition>
-                                    <RowDefinition Height="auto"></RowDefinition>
                                 </Grid.RowDefinitions>
-                                <CheckBox Grid.Row="0" IsChecked="{Binding ForcePackageVersionDownload}">
-                                    <TextBlock>Force package download</TextBlock>
-                                </CheckBox>
-                                <CheckBox Grid.Row="1" Margin="0 5 0 0" IsChecked="{Binding AddDependenciesAsReferences}">
+                                <CheckBox Grid.Row="0"
+                                          DataContext="{Binding Options}"
+                                          IsChecked="{Binding AddDependenciesAsReferences}">
                                     <TextBlock>Add dependencies as references</TextBlock>
                                 </CheckBox>
-                                <CheckBox Grid.Row="2" Margin="0 5 0 0" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding ForceShowLicense}">
-                                    <TextBlock>Confirm license of already installed packages</TextBlock>
-                                </CheckBox>
-                                <CheckBox Grid.Row="3" Margin="0 5 0 0" IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" IsChecked="{Binding UninstallDeletes}">
-                                    <TextBlock>Remove deletes library from system</TextBlock>
-                                </CheckBox>
+                                <Expander Grid.Row="1" Header="Advanced" FlowDirection="RightToLeft" >
+                                    <StackPanel FlowDirection="LeftToRight">
+                                        <CheckBox Grid.Row="0" 
+                                                  Margin="0 5 0 0"
+                                                  DataContext="{Binding Options}"
+                                                  IsChecked="{Binding Optional}">
+                                            <TextBlock>Optional</TextBlock>
+                                        </CheckBox>
+                                        <CheckBox Margin="0 5 0 0"
+                                                  DataContext="{Binding Options}"
+                                                  IsChecked="{Binding PublishAll}">
+                                            <TextBlock>Publish all IEC symbols</TextBlock>
+                                        </CheckBox>
+                                        <CheckBox Margin="0 5 0 0"
+                                                  IsChecked="{Binding ForcePackageVersionDownload}">
+                                            <TextBlock>Force package download</TextBlock>
+                                        </CheckBox>
+                                        <CheckBox Margin="0 5 0 0"
+                                                  IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" 
+                                                  IsChecked="{Binding ForceShowLicense}">
+                                            <TextBlock>Confirm license of already installed packages</TextBlock>
+                                        </CheckBox>
+                                        <CheckBox Margin="0 5 0 0"
+                                                  IsEnabled="{Binding IsNewPackage, Converter={StaticResource BooleanToInverseBooleanConverter}}" 
+                                                  IsChecked="{Binding UninstallDeletes}">
+                                            <TextBlock>Remove deletes library from system</TextBlock>
+                                        </CheckBox>
+                                    </StackPanel>
+                                </Expander>
+                                <CheckBox Grid.Row="1"
+                                          Margin="0 5 0 0"
+                                          DataContext="{Binding Options}"
+                                          IsChecked="{Binding QualifiedOnly}">
+                                    <TextBlock>Qualified only</TextBlock>
+                                </CheckBox>                                
                             </Grid>
                         </Grid>
 
@@ -465,7 +489,7 @@
                             <StackPanel Orientation="Horizontal" Visibility="{Binding Name, Converter={StaticResource NullToVisibilityConverter}}"
                                         Margin="10,5,0,0">
                                 <TextBlock Text="Name: " FontWeight="SemiBold"></TextBlock>
-                                <TextBlock Text="{Binding Name}" TextWrapping="Wrap"></TextBlock>                                
+                                <TextBlock Text="{Binding Name}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Visibility="{Binding Title, Converter={StaticResource NullToVisibilityConverter}}"
@@ -473,7 +497,7 @@
                                 <TextBlock Text="Title: " FontWeight="SemiBold"></TextBlock>
                                 <TextBlock Text="{Binding Title}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
-                            
+
                             <StackPanel Visibility="{Binding Description, Converter={StaticResource NullToVisibilityConverter}}">
                                 <TextBlock Text="Description: " FontWeight="SemiBold"  Margin="10,5,0,0"></TextBlock>
                                 <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="15,0,0,0"></TextBlock>
@@ -546,28 +570,28 @@
                                 <TextBlock Text="Project URL: " FontWeight="SemiBold"></TextBlock>
                                 <Button Click="ShowProjectUrl_Click" Margin="0 -1 0 0" BorderThickness="0" FontWeight="SemiBold"
                                         Content="{Binding ProjectUrl}" VerticalAlignment="Top"
-                                        Visibility="{Binding HasProjectUrl, Converter={StaticResource BooleanToVisibilityConverter}}"  />                                
+                                        Visibility="{Binding HasProjectUrl, Converter={StaticResource BooleanToVisibilityConverter}}"  />
                             </StackPanel>
 
                             <Expander Grid.ColumnSpan="3" Margin="0,10,0,0" Header="Dependencies" 
                                       Visibility="{Binding HasDependencies, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <Grid Margin="5 5 0 0">
-                                  <ListView Grid.Column="0" Grid.Row="0"
+                                    <ListView Grid.Column="0" Grid.Row="0"
                                         ItemsSource="{Binding Dependencies}"
                                         BorderThickness="0" d:ItemsSource="{d:SampleData ItemCount=3}"
                                         ScrollViewer.CanContentScroll="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                                      <ListBox.ItemContainerStyle>
-                                          <Style TargetType="ListViewItem">
-                                              <Setter Property="Focusable" Value="false"/>
+                                        <ListBox.ItemContainerStyle>
+                                            <Style TargetType="ListViewItem">
+                                                <Setter Property="Focusable" Value="false"/>
                                                 <Setter Property="Background" Value="Transparent" />
                                                 <Setter Property="BorderBrush" Value="Transparent"/>
                                                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                                             </Style>
-                                      </ListBox.ItemContainerStyle>
-                                      <ListView.ItemTemplate>
-                                          <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                              <TextBlock Margin="8 0 0 0">
+                                        </ListBox.ItemContainerStyle>
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Margin="8 0 0 0">
                                                 <Run Text="{Binding Name}" FontWeight="DemiBold"/>
                                                 <Run Text="{Binding Version}"/><Run Text=","/>
                                                 <Run Text="{Binding DistributorName}"/>
@@ -584,12 +608,16 @@
                         </StackPanel>
 
                         <Grid Grid.Row="1" Grid.RowSpan="3" d:Visibility="Visible" Visibility="{Binding IsPackageVersionLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="412*"/>
+                                <ColumnDefinition Width="59*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="208,0,0,0">
                                 <fa:ImageAwesome Margin="2 0 0 0" Icon="Spinner" Spin="True" Height="12"/>
                                 <TextBlock Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
                             </StackPanel>
                         </Grid>
-                        
+
                     </Grid>
                 </Grid>
             </ScrollViewer>

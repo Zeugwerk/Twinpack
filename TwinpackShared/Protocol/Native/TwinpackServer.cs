@@ -106,7 +106,7 @@ namespace Twinpack.Protocol
 
         public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
         {
-            _logger.Info($"Uploading Package '{packageVersion.Name}' (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration}, version: {packageVersion.Version})");
+            _logger.Info($"Uploading {packageVersion.Name} {packageVersion.Version} (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration})");
 
             var requestBodyJson = JsonSerializer.Serialize(packageVersion);
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(Url + "/package-version"));
@@ -301,7 +301,7 @@ namespace Twinpack.Protocol
                 return false;
             }
 
-            _logger.Info($"Downloaded {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}) (from {packageVersion.BinaryDownloadUrl})");
+            _logger.Info($"Downloaded {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {packageVersion.BinaryDownloadUrl})");
             return true;
         }
 
@@ -371,7 +371,7 @@ namespace Twinpack.Protocol
 
 
                 // if this doesn't succeed download from Twinpack
-                _logger.Info($"Downloaded {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}) (from {UrlBase})");
+                _logger.Info($"Downloaded {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {UrlBase})");
 
             }
         }
