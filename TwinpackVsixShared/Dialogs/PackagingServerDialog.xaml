@@ -20,6 +20,7 @@
              d:DesignHeight="500" d:DesignWidth="800">
     <Window.Resources>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -83,6 +84,8 @@
                                     <TextBox Grid.Column="1" Text="{Binding Name}"></TextBox>
                                     <ComboBox Margin="5 0 5 0" 
                                               ItemsSource="{Binding ServerTypes, ElementName=This}"
+                                              IsEnabled="{Binding LoggedIn, Converter={StaticResource BooleanToInverseBooleanConverter}}"
+                                              SelectionChanged="ServerType_SelectionChanged"
                                               Grid.Column="2"
                                               MinWidth="110" Text="{Binding ServerType}">
                                     </ComboBox>
@@ -138,6 +141,7 @@
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" Content="Register" Margin="5" Click="RegisterButton_Click" />
             <Button Grid.Column="1" Content="Forgot Password" Margin="5" Click="ForgotPasswordButton_Click" />
+            <TextBlock Grid.Column="2" TextAlignment="Center" VerticalAlignment="Center" Text="Saving configuration ..." Visibility="{Binding IsEnabled, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"/>
             <Button Grid.Column="3" x:Name="OkButton" Content="OK" Width="80" Margin="5" Click="OkButton_Click" />
             <Button Grid.Column="4" x:Name="CancelButton" Content="Cancel" IsCancel="True" Width="80" Margin="5" Click="CancelButton_Click" />
         </Grid>

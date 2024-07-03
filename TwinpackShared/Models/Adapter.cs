@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using TCatSysManagerLib;
 
 namespace Twinpack.Models
 {
@@ -36,18 +37,21 @@ namespace Twinpack.Models
             Repository = package.Version;
             DistributorName = package.DistributorName;
             DisplayName = Name;
+
+            IsPlaceholder = package.Version == null;
         }
 
         public Protocol.IPackageServer PackageServer { get; set; }
         public string InstalledVersion { get { return Installed?.Version; } }
+        public bool IsPlaceholder { get; set; } // this may be null if the latest version should be used
         public string InstalledBranch { get { return Installed?.Branch; } }
         public string InstalledTarget { get { return Installed?.Target; } }
         public string InstalledConfiguration { get { return Installed?.Configuration; } }
         public PackageVersionGetResponse Update { get; set; }
         public PackageVersionGetResponse Installed { get; set; }
 
-        public bool IsUpdateable 
-        { 
+        public bool IsUpdateable
+        {
             get
             {
                 try
@@ -58,9 +62,10 @@ namespace Twinpack.Models
                 {
                     return true;
                 }
-            } 
+            }
         }
         public string UpdateVersion { get { return Update?.Version; } }
+
     }
 
     public class PackageItem : INotifyPropertyChanged
@@ -69,7 +74,6 @@ namespace Twinpack.Models
 
         PackageGetResponse _package = new PackageGetResponse();
         PackageVersionGetResponse _packageVersion = new PackageVersionGetResponse();
-        List<PackageVersionGetResponse> _packageVersions = new List<PackageVersionGetResponse>();
 
         public PackageItem()
         {
@@ -94,16 +98,6 @@ namespace Twinpack.Models
             {
                 _packageVersion = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
-            }
-        }
-
-        public List<PackageVersionGetResponse> Versions
-        {
-            get { return _packageVersions; }
-            set
-            {
-                _packageVersions = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Versions)));
             }
         }
 

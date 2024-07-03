@@ -24,6 +24,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\IntToVisibilityConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\NullToVisibilityConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\UrlToImageConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\VersionToStringConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\Converters\VisibilityToInverseVisibilityConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Dialogs\InputDialog.xaml.cs">
       <DependentUpon>InputDialog.xaml</DependentUpon>

@@ -10,7 +10,7 @@ namespace Twinpack
     {
         private static Dictionary<string, BitmapImage> _icons;
 
-        public static byte[] GenerateIdenticon(string packageName)
+        public static byte[] GenerateIdenticon(string packageName, bool isBeckhoffPackage)
         {
             var size = 128;
             var renderer = new PngRenderer(size, size);
@@ -18,11 +18,11 @@ namespace Twinpack
             
             icon.Style = new Jdenticon.IdenticonStyle 
             {
-                Hues = new HueCollection { { 216, HueUnit.Degrees } },
+                Hues = isBeckhoffPackage ? new HueCollection { { 0, HueUnit.Degrees } } : new HueCollection { { 216, HueUnit.Degrees } },
                 BackColor = Color.Transparent,
                 ColorLightness = Jdenticon.Range.Create(0.37f, 0.37f),
-                GrayscaleLightness = Jdenticon.Range.Create(0.37f, 0.37f),
-                ColorSaturation = 0.26f,
+                GrayscaleLightness = isBeckhoffPackage ? Jdenticon.Range.Create(0.435f, 0.435f) : Jdenticon.Range.Create(0.37f, 0.37f),
+                ColorSaturation = isBeckhoffPackage ? 1.00f : 0.26f,
                 GrayscaleSaturation = 0.26f
             };
             
@@ -35,11 +35,11 @@ namespace Twinpack
             }
         }
 
-        public static BitmapImage GenerateIdenticonAsBitmapImage(string packageName)
+        public static BitmapImage GenerateIdenticonAsBitmapImage(string packageName, bool isBeckhoffPackage)
         {
             var image = new BitmapImage();
 
-            using (var stream = new MemoryStream(GenerateIdenticon(packageName)))
+            using (var stream = new MemoryStream(GenerateIdenticon(packageName, isBeckhoffPackage)))
             {
                 image.BeginInit();
                 image.CacheOption = BitmapCacheOption.OnLoad;
@@ -51,14 +51,14 @@ namespace Twinpack
             return image;
         }
 
-        public static BitmapImage Icon(string iconUrl)
+        public static BitmapImage Icon(string iconUrl, bool isBeckhoffPackage)
         {
             if (_icons == null)
                 _icons = new Dictionary<string, BitmapImage>();
 
             if (iconUrl?.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase) == false)
             {
-                var img = GenerateIdenticonAsBitmapImage(iconUrl);
+                var img = GenerateIdenticonAsBitmapImage(iconUrl, isBeckhoffPackage);
                 return img;
             }
 

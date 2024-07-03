@@ -121,7 +121,11 @@ namespace Twinpack.Dialogs
                         else
                         {
                             LoadingText = "Creating temporary package configuration ...";
-                            _plcConfig = await Models.ConfigPlcProjectFactory.CreateAsync(_context.Solution, _plc, _twinpackServer, Token);
+                            _plcConfig = await Models.ConfigPlcProjectFactory.CreateAsync(
+                                _context.Solution, 
+                                _plc, 
+                                Protocol.PackagingServerRegistry.Servers.Any() ? Protocol.PackagingServerRegistry.Servers : new List<Protocol.IPackageServer> { _twinpackServer }, 
+                                Token);
                         }
 
                         IsConfigured = _plcConfig != null;
@@ -183,7 +187,7 @@ namespace Twinpack.Dialogs
                     if (_packageVersion.PackageVersionId == null)
                     {
                         IsNewPackageVersion = true;
-                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync(new Models.PlcLibrary { DistributorName = _package.DistributorName, Name = _package.Name }, 1, 1, Token)).Item1?.FirstOrDefault()?.PackageVersionId;
+                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync(new Models.PlcLibrary { DistributorName = _package.DistributorName, Name = _package.Name }, null, null, null, 1, 1, Token)).Item1?.FirstOrDefault()?.PackageVersionId;
                     }
                 }
                 else if (_plcConfig != null)
@@ -195,8 +199,8 @@ namespace Twinpack.Dialogs
                 {
                     try
                     {
-                        _packageVersion = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name, Version = _packageVersion.Version }, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target, cancellationToken: Token);
-                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name }, _packageVersion.Configuration, _packageVersion.Branch, _packageVersion.Target, cancellationToken: Token);
+                        _packageVersion = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name, Version = _packageVersion.Version }, _packageVersion.Branch, _packageVersion.Configuration, _packageVersion.Target, cancellationToken: Token);
+                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name }, _packageVersion.Branch, _packageVersion.Configuration, _packageVersion.Target, cancellationToken: Token);
                         Dependencies = _packageVersion.Dependencies;
                     }
                     catch (Exceptions.GetException ex)
@@ -224,7 +228,7 @@ namespace Twinpack.Dialogs
                 Version = _packageVersion?.Version ?? _plcConfig?.Version;
                 Authors = _packageVersion?.Authors ?? _plcConfig?.Authors;
                 License = _packageVersion?.License ?? _plcConfig?.License;
-                IconImage = IconCache.Icon(_package?.IconUrl ?? PackageName);
+                IconImage = IconCache.Icon(_package?.IconUrl ?? PackageName, isBeckhoffPackage: false);
                 Notes = _packageVersion?.Notes;
                 Version = _packageVersion?.Version;
                 LatestVersion = _packageVersionLatest?.Version;
@@ -742,7 +746,7 @@ namespace Twinpack.Dialogs
                 if (openFileDialog.ShowDialog() == true)
                 {
                     IconFile = openFileDialog.FileName;
-                    IconImage = IconCache.Icon(openFileDialog.FileName);            
+                    IconImage = IconCache.Icon(openFileDialog.FileName, isBeckhoffPackage: false);            
                 }
             }
             catch (Exception ex)
@@ -782,7 +786,7 @@ namespace Twinpack.Dialogs
                 ProjectUrl = packageResult.ProjectUrl;
                 Authors = packageResult.Authors;
                 License = packageResult.License;
-                IconImage = IconCache.Icon(packageResult?.IconUrl ?? PackageName);
+                IconImage = IconCache.Icon(packageResult?.IconUrl ?? PackageName, isBeckhoffPackage: false);
             }
             catch (Exceptions.GetException ex)
             {

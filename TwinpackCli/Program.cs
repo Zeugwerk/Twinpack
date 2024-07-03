@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Twinpack.Models;
+using Twinpack.Protocol;
 
 namespace Twinpack
 {
@@ -60,23 +61,28 @@ namespace Twinpack
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        private static Protocol.TwinpackServer _twinpackServer = new Protocol.TwinpackServer();
+        private static PackageServerCollection _packageServers;
 
         static void Login(string username, string password)
         {
-            // no need to login without credentials
-            if(username == null || password == null)
-                return;
-            
-            _twinpackServer.LoginAsync(username, password).Wait();
-            if (!_twinpackServer.LoggedIn)
-                throw new Exception("Login to Twinpack Server failed!");
+            foreach (var twinpackServer in _packageServers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
+            {
+                twinpackServer.LoginAsync(username, password).Wait();
+                if (!twinpackServer.LoggedIn && (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password)))
+                    throw new Exception("Login to Twinpack Server failed!");
+
+                if(!twinpackServer.Connected)
+                    throw new Exception("Connection to Twinpack Server failed!");
+            }
         }
 
         [STAThread]
         static int Main(string[] args)
         {
             LogManager.Setup();
+            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
+
+            _packageServers = PackagingServerRegistry.Servers;
 
             try
             {
@@ -86,23 +92,27 @@ namespace Twinpack
                     {
                         Login(opts.Username, opts.Password);
                         var config = ConfigFactory.Load();
-                        _twinpackServer.PullAsync(config, skipInternalPackages: !opts.Provided).GetAwaiter().GetResult();
+                        _packageServers.PullAsync(config, skipInternalPackages: !opts.Provided).GetAwaiter().GetResult();
                         return 0;
                     },
                     (PushOptions opts) =>
                     {
                         Login(opts.Username, opts.Password);
 
-                        _twinpackServer.PushAsync(
-                            opts.WithoutConfig ? 
-                                TwinpackUtils.PlcProjectsFromPath(opts.LibraryPath) : 
-                                TwinpackUtils.PlcProjectsFromConfig(opts.Compiled, opts.Target),
-                            opts.Configuration, 
-                            opts.Branch, 
-                            opts.Target, 
-                            opts.Notes, 
-                            opts.Compiled,
-                            opts.SkipDuplicate).GetAwaiter().GetResult();
+                        foreach(var twinpackServer in _packageServers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
+                        {
+                            twinpackServer.PushAsync(
+                                opts.WithoutConfig ?
+                                    TwinpackUtils.PlcProjectsFromPath(opts.LibraryPath) :
+                                    TwinpackUtils.PlcProjectsFromConfig(opts.Compiled, opts.Target),
+                                opts.Configuration,
+                                opts.Branch,
+                                opts.Target,
+                                opts.Notes,
+                                opts.Compiled,
+                                opts.SkipDuplicate).GetAwaiter().GetResult();
+                        }
+
                         return 0;
                     },
                     errs => 1);

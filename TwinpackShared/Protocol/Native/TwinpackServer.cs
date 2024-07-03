@@ -20,6 +20,15 @@ using System.Runtime.CompilerServices;
 
 namespace Twinpack.Protocol
 {
+    class NativePackagingServerFactory : IPackagingServerFactory
+    {
+        public IPackageServer Create(string name, string uri)
+        {
+            return new TwinpackServer(name, uri);
+        }
+
+        public string ServerType { get; } = "Twinpack Repository";
+    }
     public class TwinpackServer : IPackageServer
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
@@ -196,24 +205,15 @@ namespace Twinpack.Protocol
                                                 $"?search={HttpUtility.UrlEncode(search)}", page, perPage, cancellationToken);
         }
 
-        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch=null, string configuration=null, string target=null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             return await QueryWithPaginationAsync<PackageVersionGetResponse>($"package-versions" +
-                                            $"?distributor-name={library.DistributorName}" +
-                                            $"&name={library.Name}" +
-                                            $"&version={library.Version}"
-                                            , page, perPage, cancellationToken);
-        }
-
-        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch, string configuration, string target, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
-        {
-            return await QueryWithPaginationAsync<PackageVersionGetResponse>($"package-versions" +
-                                            $"?distributor-name={library.DistributorName}" +
-                                            $"&name={library.Name}" +
-                                            $"&version={library.Version}" +
-                                            $"&branch={HttpUtility.UrlEncode(branch)}" +
-                                            $"&target={HttpUtility.UrlEncode(target)}" +
-                                            $"&configuration={HttpUtility.UrlEncode(configuration)}",
+                                            $"?distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
+                                            $"&name={HttpUtility.UrlEncode(library.Name)}" +
+                                            $"&version={HttpUtility.UrlEncode(library.Version)}" +
+                                            (branch != null ? $"&branch={HttpUtility.UrlEncode(branch)}" : "") +
+                                            (target != null ? $"&target={HttpUtility.UrlEncode(target)}" : "") +
+                                            (configuration != null ? $"&configuration={HttpUtility.UrlEncode(configuration)}" : ""),
                                             page, perPage, cancellationToken);
         }
 
@@ -264,8 +264,6 @@ namespace Twinpack.Protocol
         {
             try
             {
-                _logger.Info($"Downloading {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {packageVersion.BinaryDownloadUrl})");
-
                 var responseDownload = await _client.GetAsync(packageVersion.BinaryDownloadUrl, cancellationToken);
                 responseDownload.EnsureSuccessStatusCode();
 
@@ -303,6 +301,7 @@ namespace Twinpack.Protocol
                 return false;
             }
 
+            _logger.Info($"Downloaded {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {packageVersion.BinaryDownloadUrl})");
             return true;
         }
 
@@ -328,10 +327,6 @@ namespace Twinpack.Protocol
                         throw;
                 }
             }
-
-
-            // if this doesn't succeed download from Twinpack
-            _logger.Info($"Downloading {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {UrlBase})");
 
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Url + $"/package-version" +
                 $"?id={packageVersion.PackageVersionId}&include-binary=1"));
@@ -373,6 +368,11 @@ namespace Twinpack.Protocol
                         throw new ChecksumException($"Checksum of downloaded file is mismatching, library was changed after its release!", packageVersion.BinarySha256, chk);
                     }
                 }
+
+
+                // if this doesn't succeed download from Twinpack
+                _logger.Info($"Downloaded {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {UrlBase})");
+
             }
         }
 
@@ -686,67 +686,6 @@ namespace Twinpack.Protocol
             }
         }
 
-        public async Task PullAsync(Config config, bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string cachePath = null, CancellationToken cancellationToken = default)
-        {
-            _logger.Info($"Pulling from Twinpack Server (skip internal packages: {(skipInternalPackages ? "true" : "false")})");
-            var plcs = config.Projects.SelectMany(x => x.Plcs);
-            var exceptions = new List<Exception>();
-            var handled = new List<ConfigPlcPackage>();
-            foreach (var plc in plcs)
-            {
-                // skip packages that are provided according to the config file
-                if (skipInternalPackages)
-                {
-                    _logger.Info($"Package {plc.Name} {plc.Version} is provided");
-                    handled.Add(new ConfigPlcPackage
-                    {
-                        Name = plc.Name,
-                        Version = plc.Version,
-                        DistributorName = plc.DistributorName,
-                        Target = null,
-                        Configuration = null,
-                        Branch = null
-                    });
-                }
-
-                foreach (var package in plc.Packages ?? new List<ConfigPlcPackage>())
-                {
-                    if (handled.Any(x => x?.Name == package?.Name && x?.Version == package?.Version &&
-                                    (x.Target == null || x?.Target == package?.Target) &&
-                                    (x.Configuration == null || x?.Configuration == package?.Configuration) &&
-                                    (x.Branch == null || x?.Branch == package?.Branch)))
-                        continue;
-
-                    if (filter != null && !filter.Any(x => x?.Name == package?.Name && x?.Version == package?.Version &&
-                                    (x.Target == null || x?.Target == package?.Target) &&
-                                    (x.Configuration == null || x?.Configuration == package?.Configuration) &&
-                                    (x.Branch == null || x?.Branch == package?.Branch)))
-                        continue;
-
-                    try
-                    {
-                        var packageVersion = await GetPackageVersionAsync(new PlcLibrary { DistributorName = package.DistributorName, Name = package.Name, Version = package.Version }, package.Branch, package.Configuration, package.Target);
-                        handled.Add(package);
-
-                        if (packageVersion?.PackageVersionId == null)
-                            throw new GetException("Package not available");
-
-                        await DownloadPackageVersionAsync(packageVersion, checksumMode: ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Warn($"{package.Name} {package.Version}: {ex.Message}");
-                        exceptions.Add(ex);
-                    }
-                }
-            }
-
-            if (exceptions.Any())
-            {
-                throw new Exceptions.GetException($"Pulling for Twinpack Server failed for {exceptions.Count()} dependencies!");
-            }
-        }
-
         private void DeleteCredential()
         {
             UserInfo = new LoginPostResponse();
@@ -759,7 +698,9 @@ namespace Twinpack.Protocol
             catch { }
         }
 
-        public void Logout()
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async Task LogoutAsync()
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             _logger.Info("Log out from Twinpack Server");
 

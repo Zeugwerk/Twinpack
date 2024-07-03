@@ -16,7 +16,6 @@ using EnvDTE80;
 using System.Security.Cryptography;
 using Microsoft.Win32;
 using System.Threading;
-using Microsoft.VisualStudio.Threading;
 
 namespace Twinpack
 {
@@ -172,12 +171,12 @@ namespace Twinpack
             }
         }
 
-        public static bool IsPackageInstalled(ITcPlcLibraryManager libManager, PackageGetResponse package)
+        public static bool IsPackageInstalled(ITcPlcLibraryManager libManager, string distributorName, string title)
         {
             foreach (ITcPlcLibrary r in libManager.ScanLibraries())
             {
-                if (string.Equals(r.Name, package.Title, StringComparison.InvariantCultureIgnoreCase) &&
-                    string.Equals(r.Distributor, package.DistributorName, StringComparison.InvariantCultureIgnoreCase))
+                if (string.Equals(r.Name, title, StringComparison.InvariantCultureIgnoreCase) &&
+                    string.Equals(r.Distributor, distributorName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return true;
                 }
@@ -186,7 +185,35 @@ namespace Twinpack
             return false;
         }
 
-        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, List<Protocol.IPackageServer> packageServers, List<PackageVersionGetResponse> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
+        public static async Task<List<PackageVersionGetResponse>> ResolvePackageDependenciesAsync(PackageVersionGetResponse packageVersion, IEnumerable<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        {
+            var resolvedDependencies = new List<PackageVersionGetResponse>();
+            foreach (var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
+            {
+                var d = dependency;
+                foreach (var packageServer in packageServers)
+                {
+                    try
+                    {
+                        d = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = dependency.DistributorName, Name = dependency.Name, Version = dependency.Version },
+                           dependency.Branch, dependency.Configuration, dependency.Target, cancellationToken);
+
+                        if (d.Name != null)
+                        {
+                            d.Version = dependency.Version; // this can be null if it is a placeholder
+                            resolvedDependencies.Add(d);
+                            break;
+                        }
+                    }
+                    catch
+                    { }
+                }
+            }
+
+            return resolvedDependencies;
+        }
+
+        public static async Task<List<PackageVersionGetResponse>> DownloadPackageVersionAndDependenciesAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, IEnumerable<Protocol.IPackageServer> packageServers, List<PackageVersionGetResponse> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
         {
             // check if we find the package on the system
             bool referenceFound = false;
@@ -209,18 +236,49 @@ namespace Twinpack
                 }
             }
 
-            if ((!referenceFound || forceDownload) && downloadedPackageVersions.Any(x => x.PackageVersionId == packageVersion.PackageVersionId) == false)
+            if ((!referenceFound || forceDownload) && downloadedPackageVersions.Any(x => x.Name == packageVersion.Name) == false)
             {
+                var success = false;
                 foreach(var packageServer in packageServers)
                 {
-                    await packageServer.DownloadPackageVersionAsync(packageVersion, checksumMode: Protocol.ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                    try
+                    {
+                        await packageServer.DownloadPackageVersionAsync(packageVersion, checksumMode: Protocol.ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                        success = true;
+                        break;
+                    }
+                    catch
+                    {}
                 }
-                downloadedPackageVersions.Add(packageVersion);
+
+                if (success)
+                    downloadedPackageVersions.Add(packageVersion);
+                else
+                    _logger.Warn($"Package {packageVersion.Title} (version: {packageVersion.Version}, distributor: {packageVersion.DistributorName}) not found on any package server!");
             }
 
-            foreach (var dependency in packageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
+            if(packageVersion.Dependencies != null)
             {
-                downloadedPackageVersions = await DownloadPackageVersionAndDependenciesAsync(libManager, dependency, packageServers, downloadedPackageVersions, forceDownload, cachePath, cancellationToken: cancellationToken);
+                var resolvedDependencies = await ResolvePackageDependenciesAsync(packageVersion, packageServers, cancellationToken);
+                foreach (var dependency in resolvedDependencies)
+                {
+                    var d = dependency;
+                    foreach (var packageServer in packageServers)
+                    {
+                        try
+                        {
+                            d = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = dependency.DistributorName, Name = dependency.Name, Version = dependency.Version },
+                               dependency.Branch, dependency.Configuration, dependency.Target, cancellationToken);
+
+                            if (d.Name != null)
+                                break;
+                        }
+                        catch
+                        { }
+                    }
+
+                    downloadedPackageVersions = await DownloadPackageVersionAndDependenciesAsync(libManager, d, packageServers, downloadedPackageVersions, forceDownload, cachePath, cancellationToken: cancellationToken);
+                }
             }
 
             return downloadedPackageVersions;
@@ -243,7 +301,7 @@ namespace Twinpack
             // try to find the vendor
             foreach (ITcPlcLibrary r in libManager.ScanLibraries())
             {
-                if (r.Name == libraryName && (r.Version == version || version == "*"))
+                if (r.Name == libraryName && (r.Version == version || version == "*" || version == null))
                 {
                     return r.Distributor;
                 }
@@ -252,21 +310,17 @@ namespace Twinpack
             return null;
         }
 
-        public static void RemoveReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName)
+        public static ITcPlcLibrary ResolvePlaceholder(ITcPlcLibraryManager libManager, string placeholderName, out string distributorName, out string effectiveVersion)
         {
-            distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
-
             // Try to remove the already existing reference
             foreach (ITcPlcLibRef item in libManager.References)
             {
                 string itemPlaceholderName;
-                string itemDistributorName;
-                string itemVersion;
+                ITcPlcLibrary plcLibrary;
 
                 try
                 {
-                    ITcPlcPlaceholderRef2 plcPlaceholder; // this will through if the library is currently not installed
-                    ITcPlcLibrary plcLibrary;
+                    ITcPlcPlaceholderRef2 plcPlaceholder; // this will throw if the library is currently not installed
                     plcPlaceholder = (ITcPlcPlaceholderRef2)item;
 
                     itemPlaceholderName = plcPlaceholder.PlaceholderName;
@@ -276,24 +330,38 @@ namespace Twinpack
                     else
                         plcLibrary = plcPlaceholder.DefaultResolution;
 
-                    itemVersion = plcLibrary.Version;
-                    itemDistributorName = plcLibrary.Distributor;
+                    effectiveVersion = plcLibrary.Version;
+                    distributorName = plcLibrary.Distributor;
                 }
                 catch
                 {
-                    ITcPlcLibrary plcLibrary;
                     plcLibrary = (ITcPlcLibrary)item;
-                    itemVersion = "Unknown";
+                    effectiveVersion = null;
                     itemPlaceholderName = plcLibrary.Name.Split(',')[0];
-                    itemDistributorName = plcLibrary.Distributor;
+                    distributorName = plcLibrary.Distributor;
                 }
 
                 if (string.Equals(itemPlaceholderName, placeholderName, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    _logger.Info($"Removing {placeholderName} {itemVersion} (distributor: {itemDistributorName})");
-                    libManager.RemoveReference(placeholderName);
-                }
+                    return plcLibrary;
             }
+
+            distributorName = null;
+            effectiveVersion = null;
+            return null;
+        }
+
+        public static string ResolveEffectiveVersion(ITcPlcLibraryManager libManager, string placeholderName)
+        {
+            ResolvePlaceholder(libManager, placeholderName, out _, out string effectiveVersion);
+
+            return effectiveVersion;
+        }
+
+        public static void RemoveReference(ITcPlcLibraryManager libManager, string placeholderName)
+        {
+            var plcLibrary = ResolvePlaceholder(libManager, placeholderName, out _, out _);
+            if (plcLibrary != null)
+                libManager.RemoveReference(placeholderName);
         }
 
         public static void AddReferences(ITcPlcLibraryManager libManager, IEnumerable<PackageVersionGetResponse> packageVersions, IEnumerable<AddPlcLibraryOptions> options)
@@ -321,7 +389,12 @@ namespace Twinpack
         public static void AddReference(ITcPlcLibraryManager libManager, string placeholderName, string libraryName, string version, string distributorName, AddPlcLibraryOptions options)
         {
             distributorName = distributorName ?? GuessDistributorName(libManager, libraryName, version);
-            RemoveReference(libManager, placeholderName, libraryName, version, distributorName);
+
+            // if we can't find the reference with the distributor name from the package, fallback to looking it up
+            if(!IsPackageInstalled(libManager, distributorName, libraryName))
+                distributorName = GuessDistributorName(libManager, libraryName, version);
+
+            RemoveReference(libManager, placeholderName);
 
             _logger.Info($"Adding {placeholderName} {version} (distributor: {distributorName})");
             if (options?.LibraryReference == true)
