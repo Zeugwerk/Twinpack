@@ -92,6 +92,8 @@ namespace Twinpack.Models
 
         public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, IEnumerable<Protocol.IPackageServer> packageServers, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
         {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+
             Config config = new Config();
 
             config.Fileversion = 1;
@@ -128,6 +130,8 @@ namespace Twinpack.Models
 
                 config.Projects.Add(project);
             }
+
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
             return config;
         }
@@ -233,6 +237,8 @@ namespace Twinpack.Models
 
         public static ConfigPlcProject MapPlcConfigToPlcProj(Config config, EnvDTE.Project prj)
         {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+
             string xml = null;
             ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
             ITcSmTreeItem plcs = systemManager.LookupTreeItem("TIPC");
@@ -252,6 +258,7 @@ namespace Twinpack.Models
                 return config.Projects.SelectMany(x => x.Plcs).FirstOrDefault(x => x.Name == plcName);
                 //return config.Projects.FirstOrDefault(x => x.Name == prj.Name)?.Plcs?.FirstOrDefault(x => x.Name == plcName);
             }
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
             return null;
         }
@@ -263,6 +270,8 @@ namespace Twinpack.Models
 
         public static async Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, IEnumerable<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+
             ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
             var project = new ConfigProject();
             project.Name = prj.Name;
@@ -287,6 +296,8 @@ namespace Twinpack.Models
                 plcConfig.FilePath = ConfigPlcProjectFactory.GuessFilePath(plcConfig);                  
                 return plcConfig;
             }
+
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
             return null;
         }

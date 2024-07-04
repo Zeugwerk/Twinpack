@@ -52,6 +52,8 @@ namespace Twinpack
 
         public static ITcSysManager SystemManager(EnvDTE.Solution solution)
         {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+
             foreach (EnvDTE.Project prj in solution.Projects)
             {
                 ITcSysManager2 systemManager = prj.Object as ITcSysManager2;
@@ -59,11 +61,15 @@ namespace Twinpack
                     return systemManager;
             }
 
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+
             return null;
         }
 
         public static EnvDTE.Project ActiveProject(DTE2 dte)
         {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+
             if (dte?.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects?.Length > 0)
             {
                 var prj = activeSolutionProjects?.GetValue(0) as EnvDTE.Project;
@@ -75,6 +81,8 @@ namespace Twinpack
                 }
                 catch { }
             }
+
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
             return null;
         }
