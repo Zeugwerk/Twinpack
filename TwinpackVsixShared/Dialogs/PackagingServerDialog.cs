@@ -44,7 +44,9 @@ namespace Twinpack.Dialogs
             Loaded += Dialog_Loaded;
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -70,7 +72,9 @@ namespace Twinpack.Dialogs
 
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void ServerType_SelectionChanged(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             var comboBox = sender as ComboBox;
             var item = FindAncestor<ListViewItem>(comboBox);
@@ -85,7 +89,9 @@ namespace Twinpack.Dialogs
             PackagingServers.ElementAt(index).Connected = server.Connected;
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         {
             var button = sender as Button;
             var item = FindAncestor<ListViewItem>(button);

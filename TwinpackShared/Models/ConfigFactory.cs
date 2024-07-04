@@ -47,7 +47,7 @@ namespace Twinpack.Models
                     {
                         solution.Load($@"{path}\" + config.Solution);
                     }
-                    catch(FileNotFoundException ex)
+                    catch(FileNotFoundException)
                     {
                         if(validate)
                             throw;

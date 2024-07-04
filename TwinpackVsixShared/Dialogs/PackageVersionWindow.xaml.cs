@@ -94,7 +94,9 @@ namespace Twinpack.Dialogs
             UserInfo = _twinpackServer.UserInfo;
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void Window_Loaded(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             try
             {
@@ -846,7 +848,9 @@ namespace Twinpack.Dialogs
             return true;
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void Publish_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             try
             {
@@ -974,7 +978,9 @@ namespace Twinpack.Dialogs
             Close();
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void Apply_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             try
             {
@@ -1021,7 +1027,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async void PackageNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        public void PackageNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             var text = ((TextBox)sender).Text;
             PackageName = text;
@@ -1029,7 +1035,7 @@ namespace Twinpack.Dialogs
             ValidateNewPackageVersion();
         }
 
-        public async void DistributorNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        public void DistributorNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             var text = ((TextBox)sender).Text;
             DistributorName = text;
@@ -1037,7 +1043,7 @@ namespace Twinpack.Dialogs
             ValidateNewPackageVersion();
         }
 
-        public async void VersionTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        public void VersionTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             var text = ((TextBox)sender).Text;
             Version = text;

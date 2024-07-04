@@ -125,7 +125,7 @@ namespace Twinpack.Protocol
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PostException("Response could not be parsed");
@@ -162,7 +162,7 @@ namespace Twinpack.Protocol
                 {
                     results.AddRange(JsonSerializer.Deserialize<List<T>>(data));
                 }
-                catch (JsonException ex)
+                catch (JsonException)
                 {
                     _logger.Trace($"Unparseable response: {data}");
                     throw new GetException("Response could not be parsed");
@@ -177,7 +177,7 @@ namespace Twinpack.Protocol
                     {
                         pagination = JsonSerializer.Deserialize<PaginationHeader>(h);
                     }
-                    catch (JsonException ex)
+                    catch (JsonException)
                     {
                         _logger.Trace($"Unparseable response: {linkHeader.First()}");
                         throw new GetException("Response could not be parsed");
@@ -238,7 +238,7 @@ namespace Twinpack.Protocol
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -398,7 +398,7 @@ namespace Twinpack.Protocol
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -430,7 +430,7 @@ namespace Twinpack.Protocol
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PutException("Response could not be parsed");
@@ -459,7 +459,7 @@ namespace Twinpack.Protocol
             {
                 result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new GetException("Response could not be parsed");
@@ -490,7 +490,7 @@ namespace Twinpack.Protocol
             {
                 result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PutException("Response could not be parsed");
@@ -522,7 +522,7 @@ namespace Twinpack.Protocol
             {
                 result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
                 throw new PutException("Response could not be parsed");
@@ -560,7 +560,7 @@ namespace Twinpack.Protocol
                 {
                     result = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
                 }
-                catch (JsonException ex)
+                catch (JsonException)
                 {
                     _logger.Trace($"Unparseable response: {responseBody}");
                     throw new LoginException("Response could not be parsed");

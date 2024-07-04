@@ -162,7 +162,7 @@ namespace Twinpack
             (plc as ITcSmTreeItem).ConsumeXml(stringWriter.ToString());
         }
 
-        public static void UninstallReferenceAsync(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, CancellationToken cancellationToken = default)
+        public static void UninstallReference(ITcPlcLibraryManager libManager, PackageVersionGetResponse packageVersion, CancellationToken cancellationToken = default)
         {
             libManager.UninstallLibrary("System", packageVersion.Title, packageVersion.Version, packageVersion.DistributorName);
             foreach (var dependency in packageVersion.Dependencies ?? new List<PackageVersionGetResponse>())

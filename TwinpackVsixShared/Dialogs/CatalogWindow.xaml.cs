@@ -562,7 +562,9 @@ namespace Twinpack.Dialogs
             cancellationToken.ThrowIfCancellationRequested();
         }
 
+#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         public async void EditServersButton_Click(object sender, RoutedEventArgs e)
+#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         {
             var dialog = new PackagingServerDialog();
             dialog.Owner = Application.Current.MainWindow;
@@ -575,7 +577,9 @@ namespace Twinpack.Dialogs
             }
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void UninstallPackageButton_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             try
             {
@@ -614,7 +618,9 @@ namespace Twinpack.Dialogs
             }
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void AddPackageButton_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             try
             {
@@ -932,7 +938,7 @@ namespace Twinpack.Dialogs
             if (UninstallDeletes)
             {
                 _logger.Info($"Uninstalling package {_packageItem.PackageVersion.Name} from system ...");
-                TwinpackUtils.UninstallReferenceAsync(_libraryManager, _packageItem.PackageVersion, cancellationToken);
+                TwinpackUtils.UninstallReference(_libraryManager, _packageItem.PackageVersion, cancellationToken);
             }
 
             // update config
@@ -1410,12 +1416,16 @@ namespace Twinpack.Dialogs
             cancellationToken.ThrowIfCancellationRequested();
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void ShowMoreAvailablePackagesButton_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             await LoadNextCatalogPageAsync(SearchTextBox.Text, cancellationToken: Token);
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void ShowMoreAvailableVersionsButton_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             if (_packageItem.PackageVersion.Name == null)
                 return;
@@ -1442,7 +1452,9 @@ namespace Twinpack.Dialogs
             ConfigurationsView.SelectedIndex = string.IsNullOrEmpty(installed?.Configuration) ? 0 : _packageItem.Package.Configurations?.FindIndex(x => x == installed.Configuration) ?? -1;
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void Catalog_SelectionChanged(object sender, SelectionChangedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             _catalogItem = (sender as ListView).SelectedItem as Models.CatalogItem;
             if (_catalogItem == null)
@@ -1496,7 +1508,9 @@ namespace Twinpack.Dialogs
             }
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void PackageFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             if (_packageItem.Package.Name == null ||
                 BranchesView.SelectedIndex < 0 || TargetsView.SelectedIndex < 0 || ConfigurationsView.SelectedIndex < 0)
@@ -1544,8 +1558,9 @@ namespace Twinpack.Dialogs
                 IsPackageVersionLoading = false;
             }
         }
-
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void PackageVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             try
             {
@@ -1647,7 +1662,10 @@ namespace Twinpack.Dialogs
             }
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void CancelButton_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
+
         {
             _cancellationTokenSource?.Cancel();
             IsFetchingAvailablePackages = false;
@@ -1658,7 +1676,10 @@ namespace Twinpack.Dialogs
             IsPackageVersionLoading = false;
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void CreateConfig_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
+
         {
             try
             {
@@ -1723,7 +1744,10 @@ namespace Twinpack.Dialogs
             Process.Start("https://github.com/Zeugwerk/Twinpack");
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
+
         {
             try
             {
