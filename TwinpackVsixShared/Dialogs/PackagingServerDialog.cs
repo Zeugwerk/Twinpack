@@ -8,8 +8,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Linq;
-using Newtonsoft.Json.Linq;
-using static System.Net.Mime.MediaTypeNames;
 using System.Threading.Tasks;
 
 namespace Twinpack.Dialogs

@@ -69,15 +69,15 @@
       <Version>5.2.2</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Build.Tasks.Pack">
-      <Version>6.9.1</Version>
+      <Version>6.7.1</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NuGet.Configuration">
-      <Version>6.9.1</Version>
+      <Version>6.7.1</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Protocol">
-      <Version>6.9.1</Version>
+      <Version>6.7.1</Version>
     </PackageReference>
     <PackageReference Include="System.Buffers">
       <Version>4.5.1</Version>
