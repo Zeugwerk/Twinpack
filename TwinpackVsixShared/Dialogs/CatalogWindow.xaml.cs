@@ -432,7 +432,7 @@ namespace Twinpack.Dialogs
         {
             _context = context;
             _packageServers = Protocol.PackagingServerRegistry.Servers;
-            _packageServerChange = new SelectionChangedEventHandler(ReloadAsync);
+            _packageServerChange = new SelectionChangedEventHandler(Reload);
 
             IsInitializing = true;
             IsCatalogEnabled = true;
@@ -461,7 +461,9 @@ namespace Twinpack.Dialogs
             Loaded += Dialog_Loaded;
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
 
@@ -562,9 +564,7 @@ namespace Twinpack.Dialogs
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
-        public async void EditServersButton_Click(object sender, RoutedEventArgs e)
-#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+        public void EditServersButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new PackagingServerDialog();
             dialog.Owner = Application.Current.MainWindow;
@@ -573,7 +573,7 @@ namespace Twinpack.Dialogs
             if (dialog.DialogResult == true)
             {
                 ResetServerSelection();
-                ReloadAsync(sender, e);
+                Reload(sender, e);
             }
         }
 
@@ -672,7 +672,9 @@ namespace Twinpack.Dialogs
             AddPackageButton_Click(sender, e);
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void RestoreAllPackageButton_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             try
             {
@@ -742,7 +744,9 @@ namespace Twinpack.Dialogs
             }
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void UpdateAllPackageButton_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             IEnumerable<CatalogItem> items = new List<Models.CatalogItem>();
             try
@@ -830,7 +834,9 @@ namespace Twinpack.Dialogs
             UpdateCatalog();
         }
 
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void ShowCatalog_Click(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             IsBrowsingAvailablePackages = true;
             IsBrowsingUpdatablePackages = false;
@@ -1621,10 +1627,12 @@ namespace Twinpack.Dialogs
 
         public void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
-            ReloadAsync(sender, e); 
+            Reload(sender, e); 
         }
 
-        public async void ReloadAsync(object sender, RoutedEventArgs e)
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
+        public async void Reload(object sender, RoutedEventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
             try
             {
@@ -1662,10 +1670,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
-        public async void CancelButton_Click(object sender, RoutedEventArgs e)
-#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
-
+        public void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             _cancellationTokenSource?.Cancel();
             IsFetchingAvailablePackages = false;

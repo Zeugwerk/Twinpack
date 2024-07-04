@@ -71,7 +71,11 @@ namespace Twinpack.Commands
         /// </summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event args.</param>
+#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void Execute(object sender, EventArgs e)
+#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
+#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         {
 
         }

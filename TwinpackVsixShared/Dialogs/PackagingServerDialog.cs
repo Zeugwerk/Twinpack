@@ -55,21 +55,20 @@ namespace Twinpack.Dialogs
             SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
         }
 
-        private async void AddButton_Click(object sender, RoutedEventArgs e)
+        private void AddButton_Click(object sender, RoutedEventArgs e)
         {
             PackagingServers.Add(new Models.PackagingServer() { Name = $"Source Repository #{PackagingServers.Count()}", Url = "https://", ServerType = Protocol.PackagingServerRegistry.ServerTypes.First() });
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRemoveButtonEnabled)));
 
         }
 
-        private async void RemoveButton_Click(object sender, RoutedEventArgs e)
+        private void RemoveButton_Click(object sender, RoutedEventArgs e)
         {
             if (PackagingServersView.SelectedItem == null)
                 return;
 
             PackagingServers.Remove(PackagingServersView.SelectedItem as Models.PackagingServer);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRemoveButtonEnabled)));
-
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
