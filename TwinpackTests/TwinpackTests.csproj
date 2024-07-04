@@ -81,10 +81,10 @@
       <Version>5.2.7</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Configuration">
-      <Version>6.10.1</Version>
+      <Version>5.11.6</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Protocol">
-      <Version>6.10.1</Version>
+      <Version>5.11.6</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Compression.ZipFile">
       <Version>4.3.0</Version>
