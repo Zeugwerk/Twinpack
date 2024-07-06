@@ -18,6 +18,12 @@ namespace Twinpack.Models
 
         }
 
+        public Solution(string name, List<Project> projects)
+        {
+            Name = name;
+            Projects = projects;
+        }
+
         public static Solution LoadFromFile(string filepath)
         {
             var solution = new Solution();
