@@ -22,8 +22,8 @@ namespace Twinpack.Protocol
 
             if(useDefaults)
             {
-                await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase);
-                await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable");
+                await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase, login: false);
+                await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable", login: false);
             }
             else
             {
@@ -55,11 +55,16 @@ namespace Twinpack.Protocol
             return factory.Create(name, uri);
         }
 
-        public static async Task<IPackageServer> AddServerAsync(string type, string name, string uri)
+        public static async Task<IPackageServer> AddServerAsync(string type, string name, string uri, bool login=true)
         {
             var server = CreateServer(type, name, uri);
-            var auth = new Authentication(server);
-            await auth.LoginAsync(onlyTry: true);
+
+            if(login)
+            {
+                var auth = new Authentication(server);
+                await auth.LoginAsync(onlyTry: true);
+            }
+
             _servers.Add(server);
             return server;
         }
