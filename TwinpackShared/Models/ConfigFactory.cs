@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using EnvDTE;
 using NLog;
 using TCatSysManagerLib;
 
@@ -160,9 +161,23 @@ namespace Twinpack.Models
                 config.FilePath = $@"{Environment.CurrentDirectory}\.Zeugwerk\config.json";
             }
 
-            var solution = Solution.LoadFromFile(solutions.First());
-            
-            foreach(var project in solution.Projects)
+            var solutionFilepath = solutions.FirstOrDefault();
+            Solution solution = null;
+            if(solutionFilepath != null)
+            {
+                solution = Solution.LoadFromFile(solutions.First());
+            }
+            else
+            {
+                var tsprojs = Directory.GetFiles(path, "*.tsproj", SearchOption.AllDirectories);
+                if (tsprojs.Any())
+                {
+                    var name = Path.GetFileName(tsprojs.First());
+                    solution = new Solution(name, new List<Project> { new Project(name, tsprojs.First()) });
+                }
+            }
+
+            foreach (var project in solution.Projects)
             {
                 var projectConfig = new ConfigProject();
                 projectConfig.Name = project.Name;
