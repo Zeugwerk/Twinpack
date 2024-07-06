@@ -99,6 +99,9 @@ namespace Twinpack.Protocol
 
         public virtual async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
+            if(_sourceRepository == null)
+                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(new List<CatalogItemGetResponse>(), false);
+
             ILogger logger = NullLogger.Instance;
 
             try
@@ -140,6 +143,9 @@ namespace Twinpack.Protocol
 
         public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch = null, string configuration = null, string target = null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
+            if (_sourceRepository == null)
+                return new Tuple<IEnumerable<PackageVersionGetResponse>, bool>(new List<PackageVersionGetResponse>(), false);
+
             PackageMetadataResource resource = await _sourceRepository.GetResourceAsync<PackageMetadataResource>();
 
             IEnumerable<IPackageSearchMetadata> results = await resource.GetMetadataAsync(
@@ -190,6 +196,9 @@ namespace Twinpack.Protocol
 
         public async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
         {
+            if (_sourceRepository == null)
+                return;
+
             FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
 
             using (MemoryStream packageStream = new MemoryStream())
@@ -303,6 +312,9 @@ namespace Twinpack.Protocol
 
         public virtual async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
         {
+            if (_sourceRepository == null)
+                return new PackageVersionGetResponse();
+
             PackageMetadataResource resource = await _sourceRepository.GetResourceAsync<PackageMetadataResource>();
 
             IEnumerable<IPackageSearchMetadata> packages = await resource.GetMetadataAsync(
@@ -408,6 +420,9 @@ namespace Twinpack.Protocol
 
         public async Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)
         {
+            if (_sourceRepository == null)
+                return new PackageGetResponse();
+
             PackageMetadataResource resource = await _sourceRepository.GetResourceAsync<PackageMetadataResource>();
 
             IEnumerable<IPackageSearchMetadata> packages = await resource.GetMetadataAsync(
