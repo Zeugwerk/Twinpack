@@ -444,7 +444,7 @@
                                           IsChecked="{Binding AddDependenciesAsReferences}">
                                     <TextBlock>Add dependencies as references</TextBlock>
                                 </CheckBox>
-                                <Expander Grid.Row="1" Header="Advanced" FlowDirection="RightToLeft" >
+                                <Expander Grid.Row="1" Margin="-1" Padding="0" Header="Advanced" FlowDirection="RightToLeft" >
                                     <StackPanel FlowDirection="LeftToRight">
                                         <CheckBox Grid.Row="0" 
                                                   Margin="0 5 0 0"
@@ -475,6 +475,7 @@
                                 </Expander>
                                 <CheckBox Grid.Row="1"
                                           Margin="0 5 0 0"
+                                          VerticalAlignment="Top"
                                           DataContext="{Binding Options}"
                                           IsChecked="{Binding QualifiedOnly}">
                                     <TextBlock>Qualified only</TextBlock>

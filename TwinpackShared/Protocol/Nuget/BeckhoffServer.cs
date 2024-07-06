@@ -38,12 +38,17 @@ namespace Twinpack.Protocol
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         public new string ServerType { get; } = "Beckhoff Repository";
         protected override string SearchPrefix { get => "tags:library "; }
+        public override string UrlRegister
+        {
+            get => "https://www.beckhoff.com/en-en/mybeckhoff-registration/index.aspx";
+        }
         protected override string IconUrl { get => "https://twinpack.dev/Icons/beckhoff.png"; }
 
         public BeckhoffServer(string name = "", string url = DefaultUrlBase) : base(name, url)
         {
 
         }
+
 
         public override async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
         {
