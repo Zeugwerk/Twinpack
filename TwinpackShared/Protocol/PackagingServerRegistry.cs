@@ -14,26 +14,34 @@ namespace Twinpack.Protocol
         static List<IPackagingServerFactory> _factories;
         static PackageServerCollection _servers;
 
-        public static async Task InitializeAsync()
+        public static async Task InitializeAsync(bool useDefaults=false)
         {
             _filePath = Environment.ExpandEnvironmentVariables(_filePath);
             _factories = new List<IPackagingServerFactory>() { new NativePackagingServerFactory(), new NugetPackagingServerFactory(), new BeckhoffPackagingServerFactory() };
             _servers = new PackageServerCollection();
 
-            try
-            {
-                if (!File.Exists(_filePath))
-                    throw new FileNotFoundException("Configuration file not found");
-
-                var sourceRepositories = JsonSerializer.Deserialize<Models.SourceRepositories>(File.ReadAllText(_filePath),
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                foreach(var server in sourceRepositories.PackagingServers)
-                    await AddServerAsync(server.ServerType, server.Name, server.Url);
-            }
-            catch
+            if(useDefaults)
             {
                 await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase);
                 await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable");
+            }
+            else
+            {
+                try
+                {
+                    if (!File.Exists(_filePath))
+                        throw new FileNotFoundException("Configuration file not found");
+
+                    var sourceRepositories = JsonSerializer.Deserialize<Models.SourceRepositories>(File.ReadAllText(_filePath),
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    foreach (var server in sourceRepositories.PackagingServers)
+                        await AddServerAsync(server.ServerType, server.Name, server.Url);
+                }
+                catch
+                {
+                    await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase);
+                    await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable");
+                }
             }
         }
         public static IEnumerable<string> ServerTypes { get { return _factories.Select(x => x.ServerType); } }
