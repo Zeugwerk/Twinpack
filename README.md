@@ -94,10 +94,10 @@ This is the most straight forward way to publish a package if you want to publis
    - Check all objects of your library
    - Upload the library as a package to the Twinpack server making it available for the community
 
-<p float="left">
+<div style="display: flex; justify-content: center;">
 <img src="/images/twinpack_contextmenu2.png" width="270" hspace="80" />   
 <img src="/images/twinpack_publish.png" width="370" />
-</p>
+</div>
 
 After the initial upload of your library as a package, you may publish newer versions of your library or you can also modify the current version by right clicking on the PLC item and then on **Twinpack** -> **Modify...**. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
 
