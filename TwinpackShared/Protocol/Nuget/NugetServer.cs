@@ -45,9 +45,9 @@ namespace Twinpack.Protocol
         {
             get => UrlBase;
         }
-        public string UrlRegister
+        public virtual string UrlRegister
         {
-            get => "https://www.beckhoff.com/en-en/mybeckhoff-registration/index.aspx";
+            get => null;
         }
 
         public string Username { get; set; }
@@ -56,7 +56,7 @@ namespace Twinpack.Protocol
         public bool LoggedIn { get { return Connected; } }
         public bool Connected { get { return UserInfo?.User != null; } }
         protected virtual string SearchPrefix { get => "";}
-        protected virtual string IconUrl { get => "https://twinpack.dev/Icons/beckhoff.png"; }
+        protected virtual string IconUrl { get => null; }
 
         public NugetServer(string name = "", string url = null)
         {
