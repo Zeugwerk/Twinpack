@@ -63,18 +63,8 @@ namespace Twinpack.Protocol
             Name = name;
             UrlBase = url;
             InvalidateCache();
-
-            try
-            {
-                var credentials = CredentialManager.GetCredentials(UrlBase);
-                Username = credentials?.UserName;
-                Password = credentials?.Password;
-            }
-            catch
-            {
-                Username = null;
-                Password = null;
-            }
+            Username = null;
+            Password = null;
         }
 
         public Version ClientVersion
