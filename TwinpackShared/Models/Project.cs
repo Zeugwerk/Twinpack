@@ -11,6 +11,12 @@ namespace Twinpack.Models
 {
     public class Project
     {
+        public Project(string name, List<Plc> plcs)
+        {
+            Name = name;
+            Plcs = plcs;
+        }
+            
         public Project(string name, string filepath)
         {
             if (!File.Exists(filepath))

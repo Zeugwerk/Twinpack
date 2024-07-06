@@ -151,29 +151,34 @@ namespace Twinpack.Models
             config.Fileversion = 1;
             config.WorkingDirectory = path;
 
-            if(solutions.Any())
+            Solution solution = null;
+            if (solutions.Any())
             {
                 config.Solution = Path.GetFileName(solutions.First());
-                config.FilePath = Path.GetDirectoryName(solutions.First()) + @"\.Zeugwerk\config.json";         
-            }
-            else
-            {
-                config.FilePath = $@"{Environment.CurrentDirectory}\.Zeugwerk\config.json";
-            }
+                config.FilePath = Path.GetDirectoryName(solutions.First()) + @"\.Zeugwerk\config.json";
 
-            var solutionFilepath = solutions.FirstOrDefault();
-            Solution solution = null;
-            if(solutionFilepath != null)
-            {
                 solution = Solution.LoadFromFile(solutions.First());
             }
-            else
+            else if(continueWithoutSolution)
             {
+                config.FilePath = $@"{Environment.CurrentDirectory}\.Zeugwerk\config.json";
+
                 var tsprojs = Directory.GetFiles(path, "*.tsproj", SearchOption.AllDirectories);
                 if (tsprojs.Any())
                 {
-                    var name = Path.GetFileName(tsprojs.First());
+                    var name = Path.GetFileNameWithoutExtension(tsprojs.First());
                     solution = new Solution(name, new List<Project> { new Project(name, tsprojs.First()) });
+                }
+
+                if (solution == null)
+                {
+                    var plcprojs = Directory.GetFiles(path, "*.plcproj", SearchOption.AllDirectories);
+                    if (plcprojs.Any())
+                    {
+                        var name = Path.GetFileNameWithoutExtension(plcprojs.First());
+                        var project = new Project(name, plcprojs.Select(x => new Plc(Path.GetFileNameWithoutExtension(x), x)).ToList());
+                        solution = new Solution(name, new List<Project> { project });
+                    }
                 }
             }
 
