@@ -6,7 +6,6 @@ The Twinpack Package Manager is a powerful and user-friendly package management 
 - [Download latest Release](https://github.com/Zeugwerk/Twinpack/releases/latest)
 - [Twinpack-Registry](https://github.com/Zeugwerk/Twinpack-Registry) for automatic publishing of your library on Twinpack by "pulling" them from your GitHub releases
 - [Registration](https://zeugwerk.dev/wp-login.php?action=register), only needed to "push" package, i.e. if you want to publish packages manually or with CI
-  - [Password reset](https://zeugwerk.dev/wp-login.php?action=lostpassword) (optional)
 - [Contact us](mailto:info@zeugwerk.at)
 
 ## Installation
@@ -20,23 +19,44 @@ To use the Twinpack Package Manager, follow these steps:
 
 ## Using a Package
 
-<p float="left">
-<img src="/images/twinpack_contextmenu.png" width="220" hspace="80" />
-<img src="/images/twinpack_catalog.png" width="420" />
-</p>
+<div style="display: flex; justify-content: space-between;">
+<img src="/images/twinpack_catalog.png"/>
+</div>
 
 
 To install a package, follow these steps:
 
 1. Open a TwinCAT solution and navigate to a PLC.
-2. Right click the References item of your PLC
-3. Click 'Twinpack Catalog...'
+2. Right click the **References** item of your PLC
+3. Click **Twinpack Catalog...**
 4. Browse or search for the desired package.
 5. Click on the package to view details.
-6. Click on the "Add" button to install this package and add it to the referenced libraries.
+6. Click on the **Add** to install this package and add it to the referenced libraries.
 7. Wait for the installation process to complete. If you are installing packages from a contributor for the first time and these packages come with a license you will be asked to confirm their license agreement in order to advance.
 8. Twinpack automatically installs the package, including all depending libraries, on your System and adds it as a reference to your PLC.
 9. Follow the library documentation or instructions to incorporate its functionality into your project.
+
+## Connect to Beckhoff and/or custom package servers
+
+<p float="left">
+<img src="/images/twinpack_package_servers.png" />
+</p>
+
+Twinpack supports the NuGet protocol for packages, including repositories hosted by Beckhoff since TwinCAT 4026.xx. Follow these steps to add a new repository to Twinpack:
+
+1. Click **Configure** at the top right of the Twinpack Catalog to open the configuration window.
+2. Click **Add** to add new package servers.
+3. Configure each new package server by:
+   - Entering the URL of the package server.
+   - Giving it a name of your choice.
+   - Selecting the type of package server from the combo box.
+4. Depending on the server configuration, you may need to **Login** with your credentials for the respective repository.
+5. Click **OK** to save your configuration. The Twinpack catalog will reload and display packages from your additional package servers.
+
+### URLs to popular repositories:
+
+- Official Twinpack Repository (preconfigured): `https://twinpack.dev`. Log in is optional. However, logging in will display your private packages and/or packages that are licensed to you by Zeugwerk. If you forgot your Twinpack login, reset it [here](https://zeugwerk.dev/wp-login.php?action=lostpassword).
+- Public Beckhoff Repository: `https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable`, log in in is mandatory. Use your Beckhoff credentials to connect. If you don't have a Beckhoff login, register [here](https://www.beckhoff.com/en-en/mybeckhoff-registration/index.aspx).
 
 
 ## Share a Package ...
@@ -65,7 +85,7 @@ Note, if you don't have your own CI/CD environment, this [action](https://github
 This is the most straight forward way to publish a package if you want to publish your library directly from your IDE
 
 1. Open a TwinCAT solution and navigate to the PLC library you want to share with the community.
-2. Right click the PLC item and click 'Twinpack' -> 'Publish ...'
+2. Right click the PLC item and click **Twinpack** -> **Publish ...**
 3. In the dialog, which opens, fill in the information describing your package.
    - Distributor (mandatory): The name you enter here will be exclusively associated with your Twinpack Account, and it will serve as a unique identifier for all your upcoming packages.
    - Version (mandatory): This is the initial version of your package. Once you publish your package for the first time, you have the flexibility to release newer versions in the future.
@@ -79,7 +99,7 @@ This is the most straight forward way to publish a package if you want to publis
 <img src="/images/twinpack_publish.png" width="370" />
 </p>
 
-After the initial upload of your library as a package, you may publish newer versions of your library or you can also modify the current version by right clicking on the PLC item and then on 'Twinpack' -> 'Modify...'. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
+After the initial upload of your library as a package, you may publish newer versions of your library or you can also modify the current version by right clicking on the PLC item and then on **Twinpack** -> **Modify...**. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
 
 
 ## Further information
