@@ -475,7 +475,7 @@ namespace Twinpack.Protocol
         {
             InvalidateCache();
             var credentials = CredentialManager.GetCredentials(UrlBase);
-
+            
             Username = username ?? credentials?.UserName;
             Password = password ?? credentials?.Password;
 
@@ -527,7 +527,7 @@ namespace Twinpack.Protocol
         public async Task LogoutAsync()
 #pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         {
-            _logger.Info("Log out from NuGet Server");
+            _logger.Trace("Log out from NuGet Server");
 
             UserInfo = new LoginPostResponse();
             Username = "";

@@ -702,7 +702,7 @@ namespace Twinpack.Protocol
         public async Task LogoutAsync()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            _logger.Info("Log out from Twinpack Server");
+            _logger.Trace("Log out from Twinpack Server");
 
             UserInfo = new LoginPostResponse();
             Username = "";
