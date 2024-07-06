@@ -106,5 +106,5 @@ After the initial upload of your library as a package, you may publish newer ver
 
 🌟 Make sure to follow this project by leaving a star or simply follow us, to always get notified if a newer version of Twinpack is released.
 
-📺 We have also created a short introductionary video on how to install and use Twinpack (more to come):
+📺 We have also created a short introductionary video on how to install and use Twinpack
 - [Share TwinCAT libraries with Twinpack](https://youtu.be/xvJG9BRN610?si=RMMIPcdtMAoHkyGW)
