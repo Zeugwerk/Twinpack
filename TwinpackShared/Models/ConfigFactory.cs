@@ -522,10 +522,9 @@ namespace Twinpack.Models
             plc.References["*"] = new List<string>();
             foreach (var r in systemReferences.Distinct())
             {
-                plc.References["*"].Add($"{r.Name}={r.Version}");
+                plc.References["*"].Add($"{r.Name}={r.Version ?? "*"}");
             }
         }
-
 
         public static string GuessFilePath(ConfigPlcProject plc)
         {
