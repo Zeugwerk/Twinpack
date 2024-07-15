@@ -88,7 +88,7 @@ namespace Twinpack.Models
 
         public static Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, Protocol.IPackageServer packageServer, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
         {
-            return CreateFromSolutionAsync(solution, packageServer, plcTypeFilter, cancellationToken);
+            return CreateFromSolutionAsync(solution, new List<Protocol.IPackageServer> { packageServer }, plcTypeFilter, cancellationToken);
         }
 
         public static async Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, IEnumerable<Protocol.IPackageServer> packageServers, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
