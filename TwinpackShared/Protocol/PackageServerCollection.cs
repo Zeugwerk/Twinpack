@@ -33,7 +33,6 @@ namespace Twinpack.Protocol
                     // skip packages that are provided according to the config file
                     if (skipInternalPackages)
                     {
-                        _logger.Info($"Package {plc.Name} {plc.Version} is provided");
                         handled.Add(new ConfigPlcPackage
                         {
                             Name = plc.Name,
