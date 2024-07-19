@@ -202,8 +202,8 @@ begin
   TwinpackVsixGuid17 := 'TwinpackVsix17.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23';
 
   ExtractTemporaryFile('vswhere.exe');
-  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput15);
-  ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [17.0,18.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput17);
+  // ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput15);
+  // ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [17.0,18.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput17);
   
   { Create the pages }
   
