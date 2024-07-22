@@ -37,12 +37,11 @@ LicenseFile=LICENSE
 InfoBeforeFile=DISCLAIMER
 
 [Files]
-Source: "TwinpackVsix.15\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder15}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell15;
-Source: "TwinpackVsix.17\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder17}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell17;
-Source: "TwinpackCli\bin\{#MyConfiguration}\*"; DestDir: "{commonpf}\{#MyAppPublisher}\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallCliInProgramFiles;
-Source: "TwinpackVsix.15\bin\{#MyConfiguration}\TwinpackVsix.15.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
-Source: "TwinpackVsix.17\bin\{#MyConfiguration}\TwinpackVsix.17.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
-Source: "vswhere.exe"; DestDir: "{commonpf}\{#MyAppPublisher}\Utils"; Flags: ignoreversion;
+Source: "TwinpackVsix.15\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder15}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell15
+Source: "TwinpackVsix.17\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder17}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell17
+Source: "TwinpackCli\bin\{#MyConfiguration}\*"; DestDir: "{commonpf}\{#MyAppPublisher}\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallCliInProgramFiles
+Source: "TwinpackVsix.15\bin\{#MyConfiguration}\TwinpackVsix.15.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall
+Source: "TwinpackVsix.17\bin\{#MyConfiguration}\TwinpackVsix.17.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall
 
 [Dirs]
 Name: "{commonpf}\Beckhoff\TcXaeShell\Common7\IDE\Extensions\Zeugwerk\Twinpack"
@@ -201,7 +200,7 @@ begin
   TwinpackVsixGuid15 := 'TwinpackVsix15.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23';
   TwinpackVsixGuid17 := 'TwinpackVsix17.26e0356d-ac0e-4e6a-a50d-dd2a812f6f23';
 
-  ExtractTemporaryFile('vswhere.exe');
+  // ExtractTemporaryFile('vswhere.exe');
   // ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [15.0,17.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput15);
   // ExecWithResult(ExpandConstant('{tmp}\\vswhere.exe'), '-all -products * -requiresAny -requires Microsoft.VisualStudio.Product.Community Microsoft.VisualStudio.Product.Professional Microsoft.VisualStudio.Product.Enterprise -version [17.0,18.0)', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode, VsWhereOutput17);
   
