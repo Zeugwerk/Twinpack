@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Threading;
 using NLog;
 using TCatSysManagerLib;
@@ -1533,10 +1534,11 @@ namespace Twinpack.Dialogs
 
                 if(Versions?.Any(x => x.Version != null) == true)
                 {
-
                     var index = Versions?.FindIndex(x => x.Version == _catalogItem?.Installed?.Version) ?? -1;
-                    if (_catalogItem?.IsPlaceholder == true || (index < 0 && _catalogItem?.Installed != null))
+                    if (_catalogItem?.IsPlaceholder == true)
                         index = 0;
+                    else if (index < 0 && _catalogItem?.Installed != null)
+                        index = Versions.Count > 1 ? 1 : 0;
 
                     VersionsView.IsEnabled = true;
                     VersionsView.SelectedIndex = string.IsNullOrEmpty(_catalogItem?.Installed?.Version) ? 1 : index;
