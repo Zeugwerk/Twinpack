@@ -1541,7 +1541,7 @@ namespace Twinpack.Dialogs
                         index = Versions.Count > 1 ? 1 : 0;
 
                     VersionsView.IsEnabled = true;
-                    VersionsView.SelectedIndex = string.IsNullOrEmpty(_catalogItem?.Installed?.Version) ? 1 : index;
+                    VersionsView.SelectedIndex = index;
                 }
                 else
                 {
