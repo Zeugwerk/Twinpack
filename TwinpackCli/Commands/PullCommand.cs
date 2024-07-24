@@ -24,7 +24,7 @@ namespace Twinpack.Commands
         {
             Login(Username, Password);
             var config = ConfigFactory.Load();
-            _packageServers.PullAsync(config, skipInternalPackages: !opts.Provided).GetAwaiter().GetResult();
+            _packageServers.PullAsync(config, skipInternalPackages: !Provided).GetAwaiter().GetResult();
             return 0;
         }
     }
