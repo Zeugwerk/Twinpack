@@ -1238,7 +1238,7 @@ namespace Twinpack.Dialogs
                         new PlcVersion
                         {
                             Version = null,
-                            VersionDisplayText = "Latest"
+                            VersionDisplayText = "Latest " + ( (branch == "main" || _packageItem.Package.Branches.Count == 1) && (results?.Item1.Any() == true) ? "(" + results.Item1.First().Version + ")" : "*")
                         }
                     };
 
@@ -1539,6 +1539,8 @@ namespace Twinpack.Dialogs
                         index = 0;
                     else if (index < 0 && _catalogItem?.Installed != null)
                         index = Versions.Count > 1 ? 1 : 0;
+                    else if (index == 0 && _catalogItem?.Installed == null)
+                        index = 1;
 
                     VersionsView.IsEnabled = true;
                     VersionsView.SelectedIndex = index;
