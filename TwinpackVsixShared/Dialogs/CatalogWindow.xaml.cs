@@ -1238,7 +1238,7 @@ namespace Twinpack.Dialogs
                         new PlcVersion
                         {
                             Version = null,
-                            VersionDisplayText = "Latest " + (results?.Item1?.Any() == true ? "(" + results.Item1.First().Version + ")" : "" )
+                            VersionDisplayText = "Latest"
                         }
                     };
 
@@ -1548,8 +1548,6 @@ namespace Twinpack.Dialogs
                     VersionsView.IsEnabled = false;
                     VersionsView.SelectedIndex = -1;
                 }
-
-
             }
             catch (OperationCanceledException ex)
             {
