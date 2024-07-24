@@ -1241,7 +1241,13 @@ namespace Twinpack.Dialogs
                         }
                     };
 
-                    if (_catalogItem?.Installed != null && !results.Item1.Any(x => x.Version == _catalogItem?.Installed.Version))
+                    // add already installed item to the list if the branch, target and configuration of the 
+                    // installed package is selected
+                    if (_catalogItem?.Installed != null && 
+                        !results.Item1.Any(x => x.Version == _catalogItem?.Installed.Version) &&
+                         branch == _catalogItem?.Installed.Branch &&
+                         configuration == _catalogItem?.Installed.Configuration &&
+                         target == _catalogItem?.Installed.Target)
                     {
                         Versions.Insert(1, new PlcVersion
                         {
@@ -1254,10 +1260,6 @@ namespace Twinpack.Dialogs
                 }
 
                 Versions = Versions.Concat(results.Item1.Select(x => new PlcVersion { Version = x.Version, VersionDisplayText = x.Version })).ToList();
-
-
-
-
                 _currentPackageVersionsPage++;
             }
             catch (Exception ex)
