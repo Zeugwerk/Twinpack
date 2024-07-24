@@ -55,6 +55,26 @@ Type: filesandordirs; Name: "{#TcXaeShellExtensionsFolder15}Zeugwerk\Twinpack\*"
 Type: filesandordirs; Name: "{#TcXaeShellExtensionsFolder17}Zeugwerk\Twinpack\*"
 
 [Code]
+function GetCmdParam(Param: String): String;
+var
+  i: Integer;
+  S: String;
+begin
+  Result := '';
+  for i := 1 to ParamCount do
+  begin
+    S := ParamStr(i);
+    if (S = '/' + Param) or (Copy(S, 1, Length(Param) + 1) = '/' + Param + '=') then
+    begin
+      if Pos('=', S) > 0 then
+        Result := Copy(S, Pos('=', S) + 1, MaxInt)
+      else
+        Result := 'true';
+      Exit;
+    end;
+  end;
+end;
+
 function VsWhereValue(ParameterName: string; OutputData: string): TStringList;
 var
   Lines: TStringList;
@@ -290,6 +310,15 @@ end;
 function InstallVsixInTcXaeShell17(): Boolean;
 begin
   Result := VisualStudioOptionsPage.CheckListBox.Checked[1] = True;
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := False;
+  if (PageID = UserPage.ID) and (GetCmdParam('SKIP_REGISTER_ZACCOUNT') = 'true') then
+  begin
+    Result := True;
+  end;
 end;
 
 procedure CurStepChanged (CurStep: TSetupStep);
