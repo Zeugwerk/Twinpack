@@ -16,6 +16,7 @@
     <PackageId>Twinpack.17</PackageId>
     <Description>Twinpack is a package manager for TwinCAT libraries. It enables the TwinCAT community to share their libraries and simplifies the continous integration of third-party components into TwinCAT projects</Description>
     <TargetFrameworkProfile />
+	  <LangVersion>8</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

@@ -22,7 +22,8 @@ namespace Twinpack.Commands
 
         public override int Execute()
         {
-            Login(Username, Password);
+            LoginAsync(Username, Password).GetAwaiter().GetResult();
+
             var config = ConfigFactory.Load();
             _packageServers.PullAsync(config, skipInternalPackages: !Provided).GetAwaiter().GetResult();
             return 0;

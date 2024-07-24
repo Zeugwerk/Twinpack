@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Twinpack.Exceptions;
@@ -13,10 +12,34 @@ namespace Twinpack.Protocol
     public class PackageServerCollection : List<IPackageServer>
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private List<int> _pagesPerServer = new List<int>();
 
         public void InvalidateCache()
         {
             ForEach(x => x.InvalidateCache());
+        }
+
+        public async IAsyncEnumerable<CatalogItem> SearchAsync(string filter=null, int? maxPackages=null, int batchSize=5)
+        {
+            var cache = new HashSet<string>();
+            foreach(var packageServer in this.Where(x => x.Connected))
+            {
+                var page = 1;
+                Tuple<IEnumerable<CatalogItemGetResponse>, bool> packages;
+                do
+                {
+                    packages = await packageServer.GetCatalogAsync(filter, page, batchSize);
+                    foreach (var package in packages.Item1.Where(x => !cache.Contains(x.Name)))
+                    {
+                        cache.Add(package.Name);
+                        yield return new CatalogItem(packageServer, package);
+                        if (maxPackages != null && cache.Count >= maxPackages)
+                            yield break;
+                    }
+
+                    page++;
+                } while (packages?.Item2 == true);
+            }
         }
 
         public async Task PullAsync(Config config, bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string cachePath = null, CancellationToken cancellationToken = default)

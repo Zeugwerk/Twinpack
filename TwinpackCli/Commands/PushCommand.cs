@@ -43,7 +43,7 @@ namespace Twinpack.Commands
 
         public override int Execute()
         {
-            Login(Username, Password);
+            LoginAsync(Username, Password).GetAwaiter().GetResult();
 
             foreach (var twinpackServer in _packageServers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
             {

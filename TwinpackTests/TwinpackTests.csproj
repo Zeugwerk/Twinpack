@@ -19,6 +19,8 @@
     <TestProjectType>UnitTest</TestProjectType>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+	  <LangVersion>8</LangVersion>
+
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -58,6 +60,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigFactoryTest.cs" />
+    <Compile Include="mocks\PackageServerMock.cs" />
+    <Compile Include="PackageServerCollectionTest.cs" />
     <Compile Include="LibraryReaderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

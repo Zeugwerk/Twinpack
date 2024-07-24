@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,24 +10,28 @@ namespace Twinpack.Commands
 {
     public abstract class Command
     {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
         protected static PackageServerCollection _packageServers;
 
         public abstract int Execute();
 
-        protected void Login(string username, string password)
+        protected async Task LoginAsync(string username=null, string password=null)
         {
-            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
+            await PackagingServerRegistry.InitializeAsync();
 
             _packageServers = PackagingServerRegistry.Servers;
-
-            foreach (var twinpackServer in _packageServers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
+            foreach(var packageServer in _packageServers)
             {
-                twinpackServer.LoginAsync(username, password).Wait();
-                if (!twinpackServer.LoggedIn && (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password)))
-                    throw new Exception("Login to Twinpack Server failed!");
-
-                if (!twinpackServer.Connected)
-                    throw new Exception("Connection to Twinpack Server failed!");
+                try
+                {
+                    await packageServer.LoginAsync(username, password);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex.Message);
+                    _logger.Trace(ex);
+                }
             }
         }
     }

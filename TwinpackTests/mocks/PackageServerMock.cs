@@ -1,0 +1,101 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Twinpack.Models;
+using Twinpack.Protocol;
+
+namespace TwinpackTests
+{
+    public class PackageServerMock : IPackageServer
+    {
+        public List<CatalogItemGetResponse> CatalogItems { get; set; }
+        public string ServerType => throw new NotImplementedException();
+
+        public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string UrlBase { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        public string Url => throw new NotImplementedException();
+
+        public string UrlRegister => throw new NotImplementedException();
+
+        public string Username { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string Password { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        public LoginPostResponse UserInfo => throw new NotImplementedException();
+
+        public bool LoggedIn => throw new NotImplementedException();
+
+        public bool Connected { get; set; }
+
+        public Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
+            page = page - 1;
+            if (page * perPage + perPage < CatalogItems.Count)
+                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(CatalogItems.GetRange(page * perPage, perPage), true);
+            else if (page * perPage < CatalogItems.Count)
+                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(CatalogItems.GetRange(page * perPage, CatalogItems.Count - page * perPage), false);
+
+            return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(new List<CatalogItemGetResponse> { }, false);
+        }
+
+        public Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch = null, string configuration = null, string target = null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void InvalidateCache()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task LogoutAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+    }
+}

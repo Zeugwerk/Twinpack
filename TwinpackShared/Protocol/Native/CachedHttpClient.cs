@@ -10,6 +10,7 @@ namespace Twinpack.Protocol
     public class CachedHttpClient : HttpClient
     {
         private readonly ObjectCache _cache;
+        private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         public CachedHttpClient() : base()
         {
@@ -20,6 +21,8 @@ namespace Twinpack.Protocol
         {
             try
             {
+                await _semaphore.WaitAsync();
+
                 if (!NetworkInterface.GetIsNetworkAvailable())
                     throw new HttpRequestException("No internet connection! Please check your connection.");
 
@@ -54,12 +57,25 @@ namespace Twinpack.Protocol
                 throw new TimeoutException($"Timed out during request to {request.RequestUri.Scheme}://{request.RequestUri.Host}\nTwinpack Server is unresponsive! There might be no internet connection or the server may be temporarily down! " +
                         "Please check your connection or try again later.");
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         public void Invalidate()
         {
-            foreach (var item in _cache)
-                _cache.Remove(item.Key);
+            try
+            {
+                _semaphore.Wait();
+
+                foreach (var item in _cache)
+                    _cache.Remove(item.Key);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
     }
 }
