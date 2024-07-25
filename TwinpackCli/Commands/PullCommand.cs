@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Twinpack.Core;
 using Twinpack.Models;
+using Twinpack.Protocol;
 
 namespace Twinpack.Commands
 {
@@ -20,12 +22,14 @@ namespace Twinpack.Commands
         [Option('P', "provided", Required = false, Default = false, HelpText = "Also pull packages that are provided by the package definition")]
         public bool Provided { get; set; }
 
-        public override int Execute()
+        public override async Task<int> ExecuteAsync()
         {
-            LoginAsync(Username, Password).GetAwaiter().GetResult();
+            await PackagingServerRegistry.InitializeAsync();
+            _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 
             var config = ConfigFactory.Load();
-            _packageServers.PullAsync(config, skipInternalPackages: !Provided).GetAwaiter().GetResult();
+            await _twinpack.LoginAsync(Username, Password);
+            await PackagingServerRegistry.Servers.PullAsync(config, skipInternalPackages: !Provided);
             return 0;
         }
     }

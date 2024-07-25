@@ -6,20 +6,36 @@ using System.Threading;
 using System.Threading.Tasks;
 using Twinpack.Exceptions;
 using Twinpack.Models;
+using Twinpack.Protocol;
 
-namespace Twinpack.Protocol
+namespace Twinpack.Core
 {
     public class PackageServerCollection : List<IPackageServer>
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-        private List<int> _pagesPerServer = new List<int>();
 
         public void InvalidateCache()
         {
             ForEach(x => x.InvalidateCache());
         }
 
-        public async IAsyncEnumerable<CatalogItem> SearchAsync(string filter=null, int? maxPackages=null, int batchSize=5)
+        public async Task LoginAsync(string username, string password)
+        {
+            foreach (var packageServer in this)
+            {
+                try
+                {
+                    await packageServer.LoginAsync(username, password);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex.Message);
+                    _logger.Trace(ex);
+                }
+            }
+        }
+
+        public async IAsyncEnumerable<CatalogItem> SearchAsync(string filter=null, int? maxPackages=null, int batchSize=5, CancellationToken token = default)
         {
             var cache = new HashSet<string>();
             foreach(var packageServer in this.Where(x => x.Connected))
@@ -28,7 +44,7 @@ namespace Twinpack.Protocol
                 Tuple<IEnumerable<CatalogItemGetResponse>, bool> packages;
                 do
                 {
-                    packages = await packageServer.GetCatalogAsync(filter, page, batchSize);
+                    packages = await packageServer.GetCatalogAsync(filter, page, batchSize, token);
                     foreach (var package in packages.Item1.Where(x => !cache.Contains(x.Name)))
                     {
                         cache.Add(package.Name);

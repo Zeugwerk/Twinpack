@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Twinpack.Core;
+using Twinpack.Models;
 using Twinpack.Protocol;
 
 namespace Twinpack.Commands
@@ -41,11 +43,14 @@ namespace Twinpack.Commands
         [Option('d', "skip-duplicate", Required = false, Default = false, HelpText = "If a package and version already exists, skip it and continue with the next package in the push, if any")]
         public bool SkipDuplicate { get; set; }
 
-        public override int Execute()
+        public override async Task<int> ExecuteAsync()
         {
-            LoginAsync(Username, Password).GetAwaiter().GetResult();
+            await PackagingServerRegistry.InitializeAsync();
+            _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 
-            foreach (var twinpackServer in _packageServers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
+            await _twinpack.LoginAsync(Username, Password);
+
+            foreach (var twinpackServer in PackagingServerRegistry.Servers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
             {
                 twinpackServer.PushAsync(
                     WithoutConfig ?

@@ -19,7 +19,7 @@ namespace Twinpack.Dialogs
 {
     public partial class CatalogWindow : UserControl, INotifyPropertyChanged
     {
-        private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private CancellationTokenSource _cancellationTokenSource;
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -53,7 +53,7 @@ namespace Twinpack.Dialogs
         private bool _isFetchingAvailablePackages = false;
 
         private string _searchText = "";
-        private Protocol.PackageServerCollection _packageServers;
+        private Core.PackageServerCollection _packageServers;
 
         private bool _isBrowsingAvailablePackages;
         private bool _isBrowsingInstalledPackages;

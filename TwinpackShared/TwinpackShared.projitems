@@ -30,11 +30,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)models\Solution.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\IPackageServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\TwinpackServer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackageServerCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\PackageServerCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerRegistry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\TwinpackService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TwinpackUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Core\" />
   </ItemGroup>
 </Project>

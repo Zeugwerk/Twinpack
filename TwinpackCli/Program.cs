@@ -18,17 +18,19 @@ namespace Twinpack
 
 
         [STAThread]
-        static int Main(string[] args)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        static async Task<int> Main(string[] args)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             LogManager.Setup();
 
             try
             {
-                return Parser.Default.ParseArguments<ListCommand, PullCommand, PushCommand>(args)
+                return Parser.Default.ParseArguments<SearchCommand, PullCommand, PushCommand>(args)
                     .MapResult(
-                        (ListCommand command) => Execute(command),
-                        (PullCommand command) => Execute(command),
-                        (PushCommand command) => Execute(command),
+                        (SearchCommand command) => ExecuteAsync(command).GetAwaiter().GetResult(),
+                        (PullCommand command) => ExecuteAsync(command).GetAwaiter().GetResult(),
+                        (PushCommand command) => ExecuteAsync(command).GetAwaiter().GetResult(),
                          errs => 1
                     );
             }
@@ -42,9 +44,9 @@ namespace Twinpack
             }
         }
 
-        private static int Execute<T>(T command) where T : Commands.Command
+        private static async Task<int> ExecuteAsync<T>(T command) where T : Commands.Command
         {
-            return command.Execute();
+            return await command.ExecuteAsync();
         }
     }
 }

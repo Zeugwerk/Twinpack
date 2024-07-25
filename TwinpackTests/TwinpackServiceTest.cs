@@ -1,20 +1,20 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Linq;
 using System.Threading.Tasks;
 using Twinpack.Core;
 using Twinpack.Models;
-using Twinpack.Protocol;
 
 namespace TwinpackTests
 {
     [TestClass]
-    public class PackageServerCollectionTest
+    public class TwinpackServiceTest
     {
         static PackageServerCollection _packageServers;
         static PackageServerMock _packageServer1;
         static PackageServerMock _packageServer2;
         static PackageServerMock _packageServerNotConnected;
+        static TwinpackService _twinpack;
 
         [ClassInitialize]
         public static void SetUp(TestContext context)
@@ -62,17 +62,16 @@ namespace TwinpackTests
                 _packageServerNotConnected,
                 _packageServer2,
             };
+
+            _twinpack = new TwinpackService(_packageServers);
         }
 
 
         [TestMethod]
-        public async Task SearchAllAsync_AllPackages()
+        public async Task RetrieveAvailablePackagesAsync_AllPackages()
         {
-            var packages = new List<CatalogItem>();
-            await foreach (var p in _packageServers.SearchAsync(null, maxPackages: null, batchSize: 2))
-            {
-                packages.Add(p);
-            }
+            var packages = (await _twinpack.RetrieveNextAvailablePackagesAsync()).ToList();
+
             Assert.AreEqual(8, packages.Count);
             Assert.AreEqual("Package 1", packages[0].Name);
             Assert.AreEqual("Package 2", packages[1].Name);
@@ -91,16 +90,15 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer2, packages[5].PackageServer);
             Assert.AreEqual(_packageServer2, packages[6].PackageServer);
             Assert.AreEqual(_packageServer2, packages[7].PackageServer);
+
+            CollectionAssert.AreEqual(packages.ToList().AsReadOnly(), packages.ToList());
         }
 
         [TestMethod]
-        public async Task SearchAllAsync_LimitedPackages4()
+        public async Task RetrieveAvailablePackagesAsync_LoadMorePackages()
         {
-            var packages = new List<CatalogItem>();
-            await foreach (var p in _packageServers.SearchAsync(null, maxPackages: 4, batchSize: 2))
-            {
-                packages.Add(p);
-            }
+            var packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+
             Assert.AreEqual(4, packages.Count);
             Assert.AreEqual("Package 1", packages[0].Name);
             Assert.AreEqual("Package 2", packages[1].Name);
@@ -111,44 +109,55 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer1, packages[1].PackageServer);
             Assert.AreEqual(_packageServer1, packages[2].PackageServer);
             Assert.AreEqual(_packageServer1, packages[3].PackageServer);
+
+
+            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+
+            Assert.AreEqual(8, packages.Count);
+
+            Assert.AreEqual("Package 5", packages[4].Name);
+            Assert.AreEqual("Package 6", packages[5].Name);
+            Assert.AreEqual("Package 7", packages[6].Name);
+            Assert.AreEqual("Package 8", packages[7].Name);
+
+            Assert.AreEqual(_packageServer1, packages[4].PackageServer);
+            Assert.AreEqual(_packageServer2, packages[5].PackageServer);
+            Assert.AreEqual(_packageServer2, packages[6].PackageServer);
+            Assert.AreEqual(_packageServer2, packages[7].PackageServer);
+
+            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            Assert.AreEqual(8, packages.Count);
         }
 
         [TestMethod]
-        public async Task SearchAllAsync_LimitedPackages6()
+        public async Task RetrieveAvailablePackagesAsync_LoadMorePackages_WithSearchTerm()
         {
-            var packages = new List<CatalogItem>();
-            await foreach (var p in _packageServers.SearchAsync(null, maxPackages: 6, batchSize: 2))
-            {
-                packages.Add(p);
-            }
-            Assert.AreEqual(6, packages.Count);
-            Assert.AreEqual("Package 1", packages[0].Name);
-            Assert.AreEqual("Package 2", packages[1].Name);
-            Assert.AreEqual("Package 3", packages[2].Name);
-            Assert.AreEqual("Package 4", packages[3].Name);
-            Assert.AreEqual("Package 5", packages[4].Name);
-            Assert.AreEqual("Package 6", packages[5].Name);
+            var packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: "Package 5", maxNewPackages: 4)).ToList();
+
+            Assert.AreEqual(1, packages.Count);
+            Assert.AreEqual("Package 5", packages[0].Name);
+
+            Assert.AreEqual(_packageServer1, packages[0].PackageServer);
+
+            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+
+            Assert.AreEqual(5, packages.Count);
+
+            Assert.AreEqual("Package 5", packages[0].Name);
+            Assert.AreEqual("Package 1", packages[1].Name);
+            Assert.AreEqual("Package 2", packages[2].Name);
+            Assert.AreEqual("Package 3", packages[3].Name);
+            Assert.AreEqual("Package 4", packages[4].Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
             Assert.AreEqual(_packageServer1, packages[1].PackageServer);
             Assert.AreEqual(_packageServer1, packages[2].PackageServer);
             Assert.AreEqual(_packageServer1, packages[3].PackageServer);
             Assert.AreEqual(_packageServer1, packages[4].PackageServer);
-            Assert.AreEqual(_packageServer2, packages[5].PackageServer);
-        }
 
-        [TestMethod]
-        public async Task SearchAllAsync_SearchTerm()
-        {
-            var packages = new List<CatalogItem>();
-            await foreach (var p in _packageServers.SearchAsync("Package 4", maxPackages: 6, batchSize: 2))
-            {
-                packages.Add(p);
-            }
-            Assert.AreEqual(1, packages.Count);
-            Assert.AreEqual("Package 4", packages[0].Name);
-
-            Assert.AreEqual(_packageServer1, packages[0].PackageServer);
+            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            Assert.AreEqual(8, packages.Count);
         }
     }
 }

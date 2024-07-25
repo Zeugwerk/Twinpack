@@ -16,18 +16,12 @@ namespace TwinpackTests
 
         public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string UrlBase { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
         public string Url => throw new NotImplementedException();
-
         public string UrlRegister => throw new NotImplementedException();
-
         public string Username { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string Password { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
         public LoginPostResponse UserInfo => throw new NotImplementedException();
-
         public bool LoggedIn => throw new NotImplementedException();
-
         public bool Connected { get; set; }
 
         public Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
@@ -39,11 +33,13 @@ namespace TwinpackTests
         public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
+            var items = CatalogItems.Where(x => search == null || x.Name.Equals(search, StringComparison.OrdinalIgnoreCase)).ToList();
+
             page = page - 1;
-            if (page * perPage + perPage < CatalogItems.Count)
-                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(CatalogItems.GetRange(page * perPage, perPage), true);
-            else if (page * perPage < CatalogItems.Count)
-                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(CatalogItems.GetRange(page * perPage, CatalogItems.Count - page * perPage), false);
+            if (page * perPage + perPage < items.Count)
+                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(items.GetRange(page * perPage, perPage), true);
+            else if (page * perPage < items.Count && items.Any())
+                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(items.GetRange(page * perPage,  (items.Count - page * perPage > 0) ? (items.Count - page * perPage) : 1), false);
 
             return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(new List<CatalogItemGetResponse> { }, false);
         }
