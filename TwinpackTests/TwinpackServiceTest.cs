@@ -143,9 +143,7 @@ namespace TwinpackTests
 
             Assert.AreEqual(1, packages.Count);
             Assert.AreEqual("Package 5", packages[0].Name);
-
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
-
             Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
 
             packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
@@ -173,6 +171,18 @@ namespace TwinpackTests
             packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(8, packages.Count);
             Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
+        }
+
+        [TestMethod]
+        public async Task InvalidateCacheAsync_AvailablePackagesIsReset()
+        {
+            var packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            Assert.AreEqual(4, packages.Count);
+
+            _twinpack.InvalidateCache();
+
+            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            Assert.AreEqual(4, packages.Count);
         }
     }
 }

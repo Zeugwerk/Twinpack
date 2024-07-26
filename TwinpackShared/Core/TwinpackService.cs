@@ -29,6 +29,13 @@ namespace Twinpack.Core
             _packageServers = packageServers;
         }
 
+        public void InvalidateCache()
+        {
+            _availablePackageCache.Clear();
+            _availablePackagesIt = null;
+            _packageServers.InvalidateCache();
+        }
+
         public async Task LoginAsync(string username=null, string password=null)
         {
             await _packageServers.LoginAsync(username, password);
