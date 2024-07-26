@@ -2,6 +2,7 @@ using NLog;
 using NLog.Filters;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,13 +14,15 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Twinpack.Core
 {
-    public class TwinpackService
+    public class TwinpackService : INotifyPropertyChanged
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private List<CatalogItem> _availablePackageCache = new List<CatalogItem>();
         private PackageServerCollection _packageServers;
         private IAsyncEnumerator<CatalogItem> _availablePackagesIt;
         private string _searchTerm;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public TwinpackService(PackageServerCollection packageServers)
         {
@@ -31,14 +34,28 @@ namespace Twinpack.Core
             await _packageServers.LoginAsync(username, password);
         }
 
-        public async Task<IEnumerable<CatalogItem>> RetrieveNextAvailablePackagesAsync(string searchTerm = null, int? maxNewPackages = null, int batchSize = 5, CancellationToken token = default)
+        bool _hasMoreAvailablePackages;
+        public bool HasMoreAvailablePackages
+        {
+            get => _hasMoreAvailablePackages;
+            private set
+            {
+                if(value != _hasMoreAvailablePackages)
+                {
+                    _hasMoreAvailablePackages = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasMoreAvailablePackages)));
+                }
+            }
+        }
+
+        public async Task<IEnumerable<CatalogItem>> RetrieveAvailablePackagesAsync(string searchTerm = null, int? maxNewPackages = null, int batchSize = 5, CancellationToken token = default)
         {
             if(_availablePackagesIt == null || _searchTerm != searchTerm)
                 _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize, token).GetAsyncEnumerator();
 
             _searchTerm = searchTerm;
             var maxPackages = _availablePackageCache.Count + maxNewPackages;
-            while ((maxNewPackages == null || _availablePackageCache.Count < maxPackages) && await _availablePackagesIt.MoveNextAsync())
+            while ((maxNewPackages == null || _availablePackageCache.Count < maxPackages) && (HasMoreAvailablePackages = await _availablePackagesIt.MoveNextAsync()))
             {
                 CatalogItem item = _availablePackagesIt.Current;
 

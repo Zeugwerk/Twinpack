@@ -567,7 +567,7 @@ namespace Twinpack.Protocol
                 if (IsClientUpdateAvailable)
                     _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Download and install the lastest version at {UserInfo.UpdateUrl}");
 
-                _ = RefreshTokenAsync();
+                //_ = RefreshTokenAsync();
 
                 _logger.Info("Log in to Twinpack Server successful");
                 return UserInfo;

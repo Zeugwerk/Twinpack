@@ -70,7 +70,7 @@ namespace TwinpackTests
         [TestMethod]
         public async Task RetrieveAvailablePackagesAsync_AllPackages()
         {
-            var packages = (await _twinpack.RetrieveNextAvailablePackagesAsync()).ToList();
+            var packages = (await _twinpack.RetrieveAvailablePackagesAsync()).ToList();
 
             Assert.AreEqual(8, packages.Count);
             Assert.AreEqual("Package 1", packages[0].Name);
@@ -92,12 +92,13 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer2, packages[7].PackageServer);
 
             CollectionAssert.AreEqual(packages.ToList().AsReadOnly(), packages.ToList());
+            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
         }
 
         [TestMethod]
         public async Task RetrieveAvailablePackagesAsync_LoadMorePackages()
         {
-            var packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            var packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(4, packages.Count);
             Assert.AreEqual("Package 1", packages[0].Name);
@@ -110,9 +111,14 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer1, packages[2].PackageServer);
             Assert.AreEqual(_packageServer1, packages[3].PackageServer);
 
+            Assert.AreEqual(true, _twinpack.HasMoreAvailablePackages);
 
-            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
-            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+
+            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 5)).ToList();
+
+            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
+
+            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(8, packages.Count);
 
@@ -126,21 +132,23 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer2, packages[6].PackageServer);
             Assert.AreEqual(_packageServer2, packages[7].PackageServer);
 
-            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(8, packages.Count);
         }
 
         [TestMethod]
         public async Task RetrieveAvailablePackagesAsync_LoadMorePackages_WithSearchTerm()
         {
-            var packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: "Package 5", maxNewPackages: 4)).ToList();
+            var packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: "Package 5", maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(1, packages.Count);
             Assert.AreEqual("Package 5", packages[0].Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
 
-            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
+
+            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(5, packages.Count);
 
@@ -156,8 +164,15 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer1, packages[3].PackageServer);
             Assert.AreEqual(_packageServer1, packages[4].PackageServer);
 
-            packages = (await _twinpack.RetrieveNextAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            Assert.AreEqual(true, _twinpack.HasMoreAvailablePackages);
+
+            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(8, packages.Count);
+            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
+
+            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            Assert.AreEqual(8, packages.Count);
+            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
         }
     }
 }

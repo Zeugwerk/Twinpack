@@ -23,7 +23,7 @@ namespace Twinpack.Commands
             _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 
             await _twinpack.LoginAsync();
-            foreach(var package in await _twinpack.RetrieveNextAvailablePackagesAsync(SearchTerm, Take))
+            foreach(var package in await _twinpack.RetrieveAvailablePackagesAsync(SearchTerm, Take))
             {
                 Console.WriteLine(package.Name);
             }
