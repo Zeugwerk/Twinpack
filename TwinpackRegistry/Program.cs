@@ -84,7 +84,12 @@ namespace Twinpack
         [STAThread]
         static int Main(string[] args)
         {
+            _logger.Info("-------------------------------------------------------------------------");
+            _logger.Info($"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name} {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}");
+            _logger.Info("-------------------------------------------------------------------------");
+
             LogManager.Setup();
+            var watch = System.Diagnostics.Stopwatch.StartNew();
 
             try
             {
@@ -92,16 +97,24 @@ namespace Twinpack
                     .MapResult(
                     (PullOptions opts) =>
                     {
+                        _logger.Info(">>> twinpack-registry:pull");
+
                         Login(opts.Username, opts.Password);
+                        _logger.Info(new string('-', 3) + $" download");
                         new TwinpackRegistry(_twinpackServer).DownloadAsync(opts.RegistryOwner, opts.RegistryName, token: opts.Token).GetAwaiter().GetResult();
 
                         if(!opts.DryRun)
+                        {
+                            _logger.Info(new string('-', 3) + $" push");
                             _twinpackServer.PushAsync(TwinpackUtils.PlcProjectsFromConfig(compiled: false, target: "TC3.1"), "Release", "main", "TC3.1", null, false).GetAwaiter().GetResult();
+                        }
 
                         return 0;
                     },
                     (UpdateDownloadsOptions opts) =>
                     {
+                        _logger.Info(">>> twinpack-registry:update-downloads");
+
                         Login(opts.Username, opts.Password);
                         new TwinpackRegistry(_twinpackServer).UpdateDownloadsAsync(opts.RegistryOwner, opts.RegistryName, token: opts.Token, dryRun: opts.DryRun).GetAwaiter().GetResult();
 
@@ -109,7 +122,9 @@ namespace Twinpack
                     },
                     (DumpOptions opts) =>
                     {
-                        foreach(var file in Directory.GetFiles(opts.Path))
+                        _logger.Info(">>> twinpack-registry:dump");
+
+                        foreach (var file in Directory.GetFiles(opts.Path))
                         {
                             try
                             {
@@ -126,11 +141,23 @@ namespace Twinpack
             }
             catch (Exception ex)
             {
-                _logger.Error(ex);
+               _logger.Error(ex);
+
+                _logger.Info("-------------------------------------------------------------------------");
+                _logger.Info("FAILED");
+                _logger.Info("-------------------------------------------------------------------------");
+
                 throw;
             }
             finally
             {
+                watch.Stop();
+                TimeSpan ts = watch.Elapsed;
+                string elapsedTime = string.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
+
+                _logger.Info($"Total time: {elapsedTime}");
+                _logger.Info($"Finished at: {DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss")}");
+                _logger.Info("-------------------------------------------------------------------------");
             }
         }
     }
