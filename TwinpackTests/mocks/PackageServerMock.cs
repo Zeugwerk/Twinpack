@@ -61,7 +61,6 @@ namespace TwinpackTests
 
         public void InvalidateCache()
         {
-            throw new NotImplementedException();
         }
 
         public Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)

@@ -10,14 +10,14 @@ namespace TwinpackTests
     [TestClass]
     public class TwinpackServiceTest
     {
-        static PackageServerCollection _packageServers;
-        static PackageServerMock _packageServer1;
-        static PackageServerMock _packageServer2;
-        static PackageServerMock _packageServerNotConnected;
-        static TwinpackService _twinpack;
+        PackageServerCollection _packageServers;
+        PackageServerMock _packageServer1;
+        PackageServerMock _packageServer2;
+        PackageServerMock _packageServerNotConnected;
+        TwinpackService _twinpack;
 
-        [ClassInitialize]
-        public static void SetUp(TestContext context)
+        [TestInitialize]
+        public void TestInitialize()
         {
             _packageServer1 = new PackageServerMock
             {
