@@ -82,6 +82,14 @@ namespace Twinpack.Dialogs
         private int _installedPackagesCount;
         private int _updateablePackagesCount;
 
+        public string Version
+        {
+            get
+            {
+                return _context?.Version;
+            }
+        }
+
         public TwinpackService Twinpack { get; set; }
 
         private CancellationToken Token

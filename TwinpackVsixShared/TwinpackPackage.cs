@@ -126,6 +126,8 @@ namespace Twinpack
         /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
+            _logger.Info($"Twinpack {Context.Version}");
+
             await Commands.CatalogCommand.InitializeAsync(this);
             await Commands.TwinpackMenuCommand.InitializeAsync(this);
             await Commands.ModifyCommand.InitializeAsync(this);
@@ -133,11 +135,13 @@ namespace Twinpack
 
 
             // Liste aller Kommandos in der Extension --> wichtig für gemeinsame Initialisierung
-            _commands = new List<Commands.ICommand>();
-            _commands.Add(Commands.CatalogCommand.Instance);
-            _commands.Add(Commands.TwinpackMenuCommand.Instance);
-            _commands.Add(Commands.PublishCommand.Instance);
-            _commands.Add(Commands.ModifyCommand.Instance);
+            _commands = new List<Commands.ICommand>
+            {
+                Commands.CatalogCommand.Instance,
+                Commands.TwinpackMenuCommand.Instance,
+                Commands.PublishCommand.Instance,
+                Commands.ModifyCommand.Instance
+            };
 
             // When initialized asynchronously, the current thread may be a background thread at this point.
             // Do any initialization that requires the UI thread after switching to the UI thread.
@@ -149,8 +153,6 @@ namespace Twinpack
             await Protocol.PackagingServerRegistry.InitializeAsync();
 
             InitPackage();
-
-            _logger.Info("Initialized Twinpack Package Manager");
         }
 
         private void InitPackage()
