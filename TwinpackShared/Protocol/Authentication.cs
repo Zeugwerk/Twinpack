@@ -74,20 +74,24 @@ namespace Twinpack.Protocol
                 }
                 catch (Exception ex)
                 {
-                    message = "Login to Twinpack Server failed!";
+                    message = @$"Login to Twinpack Server failed, see '%LOCALAPPDATA%\Zeugwerk\logs\Twinpack' for details!";
                     _logger.Trace(ex);
                     _logger.Error(ex.Message);
                 }
 
-                if (!_packageServer.LoggedIn && _packageServer.UrlRegister != null)
+                if (!_packageServer.LoggedIn)
                 {
-                    if (MessageBox.Show($@"{message} Do you want to register?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                    if (_packageServer.UrlRegister != null)
                     {
-                        Process.Start(_packageServer.UrlRegister);
+                        if (MessageBox.Show($"{message}\n\nDo you need to register?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                            Process.Start(_packageServer.UrlRegister);
+                        else
+                            return;
                     }
                     else
                     {
-                        return;
+                        if (MessageBox.Show($"{message}\n\nRetry?", "Login failed", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
+                            return;
                     }
                 }
             }
