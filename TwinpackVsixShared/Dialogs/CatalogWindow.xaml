@@ -26,31 +26,9 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"></RowDefinition>
             <RowDefinition Height="auto"></RowDefinition>
-            <RowDefinition Height="auto"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"></RowDefinition>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="auto"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
-
-            <Button Grid.Column="2" Click="UpdateAvailableButton_Click" Margin="0" BorderThickness="0" 
-                    FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Top" d:Visibility="Collapsed"
-                    Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
-                    <TextBlock Margin="0 0 0 0" VerticalAlignment="Top">
-                        <fa:ImageAwesome Margin="2 0 0 0" Icon="Bolt" Height="10"/>
-                        <Run Text="Twinpack Update available!"></Run>
-                    </TextBlock>
-                </StackPanel>
-            </Button>
-        </Grid>
-        <Grid Grid.Row="1" Margin="5 0 5 5">
+        <Grid Grid.Row="0" Margin="5 0 5 5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -81,7 +59,7 @@
                 </Button>
             </StackPanel>
         </Grid>
-        <Grid HorizontalAlignment="Stretch" Grid.Row="2" Margin="5 0 5 5">
+        <Grid HorizontalAlignment="Stretch" Grid.Row="1" Margin="5 0 5 5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
                 <ColumnDefinition Width="auto"></ColumnDefinition>
@@ -106,8 +84,25 @@
                     </StackPanel>
                 </Button>
             </StackPanel>
+
+            <TextBlock Grid.Column="5" HorizontalAlignment="Right"
+                d:Visibility="Visible" Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}">
+                <Run Text="Twinpack"></Run>
+                <Run d:Text="1.0.0.0" Text="{Binding Version, Mode=OneTime}"></Run>
+            </TextBlock>
+            <Button Grid.Column="5" Click="UpdateAvailableButton_Click" Margin="0" BorderThickness="0" 
+                    FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Top" 
+                    d:Visibility="Hidden" Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                    <TextBlock Margin="0 0 0 0" VerticalAlignment="Top">
+                        <fa:ImageAwesome Margin="2 0 0 0" Icon="Bolt" Height="10"/>
+                        <Run Text="Twinpack Update available!"></Run>
+                    </TextBlock>
+                </StackPanel>
+            </Button>
+
         </Grid>
-        <Grid Grid.Row="4" Margin="5 0 5 0" >
+        <Grid Grid.Row="2" Margin="5 0 5 0" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="5"/>
