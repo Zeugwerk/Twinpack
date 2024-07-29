@@ -41,10 +41,11 @@ namespace Twinpack.Commands
             _logger.Info(new string('-', 3) + $" download");
             await registry.DownloadAsync(RegistryOwner, RegistryName, token: Token);
 
-            if (!DryRun)
+            var plcs = TwinpackUtils.PlcProjectsFromConfig(compiled: false, target: "TC3.1");
+            if (!DryRun && plcs.Any())
             {
                 _logger.Info(new string('-', 3) + $" push");
-                await _twinpackServer.PushAsync(TwinpackUtils.PlcProjectsFromConfig(compiled: false, target: "TC3.1"), "Release", "main", "TC3.1", null, false);
+                await _twinpackServer.PushAsync(plcs, "Release", "main", "TC3.1", null, false);
             }
 
             return 0;
