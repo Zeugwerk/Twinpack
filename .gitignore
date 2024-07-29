@@ -4,6 +4,10 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 GeneratedFiles
+*.projectinfo.xml
+*.libcat
+*.projectinfo.bin
+*.stringtable
 
 # User-specific files
 Output/
