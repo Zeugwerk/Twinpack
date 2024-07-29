@@ -330,8 +330,8 @@ namespace Twinpack.Protocol
             if (x == null)
                 throw new Exceptions.LibraryNotFoundException(library.Name, library.Version, $"Package {library.Name} (version: {library.Version}, distributor: {library.DistributorName}) not found!");
 
-            if (!x.Tags?.ToLower().Contains("library") == true)
-                throw new Exceptions.LibraryFileInvalidException($"Package {library.Name} (version: {library.Version}, distributor: {library.DistributorName}) does not have a 'Library' tag!");
+            if (!x.Tags?.ToLower().Contains("library") == true && !x.Tags?.ToLower().Contains("plc-library") == true)
+                throw new Exceptions.LibraryFileInvalidException($"Package {library.Name} (version: {library.Version}, distributor: {library.DistributorName}) does not have a 'plc-library' or 'library' tag!");
 
             var dependencyPackages = x.DependencySets?.SelectMany(p => p.Packages).ToList() ?? new List<PackageDependency>();
             List<PackageVersionGetResponse> dependencies = new List<PackageVersionGetResponse>();
