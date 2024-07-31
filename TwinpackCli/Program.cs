@@ -26,9 +26,10 @@ namespace Twinpack
 
             try
             {
-                return Parser.Default.ParseArguments<SearchCommand, PullCommand, PushCommand>(args)
+                return Parser.Default.ParseArguments<SearchCommand, ListCommand, PullCommand, PushCommand>(args)
                     .MapResult(
                         (SearchCommand command) => ExecuteAsync(command).GetAwaiter().GetResult(),
+                        (ListCommand command) => ExecuteAsync(command).GetAwaiter().GetResult(),
                         (PullCommand command) => ExecuteAsync(command).GetAwaiter().GetResult(),
                         (PushCommand command) => ExecuteAsync(command).GetAwaiter().GetResult(),
                          errs => 1

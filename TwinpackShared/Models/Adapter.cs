@@ -37,6 +37,7 @@ namespace Twinpack.Models
             Repository = package.Version;
             DistributorName = package.DistributorName;
             DisplayName = Name;
+            Configuration = package;
 
             IsPlaceholder = package.Version == null;
         }
@@ -47,8 +48,11 @@ namespace Twinpack.Models
         public string InstalledBranch { get { return Installed?.Branch; } }
         public string InstalledTarget { get { return Installed?.Target; } }
         public string InstalledConfiguration { get { return Installed?.Configuration; } }
-        public PackageVersionGetResponse Update { get; set; }
+
+        PackageVersionGetResponse _update;
+        public PackageVersionGetResponse Update{ get; set; }
         public PackageVersionGetResponse Installed { get; set; }
+        public ConfigPlcPackage Configuration { get; set; }
 
         public bool IsUpdateable
         {

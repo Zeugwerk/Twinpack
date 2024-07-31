@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using Twinpack.Models;
+using Twinpack.Protocol;
 
 namespace TwinpackTests
 {

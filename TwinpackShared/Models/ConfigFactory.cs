@@ -137,8 +137,9 @@ namespace Twinpack.Models
             return config;
         }
 
-        public static async Task<Config> CreateFromSolutionFileAsync(string path = ".", bool continueWithoutSolution = false, Protocol.IPackageServer packageServer = null, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter=null, CancellationToken cancellationToken = default)
+        public static async Task<Config> CreateFromSolutionFileAsync(string path=".", bool continueWithoutSolution=false, IEnumerable<Protocol.IPackageServer> packageServers=null, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter=null, CancellationToken cancellationToken = default)
         {
+            packageServers = packageServers == null ? new List<Protocol.IPackageServer>() : packageServers;
 
             Config config = new Config();
             var solutions = Directory.GetFiles(path, "*.sln", SearchOption.AllDirectories);
@@ -190,7 +191,7 @@ namespace Twinpack.Models
 
                 foreach (var plc in project.Plcs)
                 {
-                    var plcConfig = await ConfigPlcProjectFactory.CreateAsync(plc.FilePath, packageServer, cancellationToken);
+                    var plcConfig = await ConfigPlcProjectFactory.CreateAsync(plc.FilePath, packageServers, cancellationToken);
 
                     if(plcTypeFilter == null || plcTypeFilter.Contains(plcConfig.PlcType))
                         projectConfig.Plcs.Add(plcConfig);

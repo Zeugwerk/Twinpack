@@ -1,3 +1,5 @@
+using EnvDTE;
+using EnvDTE80;
 using NLog;
 using NLog.Filters;
 using System;
@@ -21,12 +23,15 @@ namespace Twinpack.Core
         private PackageServerCollection _packageServers;
         private IAsyncEnumerator<CatalogItem> _availablePackagesIt;
         private string _searchTerm;
+        private Config _config;
+        private AutomationInterfaceService _automationInterfaceService;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public TwinpackService(PackageServerCollection packageServers)
+        public TwinpackService(PackageServerCollection packageServers, AutomationInterfaceService automationInterfaceService=null)
         {
             _packageServers = packageServers;
+            _automationInterfaceService = automationInterfaceService;
         }
 
         public void InvalidateCache()
@@ -72,6 +77,37 @@ namespace Twinpack.Core
             }
 
             return _availablePackageCache
+            .Where(x =>
+                        searchTerm == null ||
+                        x.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                        x.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                        x.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                    ;
+        }
+
+        public async Task<IEnumerable<CatalogItem>> RetrieveInstalledPackagesAsync(Config config, string searchTerm = null, CancellationToken token = default)
+        {
+            var installedPackages = new List<CatalogItem>();
+
+            foreach (var project in config.Projects)
+            {
+                var packages = project.Plcs.SelectMany(x => x.Packages).Where(x => searchTerm == null || x.Name?.IndexOf(searchTerm) > 0);
+
+                foreach (var package in packages)
+                {
+                    CatalogItem catalogItem = await _packageServers.ResolvePackageAsync(project, package, _automationInterfaceService, token);
+
+                    installedPackages.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
+                    installedPackages.Add(catalogItem);
+
+                    if (catalogItem.PackageServer == null)
+                        _logger.Warn($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) referenced in the configuration can not be found on any package server");
+                    else
+                        _logger.Info($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) located on {catalogItem.PackageServer.UrlBase}");
+                }
+            }
+
+            return installedPackages
             .Where(x =>
                         searchTerm == null ||
                         x.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||

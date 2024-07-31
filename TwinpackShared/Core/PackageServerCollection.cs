@@ -1,4 +1,5 @@
-﻿using NLog;
+﻿using EnvDTE;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,6 +57,65 @@ namespace Twinpack.Core
                     page++;
                 } while (packages?.Item2 == true);
             }
+        }
+
+        public async Task<CatalogItem> ResolvePackageAsync(ConfigProject project, ConfigPlcPackage item, AutomationInterfaceService automationInterface, CancellationToken token = default)
+        {
+            var catalogItem = new CatalogItem(item);
+
+            foreach (var packageServer in this)
+            {
+                catalogItem.PackageServer = packageServer;
+
+
+                // try to get the installed package, if we can't find it at least try to resolve it
+                var packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },
+                                                                                  item.Branch, item.Configuration, item.Target,
+                                                                                  cancellationToken: token);
+
+                if (packageVersion != null && item.Version == null)
+                {
+                    if (automationInterface != null)
+                    {
+                        var effectiveVersion = automationInterface.ResolveEffectiveVersion(project.Name, packageVersion.Title);
+                        packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
+                                                                                          item.Branch, item.Configuration, item.Target,
+                                                                                          cancellationToken: token);
+                    }
+                    else
+                    {
+                        _logger.Warn($"Cannot resolve wildcard reference '{packageVersion.Name}' without automation interface");
+                    }
+                }
+
+                var packageVersionLatest = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name },
+                                                                                  item.Branch, item.Configuration, item.Target,
+                                                                                  cancellationToken: token);
+
+                // force the packageVersion references version even if the version was not found
+                if (packageVersion.Name != null)
+                {
+                    catalogItem = new CatalogItem(packageServer, packageVersion);
+                    catalogItem.Installed = packageVersion;
+                    catalogItem.IsPlaceholder = item.Version == null;
+                }
+
+                // a package might be updateable but not available on Twinpack
+                if (packageVersionLatest.Name != null)
+                {
+                    catalogItem.Update = packageVersionLatest;
+                    catalogItem.PackageServer = packageServer;
+                }
+
+                catalogItem.Configuration = item;
+
+                if (packageVersion.Name != null)
+                    return catalogItem;
+            }
+
+            catalogItem.Configuration = item;
+
+            return catalogItem;
         }
 
         public async Task PullAsync(Config config, bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string cachePath = null, CancellationToken cancellationToken = default)
