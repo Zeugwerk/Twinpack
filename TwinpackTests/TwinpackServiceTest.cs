@@ -29,19 +29,31 @@ namespace TwinpackTests
                     new CatalogItemGetResponse() { Name = "Package 4" },
                     new CatalogItemGetResponse() { Name = "Package 5" },
                 },
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                },
                 Connected = true
             };
 
             _packageServer2 = new PackageServerMock
             {
                 CatalogItems = new List<CatalogItemGetResponse>
-                    {
-                        new CatalogItemGetResponse() { Name = "Package 4" },
-                        new CatalogItemGetResponse() { Name = "Package 5" },
-                        new CatalogItemGetResponse() { Name = "Package 6" },
-                        new CatalogItemGetResponse() { Name = "Package 7" },
-                        new CatalogItemGetResponse() { Name = "Package 8" },
-                    },
+                {
+                    new CatalogItemGetResponse() { Name = "Package 4" },
+                    new CatalogItemGetResponse() { Name = "Package 5" },
+                    new CatalogItemGetResponse() { Name = "Package 6" },
+                    new CatalogItemGetResponse() { Name = "Package 7" },
+                    new CatalogItemGetResponse() { Name = "Package 8" },
+                },
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 5", DistributorName = "My Distributor", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                },
                 Connected = true
             };
 
@@ -183,6 +195,78 @@ namespace TwinpackTests
 
             packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(4, packages.Count);
+        }
+
+        [TestMethod]
+        public async Task RetrieveInstalledPackagesAsync_WithoutSearchTerm()
+        {
+            var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
+            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            {
+                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+            };
+
+            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: null)).ToList();
+
+            Assert.AreEqual(3, packages.Count);
+            Assert.AreEqual(2, packages.Where(x => x.Installed != null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Installed == null).Count());
+        }
+
+        [TestMethod]
+        public async Task RetrieveInstalledPackagesAsync_WithSearchTerm_PackageName()
+        {
+            var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
+            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            {
+                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+            };
+
+            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: "4")).ToList();
+
+            Assert.AreEqual(1, packages.Count);
+            Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
+            Assert.AreEqual(0, packages.Where(x => x.Installed == null).Count());
+        }
+
+        [TestMethod]
+        public async Task RetrieveInstalledPackagesAsync_WithSearchTerm_DistributorName()
+        {
+            var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
+            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            {
+                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+            };
+
+            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: "My Distributor")).ToList();
+
+            Assert.AreEqual(1, packages.Count);
+            Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
+            Assert.AreEqual(0, packages.Where(x => x.Installed == null).Count());
+        }
+
+        [TestMethod]
+        public async Task RetrieveInstalledPackagesAsync_WithSearchTerm_DisplayName()
+        {
+            var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
+            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            {
+                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+            };
+
+            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: "My Displayname")).ToList();
+
+            Assert.AreEqual(1, packages.Count);
+            Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
+            Assert.AreEqual(0, packages.Where(x => x.Installed == null).Count());
         }
     }
 }

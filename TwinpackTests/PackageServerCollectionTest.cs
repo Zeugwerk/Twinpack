@@ -29,19 +29,31 @@ namespace TwinpackTests
                     new CatalogItemGetResponse() { Name = "Package 4" },
                     new CatalogItemGetResponse() { Name = "Package 5" },
                 },
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                },
                 Connected = true
             };
 
             _packageServer2 = new PackageServerMock
             {
                 CatalogItems = new List<CatalogItemGetResponse>
-                    {
-                        new CatalogItemGetResponse() { Name = "Package 4" },
-                        new CatalogItemGetResponse() { Name = "Package 5" },
-                        new CatalogItemGetResponse() { Name = "Package 6" },
-                        new CatalogItemGetResponse() { Name = "Package 7" },
-                        new CatalogItemGetResponse() { Name = "Package 8" },
-                    },
+                {
+                    new CatalogItemGetResponse() { Name = "Package 4" },
+                    new CatalogItemGetResponse() { Name = "Package 5" },
+                    new CatalogItemGetResponse() { Name = "Package 6" },
+                    new CatalogItemGetResponse() { Name = "Package 7" },
+                    new CatalogItemGetResponse() { Name = "Package 8" },
+                },
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                },
                 Connected = true
             };
 
@@ -149,6 +161,129 @@ namespace TwinpackTests
             Assert.AreEqual("Package 4", packages[0].Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
+        }
+
+        [DataTestMethod]
+        [DataRow("1.1.0.0", "Package 4", "My Distributor", "1.0.0.0", "main", "Release", "TC3.1")]
+        [DataRow("1.1.0.0", "Package 4", "My Distributor", "1.1.0.0", "main", "Release", "TC3.1")]
+        [DataRow("1.3.0.0", "Package 4", "My Distributor", "1.2.0.0", "main", "Snapshot", "TC3.1")]
+        public async Task ResolvePackageAsync_NormalLookUp_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        {
+            var package = new ConfigPlcPackage
+            {
+                Name = name,
+                DistributorName = distributor,
+                Version = version,
+                Branch = branch,
+                Configuration = configuration,
+                Target = target
+            };
+
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+
+            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
+            Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
+            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(false, catalogItem.IsPlaceholder);
+            Assert.AreEqual(_packageServer1, catalogItem.PackageServer);
+        }
+
+        [DataTestMethod]
+        [DataRow("1.0.0.0", "Package 5", "My Distributor", "1.0.0.0", "main", "Release", "TC3.1")]
+        public async Task ResolvePackageAsync_NormalLookUp_PackageServer2(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        {
+            var package = new ConfigPlcPackage
+            {
+                Name = name,
+                DistributorName = distributor,
+                Version = version,
+                Branch = branch,
+                Configuration = configuration,
+                Target = target
+            };
+
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+
+            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
+            Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
+            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(false, catalogItem.IsPlaceholder);
+            Assert.AreEqual(_packageServer2, catalogItem.PackageServer);
+        }
+
+
+        [DataTestMethod]
+        [DataRow("1.1.0.0", "Package 4", "My Distributor", "0.9.0.0", "main", "Release", "TC3.1")]
+        public async Task ResolvePackageAsync_KnownButUnresolveable_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        {
+            var package = new ConfigPlcPackage
+            {
+                Name = name,
+                DistributorName = distributor,
+                Version = version,
+                Branch = branch,
+                Configuration = configuration,
+                Target = target
+            };
+
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+
+            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(null, catalogItem.InstalledVersion);
+            Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
+            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(false, catalogItem.IsPlaceholder);
+            Assert.AreEqual(_packageServer1, catalogItem.PackageServer);
+        }
+
+        [DataTestMethod]
+        [DataRow("1.0.0.0", "Package 5", "My Distributor", "0.9.0.0", "main", "Release", "TC3.1")]
+        public async Task ResolvePackageAsync_KnownButUnresolveable_PackageServer2(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        {
+            var package = new ConfigPlcPackage
+            {
+                Name = name,
+                DistributorName = distributor,
+                Version = version,
+                Branch = branch,
+                Configuration = configuration,
+                Target = target
+            };
+
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+
+            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(null, catalogItem.InstalledVersion);
+            Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
+            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(false, catalogItem.IsPlaceholder);
+            Assert.AreEqual(_packageServer2, catalogItem.PackageServer);
+        }
+
+        [DataTestMethod]
+        [DataRow(null, "Package 6", "My Distributor", "0.9.0.0", "main", "Release", "TC3.1")]
+        public async Task ResolvePackageAsync_Unknown_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        {
+            var package = new ConfigPlcPackage
+            {
+                Name = name,
+                DistributorName = distributor,
+                Version = version,
+                Branch = branch,
+                Configuration = configuration,
+                Target = target
+            };
+
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+
+            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(null, catalogItem.InstalledVersion);
+            Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
+            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(false, catalogItem.IsPlaceholder);
+            Assert.AreEqual(null, catalogItem.PackageServer);
         }
     }
 }

@@ -91,11 +91,11 @@ namespace Twinpack.Core
 
             foreach (var project in config.Projects)
             {
-                var packages = project.Plcs.SelectMany(x => x.Packages).Where(x => searchTerm == null || x.Name?.IndexOf(searchTerm) > 0);
+                var packages = project.Plcs.SelectMany(x => x.Packages);
 
                 foreach (var package in packages)
                 {
-                    CatalogItem catalogItem = await _packageServers.ResolvePackageAsync(project, package, _automationInterfaceService, token);
+                    CatalogItem catalogItem = await _packageServers.ResolvePackageAsync(project.Name, package, _automationInterfaceService, token);
 
                     installedPackages.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
                     installedPackages.Add(catalogItem);

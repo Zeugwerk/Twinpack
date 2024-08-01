@@ -59,11 +59,11 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<CatalogItem> ResolvePackageAsync(ConfigProject project, ConfigPlcPackage item, AutomationInterfaceService automationInterface, CancellationToken token = default)
+        public async Task<CatalogItem> ResolvePackageAsync(string plcName, ConfigPlcPackage item, AutomationInterfaceService automationInterface=null, CancellationToken token = default)
         {
             var catalogItem = new CatalogItem(item);
 
-            foreach (var packageServer in this)
+            foreach (var packageServer in this.Where(x => x.Connected))
             {
                 catalogItem.PackageServer = packageServer;
 
@@ -77,7 +77,7 @@ namespace Twinpack.Core
                 {
                     if (automationInterface != null)
                     {
-                        var effectiveVersion = automationInterface.ResolveEffectiveVersion(project.Name, packageVersion.Title);
+                        var effectiveVersion = automationInterface.ResolveEffectiveVersion(plcName, packageVersion.Title);
                         packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
                                                                                           item.Branch, item.Configuration, item.Target,
                                                                                           cancellationToken: token);
@@ -107,14 +107,14 @@ namespace Twinpack.Core
                     catalogItem.PackageServer = packageServer;
                 }
 
-                catalogItem.Configuration = item;
+                catalogItem.Config = item;
 
-                if (packageVersion.Name != null)
+                if (packageVersionLatest.Name != null)
                     return catalogItem;
             }
 
-            catalogItem.Configuration = item;
-
+            catalogItem.Config = item;
+            catalogItem.PackageServer = null;
             return catalogItem;
         }
 

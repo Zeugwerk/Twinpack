@@ -12,10 +12,10 @@ namespace TwinpackTests
     public class PackageServerMock : IPackageServer
     {
         public List<CatalogItemGetResponse> CatalogItems { get; set; }
+        public List<PackageVersionGetResponse> PackageVersionItems { get; set;  }
         public string ServerType => throw new NotImplementedException();
-
         public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public string UrlBase { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string UrlBase { get; set; }
         public string Url => throw new NotImplementedException();
         public string UrlRegister => throw new NotImplementedException();
         public string Username { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
@@ -49,9 +49,19 @@ namespace TwinpackTests
             throw new NotImplementedException();
         }
 
-        public Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            throw new NotImplementedException();
+            return PackageVersionItems
+                .Where(x =>
+                    x.Name == library.Name &&
+                    (x.Version == library.Version || library.Version == null) &&
+                    (x.Branch == branch || branch == null) &&
+                    (x.Configuration == configuration || configuration == null) &&
+                    (x.Target == target || target == null))
+                .OrderByDescending(x => new Version(x.Version))
+                .FirstOrDefault() ?? new PackageVersionGetResponse();
         }
 
         public Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch = null, string configuration = null, string target = null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
