@@ -82,7 +82,7 @@ namespace Twinpack.Models
         public string DisplayName { get; set; }
 
         [JsonPropertyName("downloads")]
-        public int Downloads { get; set; }
+        public int? Downloads { get; set; }
         [JsonPropertyName("created")]
         public string Created { get; set; }
         [JsonPropertyName("modified")]
