@@ -161,7 +161,12 @@
                                         <fa:ImageAwesome Margin="0 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="IdCard" Height="14" d:Visibility="Visible" Visibility="{Binding HasRuntimeLicense, Converter={StaticResource BooleanToVisibilityConverter}}"/>                                                                              
                                         <Run Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="16"/>
                                         <Run Text="by"/>
-                                        <Run Text="{Binding DistributorName}"/><Run Text=","/>
+                                        <Run Text="{Binding DistributorName}"/>
+                                    </TextBlock>
+                                    <TextBlock VerticalAlignment="Bottom"
+                                               d:Visibility="Visible"
+                                               Visibility="{Binding Downloads, Converter={StaticResource NullToVisibilityConverter}}">
+                                        <Run Text=","/>
                                         <Run Text="{Binding Downloads}" d:Text="10" FontWeight="DemiBold"/>
                                         <Run Text="downloads"/>
                                     </TextBlock>

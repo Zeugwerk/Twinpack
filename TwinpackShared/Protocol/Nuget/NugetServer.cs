@@ -131,13 +131,13 @@ namespace Twinpack.Protocol
                                 PackageId = null,
                                 Name = x.Identity.Id,
                                 DistributorName = x.Authors,
-                                // Description = x.Description, Beckhoff's descriptions are meh
+                                Description = x.Description,
                                 IconUrl = x.IconUrl?.ToString() ?? IconUrl,
                                 RuntimeLicense = 1,
                                 DisplayName = x.Identity.Id,
-                                Downloads = (int)x.DownloadCount,
-                                Created = x.Published?.ToString(),
-                                Modified = x.Published?.ToString()
+                                Downloads = x.DownloadCount.HasValue && x.DownloadCount.Value > 0 ? ((int?)x.DownloadCount.Value) : null,
+                                Created = x.Published?.ToString() ?? "Unknown",
+                                Modified = x.Published?.ToString() ?? "Unknown"
                             }).ToList(),
                         results.Any());
             }
@@ -169,7 +169,7 @@ namespace Twinpack.Protocol
                         Title = EvaluateTitle(x),
                         DistributorName = x.Authors,
                         DisplayName = x.Identity.Id,
-                        // Description = x.Description,
+                        Description = x.Description,
                         Entitlement = null,
                         ProjectUrl = x.ProjectUrl?.ToString(),
                         IconUrl = x.IconUrl?.ToString() ?? IconUrl,
@@ -326,10 +326,10 @@ namespace Twinpack.Protocol
             IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => p.Identity.Version.Version.ToString() == library.Version);
 
             if (x == null)
-                throw new Exceptions.LibraryNotFoundException(library.Name, library.Version, $"Package {library.Name} (version: {library.Version}, distributor: {library.DistributorName}) not found!");
+                throw new Exceptions.LibraryNotFoundException(library.Name, library.Version, $"Package {library.Name} {library.Version} (distributor: {library.DistributorName}) not found!");
 
             if (!x.Tags?.ToLower().Contains("library") == true && !x.Tags?.ToLower().Contains("plc-library") == true)
-                throw new Exceptions.LibraryFileInvalidException($"Package {library.Name} (version: {library.Version}, distributor: {library.DistributorName}) does not have a 'plc-library' or 'library' tag!");
+                throw new Exceptions.LibraryFileInvalidException($"Package {library.Name} {library.Version} (distributor: {library.DistributorName}) does not have a 'plc-library' or 'library' tag!");
 
             var dependencyPackages = x.DependencySets?.SelectMany(p => p.Packages).ToList() ?? new List<PackageDependency>();
             List<PackageVersionGetResponse> dependencies = new List<PackageVersionGetResponse>();
@@ -357,7 +357,7 @@ namespace Twinpack.Protocol
                             Title = EvaluateTitle(dependency),
                             DistributorName = x.Authors,
                             DisplayName = dependency.Identity.Id,
-                            // Description = dependency.Description,
+                            Description = dependency.Description,
                             Entitlement = null,
                             ProjectUrl = dependency.ProjectUrl?.ToString(),
                             IconUrl = dependency.IconUrl?.ToString() ?? IconUrl,
@@ -391,7 +391,7 @@ namespace Twinpack.Protocol
                 Title = EvaluateTitle(x),
                 DistributorName = x.Authors,
                 DisplayName = x.Identity.Id,
-                // Description = x.Description,
+                Description = x.Description,
                 Entitlement = null,
                 ProjectUrl = x.ProjectUrl?.ToString(),
                 IconUrl = x.IconUrl?.ToString() ?? IconUrl,
@@ -440,7 +440,7 @@ namespace Twinpack.Protocol
                 Title = EvaluateTitle(x),
                 DistributorName = x.Authors,
                 DisplayName = x.Identity.Id,
-                // Description = x.Description,
+                Description = x.Description,
                 Entitlement = null,
                 ProjectUrl = x.ProjectUrl?.ToString(),
                 IconUrl = x.IconUrl?.ToString() ?? IconUrl,
