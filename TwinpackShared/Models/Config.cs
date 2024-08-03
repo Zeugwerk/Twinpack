@@ -193,7 +193,7 @@ namespace Twinpack.Models
         public ConfigFrameworks Frameworks { get; set; }
 
         [JsonPropertyName("packages")]
-        public IEnumerable<ConfigPlcPackage> Packages { get; set; }
+        public List<ConfigPlcPackage> Packages { get; set; }
 
         [JsonPropertyName("references")]
         public Dictionary<String, List<String>> References { get; set; }

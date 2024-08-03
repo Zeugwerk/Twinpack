@@ -216,7 +216,7 @@ namespace Twinpack.Models
         [JsonPropertyName("binary-sha256")]
         public string BinarySha256 { get; set; }        
         [JsonPropertyName("dependencies")]
-        public IEnumerable<PackageVersionGetResponse> Dependencies { get; set; }
+        public List<PackageVersionGetResponse> Dependencies { get; set; }
         [JsonPropertyName("type")]
         public string PackageType { get; set; }
 
