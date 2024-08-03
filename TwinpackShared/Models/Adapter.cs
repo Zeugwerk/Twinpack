@@ -84,6 +84,10 @@ namespace Twinpack.Models
         }
 
         public Protocol.IPackageServer PackageServer { get; set; }
+        public string ProjectName { get; set; }
+        public string PlcName { get; set; }
+
+        public ConfigPlcPackage Config { get; set; }
 
         public PackageGetResponse Package
         {

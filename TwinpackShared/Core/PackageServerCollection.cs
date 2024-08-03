@@ -59,7 +59,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<CatalogItem> ResolvePackageAsync(string plcName, ConfigPlcPackage item, AutomationInterfaceService automationInterface=null, CancellationToken token = default)
+        public async Task<CatalogItem> ResolvePackageAsync(string plcName, ConfigPlcPackage item, AutomationInterface automationInterface=null, CancellationToken token = default)
         {
             var catalogItem = new CatalogItem(item);
 
@@ -187,6 +187,62 @@ namespace Twinpack.Core
             {
                 throw new GetException($"Pulling for Package Server(s) failed for {exceptions.Count()} dependencies!");
             }
+        }
+
+        public async Task<List<PackageItem>> ResolvePackageDependenciesAsync(PackageItem package, CancellationToken cancellationToken = default)
+        {
+            var resolvedDependencies = new List<PackageVersionGetResponse>();
+            foreach (var dependency in package?.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
+            {
+                var d = dependency;
+                foreach (var packageServer in this.Where(x => x.Connected))
+                {
+                    try
+                    {
+                        d = await packageServer.GetPackageVersionAsync(new PlcLibrary
+                        {
+                            DistributorName = dependency.DistributorName,
+                            Name = dependency.Name,
+                            Version = dependency.Version
+                        },
+                           dependency.Branch, dependency.Configuration, dependency.Target, cancellationToken);
+
+                        if (d.Name != null)
+                        {
+                            d.Version = dependency.Version; // this can be null if it is a placeholder
+                            resolvedDependencies.Add(d);
+                            break;
+                        }
+                    }
+                    catch
+                    { }
+                }
+            }
+
+            return resolvedDependencies.Select(x => new PackageItem() { PackageVersion = x }).ToList();
+        }
+
+        public async Task<bool> DownloadPackageVersionAsync(PackageItem package, string cachePath=null, CancellationToken cancellationToken = default)
+        {
+            var success = false;
+            foreach (var packageServer in this.Where(x => x.Connected))
+            {
+                try
+                {
+                    await packageServer.DownloadPackageVersionAsync(package.PackageVersion, checksumMode: ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                    success = true;
+                    break;
+                }
+                catch
+                { }
+            }
+
+            if (!success)
+            {
+                _logger.Warn($"Package {package.PackageVersion.Title} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) not found on any package server!");
+            }
+
+            return success;
         }
     }
 }

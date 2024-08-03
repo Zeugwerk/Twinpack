@@ -9,7 +9,7 @@
     <Import_RootNamespace>TwinpackShared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterfaceUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)models\PlcVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\SourceRepositories.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PackagingServer.cs" />
