@@ -129,12 +129,12 @@ namespace Twinpack.Core
                     ;
         }
 
-        public void UninstallPackage(PackageItem packageItem, bool uninstall)
+        public async Task RemovePackageAsync(PackageItem packageItem, bool uninstall)
         {
             if (packageItem.PackageVersion.Name == null)
                 throw new Exception("No packages is selected that could be uninstalled!");
 
-            _automationInterface.RemovePackage(packageItem, uninstall: uninstall);
+            await _automationInterface.RemovePackageAsync(packageItem, uninstall: uninstall);
 
             // update cache
             var availablePackage = _availablePackageCache.FirstOrDefault(x => x.Name == packageItem.PackageVersion.Name);
@@ -166,21 +166,21 @@ namespace Twinpack.Core
                 downloadedPackageVersions = await DownloadPackageWithDependenciesAsync(package, downloadedPackageVersions, forceDownload: forceDownload, cachePath: cachePath, cancellationToken: cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                _automationInterface.RemovePackage(package);
+                await _automationInterface.RemovePackageAsync(package);
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
             // install packages
             foreach (var package in downloadedPackageVersions)
             {
-                _automationInterface.InstallPackage(package, cachePath: cachePath);
+                await _automationInterface.InstallPackageAsync(package, cachePath: cachePath);
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
             // add references
             foreach (var package in downloadedPackageVersions)
             {
-                _automationInterface.AddPackage(package);
+                await _automationInterface.AddPackageAsync(package);
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
@@ -335,7 +335,7 @@ namespace Twinpack.Core
         public async Task<List<PackageItem>> DownloadPackageWithDependenciesAsync(PackageItem package, List<PackageItem> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
         {
             // check if we find the package on the system
-            bool referenceFound = !forceDownload && _automationInterface.IsPackageInstalled(package);
+            bool referenceFound = !forceDownload && await _automationInterface.IsPackageInstalledAsync(package);
 
             if ((!referenceFound || forceDownload) && downloadedPackageVersions.Any(x => x.PackageVersion.Name == package.PackageVersion.Name) == false)
             {

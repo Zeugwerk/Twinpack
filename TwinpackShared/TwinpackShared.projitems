@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\SynchronizationContextAwaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)models\PlcVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\SourceRepositories.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PackagingServer.cs" />
@@ -38,8 +39,5 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)app.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)Core\" />
   </ItemGroup>
 </Project>

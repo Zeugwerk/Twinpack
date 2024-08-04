@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Models;
@@ -22,10 +23,17 @@ namespace Twinpack.Core
         private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
 
         DTE2 _dte;
+        SynchronizationContext _synchronizationContext;
 
         public AutomationInterface(DTE2 dte)
         {
             _dte = dte;
+            _synchronizationContext = SynchronizationContext.Current;
+        }
+
+        private async Task SwitchToMainThreadAsync(CancellationToken cancellationToken=default)
+        {
+            await _synchronizationContext;
         }
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
@@ -132,7 +140,7 @@ namespace Twinpack.Core
         private ITcPlcLibraryManager LibraryManager(string projectName = null)
         {
             var systemManager = SystemManager(projectName);
-
+            
             if (projectName == null)
             {
                 var plcConfiguration = systemManager.LookupTreeItem("TIPC");
@@ -163,6 +171,53 @@ namespace Twinpack.Core
             }
 
             return null;
+        }
+
+        public string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
+        {
+            // try to find the vendor
+            foreach (ITcPlcLibrary r in libManager.ScanLibraries())
+            {
+                if (r.Name == libraryName && (r.Version == version || version == "*" || version == null))
+                {
+                    return r.Distributor;
+                }
+            }
+
+            return null;
+        }
+
+        public async Task<bool> IsPackageInstalledAsync(PackageItem package)
+        {
+            await SwitchToMainThreadAsync();
+            return IsPackageInstalled(package);
+        }
+
+        private bool IsPackageInstalled(PackageItem package)
+        {
+            var libraryManager = LibraryManager(package.PlcName);
+            bool referenceFound = false;
+
+            if (libraryManager != null)
+            {
+                foreach (ITcPlcLibrary r in libraryManager.ScanLibraries())
+                {
+                    if (string.Equals(r.Name, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
+                        string.Equals(r.Distributor, package.PackageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
+                        (r.Version == package.Config.Version || package.Config.Version == null))
+                    {
+                        referenceFound = true;
+                        break;
+                    }
+                }
+
+                if (referenceFound)
+                {
+                    _logger.Info($"Skipping {package.PackageVersion.Title} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}), it already exists on the system");
+                }
+            }
+
+            return referenceFound;
         }
 
         private void CloseAllPackageRelatedWindows(PackageItem package)
@@ -207,25 +262,29 @@ namespace Twinpack.Core
             }
         }
 
-        public void AddPackage(PackageItem package)
+        public async Task AddPackageAsync(PackageItem package)
         {
+            await SwitchToMainThreadAsync();
+
             // add actual packages
             var libraryManager = LibraryManager(package.PlcName);
-            AddPackage(libraryManager, package);
+            await AddPackageAsync(libraryManager, package);
         }
 
-        private void AddPackage(ITcPlcLibraryManager libraryManager, PackageItem package)
+        private async Task AddPackageAsync(ITcPlcLibraryManager libraryManager, PackageItem package)
         {
+            await SwitchToMainThreadAsync();
+
             var options = package.Config.Options;
             var libraryName = package.PackageVersion.Title;
             var version = package.PackageVersion.Version;
             var distributorName = package.PackageVersion.DistributorName ?? GuessDistributorName(libraryManager, libraryName, version);
 
             // if we can't find the reference with the distributor name from the package, fallback to looking it up
-            if (!IsPackageInstalled(package))
+            if (!await IsPackageInstalledAsync(package))
                 distributorName = GuessDistributorName(libraryManager, libraryName, version);
 
-            RemovePackage(package);
+            await RemovePackageAsync(package);
 
             _logger.Info($"Adding {package.PackageVersion.Name} {version} (distributor: {distributorName})");
             if (options?.LibraryReference == true)
@@ -283,23 +342,9 @@ namespace Twinpack.Core
             }
         }
 
-        public static string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
+        public async Task RemovePackageAsync(PackageItem package, bool uninstall=false)
         {
-            // try to find the vendor
-            foreach (ITcPlcLibrary r in libManager.ScanLibraries())
-            {
-                if (r.Name == libraryName && (r.Version == version || version == "*" || version == null))
-                {
-                    return r.Distributor;
-                }
-            }
-
-            return null;
-        }
-
-        public void RemovePackage(PackageItem package, bool uninstall=false)
-        {
-            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+            await SwitchToMainThreadAsync();
 
             var libraryManager = LibraryManager(package.PlcName);
             CloseAllPackageRelatedWindows(package);
@@ -311,12 +356,14 @@ namespace Twinpack.Core
             if (uninstall)
             {
                 _logger.Info($"Uninstalling package {package.PackageVersion.Name} from system ...");
-                UninstallPackage(package);
+                await UninstallPackageAsync(package);
             }
         }
 
-        public void InstallPackage(PackageItem package, string cachePath = null)
+        public async Task InstallPackageAsync(PackageItem package, string cachePath = null)
         {
+            await SwitchToMainThreadAsync();
+
             var libraryManager = LibraryManager(package.PlcName);
             var packageVersion = package.PackageVersion;
 
@@ -326,38 +373,13 @@ namespace Twinpack.Core
             libraryManager.InstallLibrary("System", Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}"), bOverwrite: true);
         }
 
-        public void UninstallPackage(PackageItem package)
+        public async Task UninstallPackageAsync(PackageItem package)
         {
+            await SwitchToMainThreadAsync();
+
             var libraryManager = LibraryManager(package.PlcName);
 
             libraryManager.UninstallLibrary("System", package.PackageVersion.Title, package.PackageVersion.Version, package.PackageVersion.DistributorName);
-        }
-
-        internal bool IsPackageInstalled(PackageItem package)
-        {
-            var libraryManager = LibraryManager(package.PlcName);
-            bool referenceFound = false;
-
-            if (libraryManager != null)
-            {
-                foreach (ITcPlcLibrary r in libraryManager.ScanLibraries())
-                {
-                    if (string.Equals(r.Name, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
-                        string.Equals(r.Distributor, package.PackageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
-                        (r.Version == package.Config.Version || package.Config.Version == null))
-                    {
-                        referenceFound = true;
-                        break;
-                    }
-                }
-
-                if (referenceFound)
-                {
-                    _logger.Info($"Skipping {package.PackageVersion.Title} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}), it already exists on the system");
-                }
-            }
-
-            return referenceFound;
         }
     }
 }
