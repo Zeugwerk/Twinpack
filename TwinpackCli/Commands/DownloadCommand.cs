@@ -78,7 +78,7 @@ namespace Twinpack.Commands
             tempConfig.Projects[0].Plcs.Add(new ConfigPlcProject { Packages = packageConfigs });
             var packages = _twinpack.RetrieveConfiguredPackagesAsync(tempConfig, includeMetadata: true).GetAwaiter().GetResult();
 
-            List<CatalogItem> downloadedPackageVersions = new List<CatalogItem>();
+            List<PackageItem> downloadedPackageVersions = new List<PackageItem>();
 
             foreach(var package in packages)
             {

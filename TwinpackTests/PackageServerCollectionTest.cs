@@ -81,7 +81,7 @@ namespace TwinpackTests
         [TestMethod]
         public async Task SearchAllAsync_AllPackages()
         {
-            var packages = new List<CatalogItem>();
+            var packages = new List<PackageItem>();
             await foreach (var p in _packageServers.SearchAsync(null, maxPackages: null, batchSize: 2))
             {
                 packages.Add(p);
@@ -109,7 +109,7 @@ namespace TwinpackTests
         [TestMethod]
         public async Task SearchAllAsync_LimitedPackages4()
         {
-            var packages = new List<CatalogItem>();
+            var packages = new List<PackageItem>();
             await foreach (var p in _packageServers.SearchAsync(null, maxPackages: 4, batchSize: 2))
             {
                 packages.Add(p);
@@ -129,7 +129,7 @@ namespace TwinpackTests
         [TestMethod]
         public async Task SearchAllAsync_LimitedPackages6()
         {
-            var packages = new List<CatalogItem>();
+            var packages = new List<PackageItem>();
             await foreach (var p in _packageServers.SearchAsync(null, maxPackages: 6, batchSize: 2))
             {
                 packages.Add(p);
@@ -153,7 +153,7 @@ namespace TwinpackTests
         [TestMethod]
         public async Task SearchAllAsync_SearchTerm()
         {
-            var packages = new List<CatalogItem>();
+            var packages = new List<PackageItem>();
             await foreach (var p in _packageServers.SearchAsync("Package 4", maxPackages: 6, batchSize: 2))
             {
                 packages.Add(p);
