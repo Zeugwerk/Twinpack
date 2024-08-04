@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 using System.Reflection;
 using AdysTech.CredentialManager;
 using System.Threading;

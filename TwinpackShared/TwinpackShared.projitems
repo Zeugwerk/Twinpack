@@ -10,10 +10,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\IAutomationInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\MessageFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SynchronizationContextAwaiter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\VisualStudio.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)models\PlcVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\SourceRepositories.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\PackagingServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Authentication.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\BeckhoffServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetServer.cs" />
@@ -22,7 +25,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DirectoryExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\Exceptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LibraryReader.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\Adapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\PackageItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Api.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Config.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\ConfigFactory.cs" />

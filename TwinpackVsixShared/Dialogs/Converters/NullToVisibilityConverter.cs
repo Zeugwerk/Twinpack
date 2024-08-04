@@ -27,11 +27,11 @@ namespace Twinpack.Dialogs
 
             try
             {
-                if(value as Models.PackageVersionGetResponse != null)
-                    return (value as Models.PackageVersionGetResponse).Name != null ? Visibility.Visible : Visibility.Collapsed;
+                if(value as Models.Api.PackageVersionGetResponse != null)
+                    return (value as Models.Api.PackageVersionGetResponse).Name != null ? Visibility.Visible : Visibility.Collapsed;
 
-                if (value as Models.PackageGetResponse != null)
-                    return (value as Models.PackageGetResponse).Name != null ? Visibility.Visible : Visibility.Collapsed;
+                if (value as Models.Api.PackageGetResponse != null)
+                    return (value as Models.Api.PackageGetResponse).Name != null ? Visibility.Visible : Visibility.Collapsed;
             }
             catch
             {

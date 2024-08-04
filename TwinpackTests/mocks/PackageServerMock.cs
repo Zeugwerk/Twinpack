@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 using Twinpack.Protocol;
 
 namespace TwinpackTests

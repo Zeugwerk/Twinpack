@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Twinpack.Exceptions;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 using Twinpack.Protocol;
 
 namespace Twinpack.Core
@@ -59,7 +60,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<CatalogItem> ResolvePackageAsync(string plcName, ConfigPlcPackage item, AutomationInterface automationInterface=null, CancellationToken token = default)
+        public async Task<CatalogItem> ResolvePackageAsync(string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken token = default)
         {
             var catalogItem = new CatalogItem(item);
 
@@ -67,9 +68,26 @@ namespace Twinpack.Core
             {
                 catalogItem.PackageServer = packageServer;
 
+                // if some data is not present, try to resolve the information
+                var version = item.Version;
+                if(item.Version == null || item.Branch == null || item.Configuration == null || item.Target == null || item.DistributorName == null)
+                {
+                    var resolvedPackageVersion = await packageServer.ResolvePackageVersionAsync(
+                        new PlcLibrary { Name = item.Name, DistributorName = item.DistributorName, Version = item.Version },
+                        item.Target,
+                        item.Configuration,
+                        item.Branch,
+                        cancellationToken: token);
+
+                    version ??= resolvedPackageVersion.Version; // not overwrite a null in the config, because maybe the latest version should be used
+                    item.Branch ??= resolvedPackageVersion.Branch;
+                    item.Configuration ??= resolvedPackageVersion.Configuration;
+                    item.Target ??= resolvedPackageVersion.Target;
+                    item.DistributorName ??= resolvedPackageVersion.DistributorName;
+                }
 
                 // try to get the installed package, if we can't find it at least try to resolve it
-                var packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },
+                var packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = version },
                                                                                   item.Branch, item.Configuration, item.Target,
                                                                                   cancellationToken: token);
 
@@ -97,7 +115,13 @@ namespace Twinpack.Core
                 {
                     catalogItem = new CatalogItem(packageServer, packageVersion);
                     catalogItem.Installed = packageVersion;
+                    catalogItem.Config = item;
                     catalogItem.IsPlaceholder = item.Version == null;
+
+                    if(includeMetadata)
+                    {
+                        await ResolvePackageMetadataAsync(catalogItem, cancellationToken: token);
+                    }
                 }
 
                 // a package might be updateable but not available on Twinpack
@@ -116,6 +140,42 @@ namespace Twinpack.Core
             catalogItem.Config = item;
             catalogItem.PackageServer = null;
             return catalogItem;
+        }
+
+        public async Task ResolvePackageMetadataAsync(CatalogItem packageItem, CancellationToken cancellationToken = default)
+        {
+            foreach (var packageServer in this.Where(x => x.Connected))
+            {
+                var package = packageItem.Package ?? await packageServer.GetPackageAsync(packageItem.Config.DistributorName, packageItem.Config.Name, cancellationToken);
+
+                if(package != null)
+                {
+                    packageItem.Package = package;
+                    packageItem.PackageServer = packageServer;
+
+                    var packageVersion = await packageServer.GetPackageVersionAsync(
+                        new PlcLibrary
+                        {
+                            Name = packageItem.Config.Name,
+                            Version = packageItem.Config.Version,
+                            DistributorName = packageItem.Config.DistributorName
+                        },
+                        packageItem.Config.Branch,
+                        packageItem.Config.Configuration,
+                        packageItem.Config.Target,
+                        cancellationToken
+                    );
+
+                    packageItem.PackageVersion = packageVersion;
+
+                    if(packageVersion != null)
+                    {
+                        packageItem.PackageVersion.Dependencies = (await ResolvePackageDependenciesAsync(packageItem, cancellationToken)).Select(x => x.PackageVersion).ToList();
+                    }
+
+                    return;
+                }
+            }
         }
 
         public async Task PullAsync(Config config, bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string cachePath = null, CancellationToken cancellationToken = default)
@@ -189,7 +249,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<List<PackageItem>> ResolvePackageDependenciesAsync(PackageItem package, CancellationToken cancellationToken = default)
+        public async Task<List<CatalogItem>> ResolvePackageDependenciesAsync(CatalogItem package, CancellationToken cancellationToken = default)
         {
             var resolvedDependencies = new List<PackageVersionGetResponse>();
             foreach (var dependency in package?.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
@@ -219,10 +279,10 @@ namespace Twinpack.Core
                 }
             }
 
-            return resolvedDependencies.Select(x => new PackageItem() { PackageVersion = x }).ToList();
+            return resolvedDependencies.Select(x => new CatalogItem() { PackageVersion = x }).ToList();
         }
 
-        public async Task<bool> DownloadPackageVersionAsync(PackageItem package, string cachePath=null, CancellationToken cancellationToken = default)
+        public async Task<bool> DownloadPackageVersionAsync(CatalogItem package, string cachePath=null, CancellationToken cancellationToken = default)
         {
             var success = false;
             foreach (var packageServer in this.Where(x => x.Connected))

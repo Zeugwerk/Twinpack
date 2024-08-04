@@ -1,33 +1,35 @@
 using EnvDTE;
-using EnvDTE80;
 using Microsoft.Win32;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 
 namespace Twinpack.Core
 {
-    public class AutomationInterface
+    public class AutomationInterface : IAutomationInterface
     {
+        public event EventHandler<ProgressEventArgs> ProgressedEvent = delegate { };
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
 
-        DTE2 _dte;
+        VisualStudio _visualStudio;
         SynchronizationContext _synchronizationContext;
 
-        public AutomationInterface(DTE2 dte)
+        public AutomationInterface(VisualStudio visualStudio)
         {
-            _dte = dte;
+            _visualStudio = visualStudio;
             _synchronizationContext = SynchronizationContext.Current;
         }
 
@@ -35,9 +37,9 @@ namespace Twinpack.Core
         {
             await _synchronizationContext;
         }
-        public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
+        public string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
-        public static string TwincatPath
+        public string TwincatPath
         {
             get
             {
@@ -58,10 +60,13 @@ namespace Twinpack.Core
             }
         }
 
-
-        public string LicensesPath = TwincatPath + @"\CustomConfig\Licenses";
-        public string BootFolderPath = TwincatPath + @"\Boot";
-        public string SolutionPath { get => Path.GetDirectoryName(_dte.Solution.FullName); }
+        public string LicensesPath { get => TwincatPath + @"\CustomConfig\Licenses"; }
+        public string BootFolderPath { get => TwincatPath + @"\Boot"; }
+        public string SolutionPath { get => Path.GetDirectoryName(_visualStudio.Dte.Solution.FullName); }
+        public bool IsSupported(string tcversion)
+        {
+            return true;
+        }
 
         public string ResolveEffectiveVersion(string projectName, string placeholderName)
         {
@@ -122,7 +127,7 @@ namespace Twinpack.Core
             while (!ready)
             {
                 ready = true;
-                foreach (EnvDTE.Project project in _dte.Solution.Projects)
+                foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
                 {
                     if (project == null)
                         ready = false;
@@ -187,13 +192,13 @@ namespace Twinpack.Core
             return null;
         }
 
-        public async Task<bool> IsPackageInstalledAsync(PackageItem package)
+        public async Task<bool> IsPackageInstalledAsync(CatalogItem package)
         {
             await SwitchToMainThreadAsync();
             return IsPackageInstalled(package);
         }
 
-        private bool IsPackageInstalled(PackageItem package)
+        private bool IsPackageInstalled(CatalogItem package)
         {
             var libraryManager = LibraryManager(package.PlcName);
             bool referenceFound = false;
@@ -213,19 +218,19 @@ namespace Twinpack.Core
 
                 if (referenceFound)
                 {
-                    _logger.Info($"Skipping {package.PackageVersion.Title} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}), it already exists on the system");
+                    _logger.Info($"{package.PackageVersion.Title} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}), it already exists on the system");
                 }
             }
 
             return referenceFound;
         }
 
-        private void CloseAllPackageRelatedWindows(PackageItem package)
+        private void CloseAllPackageRelatedWindows(CatalogItem package)
         {
-            _dte.ExecuteCommand("File.SaveAll");
+            _visualStudio.Dte.ExecuteCommand("File.SaveAll");
 
             // Close all windows that have been opened with a library manager
-            foreach (EnvDTE.Window window in _dte.Windows)
+            foreach (EnvDTE.Window window in _visualStudio.Dte.Windows)
             {
                 try
                 {
@@ -262,7 +267,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task AddPackageAsync(PackageItem package)
+        public async Task AddPackageAsync(CatalogItem package)
         {
             await SwitchToMainThreadAsync();
 
@@ -271,7 +276,7 @@ namespace Twinpack.Core
             await AddPackageAsync(libraryManager, package);
         }
 
-        private async Task AddPackageAsync(ITcPlcLibraryManager libraryManager, PackageItem package)
+        private async Task AddPackageAsync(ITcPlcLibraryManager libraryManager, CatalogItem package)
         {
             await SwitchToMainThreadAsync();
 
@@ -342,7 +347,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task RemovePackageAsync(PackageItem package, bool uninstall=false)
+        public async Task RemovePackageAsync(CatalogItem package, bool uninstall=false)
         {
             await SwitchToMainThreadAsync();
 
@@ -360,7 +365,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task InstallPackageAsync(PackageItem package, string cachePath = null)
+        public async Task InstallPackageAsync(CatalogItem package, string cachePath = null)
         {
             await SwitchToMainThreadAsync();
 
@@ -373,7 +378,7 @@ namespace Twinpack.Core
             libraryManager.InstallLibrary("System", Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}"), bOverwrite: true);
         }
 
-        public async Task UninstallPackageAsync(PackageItem package)
+        public async Task UninstallPackageAsync(CatalogItem package)
         {
             await SwitchToMainThreadAsync();
 

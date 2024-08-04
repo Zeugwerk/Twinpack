@@ -9,6 +9,6 @@ namespace Twinpack.Commands
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         protected Core.TwinpackService _twinpack;
-        public abstract Task<int> ExecuteAsync();
+        public abstract int Execute();
     }
 }

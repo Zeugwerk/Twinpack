@@ -16,6 +16,7 @@ using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Exceptions;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 using Twinpack.Protocol;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -25,17 +26,17 @@ namespace Twinpack.Core
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private List<CatalogItem> _availablePackageCache = new List<CatalogItem>();
-        private List<CatalogItem> _installedPackagesCache = new List<CatalogItem>();
+        private List<CatalogItem> _configuredPackagesCache = new List<CatalogItem>();
 
         private PackageServerCollection _packageServers;
         private IAsyncEnumerator<CatalogItem> _availablePackagesIt;
         private string _searchTerm;
         private Config _config;
-        private AutomationInterface _automationInterface;
+        private IAutomationInterface _automationInterface;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public TwinpackService(PackageServerCollection packageServers, AutomationInterface automationInterface=null)
+        public TwinpackService(PackageServerCollection packageServers, IAutomationInterface automationInterface=null)
         {
             _packageServers = packageServers;
             _automationInterface = automationInterface;
@@ -43,14 +44,80 @@ namespace Twinpack.Core
 
         public IEnumerable<IPackageServer> PackageServers { get => _packageServers; }
         public bool IsClientUpdateAvailable { get => _packageServers.Any(x => (x as TwinpackServer)?.IsClientUpdateAvailable == true); }
-        public bool HasUnknownPackages { get => InstalledPackages.Any(x => x.Name == null) == true; }
-        public IEnumerable<CatalogItem> InstalledPackages { get => _installedPackagesCache; }
+        public bool HasUnknownPackages { get => ConfiguredPackages.Any(x => x.Name == null) == true; }
+        public IEnumerable<CatalogItem> ConfiguredPackages { get => _configuredPackagesCache; }
 
+        private HashSet<string> CopyLicenseTmcIfNeeded(IEnumerable<CatalogItem> packages, HashSet<string> knownLicenseIds)
+        {
+            // todo: flatten dependences and package versions and iterate over this
+            foreach (var package in packages)
+            {
+                if (package.PackageVersion.HasLicenseTmcBinary)
+                {
+                    _logger.Trace($"Copying license description file to TwinCAT for {package.PackageVersion.Name} ...");
+                    try
+                    {
+                        var licenseId = ParseLicenseId(package.PackageVersion.LicenseTmcText);
+                        if (licenseId == null)
+                            throw new InvalidDataException("The tmc file is not a valid license file!");
+
+                        if (knownLicenseIds.Contains(licenseId))
+                        {
+                            _logger.Trace($"LicenseId={licenseId} already known");
+                        }
+                        else
+                        {
+                            _logger.Info($"Copying license tmc with licenseId={licenseId} to {_automationInterface.LicensesPath}");
+
+                            using (var md5 = MD5.Create())
+                            {
+                                if (!Directory.Exists(_automationInterface.LicensesPath))
+                                    Directory.CreateDirectory(_automationInterface.LicensesPath);
+
+                                File.WriteAllText(Path.Combine(_automationInterface.LicensesPath, BitConverter.ToString(
+                                    md5.ComputeHash(Encoding.ASCII.GetBytes($"{package.PackageVersion.DistributorName}{package.PackageVersion.Name}"))).Replace("-", "") + ".tmc"),
+                                                  package.PackageVersion.LicenseTmcText);
+
+                            }
+
+                            knownLicenseIds.Add(licenseId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex.Message);
+                        _logger.Trace(ex);
+                    }
+                }
+
+                if (package.PackageVersion.Dependencies != null)
+                {
+                    knownLicenseIds = CopyLicenseTmcIfNeeded(package.PackageVersion.Dependencies.Select(x => new CatalogItem() { PackageVersion = x }), knownLicenseIds);
+                }
+            }
+
+            return knownLicenseIds;
+        }
+
+        private static string ParseLicenseId(string content)
+        {
+            try
+            {
+                var xdoc = XDocument.Parse(content);
+                return xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+            }
+
+            return null;
+        }
 
         public void InvalidateCache()
         {
             _availablePackageCache.Clear();
-            _installedPackagesCache.Clear();
+            _configuredPackagesCache.Clear();
             _availablePackagesIt = null;
             _packageServers.InvalidateCache();
         }
@@ -99,19 +166,19 @@ namespace Twinpack.Core
                     ;
         }
 
-        public async Task<IEnumerable<CatalogItem>> RetrieveInstalledPackagesAsync(Config config, string searchTerm = null, CancellationToken token = default)
+        public async Task<IEnumerable<CatalogItem>> RetrieveConfiguredPackagesAsync(Config config, string searchTerm = null, bool includeMetadata = false, CancellationToken token = default)
         {
 
             foreach (var project in config.Projects)
             {
                 var packages = project.Plcs.SelectMany(x => x.Packages);
 
-                foreach (var package in packages.Where(x => _installedPackagesCache.Any(y => y.Name == x.Name) == false))
+                foreach (var package in packages.Where(x => _configuredPackagesCache.Any(y => y.Name == x.Name) == false))
                 {
-                    CatalogItem catalogItem = await _packageServers.ResolvePackageAsync(project.Name, package, _automationInterface, token);
+                    CatalogItem catalogItem = await _packageServers.ResolvePackageAsync(project.Name, package, includeMetadata, _automationInterface, token);
 
-                    _installedPackagesCache.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
-                    _installedPackagesCache.Add(catalogItem);
+                    _configuredPackagesCache.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
+                    _configuredPackagesCache.Add(catalogItem);
 
                     if (catalogItem.PackageServer == null)
                         _logger.Warn($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) referenced in the configuration can not be found on any package server");
@@ -120,7 +187,7 @@ namespace Twinpack.Core
                 }
             }
 
-            return _installedPackagesCache
+            return _configuredPackagesCache
                     .Where(x =>
                         searchTerm == null ||
                         x.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
@@ -129,26 +196,26 @@ namespace Twinpack.Core
                     ;
         }
 
-        public async Task RemovePackageAsync(PackageItem packageItem, bool uninstall)
+        public async Task RemovePackageAsync(CatalogItem CatalogItem, bool uninstall)
         {
-            if (packageItem.PackageVersion.Name == null)
+            if (CatalogItem.PackageVersion.Name == null)
                 throw new Exception("No packages is selected that could be uninstalled!");
 
-            await _automationInterface.RemovePackageAsync(packageItem, uninstall: uninstall);
+            await _automationInterface.RemovePackageAsync(CatalogItem, uninstall: uninstall);
 
             // update cache
-            var availablePackage = _availablePackageCache.FirstOrDefault(x => x.Name == packageItem.PackageVersion.Name);
+            var availablePackage = _availablePackageCache.FirstOrDefault(x => x.Name == CatalogItem.PackageVersion.Name);
             if(availablePackage != null)
                 availablePackage.Installed = null;
-            _installedPackagesCache.RemoveAll(x => x.Name == packageItem.PackageVersion.Name);
+            _configuredPackagesCache.RemoveAll(x => x.Name == CatalogItem.PackageVersion.Name);
         }
 
-        public async Task AddPackageAsync(PackageItem package, bool forceDownload, CancellationToken cancellationToken = default)
+        public async Task AddPackageAsync(CatalogItem package, bool forceDownload, CancellationToken cancellationToken = default)
         {
-            await AddPackagesAsync(new List<PackageItem> { package }, forceDownload, cancellationToken);
+            await AddPackagesAsync(new List<CatalogItem> { package }, forceDownload, cancellationToken);
         }
 
-        public async Task AddPackagesAsync(List<PackageItem> packages, bool forceDownload, CancellationToken cancellationToken = default)
+        public async Task AddPackagesAsync(List<CatalogItem> packages, bool forceDownload, CancellationToken cancellationToken = default)
         {
             if (packages.Any(x => x.PackageVersion.Name == null) == true)
                 throw new Exception("Invalid package(s) should be added or updated!");
@@ -160,10 +227,10 @@ namespace Twinpack.Core
             CopyLicenseTmcIfNeeded(packages, knownLicenseIds);
 
            // download packages and close Library Manager and all windows that are related to the library. These windows cause race conditions
-            var downloadedPackageVersions = new List<PackageItem>();
+            var downloadedPackageVersions = new List<CatalogItem>();
             foreach (var package in packages)
             {
-                downloadedPackageVersions = await DownloadPackageWithDependenciesAsync(package, downloadedPackageVersions, forceDownload: forceDownload, cachePath: cachePath, cancellationToken: cancellationToken);
+                downloadedPackageVersions = await DownloadPackageAsync(package, downloadedPackageVersions, forceDownload: forceDownload, cachePath: cachePath, cancellationToken: cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
 
                 await _automationInterface.RemovePackageAsync(package);
@@ -189,7 +256,7 @@ namespace Twinpack.Core
             {
                 var parameters = package.Config.Parameters;
 
-                _installedPackagesCache.RemoveAll(x => string.Equals(x.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
+                _configuredPackagesCache.RemoveAll(x => string.Equals(x.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
 
                 var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs.FirstOrDefault(x => x.Name == package.PlcName);
                 var packageIndex = plcConfig.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
@@ -203,7 +270,7 @@ namespace Twinpack.Core
                 {
                     foreach (var dependency in package.PackageVersion.Dependencies ?? new List<PackageVersionGetResponse>())
                     {
-                        _installedPackagesCache.RemoveAll(x => string.Equals(x.Name, dependency.Name, StringComparison.InvariantCultureIgnoreCase));
+                        _configuredPackagesCache.RemoveAll(x => string.Equals(x.Name, dependency.Name, StringComparison.InvariantCultureIgnoreCase));
                         var dependencyParameters = plcConfig.Packages.FirstOrDefault(x => x.Name == dependency.Name)?.Parameters;
 
                         packageIndex = plcConfig.Packages.FindIndex(x => x.Name == dependency.Name);
@@ -229,59 +296,6 @@ namespace Twinpack.Core
 
                 cancellationToken.ThrowIfCancellationRequested();
             }
-        }
-
-
-        public HashSet<string> CopyLicenseTmcIfNeeded(IEnumerable<PackageItem> packages, HashSet<string> knownLicenseIds)
-        {
-            // todo: flatten dependences and package versions and iterate over this
-            foreach (var package in packages)
-            {
-                if (package.PackageVersion.HasLicenseTmcBinary)
-                {
-                    _logger.Trace($"Copying license description file to TwinCAT for {package.PackageVersion.Name} ...");
-                    try
-                    {
-                        var licenseId = ParseLicenseId(package.PackageVersion.LicenseTmcText);
-                        if (licenseId == null)
-                            throw new InvalidDataException("The tmc file is not a valid license file!");
-
-                        if (knownLicenseIds.Contains(licenseId))
-                        {
-                            _logger.Trace($"LicenseId={licenseId} already known");
-                        }
-                        else
-                        {
-                            _logger.Info($"Copying license tmc with licenseId={licenseId} to {_automationInterface.LicensesPath}");
-
-                            using (var md5 = MD5.Create())
-                            {
-                                if (!Directory.Exists(_automationInterface.LicensesPath))
-                                    Directory.CreateDirectory(_automationInterface.LicensesPath);
-
-                                File.WriteAllText(Path.Combine(_automationInterface.LicensesPath, BitConverter.ToString(
-                                    md5.ComputeHash(Encoding.ASCII.GetBytes($"{package.PackageVersion.DistributorName}{package.PackageVersion.Name}"))).Replace("-", "") + ".tmc"),
-                                                  package.PackageVersion.LicenseTmcText);
-
-                            }
-
-                            knownLicenseIds.Add(licenseId);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex.Message);
-                        _logger.Trace(ex);
-                    }
-                }
-
-                if (package.PackageVersion.Dependencies != null)
-                {
-                    knownLicenseIds = CopyLicenseTmcIfNeeded(package.PackageVersion.Dependencies.Select(x => new PackageItem() { PackageVersion = x}), knownLicenseIds);
-                }
-            }
-
-            return knownLicenseIds;
         }
 
         public HashSet<string> KnownLicenseIds()
@@ -312,30 +326,18 @@ namespace Twinpack.Core
             return result;
         }
 
-        public static string ParseLicenseId(string content)
+        public async Task ResolvePackageMetadataAsync(CatalogItem packageItem, CancellationToken cancellationToken = default)
         {
-            try
-            {
-                var xdoc = XDocument.Parse(content);
-                return xdoc.Elements("TcModuleClass")?.Elements("Licenses")?.Elements("License")?.Elements("LicenseId")?.FirstOrDefault()?.Value;
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-            }
-
-            return null;
+            await _packageServers.ResolvePackageMetadataAsync(packageItem, cancellationToken);
         }
 
-        public async Task<List<PackageItem>> ResolvePackageDependenciesAsync(PackageItem package, CancellationToken cancellationToken = default)
+        public async Task<List<CatalogItem>> DownloadPackageAsync(CatalogItem package, List<CatalogItem> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
         {
-            return await _packageServers.ResolvePackageDependenciesAsync(package, cancellationToken);
-        }
+            if (!forceDownload && _automationInterface == null)
+                _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
 
-        public async Task<List<PackageItem>> DownloadPackageWithDependenciesAsync(PackageItem package, List<PackageItem> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
-        {
             // check if we find the package on the system
-            bool referenceFound = !forceDownload && await _automationInterface.IsPackageInstalledAsync(package);
+            bool referenceFound = !forceDownload && _automationInterface != null && await _automationInterface.IsPackageInstalledAsync(package);
 
             if ((!referenceFound || forceDownload) && downloadedPackageVersions.Any(x => x.PackageVersion.Name == package.PackageVersion.Name) == false)
             {
@@ -347,8 +349,8 @@ namespace Twinpack.Core
             {
                 foreach (var dependency in package.PackageVersion.Dependencies)
                 {
-                    downloadedPackageVersions = await DownloadPackageWithDependenciesAsync(
-                        new PackageItem() { PackageVersion = dependency, Config = new ConfigPlcPackage { Options = new AddPlcLibraryOptions { AddDependenciesAsReferences = false } } }, 
+                    downloadedPackageVersions = await DownloadPackageAsync(
+                        new CatalogItem() { PackageVersion = dependency, Config = new ConfigPlcPackage { Options = new AddPlcLibraryOptions { AddDependenciesAsReferences = false } } }, 
                         downloadedPackageVersions, 
                         forceDownload, 
                         cachePath, 
