@@ -76,7 +76,7 @@ namespace Twinpack.Commands
             // get all the information about the configured packages
             var tempConfig = ConfigFactory.Create(null, new List<ConfigProject> { new ConfigProject() }, rootPath);
             tempConfig.Projects[0].Plcs.Add(new ConfigPlcProject { Packages = packageConfigs });
-            var packages = _twinpack.RetrieveConfiguredPackagesAsync(tempConfig, includeMetadata: true).GetAwaiter().GetResult();
+            var packages = _twinpack.RetrieveUsedPackagesAsync(tempConfig, includeMetadata: true).GetAwaiter().GetResult();
 
             List<PackageItem> downloadedPackageVersions = new List<PackageItem>();
 

@@ -26,7 +26,7 @@ namespace Twinpack.Core
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private List<PackageItem> _availablePackageCache = new List<PackageItem>();
-        private List<PackageItem> _configuredPackagesCache = new List<PackageItem>();
+        private List<PackageItem> _usedPackagesCache = new List<PackageItem>();
 
         private PackageServerCollection _packageServers;
         private IAsyncEnumerator<PackageItem> _availablePackagesIt;
@@ -44,8 +44,8 @@ namespace Twinpack.Core
 
         public IEnumerable<IPackageServer> PackageServers { get => _packageServers; }
         public bool IsClientUpdateAvailable { get => _packageServers.Any(x => (x as TwinpackServer)?.IsClientUpdateAvailable == true); }
-        public bool HasUnknownPackages { get => ConfiguredPackages.Any(x => x.Name == null) == true; }
-        public IEnumerable<PackageItem> ConfiguredPackages { get => _configuredPackagesCache; }
+        public bool HasUnknownPackages { get => UsedPackages.Any(x => x.Name == null) == true; }
+        public IEnumerable<PackageItem> UsedPackages { get => _usedPackagesCache; }
 
         private HashSet<string> CopyLicenseTmcIfNeeded(IEnumerable<PackageItem> packages, HashSet<string> knownLicenseIds)
         {
@@ -117,7 +117,7 @@ namespace Twinpack.Core
         public void InvalidateCache()
         {
             _availablePackageCache.Clear();
-            _configuredPackagesCache.Clear();
+            _usedPackagesCache.Clear();
             _availablePackagesIt = null;
             _packageServers.InvalidateCache();
         }
@@ -166,19 +166,19 @@ namespace Twinpack.Core
                     ;
         }
 
-        public async Task<IEnumerable<PackageItem>> RetrieveConfiguredPackagesAsync(Config config, string searchTerm = null, bool includeMetadata = false, CancellationToken token = default)
+        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(Config config, string searchTerm = null, bool includeMetadata = false, CancellationToken token = default)
         {
 
             foreach (var project in config.Projects)
             {
                 var packages = project.Plcs.SelectMany(x => x.Packages);
 
-                foreach (var package in packages.Where(x => _configuredPackagesCache.Any(y => y.Name == x.Name) == false))
+                foreach (var package in packages.Where(x => _usedPackagesCache.Any(y => y.Name == x.Name) == false))
                 {
                     PackageItem catalogItem = await _packageServers.ResolvePackageAsync(project.Name, package, includeMetadata, _automationInterface, token);
 
-                    _configuredPackagesCache.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
-                    _configuredPackagesCache.Add(catalogItem);
+                    _usedPackagesCache.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
+                    _usedPackagesCache.Add(catalogItem);
 
                     if (catalogItem.PackageServer == null)
                         _logger.Warn($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) referenced in the configuration can not be found on any package server");
@@ -187,7 +187,7 @@ namespace Twinpack.Core
                 }
             }
 
-            return _configuredPackagesCache
+            return _usedPackagesCache
                     .Where(x =>
                         searchTerm == null ||
                         x.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
@@ -206,8 +206,8 @@ namespace Twinpack.Core
             // update cache
             var availablePackage = _availablePackageCache.FirstOrDefault(x => x.Name == CatalogItem.PackageVersion.Name);
             if(availablePackage != null)
-                availablePackage.Installed = null;
-            _configuredPackagesCache.RemoveAll(x => x.Name == CatalogItem.PackageVersion.Name);
+                availablePackage.Used = null;
+            _usedPackagesCache.RemoveAll(x => x.Name == CatalogItem.PackageVersion.Name);
         }
 
         public async Task AddPackageAsync(PackageItem package, bool forceDownload, CancellationToken cancellationToken = default)
@@ -256,7 +256,7 @@ namespace Twinpack.Core
             {
                 var parameters = package.Config.Parameters;
 
-                _configuredPackagesCache.RemoveAll(x => string.Equals(x.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
+                _usedPackagesCache.RemoveAll(x => string.Equals(x.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
 
                 var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs.FirstOrDefault(x => x.Name == package.PlcName);
                 var packageIndex = plcConfig.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
@@ -270,7 +270,7 @@ namespace Twinpack.Core
                 {
                     foreach (var dependency in package.PackageVersion.Dependencies ?? new List<PackageVersionGetResponse>())
                     {
-                        _configuredPackagesCache.RemoveAll(x => string.Equals(x.Name, dependency.Name, StringComparison.InvariantCultureIgnoreCase));
+                        _usedPackagesCache.RemoveAll(x => string.Equals(x.Name, dependency.Name, StringComparison.InvariantCultureIgnoreCase));
                         var dependencyParameters = plcConfig.Packages.FirstOrDefault(x => x.Name == dependency.Name)?.Parameters;
 
                         packageIndex = plcConfig.Packages.FindIndex(x => x.Name == dependency.Name);

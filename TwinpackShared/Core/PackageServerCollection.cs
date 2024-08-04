@@ -69,8 +69,7 @@ namespace Twinpack.Core
                 catalogItem.PackageServer = packageServer;
 
                 // if some data is not present, try to resolve the information
-                var version = item.Version;
-                if(item.Version == null || item.Branch == null || item.Configuration == null || item.Target == null || item.DistributorName == null)
+                if(item.Branch == null || item.Configuration == null || item.Target == null || item.DistributorName == null)
                 {
                     var resolvedPackageVersion = await packageServer.ResolvePackageVersionAsync(
                         new PlcLibrary { Name = item.Name, DistributorName = item.DistributorName, Version = item.Version },
@@ -79,15 +78,17 @@ namespace Twinpack.Core
                         item.Branch,
                         cancellationToken: token);
 
-                    version ??= resolvedPackageVersion.Version; // not overwrite a null in the config, because maybe the latest version should be used
-                    item.Branch ??= resolvedPackageVersion.Branch;
-                    item.Configuration ??= resolvedPackageVersion.Configuration;
-                    item.Target ??= resolvedPackageVersion.Target;
-                    item.DistributorName ??= resolvedPackageVersion.DistributorName;
+                    if(resolvedPackageVersion?.Name != null)
+                    {
+                        item.Branch ??= resolvedPackageVersion?.Branch;
+                        item.Configuration ??= resolvedPackageVersion?.Configuration;
+                        item.Target ??= resolvedPackageVersion?.Target;
+                        item.DistributorName ??= resolvedPackageVersion?.DistributorName;
+                    }
                 }
 
                 // try to get the installed package, if we can't find it at least try to resolve it
-                var packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = version },
+                var packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },
                                                                                   item.Branch, item.Configuration, item.Target,
                                                                                   cancellationToken: token);
 
@@ -114,7 +115,7 @@ namespace Twinpack.Core
                 if (packageVersion.Name != null)
                 {
                     catalogItem = new PackageItem(packageServer, packageVersion);
-                    catalogItem.Installed = packageVersion;
+                    catalogItem.Used = packageVersion;
                     catalogItem.Config = item;
                     catalogItem.IsPlaceholder = item.Version == null;
 

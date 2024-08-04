@@ -52,7 +52,7 @@ namespace Twinpack.Commands
                 project.Plcs = project.Plcs.Where(x => !PlcFilter.Any() || PlcFilter.Contains(x.Name)).ToList();
             }
 
-            var packages = _twinpack.RetrieveConfiguredPackagesAsync(config, SearchTerm).GetAwaiter().GetResult();
+            var packages = _twinpack.RetrieveUsedPackagesAsync(config, SearchTerm).GetAwaiter().GetResult();
             foreach (var package in packages.Where(x => !Outdated || x.IsUpdateable))
             {
                 Console.WriteLine($"{package.Name} {package.InstalledVersion} {(package.IsUpdateable ? $"-> {package.UpdateVersion}" : "")}");

@@ -53,7 +53,7 @@ namespace Twinpack.Models
             Branch = "main";
             Target = "TC3.1";
             Configuration = "Release";
-            Version = "";
+            Version = null;
             DistributorName = null;
             Namespace = null;
             Parameters = null;
