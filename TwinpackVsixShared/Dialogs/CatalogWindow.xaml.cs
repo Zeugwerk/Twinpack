@@ -550,7 +550,7 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await UninstallPackageAsync(Token);
+                await _twinpack.RemovePackageAsync(_packageItem, uninstall: UninstallDeletes);
 
                 IsNewReference = true;
                 InstalledPackageVersion = null;
@@ -904,15 +904,6 @@ namespace Twinpack.Dialogs
                     InstalledPackageVersion = _catalogItem.IsPlaceholder ? _catalogItem.InstalledVersion + "*" : _catalogItem.InstalledVersion;
                 }
             }
-        }
-
-        public async Task UninstallPackageAsync(CancellationToken cancellationToken)
-        {
-            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-
-            _twinpack.UninstallPackage(_packageItem, uninstall: UninstallDeletes);
-
-            cancellationToken.ThrowIfCancellationRequested();
         }
 
         public bool IsLicenseDialogRequired(PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
