@@ -47,13 +47,13 @@ namespace Twinpack.Models
         }
 
         public Protocol.IPackageServer PackageServer { get; set; }
-        public string InstalledVersion { get { return Installed?.Version; } }
+        public string InstalledVersion { get { return Used?.Version; } }
         public bool IsPlaceholder { get; set; } // this may be null if the latest version should be used
-        public string InstalledBranch { get { return Installed?.Branch; } }
-        public string InstalledTarget { get { return Installed?.Target; } }
-        public string InstalledConfiguration { get { return Installed?.Configuration; } }
+        public string InstalledBranch { get { return Used?.Branch; } }
+        public string InstalledTarget { get { return Used?.Target; } }
+        public string InstalledConfiguration { get { return Used?.Configuration; } }
         public PackageVersionGetResponse Update{ get; set; }
-        public PackageVersionGetResponse Installed { get; set; }
+        public PackageVersionGetResponse Used { get; set; }
         public string ProjectName { get; set; }
         public string PlcName { get; set; }
         public ConfigPlcPackage Config { get; set; }
@@ -87,7 +87,7 @@ namespace Twinpack.Models
             {
                 try
                 {
-                    return (Installed?.Version == null && Update?.Version != null) || (Update?.Version != null && new Version(Installed?.Version) < new Version(Update?.Version));
+                    return (Used?.Version == null && Update?.Version != null) || (Update?.Version != null && new Version(Used?.Version) < new Version(Update?.Version));
                 }
                 catch
                 {

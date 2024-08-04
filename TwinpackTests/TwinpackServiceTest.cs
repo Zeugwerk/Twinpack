@@ -33,10 +33,10 @@ namespace TwinpackTests
                 },
                 PackageVersionItems = new List<PackageVersionGetResponse>
                 {
-                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
                 },
                 Connected = true
             };
@@ -54,7 +54,7 @@ namespace TwinpackTests
                 PackageVersionItems = new List<PackageVersionGetResponse>
                 {
                     new PackageVersionGetResponse() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 5", DistributorName = "My Distributor", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 5", DistributorName = "My Distributor 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
                 },
                 Connected = true
             };
@@ -210,11 +210,11 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveConfiguredPackagesAsync(config, searchTerm: null)).ToList();
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: null)).ToList();
 
             Assert.AreEqual(3, packages.Count);
-            Assert.AreEqual(2, packages.Where(x => x.Installed != null).Count());
-            Assert.AreEqual(1, packages.Where(x => x.Installed == null).Count());
+            Assert.AreEqual(2, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used == null).Count());
         }
 
         [TestMethod]
@@ -228,11 +228,11 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveConfiguredPackagesAsync(config, searchTerm: "4")).ToList();
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: "4")).ToList();
 
             Assert.AreEqual(1, packages.Count);
-            Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
-            Assert.AreEqual(0, packages.Where(x => x.Installed == null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(0, packages.Where(x => x.Used == null).Count());
         }
 
         [TestMethod]
@@ -246,11 +246,11 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveConfiguredPackagesAsync(config, searchTerm: "My Distributor")).ToList();
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: "My Distributor 5")).ToList();
 
             Assert.AreEqual(1, packages.Count);
-            Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
-            Assert.AreEqual(0, packages.Where(x => x.Installed == null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(0, packages.Where(x => x.Used == null).Count());
         }
 
         [TestMethod]
@@ -264,11 +264,50 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveConfiguredPackagesAsync(config, searchTerm: "My Displayname")).ToList();
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: "My Displayname")).ToList();
 
             Assert.AreEqual(1, packages.Count);
-            Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
-            Assert.AreEqual(0, packages.Where(x => x.Installed == null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(0, packages.Where(x => x.Used == null).Count());
+        }
+
+        [TestMethod]
+        public async Task RetrieveInstalledPackagesAsync_ResolvingNeeded()
+        {
+            var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
+            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            {
+                new ConfigPlcPackage() { Name = "Package 4", Version = null, Branch = null, Target = null, Configuration = null },
+                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = null, Target = null, Configuration = null },
+                new ConfigPlcPackage() { Name = "Package 6", Version = "0.0.0.0", Branch = null, Target = null, Configuration = null },
+            };
+
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: null)).ToList();
+
+            Assert.AreEqual(3, packages.Count);
+            Assert.AreEqual(2, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used == null).Count());
+
+            Assert.AreEqual("My Distributor 4", packages[0].Config.DistributorName);
+            Assert.AreEqual("main", packages[0].Config.Branch);
+            Assert.AreEqual("Snapshot", packages[0].Config.Configuration);
+            Assert.AreEqual("TC3.1", packages[0].Config.Target);
+            Assert.AreEqual(null, packages[0].Config.Version);
+            Assert.AreEqual("1.3.0.0", packages[0].Used.Version);
+
+            Assert.AreEqual("My Distributor 5", packages[1].Config.DistributorName);
+            Assert.AreEqual("main", packages[1].Config.Branch);
+            Assert.AreEqual("Release", packages[1].Config.Configuration);
+            Assert.AreEqual("TC3.1", packages[1].Config.Target);
+            Assert.AreEqual("1.0.0.0", packages[1].Config.Version);
+            Assert.AreEqual("1.0.0.0", packages[1].Used.Version);
+
+            Assert.AreEqual(null, packages[2].Config.DistributorName);
+            Assert.AreEqual(null, packages[2].Config.Branch);
+            Assert.AreEqual(null, packages[2].Config.Configuration);
+            Assert.AreEqual(null, packages[2].Config.Target);
+            Assert.AreEqual("0.0.0.0", packages[2].Config.Version);
+            Assert.AreEqual(null, packages[2].Used);
         }
     }
 }
