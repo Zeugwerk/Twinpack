@@ -24,7 +24,7 @@ namespace Twinpack.Dialogs
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private Models.PackageVersionGetResponse _packageVersion;
+        private Models.Api.PackageVersionGetResponse _packageVersion;
         private ITcPlcLibraryManager _libraryManager;
         private string _licenseText;
         private string _licenseTmcText;
@@ -33,7 +33,7 @@ namespace Twinpack.Dialogs
         private bool _showLicenseTmcText;
 
 
-        public Models.PackageVersionGetResponse PackageVersion
+        public Models.Api.PackageVersionGetResponse PackageVersion
         {
             get { return _packageVersion; }
             set
@@ -108,7 +108,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public LicenseWindow(ITcPlcLibraryManager libraryManager, Models.PackageVersionGetResponse packageVersion)
+        public LicenseWindow(ITcPlcLibraryManager libraryManager, Models.Api.PackageVersionGetResponse packageVersion)
         {
             _libraryManager = libraryManager;
             PackageVersion = packageVersion;

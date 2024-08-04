@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TextTemplating;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
 
-namespace Twinpack.Models
+namespace Twinpack.Models.Api
 {
     public class JwtPayload
     {
@@ -266,6 +267,11 @@ namespace Twinpack.Models
         public override int GetHashCode()
         {
             return Name?.GetHashCode() ?? new Random().Next();
+        }
+
+        public override string ToString()
+        {
+            return $"{Name} {Version} (distributor: {DistributorName}, branch: {Branch}, target: {Target}, configuration: {Configuration})";
         }
     }
 

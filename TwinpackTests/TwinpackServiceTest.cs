@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Twinpack.Core;
 using Twinpack.Models;
+using Twinpack.Models.Api;
+
 
 namespace TwinpackTests
 {
@@ -208,7 +210,7 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: null)).ToList();
+            var packages = (await _twinpack.RetrieveConfiguredPackagesAsync(config, searchTerm: null)).ToList();
 
             Assert.AreEqual(3, packages.Count);
             Assert.AreEqual(2, packages.Where(x => x.Installed != null).Count());
@@ -226,7 +228,7 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: "4")).ToList();
+            var packages = (await _twinpack.RetrieveConfiguredPackagesAsync(config, searchTerm: "4")).ToList();
 
             Assert.AreEqual(1, packages.Count);
             Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
@@ -244,7 +246,7 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: "My Distributor")).ToList();
+            var packages = (await _twinpack.RetrieveConfiguredPackagesAsync(config, searchTerm: "My Distributor")).ToList();
 
             Assert.AreEqual(1, packages.Count);
             Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
@@ -262,7 +264,7 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: "My Displayname")).ToList();
+            var packages = (await _twinpack.RetrieveConfiguredPackagesAsync(config, searchTerm: "My Displayname")).ToList();
 
             Assert.AreEqual(1, packages.Count);
             Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());

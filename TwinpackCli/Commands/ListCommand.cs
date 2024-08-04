@@ -28,23 +28,23 @@ namespace Twinpack.Commands
         [Option("outdated", Required = false, Default = null, HelpText = "Only show outdated packages")]
         public bool Outdated { get; set; }
 
-        public override async Task<int> ExecuteAsync()
+        public override int Execute()
         {
-            await PackagingServerRegistry.InitializeAsync();
+            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
             _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 
-            await _twinpack.LoginAsync();
+            _twinpack.LoginAsync().GetAwaiter().GetResult();
 
             var rootPath = Environment.CurrentDirectory;
             var config = ConfigFactory.Load(rootPath);
 
             if (config == null)
             {
-                config = await ConfigFactory.CreateFromSolutionFileAsync(
+                config = ConfigFactory.CreateFromSolutionFileAsync(
                     rootPath,
                     continueWithoutSolution: false,
                     packageServers: PackagingServerRegistry.Servers.Where(x => x.Connected),
-                    plcTypeFilter: null);
+                    plcTypeFilter: null).GetAwaiter().GetResult();
             }
 
             foreach (var project in config.Projects)
@@ -52,7 +52,7 @@ namespace Twinpack.Commands
                 project.Plcs = project.Plcs.Where(x => !PlcFilter.Any() || PlcFilter.Contains(x.Name)).ToList();
             }
 
-            var packages = await _twinpack.RetrieveInstalledPackagesAsync(config, SearchTerm);
+            var packages = _twinpack.RetrieveConfiguredPackagesAsync(config, SearchTerm).GetAwaiter().GetResult();
             foreach (var package in packages.Where(x => !Outdated || x.IsUpdateable))
             {
                 Console.WriteLine($"{package.Name} {package.InstalledVersion} {(package.IsUpdateable ? $"-> {package.UpdateVersion}" : "")}");

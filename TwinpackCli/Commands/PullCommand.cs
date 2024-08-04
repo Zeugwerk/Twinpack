@@ -22,14 +22,14 @@ namespace Twinpack.Commands
         [Option('P', "provided", Required = false, Default = false, HelpText = "Also pull packages that are provided by the package definition")]
         public bool Provided { get; set; }
 
-        public override async Task<int> ExecuteAsync()
+        public override int Execute()
         {
-            await PackagingServerRegistry.InitializeAsync();
+            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
             _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 
             var config = ConfigFactory.Load();
-            await _twinpack.LoginAsync(Username, Password);
-            await PackagingServerRegistry.Servers.PullAsync(config, skipInternalPackages: !Provided);
+            _twinpack.LoginAsync(Username, Password).GetAwaiter().GetResult();
+            PackagingServerRegistry.Servers.PullAsync(config, skipInternalPackages: !Provided).GetAwaiter().GetResult();
             return 0;
         }
     }

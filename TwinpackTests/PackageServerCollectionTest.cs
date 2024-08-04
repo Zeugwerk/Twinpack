@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Twinpack.Core;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 using Twinpack.Protocol;
 
 namespace TwinpackTests
@@ -179,7 +180,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
@@ -203,7 +204,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
@@ -228,7 +229,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
@@ -252,7 +253,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
@@ -276,7 +277,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package, null);
+            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);

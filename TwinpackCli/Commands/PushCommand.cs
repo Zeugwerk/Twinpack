@@ -43,12 +43,12 @@ namespace Twinpack.Commands
         [Option('d', "skip-duplicate", Required = false, Default = false, HelpText = "If a package and version already exists, skip it and continue with the next package in the push, if any")]
         public bool SkipDuplicate { get; set; }
 
-        public override async Task<int> ExecuteAsync()
+        public override int Execute()
         {
-            await PackagingServerRegistry.InitializeAsync();
+            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
             _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 
-            await _twinpack.LoginAsync(Username, Password);
+            _twinpack.LoginAsync(Username, Password).GetAwaiter().GetResult();
 
             foreach (var twinpackServer in PackagingServerRegistry.Servers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
             {

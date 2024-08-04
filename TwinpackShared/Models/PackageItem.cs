@@ -1,12 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using TCatSysManagerLib;
+using Twinpack.Models.Api;
 
 namespace Twinpack.Models
 {
-    public class CatalogItem : CatalogItemGetResponse
+    public class CatalogItem : CatalogItemGetResponse, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        PackageGetResponse _package = new PackageGetResponse();
+        PackageVersionGetResponse _packageVersion = new PackageVersionGetResponse();
+
         public CatalogItem()
         {
 
@@ -48,11 +52,34 @@ namespace Twinpack.Models
         public string InstalledBranch { get { return Installed?.Branch; } }
         public string InstalledTarget { get { return Installed?.Target; } }
         public string InstalledConfiguration { get { return Installed?.Configuration; } }
-
-        PackageVersionGetResponse _update;
         public PackageVersionGetResponse Update{ get; set; }
         public PackageVersionGetResponse Installed { get; set; }
+        public string ProjectName { get; set; }
+        public string PlcName { get; set; }
         public ConfigPlcPackage Config { get; set; }
+        public PackageGetResponse Package
+        {
+            get { return _package; }
+            set
+            {
+                _package = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Package)));
+            }
+        }
+        public PackageVersionGetResponse PackageVersion
+        {
+            get { return _packageVersion; }
+            set
+            {
+                _packageVersion = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
+            }
+        }
+        public void Invalidate()
+        {
+            _package = new PackageGetResponse();
+            _packageVersion = new PackageVersionGetResponse();
+        }
 
         public bool IsUpdateable
         {
@@ -70,49 +97,5 @@ namespace Twinpack.Models
         }
         public string UpdateVersion { get { return Update?.Version; } }
 
-    }
-
-    public class PackageItem : INotifyPropertyChanged
-    {
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        PackageGetResponse _package = new PackageGetResponse();
-        PackageVersionGetResponse _packageVersion = new PackageVersionGetResponse();
-
-        public PackageItem()
-        {
-        }
-
-        public Protocol.IPackageServer PackageServer { get; set; }
-        public string ProjectName { get; set; }
-        public string PlcName { get; set; }
-
-        public ConfigPlcPackage Config { get; set; }
-
-        public PackageGetResponse Package
-        {
-            get { return _package; }
-            set
-            {
-                _package = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Package)));
-            }
-        }
-
-        public PackageVersionGetResponse PackageVersion
-        {
-            get { return _packageVersion; }
-            set
-            {
-                _packageVersion = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
-            }
-        }
-
-        public void Invalidate()
-        {
-            _package = new PackageGetResponse();
-            _packageVersion = new PackageVersionGetResponse();
-        }
     }
 }
