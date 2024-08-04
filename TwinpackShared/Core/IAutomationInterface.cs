@@ -15,10 +15,10 @@ namespace Twinpack.Core
         public string BootFolderPath { get; }
         public string SolutionPath { get; }
         public string ResolveEffectiveVersion(string projectName, string placeholderName);
-        public Task<bool> IsPackageInstalledAsync(CatalogItem package);
-        public Task AddPackageAsync(CatalogItem package);
-        public Task RemovePackageAsync(CatalogItem package, bool uninstall = false);
-        public Task InstallPackageAsync(CatalogItem package, string cachePath = null);
-        public Task UninstallPackageAsync(CatalogItem package);
+        public Task<bool> IsPackageInstalledAsync(PackageItem package);
+        public Task AddPackageAsync(PackageItem package);
+        public Task RemovePackageAsync(PackageItem package, bool uninstall = false);
+        public Task InstallPackageAsync(PackageItem package, string cachePath = null);
+        public Task UninstallPackageAsync(PackageItem package);
     }
 }

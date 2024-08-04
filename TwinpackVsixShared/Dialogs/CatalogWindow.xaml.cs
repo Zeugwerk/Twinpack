@@ -34,13 +34,13 @@ namespace Twinpack.Dialogs
         private Config _config;
         private ConfigPlcProject _plcConfig;
         private ConfigPlcPackage _packageConfig;
-        private IEnumerable<CatalogItem> _catalog = new List<CatalogItem>();
+        private IEnumerable<PackageItem> _catalog = new List<PackageItem>();
 
         private List<PlcVersion> _packageVersions = new List<PlcVersion>();
         private SemaphoreSlim _semaphorePackages = new SemaphoreSlim(1, 1);
         private SemaphoreSlim _semaphoreAction = new SemaphoreSlim(1, 1);
 
-        private CatalogItem _catalogItem = null;
+        private PackageItem _catalogItem = null;
 
         private int _currentCatalogPage = 1;
         private int _currentPackageVersionsPage = 1;
@@ -100,7 +100,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public IEnumerable<CatalogItem> Catalog
+        public IEnumerable<PackageItem> Catalog
         {
             get { return _catalog; }
             set
@@ -400,7 +400,7 @@ namespace Twinpack.Dialogs
             InstalledPackagesCount = 0;
             UpdateablePackagesCount = 0;
             ForcePackageVersionDownload = true;
-            Catalog = new List<CatalogItem>();
+            Catalog = new List<PackageItem>();
             DataContext = this;
 
             InitializeComponent();
@@ -591,7 +591,7 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
                 _catalogItem.Config.Options = Options;
-                await AddOrUpdatePackageAsync(new List<CatalogItem> { _catalogItem }, showLicenseDialog: true, cancellationToken: Token);
+                await AddOrUpdatePackageAsync(new List<PackageItem> { _catalogItem }, showLicenseDialog: true, cancellationToken: Token);
                 _packageConfig = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _catalogItem.PackageVersion.Name);
                 _catalogItem.Package = _catalogItem.PackageVersion;
                 _catalogItem.PackageVersion = _catalogItem.PackageVersion;
@@ -648,7 +648,7 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 var installedPackages = await _twinpack.RetrieveConfiguredPackagesAsync(_config, _searchTerm, token: Token);
 
-                var packages = installedPackages.Select(x => new CatalogItem { PackageVersion = x.Installed, Config = x.Config }).ToList();
+                var packages = installedPackages.Select(x => new PackageItem { PackageVersion = x.Installed, Config = x.Config }).ToList();
                 await AddOrUpdatePackageAsync(packages, showLicenseDialog: false, cancellationToken: Token);
 
                 installedPackages = await _twinpack.RetrieveConfiguredPackagesAsync(_config, _searchTerm, token: Token);
@@ -723,7 +723,7 @@ namespace Twinpack.Dialogs
                 var installedPackages = await _twinpack.RetrieveConfiguredPackagesAsync(_config, _searchTerm, token: Token);
 
                 var items = installedPackages.Where(x => x.IsUpdateable);
-                var packages = items.Select(x => new CatalogItem { PackageVersion = x.Update, Config = x.Config }).ToList();
+                var packages = items.Select(x => new PackageItem { PackageVersion = x.Update, Config = x.Config }).ToList();
                 await AddOrUpdatePackageAsync(packages, showLicenseDialog: false, cancellationToken: Token);
 
                 installedPackages = await _twinpack.RetrieveConfiguredPackagesAsync(_config, _searchTerm, token: Token);
@@ -913,7 +913,7 @@ namespace Twinpack.Dialogs
                    (!string.IsNullOrEmpty(packageVersion.LicenseBinary) || (!string.IsNullOrEmpty(packageVersion.LicenseTmcBinary) && (ForceShowLicense || !shownLicenses.Contains(licenseId))));
         }
 
-        public HashSet<string> ShowLicensesIfNeeded(IEnumerable<CatalogItem> packages, HashSet<string> knownLicenseIds, bool showLicenseDialog, HashSet<string> shownLicenseIds = null)
+        public HashSet<string> ShowLicensesIfNeeded(IEnumerable<PackageItem> packages, HashSet<string> knownLicenseIds, bool showLicenseDialog, HashSet<string> shownLicenseIds = null)
         {
             Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             shownLicenseIds = shownLicenseIds ?? (ForceShowLicense ? new HashSet<string>() : new HashSet<string>(knownLicenseIds));
@@ -936,14 +936,14 @@ namespace Twinpack.Dialogs
 
                 if (package.PackageVersion.Dependencies != null)
                 {
-                    shownLicenseIds = ShowLicensesIfNeeded(package.PackageVersion.Dependencies.Select(x => new CatalogItem { PackageVersion = x }) , knownLicenseIds, showLicenseDialog, shownLicenseIds);
+                    shownLicenseIds = ShowLicensesIfNeeded(package.PackageVersion.Dependencies.Select(x => new PackageItem { PackageVersion = x }) , knownLicenseIds, showLicenseDialog, shownLicenseIds);
                 }
             }
 
             return shownLicenseIds;
         }
 
-        public async Task AddOrUpdatePackageAsync(List<CatalogItem> packages, bool showLicenseDialog = true, CancellationToken cancellationToken = default)
+        public async Task AddOrUpdatePackageAsync(List<PackageItem> packages, bool showLicenseDialog = true, CancellationToken cancellationToken = default)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
@@ -1120,7 +1120,7 @@ namespace Twinpack.Dialogs
         private async void Catalog_SelectionChanged(object sender, SelectionChangedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            _catalogItem = (sender as ListView).SelectedItem as Models.CatalogItem;
+            _catalogItem = (sender as ListView).SelectedItem as Models.PackageItem;
             if (_catalogItem == null)
                 return;
 

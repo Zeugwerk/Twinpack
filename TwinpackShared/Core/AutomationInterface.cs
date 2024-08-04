@@ -192,13 +192,13 @@ namespace Twinpack.Core
             return null;
         }
 
-        public async Task<bool> IsPackageInstalledAsync(CatalogItem package)
+        public async Task<bool> IsPackageInstalledAsync(PackageItem package)
         {
             await SwitchToMainThreadAsync();
             return IsPackageInstalled(package);
         }
 
-        private bool IsPackageInstalled(CatalogItem package)
+        private bool IsPackageInstalled(PackageItem package)
         {
             var libraryManager = LibraryManager(package.PlcName);
             bool referenceFound = false;
@@ -225,7 +225,7 @@ namespace Twinpack.Core
             return referenceFound;
         }
 
-        private void CloseAllPackageRelatedWindows(CatalogItem package)
+        private void CloseAllPackageRelatedWindows(PackageItem package)
         {
             _visualStudio.Dte.ExecuteCommand("File.SaveAll");
 
@@ -267,7 +267,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task AddPackageAsync(CatalogItem package)
+        public async Task AddPackageAsync(PackageItem package)
         {
             await SwitchToMainThreadAsync();
 
@@ -276,7 +276,7 @@ namespace Twinpack.Core
             await AddPackageAsync(libraryManager, package);
         }
 
-        private async Task AddPackageAsync(ITcPlcLibraryManager libraryManager, CatalogItem package)
+        private async Task AddPackageAsync(ITcPlcLibraryManager libraryManager, PackageItem package)
         {
             await SwitchToMainThreadAsync();
 
@@ -347,7 +347,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task RemovePackageAsync(CatalogItem package, bool uninstall=false)
+        public async Task RemovePackageAsync(PackageItem package, bool uninstall=false)
         {
             await SwitchToMainThreadAsync();
 
@@ -365,7 +365,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task InstallPackageAsync(CatalogItem package, string cachePath = null)
+        public async Task InstallPackageAsync(PackageItem package, string cachePath = null)
         {
             await SwitchToMainThreadAsync();
 
@@ -378,7 +378,7 @@ namespace Twinpack.Core
             libraryManager.InstallLibrary("System", Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}"), bOverwrite: true);
         }
 
-        public async Task UninstallPackageAsync(CatalogItem package)
+        public async Task UninstallPackageAsync(PackageItem package)
         {
             await SwitchToMainThreadAsync();
 

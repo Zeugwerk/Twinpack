@@ -4,24 +4,24 @@ using Twinpack.Models.Api;
 
 namespace Twinpack.Models
 {
-    public class CatalogItem : CatalogItemGetResponse, INotifyPropertyChanged
+    public class PackageItem : CatalogItemGetResponse, INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
         PackageGetResponse _package = new PackageGetResponse();
         PackageVersionGetResponse _packageVersion = new PackageVersionGetResponse();
 
-        public CatalogItem()
+        public PackageItem()
         {
 
         }
 
-        public CatalogItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package) : base(package)
+        public PackageItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package) : base(package)
         {
             PackageServer = packageServer;
         }
 
-        public CatalogItem(Protocol.IPackageServer packageServer, PackageVersionGetResponse packageVersion)
+        public PackageItem(Protocol.IPackageServer packageServer, PackageVersionGetResponse packageVersion)
         {
             PackageServer = packageServer;
             PackageId = packageVersion.PackageId;
@@ -35,7 +35,7 @@ namespace Twinpack.Models
             Downloads = packageVersion.Downloads;
         }
 
-        public CatalogItem(ConfigPlcPackage package)
+        public PackageItem(ConfigPlcPackage package)
         {
             Name = package.Name;
             Repository = package.Version;

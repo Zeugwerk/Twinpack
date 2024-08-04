@@ -37,7 +37,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async IAsyncEnumerable<CatalogItem> SearchAsync(string filter=null, int? maxPackages=null, int batchSize=5, CancellationToken token = default)
+        public async IAsyncEnumerable<PackageItem> SearchAsync(string filter=null, int? maxPackages=null, int batchSize=5, CancellationToken token = default)
         {
             var cache = new HashSet<string>();
             foreach(var packageServer in this.Where(x => x.Connected))
@@ -50,7 +50,7 @@ namespace Twinpack.Core
                     foreach (var package in packages.Item1.Where(x => !cache.Contains(x.Name)))
                     {
                         cache.Add(package.Name);
-                        yield return new CatalogItem(packageServer, package);
+                        yield return new PackageItem(packageServer, package);
                         if (maxPackages != null && cache.Count >= maxPackages)
                             yield break;
                     }
@@ -60,9 +60,9 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<CatalogItem> ResolvePackageAsync(string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken token = default)
+        public async Task<PackageItem> ResolvePackageAsync(string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken token = default)
         {
-            var catalogItem = new CatalogItem(item);
+            var catalogItem = new PackageItem(item);
 
             foreach (var packageServer in this.Where(x => x.Connected))
             {
@@ -113,7 +113,7 @@ namespace Twinpack.Core
                 // force the packageVersion references version even if the version was not found
                 if (packageVersion.Name != null)
                 {
-                    catalogItem = new CatalogItem(packageServer, packageVersion);
+                    catalogItem = new PackageItem(packageServer, packageVersion);
                     catalogItem.Installed = packageVersion;
                     catalogItem.Config = item;
                     catalogItem.IsPlaceholder = item.Version == null;
@@ -142,7 +142,7 @@ namespace Twinpack.Core
             return catalogItem;
         }
 
-        public async Task ResolvePackageMetadataAsync(CatalogItem packageItem, CancellationToken cancellationToken = default)
+        public async Task ResolvePackageMetadataAsync(PackageItem packageItem, CancellationToken cancellationToken = default)
         {
             foreach (var packageServer in this.Where(x => x.Connected))
             {
@@ -249,7 +249,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<List<CatalogItem>> ResolvePackageDependenciesAsync(CatalogItem package, CancellationToken cancellationToken = default)
+        public async Task<List<PackageItem>> ResolvePackageDependenciesAsync(PackageItem package, CancellationToken cancellationToken = default)
         {
             var resolvedDependencies = new List<PackageVersionGetResponse>();
             foreach (var dependency in package?.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
@@ -279,10 +279,10 @@ namespace Twinpack.Core
                 }
             }
 
-            return resolvedDependencies.Select(x => new CatalogItem() { PackageVersion = x }).ToList();
+            return resolvedDependencies.Select(x => new PackageItem() { PackageVersion = x }).ToList();
         }
 
-        public async Task<bool> DownloadPackageVersionAsync(CatalogItem package, string cachePath=null, CancellationToken cancellationToken = default)
+        public async Task<bool> DownloadPackageVersionAsync(PackageItem package, string cachePath=null, CancellationToken cancellationToken = default)
         {
             var success = false;
             foreach (var packageServer in this.Where(x => x.Connected))
