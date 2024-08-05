@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.PlatformUI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,13 +8,16 @@ using System.Threading.Tasks;
 using Twinpack.Models;
 using Twinpack.Models.Api;
 using Twinpack.Protocol;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TreeView;
 
 namespace TwinpackTests
 {
     public class PackageServerMock : IPackageServer
     {
-        public List<CatalogItemGetResponse> CatalogItems { get; set; }
-        public List<PackageVersionGetResponse> PackageVersionItems { get; set;  }
+        public List<CatalogItemGetResponse> CatalogItems { get; set; } = new List<CatalogItemGetResponse>();
+        public List<PackageVersionGetResponse> PackageVersionItems { get; set; } = new List<PackageVersionGetResponse>();
+        public List<PackageVersionGetResponse> DownloadedPackageVersions { get; set; } = new List<PackageVersionGetResponse>();
+
         public string ServerType => throw new NotImplementedException();
         public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string UrlBase { get; set; }
@@ -25,9 +29,22 @@ namespace TwinpackTests
         public bool LoggedIn => throw new NotImplementedException();
         public bool Connected { get; set; }
 
-        public Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            throw new NotImplementedException();
+            if (PackageVersionItems.Any(x =>
+                    x.Name == packageVersion.Name &&
+                    (x.Version == packageVersion.Version || packageVersion.Version == null) &&
+                    (x.Branch == packageVersion.Branch || packageVersion.Branch == null) &&
+                    (x.Configuration == packageVersion.Configuration || packageVersion.Configuration == null) &&
+                    (x.Target == packageVersion.Target || packageVersion.Target == null)))
+            {
+                DownloadedPackageVersions.Add(packageVersion);
+                return;
+            }
+
+            throw new Exception("Package is not available on this server");
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -45,9 +62,16 @@ namespace TwinpackTests
             return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(new List<CatalogItemGetResponse> { }, false);
         }
 
-        public Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            throw new NotImplementedException();
+            return PackageVersionItems
+                .Where(x =>
+                    x.Name == packageName &&
+                    x.DistributorName == distributorName)
+                .OrderByDescending(x => new Version(x.Version))
+                .Select(x => new PackageGetResponse { Name = packageName, DistributorName = distributorName }).FirstOrDefault() ?? new PackageGetResponse();
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously

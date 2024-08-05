@@ -326,9 +326,9 @@ namespace Twinpack.Core
             return result;
         }
 
-        public async Task ResolvePackageMetadataAsync(PackageItem packageItem, CancellationToken cancellationToken = default)
+        public async Task ResolvePackageAsync(PackageItem packageItem, CancellationToken cancellationToken = default)
         {
-            await _packageServers.ResolvePackageMetadataAsync(packageItem, cancellationToken);
+            await _packageServers.ResolvePackageAsync(packageItem.PlcName, packageItem.Config, includeMetadata: true, automationInterface: _automationInterface, token: cancellationToken);
         }
 
         public async Task<List<PackageItem>> DownloadPackageAsync(PackageItem package, List<PackageItem> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
@@ -336,26 +336,34 @@ namespace Twinpack.Core
             if (!forceDownload && _automationInterface == null)
                 _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
 
+            if (package.Package == null || package.PackageVersion == null)
+            {
+                var resolvedPackage = await _packageServers.ResolvePackageAsync(package.PlcName, package.Config, includeMetadata: true, _automationInterface, cancellationToken);
+                package.Package ??= resolvedPackage.Package;
+                package.PackageVersion ??= resolvedPackage.PackageVersion;
+            }
+
             // check if we find the package on the system
             bool referenceFound = !forceDownload && _automationInterface != null && await _automationInterface.IsPackageInstalledAsync(package);
 
             if ((!referenceFound || forceDownload) && downloadedPackageVersions.Any(x => x.PackageVersion.Name == package.PackageVersion.Name) == false)
             {
-                if(await _packageServers.DownloadPackageVersionAsync(package, cachePath, cancellationToken))
+                if (await _packageServers.DownloadPackageVersionAsync(package, cachePath, cancellationToken))
+                {
                     downloadedPackageVersions.Add(package);
+                }
+                    
             }
 
-            if (package.PackageVersion.Dependencies != null)
+            // download dependencies if there are any
+            foreach (var dependency in package.PackageVersion.Dependencies ?? new List<PackageVersionGetResponse>())
             {
-                foreach (var dependency in package.PackageVersion.Dependencies)
-                {
-                    downloadedPackageVersions = await DownloadPackageAsync(
-                        new PackageItem() { PackageVersion = dependency, Config = new ConfigPlcPackage { Options = new AddPlcLibraryOptions { AddDependenciesAsReferences = false } } }, 
-                        downloadedPackageVersions, 
-                        forceDownload, 
-                        cachePath, 
-                        cancellationToken: cancellationToken);
-                }
+                downloadedPackageVersions = await DownloadPackageAsync(
+                    new PackageItem() { Package = dependency, PackageVersion = dependency, Config = new ConfigPlcPackage { Options = new AddPlcLibraryOptions { AddDependenciesAsReferences = false } } }, 
+                    downloadedPackageVersions, 
+                    forceDownload, 
+                    cachePath, 
+                    cancellationToken: cancellationToken);
             }
 
             return downloadedPackageVersions;
