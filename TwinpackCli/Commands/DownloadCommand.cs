@@ -60,26 +60,24 @@ namespace Twinpack.Commands
             _twinpack.LoginAsync().GetAwaiter().GetResult();
 
             // create temporary configuration, which holds the packages, which should be downloaded
-            List<ConfigPlcPackage> packageConfigs = new List<ConfigPlcPackage>();
+            List<PackageItem> packages = new List<PackageItem>();
             for(int i=0; i < Packages.Count(); i++)
             {
-                packageConfigs.Add(new ConfigPlcPackage
-                {
-                    Name = Packages.ElementAt(i),
-                    Version = Versions.ElementAtOrDefault(i) ?? null,
-                    Branch = Branches.ElementAtOrDefault(i) ?? null,
-                    Target = Targets.ElementAtOrDefault(i) ?? null,
-                    Configuration = Configurations.ElementAtOrDefault(i) ?? null
+                packages.Add(new PackageItem
+                { 
+                    Config = new ConfigPlcPackage
+                    {
+                        Name = Packages.ElementAt(i),
+                        Version = Versions.ElementAtOrDefault(i) ?? null,
+                        Branch = Branches.ElementAtOrDefault(i) ?? null,
+                        Target = Targets.ElementAtOrDefault(i) ?? null,
+                        Configuration = Configurations.ElementAtOrDefault(i) ?? null
+                    }
                 });
             }
 
-            // get all the information about the configured packages
-            var tempConfig = ConfigFactory.Create(null, new List<ConfigProject> { new ConfigProject() }, rootPath);
-            tempConfig.Projects[0].Plcs.Add(new ConfigPlcProject { Packages = packageConfigs });
-            var packages = _twinpack.RetrieveUsedPackagesAsync(tempConfig, includeMetadata: true).GetAwaiter().GetResult();
 
             List<PackageItem> downloadedPackageVersions = new List<PackageItem>();
-
             foreach(var package in packages)
             {
                 _twinpack.DownloadPackageAsync(package, downloadedPackageVersions, ForceDownload).GetAwaiter().GetResult();

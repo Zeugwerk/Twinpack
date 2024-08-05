@@ -1242,7 +1242,7 @@ namespace Twinpack.Dialogs
                     _catalogItem.Config.Branch = BranchesView.SelectedItem as string;
                     _catalogItem.Config.Configuration = ConfigurationsView.SelectedItem as string;
                     _catalogItem.Config.Target = TargetsView.SelectedItem as string;
-                    await _twinpack.ResolvePackageMetadataAsync(_catalogItem);
+                    await _twinpack.ResolvePackageAsync(_catalogItem);
                 }
 
                 if ((sender as ComboBox).SelectedIndex == 0)

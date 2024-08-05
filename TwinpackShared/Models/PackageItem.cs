@@ -8,8 +8,8 @@ namespace Twinpack.Models
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        PackageGetResponse _package = new PackageGetResponse();
-        PackageVersionGetResponse _packageVersion = new PackageVersionGetResponse();
+        PackageGetResponse _package;
+        PackageVersionGetResponse _packageVersion;
 
         public PackageItem()
         {
