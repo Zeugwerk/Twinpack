@@ -92,7 +92,7 @@ namespace Twinpack.Core
                                                                                   item.Branch, item.Configuration, item.Target,
                                                                                   cancellationToken: token);
 
-                if (packageVersion != null && item.Version == null)
+                if (packageVersion?.Name != null && item.Version == null)
                 {
                     if (automationInterface != null)
                     {
@@ -121,7 +121,7 @@ namespace Twinpack.Core
 
                     if(includeMetadata)
                     {
-                        catalogItem.Package = packageVersion;
+                        catalogItem.Package = await packageServer.GetPackageAsync(packageVersion.DistributorName, packageVersion.Name, cancellationToken: token);
                         catalogItem.PackageVersion = packageVersion;
                         catalogItem.PackageVersion.Dependencies = (await ResolvePackageDependenciesAsync(catalogItem, automationInterface, token)).Select(x => x.PackageVersion).ToList();
                     }
@@ -241,7 +241,7 @@ namespace Twinpack.Core
                             automationInterface: automationInterface,
                             token: cancellationToken);
 
-                        if (resolvedDependency?.Name != null)
+                        if (resolvedDependency?.PackageVersion?.Name != null)
                         {
                             resolvedDependencies.Add(resolvedDependency.PackageVersion);
                             break;

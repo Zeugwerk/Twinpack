@@ -328,7 +328,9 @@ namespace Twinpack.Core
 
         public async Task ResolvePackageAsync(PackageItem packageItem, CancellationToken cancellationToken = default)
         {
-            await _packageServers.ResolvePackageAsync(packageItem.PlcName, packageItem.Config, includeMetadata: true, automationInterface: _automationInterface, token: cancellationToken);
+            var resolvedPackage = await _packageServers.ResolvePackageAsync(packageItem.PlcName, packageItem.Config, includeMetadata: true, automationInterface: _automationInterface, token: cancellationToken);
+            packageItem.Package ??= resolvedPackage.Package;
+            packageItem.PackageVersion ??= resolvedPackage.PackageVersion;
         }
 
         public async Task<List<PackageItem>> DownloadPackageAsync(PackageItem package, List<PackageItem> downloadedPackageVersions, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
