@@ -243,7 +243,7 @@ namespace Twinpack.Protocol
                         {
                             try
                             {
-                                var extension = library.EndsWith(".library") ? "compiled-library" : "library";
+                                var extension = library.EndsWith(".compiled-library") ? "compiled-library" : "library";
                                 var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
                                 var fileName = $@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}";
                                 Directory.CreateDirectory(filePath);

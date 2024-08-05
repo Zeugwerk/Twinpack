@@ -294,13 +294,27 @@ namespace Twinpack
 
         public static void InstallPackageVersions(ITcPlcLibraryManager libManager, List<PackageVersionGetResponse> packageVersions, string cachePath = null)
         {
-
             foreach (var packageVersion in packageVersions)
             {
                 _logger.Info($"Installing {packageVersion.Name} {packageVersion.Version}");
 
-                var suffix = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                libManager.InstallLibrary("System", Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}"), bOverwrite: true);
+                var path = Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}");
+
+                if (File.Exists($@"{path}.library"))
+                {
+                    path = $@"{path}.library";
+                } 
+                else if (File.Exists($@"{path}.compiled-library"))
+                {
+                    path = $@"{path}.compiled-library";
+                }
+                else
+                {
+                    _logger.Warn($"Did not find library in {path} with either .library or .compiled-library extensions");
+                    return;
+                }
+
+                libManager.InstallLibrary("System", path, bOverwrite: true);
             }
         }
 
