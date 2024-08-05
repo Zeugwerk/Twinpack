@@ -311,7 +311,46 @@ namespace TwinpackTests
         }
 
         [TestMethod]
-        public async Task DownloadPackageVersionAsync()
+        public async Task ResolvePackageAsync_PackageMetadataIsPopulated()
+        {
+            var packageServer = new PackageServerMock
+            {
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZAux",
+                        Version = "1.5.0.1",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ZCore" },
+                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                        }
+                    }
+                },
+                Connected = true
+            };
+
+            var packageServers = new PackageServerCollection { packageServer };
+            var twinpack = new TwinpackService(packageServers);
+
+            var downloadedPackageVersions = new List<PackageItem>();
+            var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
+
+            await twinpack.ResolvePackageAsync(package);
+
+            Assert.AreEqual("ZAux", package.Package.Name);
+            Assert.AreEqual("ZAux", package.PackageVersion.Name);
+            Assert.AreEqual("1.5.0.1", package.PackageVersion.Version);
+            Assert.IsTrue(package.Package.Branches.Contains("main"));
+            Assert.IsTrue(package.Package.Branches.Contains("release/1.0"));
+        }
+
+        [TestMethod]
+        public async Task DownloadPackageVersionAsync_PackagesWithDependencies()
         {
             var packageServer = new PackageServerMock
             {
@@ -406,6 +445,7 @@ namespace TwinpackTests
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib2"));
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib3"));
 
+            Assert.IsTrue(downloadedPackageVersions.Select(x => x.Package.Branches).FirstOrDefault()?.Count() == 2);
         }
     }
 }
