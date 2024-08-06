@@ -33,6 +33,9 @@ namespace Twinpack.Commands
                     continueWithoutSolution: false,
                     packageServers: PackagingServerRegistry.Servers.Where(x => x.Connected),
                     plcTypeFilter: null).GetAwaiter().GetResult();
+
+                // set filepath is null, because we don't want to save this config
+                _config.FilePath = null;
             }
 
             PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
@@ -45,6 +48,11 @@ namespace Twinpack.Commands
                 _config);
 
             _twinpack.LoginAsync().GetAwaiter().GetResult();
+        }
+
+        protected List<PackageItem> CreatePackageItems(IEnumerable<string> packages, string projectName = null, string plcName = null)
+        {
+            return CreatePackageItems(packages, new List<string>(), new List<string>(), new List<string>(), new List<string>(), projectName, plcName);
         }
 
         protected List<PackageItem> CreatePackageItems(IEnumerable<string> packages, IEnumerable<string> versions, IEnumerable<string> branches, IEnumerable<string> targets, IEnumerable<string> configurations, string projectName=null, string plcName=null)
