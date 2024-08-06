@@ -16,6 +16,7 @@ namespace Twinpack.Core
         public string SolutionPath { get; }
         public string ResolveEffectiveVersion(string projectName, string plcName, string placeholderName);
         public Task<bool> IsPackageInstalledAsync(PackageItem package);
+        public bool IsPackageInstalled(PackageItem package);
         public Task AddPackageAsync(PackageItem package);
         public Task RemovePackageAsync(PackageItem package, bool uninstall = false);
         public Task InstallPackageAsync(PackageItem package, string cachePath = null);

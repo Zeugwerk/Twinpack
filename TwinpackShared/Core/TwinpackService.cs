@@ -101,7 +101,7 @@ namespace Twinpack.Core
             }
         }
 
-        private static string ParseLicenseId(string content)
+        public static string ParseLicenseId(string content)
         {
             try
             {
@@ -211,7 +211,12 @@ namespace Twinpack.Core
             foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Name == y.Name)))
             {
                 await _automationInterface.RemovePackageAsync(package, uninstall: uninstall);
+
                 _usedPackagesCache.RemoveAll(x => string.Equals(x.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
+
+                // update configuration
+                var plcConfig = _config?.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
+                plcConfig?.Packages.RemoveAll(x => x.Name == package.PackageVersion.Name);
             }
 
             _automationInterface.SaveAll();
@@ -330,7 +335,7 @@ namespace Twinpack.Core
                     dependencies.Select(x =>
                                 new PackageItem()
                                 {
-                                    Name = package.Name,
+                                    Name = x.Name,
                                     ProjectName = package.ProjectName,
                                     PlcName = package.PlcName,
                                     Package = x,
@@ -357,7 +362,7 @@ namespace Twinpack.Core
             foreach(var affectedPackage in affectedPackages)
             {
                 // check if we find the package on the system
-                bool referenceFound = !forceDownload && _automationInterface != null && await _automationInterface.IsPackageInstalledAsync(affectedPackage);
+                bool referenceFound = !forceDownload && _automationInterface != null && _automationInterface.IsPackageInstalled(affectedPackage);
 
                 if (!referenceFound || forceDownload)
                 {
@@ -367,6 +372,11 @@ namespace Twinpack.Core
             }
 
             return downloadedPackages;
+        }
+
+        public bool IsPackageInstalled(PackageItem package)
+        {
+            return _automationInterface.IsPackageInstalled(package);
         }
     }
 }

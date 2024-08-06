@@ -338,7 +338,6 @@ namespace Twinpack.Core
         public void SaveAll()
         {
             _dte.ExecuteCommand("File.SaveAll");
-
         }
 
         public Projects WaitProjects()
@@ -360,6 +359,28 @@ namespace Twinpack.Core
             }
 
             return projects;
+        }
+
+        // todo: do we actually need to return EnvDTE.Project ?
+        public EnvDTE.Project ActiveProject()
+        {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+
+            if (_dte?.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects?.Length > 0)
+            {
+                var prj = activeSolutionProjects?.GetValue(0) as EnvDTE.Project;
+                try
+                {
+                    ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
+                    if (systemManager != null)
+                        return prj;
+                }
+                catch { }
+            }
+
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+
+            return null;
         }
 
         public void Dispose()

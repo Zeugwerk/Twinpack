@@ -38,7 +38,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\PackageServerCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\TwinpackService.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)TwinpackUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)app.config" />

@@ -447,7 +447,7 @@ namespace Twinpack.Dialogs
                 IsCatalogLoading = true;
                 ResetServerSelection();
 
-                _activeProject = TwinpackUtils.ActiveProject(_context.Dte);
+                _activeProject = _context.VisualStudio.ActiveProject();
 
                 var projectItemAdapter = _activeProject?.Object as dynamic; // TwinCAT.XAE.Automation.TcProjectItemAdapter
                 _libraryManager = projectItemAdapter?.LookupChild("References") as ITcPlcLibraryManager;
@@ -914,25 +914,19 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public bool IsLicenseDialogRequired(PackageVersionGetResponse packageVersion, bool showLicenseDialogHint, HashSet<string> shownLicenses)
-        {
-            var licenseId = TwinpackUtils.ParseLicenseId(packageVersion.LicenseTmcText);
-            return (ForceShowLicense || (showLicenseDialogHint && !TwinpackUtils.IsPackageInstalled(_libraryManager, packageVersion.DistributorName, packageVersion.Title))) &&
-                   (!string.IsNullOrEmpty(packageVersion.LicenseBinary) || (!string.IsNullOrEmpty(packageVersion.LicenseTmcBinary) && (ForceShowLicense || !shownLicenses.Contains(licenseId))));
-        }
-
         public bool ConfirmLicensesIfNeeded(IEnumerable<PackageItem> packages, bool showLicenseDialog)
         {
             Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
-            var knownLicenseIds = _twinpack.KnownLicenseIds();
-            var shownLicenseIds = (ForceShowLicense ? new HashSet<string>() : new HashSet<string>(knownLicenseIds));
+            var shownLicenseIds = ForceShowLicense ? new HashSet<string>() : new HashSet<string>(_twinpack.KnownLicenseIds());
 
             foreach (var package in packages)
             {
-                var licenseId = TwinpackUtils.ParseLicenseId(package.PackageVersion.LicenseTmcText);
-                if (!shownLicenseIds.Any(x => x == licenseId) && IsLicenseDialogRequired(package.PackageVersion, showLicenseDialog, shownLicenseIds))
+                var licenseId = TwinpackService.ParseLicenseId(package.PackageVersion.LicenseTmcText);
+                if (!shownLicenseIds.Any(x => x == licenseId) &&
+                   (ForceShowLicense || (showLicenseDialog && !_twinpack.IsPackageInstalled(package))) &&
+                   (!string.IsNullOrEmpty(package.PackageVersion.LicenseBinary) || (!string.IsNullOrEmpty(package.PackageVersion.LicenseTmcBinary) && (ForceShowLicense))))
                 {
-                    var licenseDialog = new LicenseWindow(_libraryManager, package.PackageVersion);
+                    var licenseDialog = new LicenseWindow(package.PackageVersion) { IsInstalling = true };
                     if (licenseDialog.ShowLicense() == false)
                         return false;
 
@@ -979,7 +973,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                var licenseDialog = new LicenseWindow(null, _catalogItem.PackageVersion);
+                var licenseDialog = new LicenseWindow(_catalogItem.PackageVersion);
                 licenseDialog.ShowLicense();
             }
             catch (Exception ex)
@@ -993,7 +987,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                var licenseDialog = new LicenseWindow(null, _catalogItem.PackageVersion);
+                var licenseDialog = new LicenseWindow(_catalogItem.PackageVersion);
                 licenseDialog.ShowLicense();
             }
             catch (Exception ex)

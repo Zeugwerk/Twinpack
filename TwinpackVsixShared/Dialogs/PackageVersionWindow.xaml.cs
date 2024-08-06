@@ -14,6 +14,8 @@ using System.Text.RegularExpressions;
 using Jdenticon.Wpf;
 using Jdenticon.Rendering;
 using System.Threading;
+using Twinpack.Core;
+using System.Xml;
 
 namespace Twinpack.Dialogs
 {
@@ -722,7 +724,7 @@ namespace Twinpack.Dialogs
                 if (openFileDialog.ShowDialog() == true)
                 {
                     var content = File.ReadAllText(openFileDialog.FileName);
-                    if (TwinpackUtils.ParseLicenseId(content) == null)
+                    if (TwinpackService.ParseLicenseId(content) == null)
                         throw new InvalidDataException("The tmc file is not a valid license file!");
 
                     LicenseTmcFile = openFileDialog.FileName;
@@ -869,14 +871,13 @@ namespace Twinpack.Dialogs
 
                 LoadingText = "Checking all objects ...";
                 var path = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\{target}\{_plcConfig.Name}_{_plcConfig.Version}.library";
-                var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
-                var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
-                
-                TwinpackUtils.SyncPlcProj(iec, _plcConfig);
+
+                ITcPlcIECProject2 iec = SetPlcProjProperties();
+
                 _logger.Info($"Checking all objects of PLC {_plcConfig.Name}");
                 if (!iec.CheckAllObjects())
                 {
-                    if (TwinpackUtils.BuildErrorCount(_context.Dte) > 0)
+                    if (_context.VisualStudio.BuildErrorCount() > 0)
                         throw new Exceptions.PostException($"{_plcConfig.Name} does not compile! Check all objects for your PLC failed. Please fix the errors in order to publish your library.");
                 }
 
@@ -892,7 +893,7 @@ namespace Twinpack.Dialogs
                     LoadingText = "Uploading to Twinpack ...";
 
                     var cachePath = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries";
-                    var suffix = compiled ? "compiled-library" : "library";                   
+                    var suffix = compiled ? "compiled-library" : "library";
                     var packageVersion = new Models.Api.PackageVersionPostRequest()
                     {
                         Name = PackageName,
@@ -962,7 +963,7 @@ namespace Twinpack.Dialogs
                 }
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Publish failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -971,6 +972,30 @@ namespace Twinpack.Dialogs
                 IsEnabled = true;
                 IsLoading = false;
             }
+        }
+
+        private ITcPlcIECProject2 SetPlcProjProperties()
+        {
+            var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
+            var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
+
+            StringWriter stringWriter = new StringWriter();
+            using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
+            {
+                _logger.Info($"Updating plcproj, setting Version={_plcConfig.Version}, Company={_plcConfig.DistributorName}");
+                writer.WriteStartElement("TreeItem");
+                writer.WriteStartElement("IECProjectDef");
+                writer.WriteStartElement("ProjectInfo");
+                writer.WriteElementString("Title", _plcConfig.Title);
+                writer.WriteElementString("Version", (new Version(_plcConfig.Version)).ToString());
+                writer.WriteElementString("Company", _plcConfig.DistributorName);
+                writer.WriteEndElement();     // ProjectInfo
+                writer.WriteEndElement();     // IECProjectDef
+                writer.WriteEndElement();     // TreeItem 
+            }
+
+            (_plc as ITcSmTreeItem).ConsumeXml(stringWriter.ToString());
+            return iec;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
@@ -1055,7 +1080,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                var licenseDialog = new LicenseWindow(null, _packageVersion);
+                var licenseDialog = new LicenseWindow(_packageVersion);
                 licenseDialog.ShowLicense();
             }
             catch (Exception ex)
@@ -1069,7 +1094,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                var licenseDialog = new LicenseWindow(null, _packageVersion);
+                var licenseDialog = new LicenseWindow(_packageVersion);
                 licenseDialog.ShowLicense();
             }
             catch (Exception ex)

@@ -25,7 +25,6 @@ namespace Twinpack.Dialogs
         public event PropertyChangedEventHandler PropertyChanged;
 
         private Models.Api.PackageVersionGetResponse _packageVersion;
-        private ITcPlcLibraryManager _libraryManager;
         private string _licenseText;
         private string _licenseTmcText;
         private bool _isInstalling;
@@ -36,7 +35,7 @@ namespace Twinpack.Dialogs
         public Models.Api.PackageVersionGetResponse PackageVersion
         {
             get { return _packageVersion; }
-            set
+            private set
             {
                 _packageVersion = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
@@ -55,7 +54,7 @@ namespace Twinpack.Dialogs
         public bool ShowLicenseText
         {
             get { return _showLicenseText; }
-            set
+            private set
             {
                 _showLicenseText = value;
                 if (_showLicenseText)
@@ -67,7 +66,7 @@ namespace Twinpack.Dialogs
         public bool ShowLicenseTmcText
         {
             get { return _showLicenseTmcText; }
-            set
+            private set
             {
                 _showLicenseTmcText = value;
 
@@ -89,7 +88,7 @@ namespace Twinpack.Dialogs
         public string LicenseText
         {
             get { return _licenseText; }
-            set
+            private set
             {
                 _licenseText = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseText)));
@@ -100,7 +99,7 @@ namespace Twinpack.Dialogs
         public string LicenseTmcText
         {
             get { return _licenseTmcText; }
-            set
+            private set
             {
                 _licenseTmcText = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LicenseTmcText)));
@@ -108,9 +107,8 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public LicenseWindow(ITcPlcLibraryManager libraryManager, Models.Api.PackageVersionGetResponse packageVersion)
+        public LicenseWindow(Models.Api.PackageVersionGetResponse packageVersion)
         {
-            _libraryManager = libraryManager;
             PackageVersion = packageVersion;
 
             if (!string.IsNullOrEmpty(PackageVersion?.LicenseBinary))
@@ -124,8 +122,6 @@ namespace Twinpack.Dialogs
 
             if (HasLicenseText)
                 ShowLicenseText = true;
-
-            IsInstalling = _libraryManager != null;
 
             DataContext = this;
             InitializeComponent();
