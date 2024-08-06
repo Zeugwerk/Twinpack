@@ -306,12 +306,12 @@ namespace Twinpack.Core
             packageItem.PackageVersion ??= resolvedPackage.PackageVersion;
         }
 
-        public async Task<List<PackageItem>> AffectedPackagesAsync(IEnumerable<PackageItem> packages, CancellationToken cancellationToken = default)
+        public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, CancellationToken cancellationToken = default)
         {
             return await AffectedPackagesAsync(packages, new List<PackageItem>(), cancellationToken);
         }
 
-        public async Task<List<PackageItem>> AffectedPackagesAsync(IEnumerable<PackageItem> packages, List<PackageItem> cache, CancellationToken cancellationToken = default)
+        public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, List<PackageItem> cache, CancellationToken cancellationToken = default)
         {
             foreach(var package in packages)
             {
@@ -326,7 +326,7 @@ namespace Twinpack.Core
                     cache.Add(package);
 
                 var dependencies = package.PackageVersion.Dependencies ?? new List<PackageVersionGetResponse>();
-                cache = await AffectedPackagesAsync(
+                await AffectedPackagesAsync(
                     dependencies.Select(x =>
                                 new PackageItem()
                                 {
@@ -336,7 +336,7 @@ namespace Twinpack.Core
                                     Package = x,
                                     PackageVersion = x,
                                     Config = new ConfigPlcPackage(x) { Options = package.Config.Options }
-                                }),
+                                }).ToList(),
                                 cache,
                                 cancellationToken: cancellationToken);
             }
@@ -349,7 +349,7 @@ namespace Twinpack.Core
             List<PackageItem> downloadedPackages = new List<PackageItem> { };
             List<PackageItem> affectedPackages = packages.ToList();
             if (includeDependencies)
-                affectedPackages = await AffectedPackagesAsync(affectedPackages, affectedPackages, cancellationToken);
+                affectedPackages = await AffectedPackagesAsync(affectedPackages, cancellationToken);
 
             if (!forceDownload && _automationInterface == null)
                 _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
