@@ -30,33 +30,15 @@ namespace Twinpack.Commands
 
         public override int Execute()
         {
-            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
-            _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
+            Initialize(headless: true);
 
-            _twinpack.LoginAsync().GetAwaiter().GetResult();
-
-            var rootPath = Environment.CurrentDirectory;
-            var config = ConfigFactory.Load(rootPath);
-
-            if (config == null)
-            {
-                config = ConfigFactory.CreateFromSolutionFileAsync(
-                    rootPath,
-                    continueWithoutSolution: false,
-                    packageServers: PackagingServerRegistry.Servers.Where(x => x.Connected),
-                    plcTypeFilter: null).GetAwaiter().GetResult();
-            }
-
-            foreach (var project in config.Projects)
-            {
+            // remove projects accordingly to the filter
+            foreach (var project in _config.Projects)
                 project.Plcs = project.Plcs.Where(x => !PlcFilter.Any() || PlcFilter.Contains(x.Name)).ToList();
-            }
 
-            var packages = _twinpack.RetrieveUsedPackagesAsync(config, SearchTerm).GetAwaiter().GetResult();
+            var packages = _twinpack.RetrieveUsedPackagesAsync(_config, SearchTerm).GetAwaiter().GetResult();
             foreach (var package in packages.Where(x => !Outdated || x.IsUpdateable))
-            {
                 Console.WriteLine($"{package.Name} {package.InstalledVersion} {(package.IsUpdateable ? $"-> {package.UpdateVersion}" : "")}");
-            }
 
             return 0;
         }

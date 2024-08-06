@@ -76,6 +76,7 @@ namespace Twinpack.Dialogs
         private string _installedPackageVersion;
 
         private bool _forcePackageVersionDownload;
+        private bool _addDependencies;
         private bool _forceShowLicense;
         private bool _uninstallDeletes;
 
@@ -186,6 +187,17 @@ namespace Twinpack.Dialogs
             {
                 _packageVersions = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Versions)));
+            }
+        }
+
+        
+        public bool AddDependencies
+        {
+            get { return _addDependencies; }
+            set
+            {
+                _addDependencies = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AddDependencies)));
             }
         }
 
@@ -952,7 +964,7 @@ namespace Twinpack.Dialogs
             ShowLicensesIfNeeded(packages, knownLicenseIds, showLicenseDialog);
 
             // add packages
-            await _twinpack.AddPackagesAsync(packages, forceDownload: ForcePackageVersionDownload, cancellationToken);
+            await _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload=ForcePackageVersionDownload, AddDependencies=AddDependencies }, cancellationToken);
 
             IsNewReference = false;
         }

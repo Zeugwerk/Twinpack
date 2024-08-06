@@ -46,9 +46,9 @@ namespace Twinpack.Core
             _solution = solution;
         }
 
-        public void Save()
+        public void Close(bool save=true)
         {
-            _solution?.Close(true);
+            _solution?.Close(save);
         }
 
         protected bool Initialize(bool hidden = true)
@@ -335,15 +335,10 @@ namespace Twinpack.Core
             return errorCount;
         }
 
-        public void SaveAllFiles()
+        public void SaveAll()
         {
-            for (int i = 1; i <= _solution.Projects.Count; i++)
-            {
-                _solution.Projects.Item(i).Save();
+            _dte.ExecuteCommand("File.SaveAll");
 
-                for (int j = 1; j <= _solution.Projects.Item(i).ProjectItems.Count; j++)
-                    _solution.Projects.Item(i).ProjectItems.Item(j).Save();
-            }
         }
 
         public Projects WaitProjects()
