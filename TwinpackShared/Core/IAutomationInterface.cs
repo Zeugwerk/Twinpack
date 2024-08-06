@@ -14,11 +14,12 @@ namespace Twinpack.Core
         public string LicensesPath { get; }
         public string BootFolderPath { get; }
         public string SolutionPath { get; }
-        public string ResolveEffectiveVersion(string projectName, string placeholderName);
+        public string ResolveEffectiveVersion(string projectName, string plcName, string placeholderName);
         public Task<bool> IsPackageInstalledAsync(PackageItem package);
         public Task AddPackageAsync(PackageItem package);
         public Task RemovePackageAsync(PackageItem package, bool uninstall = false);
         public Task InstallPackageAsync(PackageItem package, string cachePath = null);
         public Task UninstallPackageAsync(PackageItem package);
+        public void SaveAll();
     }
 }

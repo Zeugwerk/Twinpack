@@ -68,16 +68,21 @@ namespace Twinpack.Core
             return true;
         }
 
-        public string ResolveEffectiveVersion(string projectName, string placeholderName)
+        public void SaveAll()
         {
-            ResolvePlaceholder(projectName, placeholderName, out _, out string effectiveVersion);
+            _visualStudio?.SaveAll();
+        }
+
+        public string ResolveEffectiveVersion(string projectName, string plcName, string placeholderName)
+        {
+            ResolvePlaceholder(projectName, plcName, placeholderName, out _, out string effectiveVersion);
 
             return effectiveVersion;
         }
 
-        private ITcPlcLibrary ResolvePlaceholder(string projectName, string placeholderName, out string distributorName, out string effectiveVersion)
+        private ITcPlcLibrary ResolvePlaceholder(string projectName, string plcName, string placeholderName, out string distributorName, out string effectiveVersion)
         {
-            ITcPlcLibraryManager libManager = LibraryManager(projectName);
+            ITcPlcLibraryManager libManager = LibraryManager(projectName, plcName);
             return ResolvePlaceholder(libManager, placeholderName, out distributorName, out effectiveVersion);
         }
 
@@ -142,11 +147,11 @@ namespace Twinpack.Core
             return null;
         }
 
-        private ITcPlcLibraryManager LibraryManager(string projectName = null)
+        private ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)
         {
             var systemManager = SystemManager(projectName);
             
-            if (projectName == null)
+            if (plcName == null)
             {
                 var plcConfiguration = systemManager.LookupTreeItem("TIPC");
                 for (var j = 1; j <= plcConfiguration.ChildCount; j++)
@@ -163,7 +168,7 @@ namespace Twinpack.Core
             }
             else
             {
-                var projectRoot = systemManager.LookupTreeItem($"TIPC^{projectName}");
+                var projectRoot = systemManager.LookupTreeItem($"TIPC^{plcName}");
                 var plc = (projectRoot as ITcProjectRoot)?.NestedProject;
                 for (var k = 1; k <= (plc?.ChildCount ?? 0); k++)
                 {
@@ -172,7 +177,6 @@ namespace Twinpack.Core
                         return plc.Child[k] as ITcPlcLibraryManager;
                     }
                 }
-
             }
 
             return null;
@@ -200,7 +204,7 @@ namespace Twinpack.Core
 
         private bool IsPackageInstalled(PackageItem package)
         {
-            var libraryManager = LibraryManager(package.PlcName);
+            var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             bool referenceFound = false;
 
             if (libraryManager != null)
@@ -215,11 +219,6 @@ namespace Twinpack.Core
                         break;
                     }
                 }
-
-                if (referenceFound)
-                {
-                    _logger.Info($"{package.PackageVersion.Title} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}), it already exists on the system");
-                }
             }
 
             return referenceFound;
@@ -227,7 +226,7 @@ namespace Twinpack.Core
 
         private void CloseAllPackageRelatedWindows(PackageItem package)
         {
-            _visualStudio.Dte.ExecuteCommand("File.SaveAll");
+            SaveAll();
 
             // Close all windows that have been opened with a library manager
             foreach (EnvDTE.Window window in _visualStudio.Dte.Windows)
@@ -272,7 +271,7 @@ namespace Twinpack.Core
             await SwitchToMainThreadAsync();
 
             // add actual packages
-            var libraryManager = LibraryManager(package.PlcName);
+            var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             await AddPackageAsync(libraryManager, package);
         }
 
@@ -286,7 +285,7 @@ namespace Twinpack.Core
             var distributorName = package.PackageVersion.DistributorName ?? GuessDistributorName(libraryManager, libraryName, version);
 
             // if we can't find the reference with the distributor name from the package, fallback to looking it up
-            if (!await IsPackageInstalledAsync(package))
+            if (!IsPackageInstalled(package))
                 distributorName = GuessDistributorName(libraryManager, libraryName, version);
 
             await RemovePackageAsync(package);
@@ -351,10 +350,10 @@ namespace Twinpack.Core
         {
             await SwitchToMainThreadAsync();
 
-            var libraryManager = LibraryManager(package.PlcName);
+            var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             CloseAllPackageRelatedWindows(package);
 
-            var plcLibrary = ResolvePlaceholder(package.PlcName, package.PackageVersion.Title, out _, out _);
+            var plcLibrary = ResolvePlaceholder(package.ProjectName, package.PlcName, package.PackageVersion.Title, out _, out _);
             if (plcLibrary != null)
                 libraryManager.RemoveReference(package.PackageVersion.Title);
 
@@ -369,7 +368,7 @@ namespace Twinpack.Core
         {
             await SwitchToMainThreadAsync();
 
-            var libraryManager = LibraryManager(package.PlcName);
+            var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             var packageVersion = package.PackageVersion;
 
             _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
@@ -382,7 +381,7 @@ namespace Twinpack.Core
         {
             await SwitchToMainThreadAsync();
 
-            var libraryManager = LibraryManager(package.PlcName);
+            var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
 
             libraryManager.UninstallLibrary("System", package.PackageVersion.Title, package.PackageVersion.Version, package.PackageVersion.DistributorName);
         }

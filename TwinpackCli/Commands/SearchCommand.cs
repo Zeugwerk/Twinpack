@@ -19,10 +19,8 @@ namespace Twinpack.Commands
 
         public override int Execute()
         {
-            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
-            _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
+            Initialize(headless: true);
 
-            _twinpack.LoginAsync().GetAwaiter().GetResult();
             foreach (var package in _twinpack.RetrieveAvailablePackagesAsync(SearchTerm, Take).GetAwaiter().GetResult())
             {
                 Console.WriteLine(package.Name);

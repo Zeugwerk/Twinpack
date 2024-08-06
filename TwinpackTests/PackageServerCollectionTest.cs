@@ -180,7 +180,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
+            var catalogItem = await _packageServers.ResolvePackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
@@ -204,7 +204,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
+            var catalogItem = await _packageServers.ResolvePackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
@@ -229,7 +229,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
+            var catalogItem = await _packageServers.ResolvePackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
@@ -253,7 +253,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
+            var catalogItem = await _packageServers.ResolvePackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
@@ -277,7 +277,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync("plc1", package);
+            var catalogItem = await _packageServers.ResolvePackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);

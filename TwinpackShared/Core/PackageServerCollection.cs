@@ -60,7 +60,12 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<PackageItem> ResolvePackageAsync(string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken token = default)
+        public async Task<PackageItem> ResolvePackageAsync(ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, CancellationToken token = default)
+        {
+            return await ResolvePackageAsync(null, null, item, includeMetadata, automationInterface, token);
+        }
+
+        public async Task<PackageItem> ResolvePackageAsync(string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken token = default)
         {
             var catalogItem = new PackageItem(item);
 
@@ -92,11 +97,11 @@ namespace Twinpack.Core
                                                                                   item.Branch, item.Configuration, item.Target,
                                                                                   cancellationToken: token);
 
-                if (packageVersion?.Name != null && item.Version == null)
+                if (packageVersion?.Name != null && item.Version == null && projectName != null && plcName != null)
                 {
                     if (automationInterface != null)
                     {
-                        var effectiveVersion = automationInterface.ResolveEffectiveVersion(plcName, packageVersion.Title);
+                        var effectiveVersion = automationInterface.ResolveEffectiveVersion(projectName, plcName, packageVersion.Title);
                         packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
                                                                                           item.Branch, item.Configuration, item.Target,
                                                                                           cancellationToken: token);
@@ -227,6 +232,7 @@ namespace Twinpack.Core
                     try
                     {
                         var resolvedDependency = await ResolvePackageAsync(
+                            package.ProjectName,
                             package.PlcName,
                             new ConfigPlcPackage
                             {

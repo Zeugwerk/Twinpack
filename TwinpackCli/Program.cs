@@ -24,11 +24,12 @@ namespace Twinpack
 
             try
             {
-                return Parser.Default.ParseArguments<SearchCommand, ListCommand, DownloadCommand, PullCommand, PushCommand>(args)
+                return Parser.Default.ParseArguments<SearchCommand, ListCommand, DownloadCommand, AddCommand, PullCommand, PushCommand>(args)
                     .MapResult(
                         (SearchCommand command) => Execute(command),
                         (ListCommand command) => Execute(command),
                         (DownloadCommand command) => Execute(command),
+                        (AddCommand command) => Execute(command),
                         (PullCommand command) => Execute(command),
                         (PushCommand command) => Execute(command),
                          errs => 1

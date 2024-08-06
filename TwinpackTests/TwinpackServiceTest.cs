@@ -435,7 +435,7 @@ namespace TwinpackTests
             var downloadedPackageVersions = new List<PackageItem>();
             var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
 
-            downloadedPackageVersions = await twinpack.DownloadPackageAsync(package, downloadedPackageVersions, forceDownload: true);
+            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, includeDependencies: true, forceDownload: true);
 
             Assert.AreEqual(6, downloadedPackageVersions.Count());
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZCore"));

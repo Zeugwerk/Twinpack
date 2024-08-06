@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\AddCommand.cs" />
     <Compile Include="Commands\Command.cs" />
     <Compile Include="Commands\DownloadCommand.cs" />
     <Compile Include="Commands\ListCommand.cs" />
