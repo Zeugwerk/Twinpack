@@ -55,9 +55,10 @@ namespace Twinpack.Core
         public bool HasUnknownPackages { get => UsedPackages.Any(x => x.Name == null) == true; }
         public IEnumerable<PackageItem> UsedPackages { get => _usedPackagesCache; }
 
-        private HashSet<string> CopyLicenseTmcIfNeeded(IEnumerable<PackageItem> packages, HashSet<string> knownLicenseIds)
+        private void CopyRuntimeLicenseIfNeeded(IEnumerable<PackageItem> packages)
         {
-            // todo: flatten dependences and package versions and iterate over this
+            var knownLicenseIds = KnownLicenseIds();
+
             foreach (var package in packages)
             {
                 if (package.PackageVersion.HasLicenseTmcBinary)
@@ -97,14 +98,7 @@ namespace Twinpack.Core
                         _logger.Trace(ex);
                     }
                 }
-
-                if (package.PackageVersion.Dependencies != null)
-                {
-                    knownLicenseIds = CopyLicenseTmcIfNeeded(package.PackageVersion.Dependencies.Select(x => new PackageItem() { PackageVersion = x }), knownLicenseIds);
-                }
             }
-
-            return knownLicenseIds;
         }
 
         private static string ParseLicenseId(string content)
@@ -204,18 +198,24 @@ namespace Twinpack.Core
                     ;
         }
 
-        public async System.Threading.Tasks.Task RemovePackageAsync(PackageItem CatalogItem, bool uninstall)
+        public async System.Threading.Tasks.Task RemovePackagesAsync(List<PackageItem> packages, bool uninstall, CancellationToken cancellationToken = default)
         {
-            if (CatalogItem.PackageVersion.Name == null)
-                throw new Exception("No packages is selected that could be uninstalled!");
+            foreach (var package in packages)
+            {
+                if (package.Config.Name == null)
+                    throw new Exception("No packages is selected that could be uninstalled!");
+            }
 
-            await _automationInterface.RemovePackageAsync(CatalogItem, uninstall: uninstall);
+            var affectedPackages = await AffectedPackagesAsync(packages, cancellationToken);
 
-            // update cache
-            var availablePackage = _availablePackageCache.FirstOrDefault(x => x.Name == CatalogItem.PackageVersion.Name);
-            if(availablePackage != null)
-                availablePackage.Used = null;
-            _usedPackagesCache.RemoveAll(x => x.Name == CatalogItem.PackageVersion.Name);
+            foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Name == y.Name)))
+            {
+                await _automationInterface.RemovePackageAsync(package, uninstall: uninstall);
+                _usedPackagesCache.RemoveAll(x => string.Equals(x.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
+            }
+
+            _automationInterface.SaveAll();
+            ConfigFactory.Save(_config);
         }
 
         public async System.Threading.Tasks.Task AddPackageAsync(PackageItem package, AddPackageOptions options = default, CancellationToken cancellationToken = default)
@@ -231,9 +231,8 @@ namespace Twinpack.Core
             var affectedPackages = await AffectedPackagesAsync(packages, cancellationToken);
             var cachePath = $@"{_automationInterface.SolutionPath}\.Zeugwerk\libraries";
 
-            // license handling
-            var knownLicenseIds = KnownLicenseIds();
-            CopyLicenseTmcIfNeeded(packages, knownLicenseIds);
+            // copy runtime licenses
+            CopyRuntimeLicenseIfNeeded(affectedPackages);
 
            // download packages
             var downloadedPackageVersions = await DownloadPackagesAsync(affectedPackages, includeDependencies: false, forceDownload: options?.ForceDownload == true, cachePath: cachePath, cancellationToken: cancellationToken);
@@ -263,12 +262,13 @@ namespace Twinpack.Core
                 if (packageIndex.HasValue && packageIndex.Value >= 0)
                     plcConfig.Packages[packageIndex.Value] = package.Config;
                 else
-                    plcConfig.Packages.Add(package.Config); // todo: might be null for dependencies
+                    plcConfig.Packages.Add(package.Config);
 
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
             _automationInterface.SaveAll();
+            ConfigFactory.Save(_config);
         }
 
         public HashSet<string> KnownLicenseIds()
