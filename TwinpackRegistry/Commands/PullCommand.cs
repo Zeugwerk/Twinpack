@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Twinpack.Models;
 
 namespace Twinpack.Commands
 {
@@ -41,7 +42,7 @@ namespace Twinpack.Commands
             _logger.Info(new string('-', 3) + $" download");
             await registry.DownloadAsync(RegistryOwner, RegistryName, token: Token);
 
-            var plcs = TwinpackUtils.PlcProjectsFromConfig(compiled: false, target: "TC3.1");
+            var plcs = ConfigPlcProjectFactory.PlcProjectsFromConfig(compiled: false, target: "TC3.1");
             if (!DryRun && plcs.Any())
             {
                 _logger.Info(new string('-', 3) + $" push");

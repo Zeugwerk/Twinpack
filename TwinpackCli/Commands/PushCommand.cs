@@ -54,8 +54,8 @@ namespace Twinpack.Commands
             {
                 twinpackServer.PushAsync(
                     WithoutConfig ?
-                        TwinpackUtils.PlcProjectsFromPath(LibraryPath) :
-                        TwinpackUtils.PlcProjectsFromConfig(Compiled, Target),
+                        ConfigPlcProjectFactory.PlcProjectsFromPath(LibraryPath) :
+                        ConfigPlcProjectFactory.PlcProjectsFromConfig(Compiled, Target),
                     Configuration,
                     Branch,
                     Target,

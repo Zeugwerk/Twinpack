@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using EnvDTE;
 using NLog;
+using NuGet.Common;
 using TCatSysManagerLib;
 
 namespace Twinpack.Models
@@ -254,6 +255,8 @@ namespace Twinpack.Models
 
     public class ConfigPlcProjectFactory
     {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
         public static XNamespace TcNs = "http://schemas.microsoft.com/developer/msbuild/2003";
 
         public static ConfigPlcProject MapPlcConfigToPlcProj(Config config, EnvDTE.Project prj)
@@ -594,6 +597,50 @@ namespace Twinpack.Models
         public static XDocument XDoc(ConfigPlcProject plc)
         {
             return XDocument.Load(GuessFilePath(plc));
+        }
+
+        public static IEnumerable<ConfigPlcProject> PlcProjectsFromConfig(bool compiled, string target, string rootPath = ".", string cachePath = null)
+        {
+            var config = ConfigFactory.Load(rootPath);
+
+            _logger.Info($"Pushing to Twinpack Server");
+
+            var suffix = compiled ? "compiled-library" : "library";
+            var plcs = config.Projects.SelectMany(x => x.Plcs)
+                                      .Where(x => x.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary ||
+                                             x.PlcType == ConfigPlcProject.PlcProjectType.Library);
+            // check if all requested files are present
+            foreach (var plc in plcs)
+            {
+                plc.FilePath = $@"{cachePath ?? Protocol.TwinpackServer.DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}";
+                if (!File.Exists(plc.FilePath))
+                    throw new Exceptions.LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{plc.FilePath}'");
+
+                if (!string.IsNullOrEmpty(plc.LicenseFile) && !File.Exists(plc.LicenseFile))
+                    _logger.Warn($"Could not find license file '{plc.LicenseFile}'");
+
+                yield return plc;
+            }
+        }
+
+        public static IEnumerable<ConfigPlcProject> PlcProjectsFromPath(string rootPath = ".")
+        {
+            foreach (var libraryFile in Directory.GetFiles(rootPath, "*.library"))
+            {
+                var libraryInfo = LibraryReader.Read(File.ReadAllBytes(libraryFile));
+                var plc = new ConfigPlcProject()
+                {
+                    Name = libraryInfo.Title,
+                    DisplayName = libraryInfo.Title,
+                    Description = libraryInfo.Description,
+                    Authors = libraryInfo.Author,
+                    DistributorName = libraryInfo.Company,
+                    Version = libraryInfo.Version,
+                    FilePath = libraryFile
+                };
+
+                yield return plc;
+            }
         }
     }
 }

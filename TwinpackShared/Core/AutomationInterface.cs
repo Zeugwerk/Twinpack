@@ -9,6 +9,7 @@ using System.Management;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Models;
@@ -202,7 +203,7 @@ namespace Twinpack.Core
             return IsPackageInstalled(package);
         }
 
-        private bool IsPackageInstalled(PackageItem package)
+        public bool IsPackageInstalled(PackageItem package)
         {
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             bool referenceFound = false;
