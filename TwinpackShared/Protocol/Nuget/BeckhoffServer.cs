@@ -56,5 +56,10 @@ namespace Twinpack.Protocol
             library.Name = "TwinCAT.XAE.PLC.Lib." + library.Name;
             return await base.ResolvePackageVersionAsync(library, preferredTarget, preferredConfiguration, preferredBranch, cancellationToken);
         }
+
+        protected override int EvaluateCompiled(string tags)
+        {
+            return 1;
+        }
     }
 }
