@@ -17,6 +17,7 @@ using WixToolset.Dtf.WindowsInstaller;
 using WixToolset.Dtf.WindowsInstaller.Package;
 using NuGet.Packaging.Core;
 using System.Data;
+using EnvDTE;
 
 namespace Twinpack.Protocol
 {
@@ -180,7 +181,7 @@ namespace Twinpack.Protocol
                         Branch = "main",
                         Target = "TC3.1",
                         Configuration = "Release",
-                        Compiled = 1,
+                        Compiled = EvaluateCompiled(x.Tags),
                         //Notes =,
                         //PackageType,
                         Binary = null,
@@ -232,8 +233,8 @@ namespace Twinpack.Protocol
 
                     var msis = packageFiles.Where(x => x.EndsWith(".msi", StringComparison.InvariantCultureIgnoreCase));
                     var libraries = packageFiles.Where(x => 
-                        x.EndsWith(".library", StringComparison.InvariantCultureIgnoreCase) ||
-                        Path.GetExtension(x).StartsWith(".compiled-library"));
+                        (packageVersion.Compiled == 0 && x.EndsWith(".library", StringComparison.InvariantCultureIgnoreCase)) ||
+                        (packageVersion.Compiled == 1 && Path.GetExtension(x).StartsWith(".compiled-library")));
 
                     if(libraries.Count() == 1)
                     {
@@ -243,7 +244,7 @@ namespace Twinpack.Protocol
                         {
                             try
                             {
-                                var extension = library.EndsWith(".library") ? "compiled-library" : "library";
+                                var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
                                 var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
                                 var fileName = $@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}";
                                 Directory.CreateDirectory(filePath);
@@ -279,14 +280,18 @@ namespace Twinpack.Protocol
                                     pkg.ExtractFiles();
                                 }
 
-                                var files = Directory.GetFiles(tempFolderPath, "*", SearchOption.AllDirectories).Where(x => Path.GetExtension(x) == ".library" || Path.GetExtension(x).StartsWith(".compiled-library"));
+                                var files = Directory.GetFiles(tempFolderPath, "*", SearchOption.AllDirectories)
+                                    .Where(x => 
+                                    (packageVersion.Compiled == 0 && Path.GetExtension(x) == ".library") || 
+                                    (packageVersion.Compiled == 1 && Path.GetExtension(x).StartsWith(".compiled-library")));
+
                                 if(files.Count() != 1)
                                 {
                                     throw new Exceptions.GetException("nupkg contains a msi file that contains more than one library!");
                                 }
                                 foreach (var f in files)
                                 {
-                                    var extension = Path.GetExtension(f).StartsWith(".compiled-library") ? "compiled-library" : "library";
+                                    var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
                                     var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
                                     var fileName = $@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}";
                                     Directory.CreateDirectory(filePath);
@@ -302,7 +307,7 @@ namespace Twinpack.Protocol
                     }
                     else
                     {
-                        throw new Exceptions.GetException("nupkg should contain a single msi or library file!");
+                        throw new Exceptions.GetException($"nupkg should contain a single .msi or {(packageVersion.Compiled == 1 ? ".compiled-library" : ".library")} file!");
                     }
                 }
             }
@@ -374,7 +379,7 @@ namespace Twinpack.Protocol
                             Branch = "main",
                             Target = "TC3.1",
                             Configuration = "Release",
-                            Compiled = 1,
+                            Compiled = EvaluateCompiled(dependency.Tags),
                             Notes = dependency.Description,
                             //PackageType,
                             Binary = null,
@@ -408,7 +413,7 @@ namespace Twinpack.Protocol
                 Branch = "main",
                 Target = "TC3.1",
                 Configuration = "Release",
-                Compiled = 1,
+                Compiled = EvaluateCompiled(x.Tags),
                 Notes = x.Description,
                 //PackageType,
                 Binary = null,
@@ -560,6 +565,12 @@ namespace Twinpack.Protocol
                 title = tags[libraryIdx + 1];
 
             return title;
+        }
+
+        protected virtual int EvaluateCompiled(string tags)
+        {
+            var tagList = tags.Split(' ').ToList();
+            return tagList.IndexOf("tp-compiled-library") >= 0 ? 1 : 0;
         }
     }
 }
