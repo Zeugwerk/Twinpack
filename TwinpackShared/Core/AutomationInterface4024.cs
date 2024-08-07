@@ -235,18 +235,14 @@ namespace Twinpack.Core
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD103:Call async methods when in an async method", 
+            Justification = "IsPackageInstalled always has to switch to the main context, so it is better to just call it right away")]
         public override async Task AddPackageAsync(PackageItem package)
         {
             await SwitchToMainThreadAsync();
 
             // add actual packages
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
-            await AddPackageAsync(libraryManager, package);
-        }
-
-        private async Task AddPackageAsync(ITcPlcLibraryManager libraryManager, PackageItem package)
-        {
-            await SwitchToMainThreadAsync();
 
             var options = package.Config.Options;
             var libraryName = package.PackageVersion.Title;
