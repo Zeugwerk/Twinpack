@@ -16,8 +16,6 @@ using System.Reflection;
 using AdysTech.CredentialManager;
 using System.Threading;
 using System.Security.Cryptography;
-using System.Runtime.Remoting.Messaging;
-using System.Runtime.CompilerServices;
 
 namespace Twinpack.Protocol
 {

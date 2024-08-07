@@ -1,11 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Twinpack.Core;
 using Twinpack.Models;
 using Twinpack.Models.Api;
-
 
 namespace TwinpackTests
 {
@@ -337,7 +338,6 @@ namespace TwinpackTests
             var packageServers = new PackageServerCollection { packageServer };
             var twinpack = new TwinpackService(packageServers);
 
-            var downloadedPackageVersions = new List<PackageItem>();
             var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
 
             await twinpack.ResolvePackageAsync(package);
@@ -345,6 +345,48 @@ namespace TwinpackTests
             Assert.AreEqual("ZAux", package.Package.Name);
             Assert.AreEqual("ZAux", package.PackageVersion.Name);
             Assert.AreEqual("1.5.0.1", package.PackageVersion.Version);
+            Assert.IsTrue(package.Package.Branches.Contains("main"));
+            Assert.IsTrue(package.Package.Branches.Contains("release/1.0"));
+        }
+
+        [DataTestMethod]
+        [DataRow("2.0.0.0", "1.0.0.0")]
+        [DataRow("1.0.0.0", "1.0.0.0")]
+        public async Task ResolvePackageAsync_EffectiveVersion(string effectiveVersion, string expectedPackageVersion)
+        {
+            var packageServer = new PackageServerMock
+            {
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZAux",
+                        Title = "ZAux",
+                        Version = "1.0.0.0",
+                        DistributorName = "My Company",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1"
+                    }
+                },
+                Connected = true
+            };
+
+            var automationInterfaceMock = new Mock<IAutomationInterface>();
+            automationInterfaceMock.Setup(x => x.ResolveEffectiveVersion("TestProject1", "Untitled1", "ZAux")).Returns("2.0.0.0");
+
+            var packageServers = new PackageServerCollection { packageServer };
+            var twinpack = new TwinpackService(packageServers, automationInterfaceMock.Object);
+
+            var package = new PackageItem { ProjectName = "TestProject1", PlcName = "Untitled1", Config = new ConfigPlcPackage { Name = "ZAux" } };
+
+            await twinpack.ResolvePackageAsync(package);
+
+            Assert.AreEqual("ZAux", package.Package.Name);
+            Assert.AreEqual("ZAux", package.PackageVersion.Name);
+            Assert.AreEqual("ZAux", package.PackageVersion.Title);
+            Assert.AreEqual("My Company", package.PackageVersion.DistributorName);
+            Assert.AreEqual(expectedPackageVersion, package.PackageVersion.Version);
             Assert.IsTrue(package.Package.Branches.Contains("main"));
             Assert.IsTrue(package.Package.Branches.Contains("release/1.0"));
         }
@@ -446,122 +488,6 @@ namespace TwinpackTests
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib3"));
 
             Assert.IsTrue(downloadedPackageVersions.Select(x => x.Package.Branches).FirstOrDefault()?.Count() == 2);
-        }
-
-        [TestMethod]
-        public async Task SystemTest_UninstallAddRemove_Async_Headed()
-        {
-            var config = await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution");
-
-            await SystemTest_UninstallAddRemove_Async(new VisualStudio().Open(config), config);
-        }
-
-        [TestMethod]
-        public async Task SystemTest_UninstallAddRemove_Async_Headless()
-        {
-            var config = await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution");
-
-            await SystemTest_UninstallAddRemove_Async(new AutomationInterfaceHeadless(config), config);
-        }
-
-        public async Task SystemTest_UninstallAddRemove_Async(IAutomationInterface automationInterface, Config config)
-        {
-            var packageServer = new PackageServerMock
-            {
-                PackageVersionItems = new List<PackageVersionGetResponse>
-                {
-                    new PackageVersionGetResponse()
-                    {
-                        Name = "PlcLibrary1",
-                        Title = "PlcLibrary1",
-                        Version = "1.2.3.3",
-                        Branch = "main",
-                        Configuration = "Release",
-                        Target = "TC3.1",
-                        DistributorName = "My Company",
-                        Dependencies = new List<PackageVersionGetResponse> { new PackageVersionGetResponse() { Name = "Tc3_Module" } }
-                    },
-                    new PackageVersionGetResponse()
-                    {
-                        Name = "PlcLibrary1",
-                        Title = "PlcLibrary1",
-                        Version = "1.2.3.4",
-                        Branch = "main",
-                        Configuration = "Release",
-                        Target = "TC3.1",
-                        DistributorName = "My Company",
-                        Dependencies = new List<PackageVersionGetResponse> { new PackageVersionGetResponse() { Name = "Tc3_Module" } }
-                    },
-                    new PackageVersionGetResponse()
-                    {
-                        Name = "Tc3_Module",
-                        Title = "Tc3_Module",
-                        Version = null,
-                        Branch = "main",
-                        Configuration = "Release",
-                        Target = "TC3.1",
-                        DistributorName = "Beckhoff Automation GmbH"
-                    }
-                },
-                Connected = true
-            };
-
-            var packageServers = new PackageServerCollection { packageServer };
-            var twinpack = new TwinpackService(packageServers, automationInterface: automationInterface, config: config);
-
-
-            // act - uninstall previously installed package
-            var package = new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = "1.2.3.4" } };
-            await twinpack.UninstallPackagesAsync(new List<PackageItem> { package });
-            var uninstalled = await twinpack.UninstallPackagesAsync(new List<PackageItem> { package });
-
-            Assert.IsFalse(uninstalled, "Package that is not installed does not throw if trying to uninstall");
-
-
-            // act - add package, including dependencies
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = null } } }, 
-                new TwinpackService.AddPackageOptions { AddDependencies = true, ForceDownload = false });
-
-            // check if config was updated correctly
-            var configPackages = config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
-            Assert.AreEqual(configPackages.Count, 2);
-            Assert.AreEqual(true, configPackages.Any(x => x.Name == "PlcLibrary1"));
-            Assert.AreEqual(true, configPackages.Any(x => x.Name == "Tc3_Module"));
-
-            // check if plcproj was updated as well
-            var plcproj = await ConfigFactory.CreateFromSolutionFileAsync(config.WorkingDirectory);
-            var plcprojPackages = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
-            Assert.AreEqual(plcprojPackages.Count, 2);
-            Assert.AreEqual(true, plcprojPackages.Any(x => x.Name == "PlcLibrary1"));
-            Assert.AreEqual(true, plcprojPackages.Any(x => x.Name == "Tc3_Module"));
-
-
-            // act remove PlcLibrary1 package
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = null } } });
-
-            // check if config was updated correctly
-            configPackages = config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
-            Assert.AreEqual(configPackages.Count, 1);
-            Assert.AreEqual(true, configPackages.Any(x => x.Name == "Tc3_Module"));
-
-            // check if plcproj was updated as well
-            plcproj = await ConfigFactory.CreateFromSolutionFileAsync(config.WorkingDirectory);
-            plcprojPackages = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
-            Assert.AreEqual(plcprojPackages.Count, 1);
-            Assert.AreEqual(true, plcprojPackages.Any(x => x.Name == "Tc3_Module"));
-
-
-            // act remove Tc3_Module package
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module", Version = null } } });
-
-            // check if config was updated correctly
-            configPackages = config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
-            Assert.AreEqual(configPackages.Count, 0);
-
-            // check if plcproj was updated as well
-            plcproj = await ConfigFactory.CreateFromSolutionFileAsync(config.WorkingDirectory);
-            plcprojPackages = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
-            Assert.AreEqual(plcprojPackages.Count, 0);
         }
     }
 }

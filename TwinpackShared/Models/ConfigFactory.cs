@@ -386,10 +386,11 @@ namespace Twinpack.Models
 
         private static async Task SyncPackagesAndReferencesAsync(ConfigPlcProject plc, XDocument xdoc, IEnumerable<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
         {
-            AddPlcLibraryOptions ParseOptions(XElement element)
+            AddPlcLibraryOptions ParseOptions(XElement element, bool isLibraryReference)
             {
                 var ret = new AddPlcLibraryOptions
                 {
+                    LibraryReference = isLibraryReference,
                     Optional = bool.TryParse(element.Element(TcNs + "Optional")?.Value, out var optional) && optional,
                     HideWhenReferencedAsDependency = bool.TryParse(element.Element(TcNs + "HideWhenReferencedAsDependency")?.Value, out var hideWhenReferenced) && hideWhenReferenced,
                     PublishSymbolsInContainer = bool.TryParse(element.Element(TcNs + "PublishSymbolsInContainer")?.Value, out var publishSymbols) && publishSymbols,
@@ -405,6 +406,8 @@ namespace Twinpack.Models
             // collect references
             var references = new List<PlcLibrary>();
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
+
+            /*
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderResolution").Elements(TcNs + "Resolution"))
             {
                 var match = re.Match(g.Value);
@@ -415,10 +418,11 @@ namespace Twinpack.Models
                         Name = match.Groups[1].Value.Trim(), 
                         Version = version == "*" ? null : version, 
                         DistributorName = match.Groups[3].Value.Trim(),
-                        Options = ParseOptions(g.Parent)
+                        Options = ParseOptions(g.Parent, false)
                     });
                 }
             }
+            */
 
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderReference").Elements(TcNs + "DefaultResolution"))
             {
@@ -431,7 +435,7 @@ namespace Twinpack.Models
                         Name = match.Groups[1].Value.Trim(), 
                         Version = version == "*" ? null : version, 
                         DistributorName = match.Groups[3].Value.Trim(),
-                        Options = ParseOptions(g.Parent)
+                        Options = ParseOptions(g.Parent, false)
                     });
                 }
 
@@ -452,7 +456,7 @@ namespace Twinpack.Models
                         Name = match.Groups[1].Value.Trim(), 
                         Version = version == "*" ? null : version, 
                         DistributorName = match.Groups[3].Value.Trim(),
-                        Options = ParseOptions(g)
+                        Options = ParseOptions(g, true)
                     });
                 }
             }

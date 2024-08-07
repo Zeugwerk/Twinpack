@@ -402,7 +402,7 @@ namespace Twinpack.Dialogs
         public CatalogWindow(PackageContext context)
         {
             _context = context;
-            _twinpack = new TwinpackService(PackagingServerRegistry.Servers, new VisualStudio(_context.Dte, _context.Solution).AutomationInterface);
+            _twinpack = new TwinpackService(PackagingServerRegistry.Servers, _context.VisualStudio.AutomationInterface);
 
             _packageServerChange = new SelectionChangedEventHandler(Reload);
 

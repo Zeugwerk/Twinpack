@@ -350,6 +350,9 @@ namespace Twinpack.Core
                     package.PackageVersion ??= resolvedPackage.PackageVersion;
                 }
 
+                if (package.PackageVersion?.Name == null)
+                    break;
+
                 if (cache.Any(x => x.PackageVersion.Name == package.PackageVersion.Name) == false)
                     cache.Add(package);
 
