@@ -44,15 +44,12 @@ namespace Twinpack.Commands
         [Option("force-download", Required = false, Default = null, HelpText = "Download packages even if they are already available on the system")]
         public bool ForceDownload { get; set; }
 
-        [Option("headless", Required = false, Default = false, HelpText = "Do not use the Automation Interface, some actions are not available with this option. For instance, using the headless mode will always download packages even if they would already exist on the system, because the Automation Interface can not be used to check if they already exist or not")]
-        public bool Headless { get; set; }
+        [Option("headed", Required = false, Default = false, HelpText = "Use Beckhoff Automation Interface, some actions are not available without this argument")]
+        public bool Headed { get; set; }
 
         public override int Execute()
         {
-            if (Headless)
-                throw new NotImplementedException("Headless is not implemented atm!");
-
-            Initialize(Headless);
+            Initialize(Headed);
 
             var packages = CreatePackageItems(Packages, Versions, Branches, Targets, Configurations, ProjectName, PlcName);
 

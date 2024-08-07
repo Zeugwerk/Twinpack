@@ -19,7 +19,7 @@ namespace Twinpack.Commands
 
         public abstract int Execute();
 
-        protected void Initialize(bool headless)
+        protected void Initialize(bool headed)
         {
             PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
             var rootPath = Environment.CurrentDirectory;
@@ -42,9 +42,9 @@ namespace Twinpack.Commands
 
             _twinpack = new TwinpackService(
                 PackagingServerRegistry.Servers,
-                headless 
-                    ? null 
-                    : new VisualStudio(hidden: true).Open(_config),
+                headed
+                    ? new VisualStudio(hidden: true).Open(_config) 
+                    : new AutomationInterfaceHeadless(_config),
                 _config);
 
             _twinpack.LoginAsync().GetAwaiter().GetResult();
