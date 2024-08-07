@@ -61,6 +61,7 @@
   <ItemGroup>
     <Compile Include="ConfigFactoryTest.cs" />
     <Compile Include="mocks\PackageServerMock.cs" />
+    <Compile Include="SystemTest.cs" />
     <Compile Include="TwinpackServiceTest.cs" />
     <Compile Include="PackageServerCollectionTest.cs" />
     <Compile Include="LibraryReaderTest.cs" />
@@ -78,6 +79,9 @@
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.SDK">
       <Version>15.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="Moq">
+      <Version>4.20.70</Version>
     </PackageReference>
     <PackageReference Include="MSTest.TestAdapter">
       <Version>2.2.10</Version>
