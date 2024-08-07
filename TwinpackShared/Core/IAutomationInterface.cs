@@ -21,7 +21,7 @@ namespace Twinpack.Core
         public Task AddPackageAsync(PackageItem package);
         public Task RemovePackageAsync(PackageItem package, bool uninstall = false);
         public Task InstallPackageAsync(PackageItem package, string cachePath = null);
-        public Task UninstallPackageAsync(PackageItem package);
+        public Task<bool> UninstallPackageAsync(PackageItem package);
         public Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages);
         public void SaveAll();
     }

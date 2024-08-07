@@ -70,7 +70,7 @@ namespace TwinpackTests
                 .Where(x =>
                     x.Name == packageName &&
                     x.DistributorName == distributorName)
-                .OrderByDescending(x => new Version(x.Version))
+                .OrderByDescending(x => x.Version == null ? new Version(9, 9, 9, 9) : new Version(x.Version))
                 .Select(x => new PackageGetResponse { Name = packageName, DistributorName = distributorName, Branches = new List<string> { "main", "release/1.0" } }).FirstOrDefault() ?? new PackageGetResponse();
         }
 
@@ -85,7 +85,7 @@ namespace TwinpackTests
                     (x.Branch == branch || branch == null) &&
                     (x.Configuration == configuration || configuration == null) &&
                     (x.Target == target || target == null))
-                .OrderByDescending(x => new Version(x.Version))
+                .OrderByDescending(x => x.Version == null ? new Version(9, 9, 9, 9) : new Version(x.Version))
                 .FirstOrDefault() ?? new PackageVersionGetResponse();
         }
 
@@ -129,7 +129,7 @@ namespace TwinpackTests
         {
             return PackageVersionItems.Where(x => x.Name == library.Name)
                 .OrderByDescending(x => (string.IsNullOrEmpty(library.Version) || new Version(library.Version) == new Version(x.Version)))
-                .ThenByDescending(x => new Version(x.Version))
+                .ThenByDescending(x => x.Version == null ? new Version(9,9,9,9) : new Version(x.Version))
                 .FirstOrDefault();
         }
     }

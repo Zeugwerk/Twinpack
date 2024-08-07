@@ -199,7 +199,26 @@ namespace Twinpack.Core
                     ;
         }
 
-        public async System.Threading.Tasks.Task RemovePackagesAsync(List<PackageItem> packages, bool uninstall, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<bool> UninstallPackagesAsync(List<PackageItem> packages, CancellationToken cancellationToken = default)
+        {
+            foreach (var package in packages)
+            {
+                if (package.Config.Name == null)
+                    throw new Exception("No packages is selected that could be uninstalled!");
+            }
+
+            var affectedPackages = await AffectedPackagesAsync(packages, cancellationToken);
+
+            await _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
+
+            var uninstalled = true;
+            foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Name == y.Name)))
+                uninstalled &= await _automationInterface.UninstallPackageAsync(package);
+
+            return uninstalled;
+        }
+
+        public async System.Threading.Tasks.Task RemovePackagesAsync(List<PackageItem> packages, bool uninstall=false, CancellationToken cancellationToken = default)
         {
             foreach (var package in packages)
             {

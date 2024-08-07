@@ -342,16 +342,26 @@ namespace Twinpack.Core
             _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
 
             var suffix = package.PackageVersion.Compiled == 1 ? "compiled-library" : "library";
-            libraryManager.InstallLibrary("System", Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}"), bOverwrite: true);
+            var path = Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}");
+
+            if (!File.Exists(path))
+                throw new FileNotFoundException(path);
+
+            libraryManager.InstallLibrary("System", path, bOverwrite: true);
         }
 
-        public override async Task UninstallPackageAsync(PackageItem package)
+        public override async Task<bool> UninstallPackageAsync(PackageItem package)
         {
             await SwitchToMainThreadAsync();
 
-            var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
+            if (IsPackageInstalled(package))
+            {
+                var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
+                libraryManager.UninstallLibrary("System", package.PackageVersion.Title, package.PackageVersion.Version, package.PackageVersion.DistributorName);
+                return true;
+            }
 
-            libraryManager.UninstallLibrary("System", package.PackageVersion.Title, package.PackageVersion.Version, package.PackageVersion.DistributorName);
+            return false;
         }
     }
 }
