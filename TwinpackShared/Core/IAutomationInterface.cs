@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Management;
 using System.Threading.Tasks;
 using Twinpack.Models;
@@ -21,6 +22,7 @@ namespace Twinpack.Core
         public Task RemovePackageAsync(PackageItem package, bool uninstall = false);
         public Task InstallPackageAsync(PackageItem package, string cachePath = null);
         public Task UninstallPackageAsync(PackageItem package);
+        public Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages);
         public void SaveAll();
     }
 }

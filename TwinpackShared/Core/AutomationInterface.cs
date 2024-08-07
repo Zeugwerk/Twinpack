@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Management;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,15 +77,10 @@ namespace Twinpack.Core
 
         public string ResolveEffectiveVersion(string projectName, string plcName, string placeholderName)
         {
-            ResolvePlaceholder(projectName, plcName, placeholderName, out _, out string effectiveVersion);
+            ITcPlcLibraryManager libManager = LibraryManager(projectName, plcName);
+            ResolvePlaceholder(libManager, placeholderName, out _, out var effectiveVersion);
 
             return effectiveVersion;
-        }
-
-        private ITcPlcLibrary ResolvePlaceholder(string projectName, string plcName, string placeholderName, out string distributorName, out string effectiveVersion)
-        {
-            ITcPlcLibraryManager libManager = LibraryManager(projectName, plcName);
-            return ResolvePlaceholder(libManager, placeholderName, out distributorName, out effectiveVersion);
         }
 
         private ITcPlcLibrary ResolvePlaceholder(ITcPlcLibraryManager libManager, string placeholderName, out string distributorName, out string effectiveVersion)
@@ -183,7 +179,7 @@ namespace Twinpack.Core
             return null;
         }
 
-        public string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
+        private string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
         {
             // try to find the vendor
             foreach (ITcPlcLibrary r in libManager.ScanLibraries())
@@ -225,45 +221,41 @@ namespace Twinpack.Core
             return referenceFound;
         }
 
-        private void CloseAllPackageRelatedWindows(PackageItem package)
+        public async Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages)
         {
-            SaveAll();
+            await SwitchToMainThreadAsync();
 
+            SaveAll();
             // Close all windows that have been opened with a library manager
             foreach (EnvDTE.Window window in _visualStudio.Dte.Windows)
             {
-                try
+                foreach (var package in packages)
                 {
-                    var obj = (window as dynamic).Object;
-                    if (obj == null)
-                        continue;
-
-                    if (obj.EditorViewFactoryGuid == _libraryManagerGuid)
+                    try
                     {
-                        window.Close(vsSaveChanges.vsSaveChangesNo);
-                        continue;
-                    }
+                        var obj = (window as dynamic).Object;
+                        if (obj == null)
+                            continue;
 
-                    if (!(obj.FileName as string).StartsWith("["))
-                        continue;
-
-                    if (Regex.Match(obj.FileName, $@"\[{package.PackageVersion.Name}.*?\({package.PackageVersion.DistributorName}\)\].*", RegexOptions.IgnoreCase).Success)
-                    {
-                        window.Close(vsSaveChanges.vsSaveChangesNo);
-                        continue;
-                    }
-
-                    foreach (var dependency in package.PackageVersion.Dependencies ?? new List<PackageVersionGetResponse>())
-                    {
-                        if (Regex.Match(obj.FileName, $@"\[{dependency.Name}.*?\({dependency.DistributorName}\)\].*", RegexOptions.IgnoreCase).Success)
+                        if (obj.EditorViewFactoryGuid == _libraryManagerGuid)
                         {
+                            _logger.Trace($"Closing {package.Name} library manager window");
                             window.Close(vsSaveChanges.vsSaveChangesNo);
-                            break;
+                            continue;
+                        }
+
+                        if (!(obj.FileName as string).StartsWith("["))
+                            continue;
+
+                        if (Regex.Match(obj.FileName, $@"\[{package.PackageVersion.Name}.*?\({package.PackageVersion.DistributorName}\)\].*", RegexOptions.IgnoreCase).Success)
+                        {
+                            _logger.Trace($"Closing {obj.FileName} window");
+                            window.Close(vsSaveChanges.vsSaveChangesNo);
+                            continue;
                         }
                     }
-
+                    catch { }
                 }
-                catch { }
             }
         }
 
@@ -352,9 +344,8 @@ namespace Twinpack.Core
             await SwitchToMainThreadAsync();
 
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
-            CloseAllPackageRelatedWindows(package);
 
-            var plcLibrary = ResolvePlaceholder(package.ProjectName, package.PlcName, package.PackageVersion.Title, out _, out _);
+            var plcLibrary = ResolvePlaceholder(libraryManager, package.PackageVersion.Title, out _, out _);
             if (plcLibrary != null)
                 libraryManager.RemoveReference(package.PackageVersion.Title);
 

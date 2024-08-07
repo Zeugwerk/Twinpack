@@ -22,12 +22,9 @@ namespace Twinpack.Core
         protected EnvDTE.Solution _solution;
         protected IAutomationInterface _automationInterface;
         protected System.Timers.Timer _timeout;
-        IOleMessageFilter _oldFilter;
+        MessageFilter _filter;
 
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
-
-        [DllImport("Ole32.dll")]
-        private static extern int CoRegisterMessageFilter(IOleMessageFilter newFilter, out IOleMessageFilter oldFilter);
 
         public string OutputTcVersion { get; private set; }
         public string UsedTcVersion { get; private set; }
@@ -63,7 +60,7 @@ namespace Twinpack.Core
             _timeout.AutoReset = false; // One-shot-timer
             _timeout.Start();
 
-            IOleMessageFilter filter = new MessageFilter();
+            _filter = new MessageFilter();
             List<string> shells = new List<string> { "TcXaeShell.DTE.15.0", "TcXaeShell.DTE.17.0" };
 
             foreach(var shell in shells)
@@ -71,8 +68,6 @@ namespace Twinpack.Core
                 Type t = Type.GetTypeFromProgID(shell);
                 if (t != null)
                 {
-                    CoRegisterMessageFilter(filter, out _oldFilter);
-
                     _logger.Info($"Loading {shell}");
                     DTE2 dte = Activator.CreateInstance(t) as DTE2;
                     dte.SuppressUI = hidden;
@@ -87,12 +82,12 @@ namespace Twinpack.Core
                 }
             }
 
-            throw new NotSupportedException("No VisualStudio version, which is supported, detected");
+            throw new NotSupportedException($"No supported Visual Studio ({string.Join(", ", shells)}) detected!");
         }
 
         private void KillProcess(Object source, System.Timers.ElapsedEventArgs e)
         {
-            _logger.Info($"timeout occured ... killing processes");
+            _logger.Info($"Timeout occured ... killing processes");
             Environment.Exit(-1);
 
             Dispose();
@@ -180,7 +175,7 @@ namespace Twinpack.Core
             throw new NotSupportedException($"No AutomationInterface implementation supports {UsedTcVersion}");
         }
 
-        private string CurrentTcVersion()
+        public string CurrentTcVersion()
         {
             dynamic remoteManager = _dte.GetObject("TcRemoteManager");
             if (string.IsNullOrEmpty(remoteManager.Version))
@@ -194,7 +189,7 @@ namespace Twinpack.Core
             return $"TC{remoteManager.Version}";
         }
 
-        internal string FindTargetSystem(string requestedTcVersion = "TC3.1")
+        private string FindTargetSystem(string requestedTcVersion = "TC3.1")
         {
             string remotemanager_tcversion = requestedTcVersion?.Replace("TC", "") ?? "TC3.1"; // TC3.1.4024.10
 
@@ -340,7 +335,7 @@ namespace Twinpack.Core
             _dte.ExecuteCommand("File.SaveAll");
         }
 
-        public Projects WaitProjects()
+        private Projects WaitProjects()
         {
             var ready = false;
             Projects projects = null;
@@ -385,12 +380,8 @@ namespace Twinpack.Core
 
         public void Dispose()
         {
+            _filter?.Dispose();
             _dte?.Quit();
-            if(_oldFilter != null)
-            {
-                CoRegisterMessageFilter(_oldFilter, out _);
-                _oldFilter = null;
-            }
         }
     }
 }

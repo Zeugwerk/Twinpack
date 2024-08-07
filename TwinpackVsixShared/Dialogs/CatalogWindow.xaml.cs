@@ -917,11 +917,11 @@ namespace Twinpack.Dialogs
         public bool ConfirmLicensesIfNeeded(IEnumerable<PackageItem> packages, bool showLicenseDialog)
         {
             Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
-            var shownLicenseIds = ForceShowLicense ? new HashSet<string>() : new HashSet<string>(_twinpack.KnownLicenseIds());
+            var shownLicenseIds = ForceShowLicense ? new HashSet<string>() : new HashSet<string>(_twinpack.KnownRuntimeLicenseIds());
 
             foreach (var package in packages)
             {
-                var licenseId = TwinpackService.ParseLicenseId(package.PackageVersion.LicenseTmcText);
+                var licenseId = TwinpackService.ParseRuntimeLicenseIdFromTmc(package.PackageVersion.LicenseTmcText);
                 if (!shownLicenseIds.Any(x => x == licenseId) &&
                    (ForceShowLicense || (showLicenseDialog && !_twinpack.IsPackageInstalled(package))) &&
                    (!string.IsNullOrEmpty(package.PackageVersion.LicenseBinary) || (!string.IsNullOrEmpty(package.PackageVersion.LicenseTmcBinary) && (ForceShowLicense))))
