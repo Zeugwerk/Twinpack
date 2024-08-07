@@ -724,7 +724,7 @@ namespace Twinpack.Dialogs
                 if (openFileDialog.ShowDialog() == true)
                 {
                     var content = File.ReadAllText(openFileDialog.FileName);
-                    if (TwinpackService.ParseLicenseId(content) == null)
+                    if (TwinpackService.ParseRuntimeLicenseIdFromTmc(content) == null)
                         throw new InvalidDataException("The tmc file is not a valid license file!");
 
                     LicenseTmcFile = openFileDialog.FileName;

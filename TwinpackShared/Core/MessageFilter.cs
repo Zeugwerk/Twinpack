@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog.Filters;
+using System;
 using System.Runtime.InteropServices;
 
 
@@ -20,8 +21,23 @@ namespace Twinpack.Core
 
     // This class is suggested by Beckhoff in order to use the Automation Interface. It is used to
     // synchronize the Visualstudio instance that is started within the application.
-    public class MessageFilter : IOleMessageFilter
+    public class MessageFilter : IOleMessageFilter, IDisposable
     {
+        IOleMessageFilter _oldFilter;
+        public MessageFilter()
+        {
+            CoRegisterMessageFilter(this, out _oldFilter);
+        }
+
+        public void Dispose()
+        {
+            if (_oldFilter != null)
+            {
+                CoRegisterMessageFilter(_oldFilter, out _);
+                _oldFilter = null;
+            }
+        }
+
         int IOleMessageFilter.HandleInComingCall(int dwCallType, System.IntPtr hTaskCaller, int dwTickCount, System.IntPtr lpInterfaceInfo)
         {
             return 0;

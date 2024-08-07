@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Packaging;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -57,7 +58,7 @@ namespace Twinpack.Core
 
         private void CopyRuntimeLicenseIfNeeded(IEnumerable<PackageItem> packages)
         {
-            var knownLicenseIds = KnownLicenseIds();
+            var knownLicenseIds = KnownRuntimeLicenseIds();
 
             foreach (var package in packages)
             {
@@ -66,7 +67,7 @@ namespace Twinpack.Core
                     _logger.Trace($"Copying license description file to TwinCAT for {package.PackageVersion.Name} ...");
                     try
                     {
-                        var licenseId = ParseLicenseId(package.PackageVersion.LicenseTmcText);
+                        var licenseId = ParseRuntimeLicenseIdFromTmc(package.PackageVersion.LicenseTmcText);
                         if (licenseId == null)
                             throw new InvalidDataException("The tmc file is not a valid license file!");
 
@@ -101,7 +102,7 @@ namespace Twinpack.Core
             }
         }
 
-        public static string ParseLicenseId(string content)
+        public static string ParseRuntimeLicenseIdFromTmc(string content)
         {
             try
             {
@@ -208,6 +209,8 @@ namespace Twinpack.Core
 
             var affectedPackages = await AffectedPackagesAsync(packages, cancellationToken);
 
+            await _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
+
             foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Name == y.Name)))
             {
                 await _automationInterface.RemovePackageAsync(package, uninstall: uninstall);
@@ -239,8 +242,11 @@ namespace Twinpack.Core
             // copy runtime licenses
             CopyRuntimeLicenseIfNeeded(affectedPackages);
 
-           // download packages
-            var downloadedPackageVersions = await DownloadPackagesAsync(affectedPackages, includeDependencies: false, forceDownload: options?.ForceDownload == true, cachePath: cachePath, cancellationToken: cancellationToken);
+            var closeAllPackageRelatedWindowsTask = _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
+            var downloadPackagesTask = DownloadPackagesAsync(affectedPackages, includeDependencies: false, forceDownload: options?.ForceDownload == true, cachePath: cachePath, cancellationToken: cancellationToken);
+            await System.Threading.Tasks.Task.WhenAll(closeAllPackageRelatedWindowsTask, downloadPackagesTask);
+
+            var downloadedPackageVersions = await downloadPackagesTask;
 
             // install downloaded packages
             foreach (var package in downloadedPackageVersions)
@@ -276,7 +282,7 @@ namespace Twinpack.Core
             ConfigFactory.Save(_config);
         }
 
-        public HashSet<string> KnownLicenseIds()
+        public HashSet<string> KnownRuntimeLicenseIds()
         {
             var result = new HashSet<string>();
             if (!Directory.Exists(_automationInterface.LicensesPath))
@@ -286,10 +292,10 @@ namespace Twinpack.Core
             {
                 try
                 {
-                    var licenseId = ParseLicenseId(File.ReadAllText(fileName));
+                    var licenseId = ParseRuntimeLicenseIdFromTmc(File.ReadAllText(fileName));
 
                     if (licenseId == null)
-                        throw new InvalidDataException("The file {fileName} is not a valid license file!");
+                        throw new InvalidDataException($"The file {fileName} is not a valid license file!");
 
                     result.Add(licenseId);
                 }
@@ -297,8 +303,6 @@ namespace Twinpack.Core
                 {
                     _logger.Trace(ex);
                 }
-
-
             }
 
             return result;
@@ -316,7 +320,7 @@ namespace Twinpack.Core
             return await AffectedPackagesAsync(packages, new List<PackageItem>(), cancellationToken);
         }
 
-        public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, List<PackageItem> cache, CancellationToken cancellationToken = default)
+        private async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, List<PackageItem> cache, CancellationToken cancellationToken = default)
         {
             foreach(var package in packages)
             {
@@ -362,7 +366,7 @@ namespace Twinpack.Core
             foreach(var affectedPackage in affectedPackages)
             {
                 // check if we find the package on the system
-                bool referenceFound = !forceDownload && _automationInterface != null && _automationInterface.IsPackageInstalled(affectedPackage);
+                bool referenceFound = !forceDownload && _automationInterface != null && await _automationInterface.IsPackageInstalledAsync(affectedPackage);
 
                 if (!referenceFound || forceDownload)
                 {
