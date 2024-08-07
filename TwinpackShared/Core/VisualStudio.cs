@@ -107,7 +107,7 @@ namespace Twinpack.Core
             OutputTcVersion = tcversion;
             var used_rm_version = FindTargetSystem(tcversion);
 
-            _solution.Open($"{Directory.GetCurrentDirectory()}\\{config.Solution}");
+            _solution.Open(Path.GetFullPath($"{config.WorkingDirectory}\\{config.Solution}"));
             CloseAllWindows();
             var projects = WaitProjects();
 

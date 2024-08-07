@@ -210,6 +210,12 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="assets\TestSolution\.Zeugwerk\libraries\TC3.1\PlcLibrary1_1.2.3.3.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\TestSolution\.Zeugwerk\libraries\TC3.1\PlcLibrary1_1.2.3.4.library">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="assets\TestSolution\TestProject2\PlcLibrary1\PlcLibrary1.plcproj">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

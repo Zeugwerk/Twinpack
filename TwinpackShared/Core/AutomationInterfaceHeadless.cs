@@ -76,7 +76,7 @@ namespace Twinpack.Core
             throw new NotImplementedException("Headless AutomationInterface can not install packages");
         }
 
-        public override async Task UninstallPackageAsync(PackageItem package)
+        public override async Task<bool> UninstallPackageAsync(PackageItem package)
         {
             throw new NotImplementedException("Headless AutomationInterface can not uninstall packages");
         }

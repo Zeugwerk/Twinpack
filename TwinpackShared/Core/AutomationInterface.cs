@@ -62,7 +62,7 @@ namespace Twinpack.Core
         public abstract Task AddPackageAsync(PackageItem package);
         public abstract Task RemovePackageAsync(PackageItem package, bool uninstall = false);
         public abstract Task InstallPackageAsync(PackageItem package, string cachePath = null);
-        public abstract Task UninstallPackageAsync(PackageItem package);
+        public abstract Task<bool> UninstallPackageAsync(PackageItem package);
         public abstract Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages);
         public abstract void SaveAll();
         protected abstract Version MinVersion { get; }
