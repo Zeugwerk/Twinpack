@@ -30,7 +30,7 @@ namespace Twinpack.Commands
 
         public override int Execute()
         {
-            Initialize(headless: true);
+            Initialize(headed: false);
 
             // remove projects accordingly to the filter
             foreach (var project in _config.Projects)

@@ -10,6 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterfaceHeadless.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterface4024.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)core\IAutomationInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\MessageFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SynchronizationContextAwaiter.cs" />

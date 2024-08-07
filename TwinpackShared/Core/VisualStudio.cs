@@ -153,7 +153,7 @@ namespace Twinpack.Core
 
             var automationInterfaces = new List<IAutomationInterface>
             {
-                new AutomationInterface(this),
+                new AutomationInterface4024(this),
             };
 
             foreach (var automationInterface in automationInterfaces)
