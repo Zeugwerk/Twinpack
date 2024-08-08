@@ -263,51 +263,78 @@ namespace Twinpack.Core
 
             if (options != null)
             {
-                var referenceItem = (libraryManager as ITcSmTreeItem).LookupChild(libraryName);
-                var referenceXml = referenceItem.ProduceXml(bRecursive: true);
-                var referenceDoc = XDocument.Parse(referenceXml);
+                ITcSmTreeItem referenceItem = null;
+                ITcSmTreeItem libraryManagerItem = (libraryManager as ITcSmTreeItem);
 
-                if (options?.QualifiedOnly == true)
+                if (options?.LibraryReference == true)
                 {
-                    var qualifiedOnlyItem = referenceDoc.Elements("TreeItem")
+                    for (var i = 1; i < libraryManagerItem.ChildCount; i++)
+                    {
+                        ITcSmTreeItem child = libraryManagerItem.Child[i];
+                        string childName = child.Name;
+                        if (childName == libraryName)
+                        {
+                            referenceItem = libraryManagerItem.Child[i];
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    referenceItem = (libraryManager as ITcSmTreeItem).LookupChild(libraryName);
+                }
+
+                if (referenceItem != null)
+                {
+                    var referenceXml = referenceItem.ProduceXml(bRecursive: true);
+                    var referenceDoc = XDocument.Parse(referenceXml);
+
+                    if (options?.QualifiedOnly == true)
+                    {
+                        var qualifiedOnlyItem = referenceDoc.Elements("TreeItem")
+                            .Elements("VSProperties")
+                            .Elements("VSProperty")
+                            .Where(x => x.Element("Name").Value == "QualifiedlAccessOnly")
+                            .Elements("Value").FirstOrDefault();
+                        qualifiedOnlyItem.Value = options?.QualifiedOnly == true ? "True" : "False";
+                    }
+
+                    if (options?.HideWhenReferencedAsDependency == true)
+                    {
+                        var hideReferenceItem = referenceDoc.Elements("TreeItem")
                         .Elements("VSProperties")
                         .Elements("VSProperty")
-                        .Where(x => x.Element("Name").Value == "QualifiedlAccessOnly")
+                        .Where(x => x.Element("Name").Value == "HideReference")
                         .Elements("Value").FirstOrDefault();
-                    qualifiedOnlyItem.Value = options?.QualifiedOnly == true ? "True" : "False";
-                }
+                        hideReferenceItem.Value = options?.HideWhenReferencedAsDependency == true ? "True" : "False";
+                    }
 
-                if (options?.HideWhenReferencedAsDependency == true)
-                {
-                    var hideReferenceItem = referenceDoc.Elements("TreeItem")
-                    .Elements("VSProperties")
-                    .Elements("VSProperty")
-                    .Where(x => x.Element("Name").Value == "HideReference")
-                    .Elements("Value").FirstOrDefault();
-                    hideReferenceItem.Value = options?.HideWhenReferencedAsDependency == true ? "True" : "False";
-                }
+                    if (options?.Optional == true)
+                    {
+                        var optionalItem = referenceDoc.Elements("TreeItem")
+                            .Elements("VSProperties")
+                            .Elements("VSProperty")
+                            .Where(x => x.Element("Name").Value == "Optional")
+                            .Elements("Value").FirstOrDefault();
+                        optionalItem.Value = options?.Optional == true ? "True" : "False";
+                    }
 
-                if (options?.Optional == true)
-                {
-                    var optionalItem = referenceDoc.Elements("TreeItem")
+                    if (options?.PublishSymbolsInContainer == true)
+                    {
+                        var publishSymbolsInContainerItem = referenceDoc.Elements("TreeItem")
                         .Elements("VSProperties")
                         .Elements("VSProperty")
-                        .Where(x => x.Element("Name").Value == "Optional")
+                        .Where(x => x.Element("Name").Value == "PublishAll")
                         .Elements("Value").FirstOrDefault();
-                    optionalItem.Value = options?.Optional == true ? "True" : "False";
-                }
+                        publishSymbolsInContainerItem.Value = options?.PublishSymbolsInContainer == true ? "True" : "False";
+                    }
 
-                if (options?.PublishSymbolsInContainer == true)
+                    referenceItem.ConsumeXml(referenceDoc.ToString());
+                }
+                else
                 {
-                    var publishSymbolsInContainerItem = referenceDoc.Elements("TreeItem")
-                    .Elements("VSProperties")
-                    .Elements("VSProperty")
-                    .Where(x => x.Element("Name").Value == "PublishAll")
-                    .Elements("Value").FirstOrDefault();
-                    publishSymbolsInContainerItem.Value = options?.PublishSymbolsInContainer == true ? "True" : "False";
+                    _logger.Warn($"Could not apply options to {package.PackageVersion.Name} {package.PackageVersion.Version}");
                 }
-
-                referenceItem.ConsumeXml(referenceDoc.ToString());
             }
         }
 

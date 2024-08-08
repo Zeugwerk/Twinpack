@@ -100,6 +100,10 @@ namespace TwinpackTests
             var packageServers = new PackageServerCollection { _packageServer };
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
+            // cleanup
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+
             // act - uninstall previously installed package
             var package = new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = "1.2.3.4" } };
             await twinpack.UninstallPackagesAsync(new List<PackageItem> { package });
@@ -163,6 +167,10 @@ namespace TwinpackTests
             var packageServers = new PackageServerCollection { _packageServer };
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
+            // cleanup
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+
             // act - add package, including dependencies
             await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", 
                 Config = new ConfigPlcPackage
@@ -185,23 +193,23 @@ namespace TwinpackTests
             var package = configPackages.FirstOrDefault(x => x.Name == "PlcLibrary1");
             Assert.AreEqual(configPackages.Count, 2);
             Assert.IsNotNull(package?.Name);
-            Assert.AreEqual(hide, package.Options.HideWhenReferencedAsDependency);
-            Assert.AreEqual(library, package.Options.LibraryReference);
-            Assert.AreEqual(optional, package.Options.Optional);
-            Assert.AreEqual(publishAll, package.Options.PublishSymbolsInContainer);
-            Assert.AreEqual(qualifiedOnly, package.Options.QualifiedOnly);
+            Assert.AreEqual(hide, package.Options?.HideWhenReferencedAsDependency);
+            Assert.AreEqual(library, package.Options?.LibraryReference);
+            Assert.AreEqual(optional, package.Options?.Optional);
+            Assert.AreEqual(publishAll, package.Options?.PublishSymbolsInContainer);
+            Assert.AreEqual(qualifiedOnly, package.Options?.QualifiedOnly);
 
             // check if plcproj was updated as well
             var plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
             var plcprojPackages = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
             var plcprojPackage = plcprojPackages.FirstOrDefault(x => x.Name == "PlcLibrary1");
-            Assert.AreEqual(plcprojPackages.Count, 2);
+            Assert.AreEqual(2, plcprojPackages.Count);
             Assert.IsNotNull(plcprojPackage?.Name);
-            Assert.AreEqual(hide, plcprojPackage.Options.HideWhenReferencedAsDependency);
-            Assert.AreEqual(library, plcprojPackage.Options.LibraryReference);
-            Assert.AreEqual(optional, plcprojPackage.Options.Optional);
-            Assert.AreEqual(publishAll, plcprojPackage.Options.PublishSymbolsInContainer);
-            Assert.AreEqual(qualifiedOnly, plcprojPackage.Options.QualifiedOnly);
+            Assert.AreEqual(hide, plcprojPackage.Options?.HideWhenReferencedAsDependency);
+            Assert.AreEqual(library, plcprojPackage.Options?.LibraryReference);
+            Assert.AreEqual(optional, plcprojPackage.Options?.Optional);
+            Assert.AreEqual(publishAll, plcprojPackage.Options?.PublishSymbolsInContainer);
+            Assert.AreEqual(qualifiedOnly, plcprojPackage.Options?.QualifiedOnly);
 
             // act remove PlcLibrary1 package
             await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = null } } });
