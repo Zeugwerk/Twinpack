@@ -186,7 +186,7 @@ namespace Twinpack.Core
                 {
                     if (string.Equals(r.Name, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
                         string.Equals(r.Distributor, package.PackageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
-                        (r.Version == package.Config.Version || package.Config.Version == null))
+                        (r.Version == package.PackageVersion.Version || package.PackageVersion.Version == null))
                     {
                         referenceFound = true;
                         break;
