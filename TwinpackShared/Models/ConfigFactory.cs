@@ -479,7 +479,7 @@ namespace Twinpack.Models
                     try
                     {
                         var packageVersion = await packageServer.ResolvePackageVersionAsync(r, cancellationToken: cancellationToken);
-                        if(isPackage = packageVersion.Name != null && packageVersion.DistributorName != null)
+                        if(isPackage = packageVersion?.Name != null && packageVersion?.DistributorName != null)
                         {
                             packages.Add(new ConfigPlcPackage
                             {

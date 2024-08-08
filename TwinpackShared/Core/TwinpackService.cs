@@ -366,7 +366,7 @@ namespace Twinpack.Core
                                     PlcName = package.PlcName,
                                     Package = x,
                                     PackageVersion = x,
-                                    Config = new ConfigPlcPackage(x) { Options = package.Config.Options }
+                                    Config = new ConfigPlcPackage(x) { Options = package.Config.Options?.CopyForDependency() }
                                 }).ToList(),
                                 cache,
                                 cancellationToken: cancellationToken);

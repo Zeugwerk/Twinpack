@@ -31,6 +31,18 @@ namespace Twinpack.Models
             QualifiedOnly = options.QualifiedOnly;
         }
 
+        public AddPlcLibraryOptions CopyForDependency()
+        {
+            return new AddPlcLibraryOptions
+            {
+                LibraryReference = false,
+                Optional = false,
+                HideWhenReferencedAsDependency = false,
+                PublishSymbolsInContainer = false,
+                QualifiedOnly = this.QualifiedOnly,
+            };
+        }
+
         [DefaultValue(false)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("library-reference")]

@@ -67,6 +67,21 @@ namespace Twinpack.Core
 
         public override async Task AddPackageAsync(PackageItem package)
         {
+            static void AddOptions(XElement root, AddPlcLibraryOptions options)
+            {
+                if (options?.Optional == true)
+                    root.Add(new XElement(TcNs + "Optional", options.Optional.ToString().ToLower()));
+
+                if (options?.HideWhenReferencedAsDependency == true)
+                    root.Add(new XElement(TcNs + "HideWhenReferencedAsDependency", options.HideWhenReferencedAsDependency.ToString().ToLower()));
+
+                if (options?.PublishSymbolsInContainer == true)
+                    root.Add(new XElement(TcNs + "PublishSymbolsInContainer", options.PublishSymbolsInContainer.ToString().ToLower()));
+
+                if (options?.QualifiedOnly == true)
+                    root.Add(new XElement(TcNs + "QualifiedOnly", options.QualifiedOnly.ToString().ToLower()));
+            }
+
             var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault();
 
             var xdoc = XDocument.Load(plcConfig.FilePath);
@@ -75,11 +90,11 @@ namespace Twinpack.Core
                 throw new InvalidDataException($"{plcConfig.FilePath} is not a valid plcproj file");
 
             // get or create groups
-            var resolutionsGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "PlaceholderResolution") != null).FirstOrDefault();
-            var referencesGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "PlaceholderReference") != null).FirstOrDefault();
-            var libraryGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "LibraryReference") != null).FirstOrDefault();
+            var resolutionsGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "PlaceholderResolution").Any()).FirstOrDefault();
+            var referencesGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "PlaceholderReference").Any()).FirstOrDefault();
+            var libraryGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "LibraryReference").Any()).FirstOrDefault();
 
-            if (package.Config?.Options?.LibraryReference == true && package.Config.Version != null)
+            if (package.Config?.Options?.LibraryReference == true)
             {
                 if (libraryGroup == null)
                 {
@@ -87,14 +102,14 @@ namespace Twinpack.Core
                     project.Add(libraryGroup);
                 }
 
-                referencesGroup.Add(
-                    new XElement(TcNs + "PlaceholderReference",
-                        new XAttribute("Include", $"{package.Config.Name},{package.Config.Version},{package.Config.DistributorName}"),
+                var library = new XElement(TcNs + "LibraryReference",
+                        new XAttribute("Include", $"{package.Config.Name},{(package.Config.Version ?? "*")},{package.Config.DistributorName}"),
                         new List<XElement> {
                             new XElement(TcNs + "Namespace", package.Config.Name),
-                        }
-                    )
-                );
+                        });
+
+                AddOptions(library, package.Config?.Options);
+                referencesGroup.Add(library);
             }
             else
             {
@@ -110,15 +125,16 @@ namespace Twinpack.Core
                     project.Add(referencesGroup);
                 }
 
-                referencesGroup.Add(
-                    new XElement(TcNs + "PlaceholderReference",
+                var reference = new XElement(TcNs + "PlaceholderReference",
                         new XAttribute("Include", package.Config.Name),
                         new List<XElement> {
                             new XElement(TcNs + "DefaultResolution", $"{package.Config.Name}, {(package.Config.Version ?? "*")} ({package.Config.DistributorName})"),
                             new XElement(TcNs + "Namespace", package.Config.Name),
                         }
-                    )
-                );
+                    );
+
+                AddOptions(reference, package.Config?.Options);
+                referencesGroup.Add(reference);
 
                 resolutionsGroup.Add(
                     new XElement(TcNs + "PlaceholderResolution",
@@ -139,11 +155,6 @@ namespace Twinpack.Core
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
             if (project == null)
                 throw new InvalidDataException($"{plcConfig.FilePath} is not a valid plcproj file");
-
-            // get or create groups
-            var resolutionsGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "PlaceholderResolution") != null).FirstOrDefault();
-            var referencesGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "PlaceholderReference") != null).FirstOrDefault();
-            var libraryGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "LibraryReference") != null).FirstOrDefault();
 
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
             foreach (XElement g in xdoc.Elements(TcNs + "Project")?.Elements(TcNs + "ItemGroup")?.Elements(TcNs + "PlaceholderResolution")?.Elements(TcNs + "Resolution") ?? new List<XElement>())
