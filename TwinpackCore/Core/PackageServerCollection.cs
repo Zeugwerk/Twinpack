@@ -7,8 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Twinpack.Exceptions;
 using Twinpack.Models;
-using Twinpack.Models.Api;
+using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
+using Twinpack.Configuration;
 
 namespace Twinpack.Core
 {

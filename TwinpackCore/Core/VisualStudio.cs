@@ -13,6 +13,7 @@ using System.Text.Json;
 using Twinpack;
 using EnvDTE;
 using System.Management;
+using Twinpack.Configuration;
 
 namespace Twinpack.Core
 {

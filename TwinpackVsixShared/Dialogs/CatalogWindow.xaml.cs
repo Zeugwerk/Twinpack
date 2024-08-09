@@ -14,8 +14,9 @@ using NLog;
 using TCatSysManagerLib;
 using Twinpack.Core;
 using Twinpack.Models;
-using Twinpack.Models.Api;
+using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
+using Twinpack.Configuration;
 
 namespace Twinpack.Dialogs
 {
@@ -950,7 +951,7 @@ namespace Twinpack.Dialogs
             IsNewReference = false;
         }
 
-        public async Task<Models.Config> WritePlcConfigToConfigAsync(ConfigPlcProject plcConfig, CancellationToken cancellationToken)
+        public async Task<Config> WritePlcConfigToConfigAsync(ConfigPlcProject plcConfig, CancellationToken cancellationToken)
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             var config = ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
@@ -1101,7 +1102,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        private void SelectPackageVersionFilter(Models.Api.PackageVersionGetResponse installed)
+        private void SelectPackageVersionFilter(Protocol.Api.PackageVersionGetResponse installed)
         {
             ConfigurationsView.SelectedIndex = -1;
             BranchesView.SelectedIndex = string.IsNullOrEmpty(installed?.Branch) ? 0 : _catalogItem.Package.Branches?.FindIndex(x => x == installed.Branch) ?? -1;
@@ -1341,7 +1342,7 @@ namespace Twinpack.Dialogs
                     _logger.Info($"Detected {config?.Projects?.SelectMany(x => x.Plcs)?.SelectMany(x => x.Packages)?.Count()} Twinpack packages and {config?.Projects?.SelectMany(x => x.Plcs)?.SelectMany(x => x.References)?.Count()} other references");
 
                     IsCreateConfigVisible = false;
-                    var path = Models.ConfigFactory.Save(config);
+                    var path = ConfigFactory.Save(config);
 
                     if (MessageBoxResult.Yes == MessageBox.Show($"The configuration file was successfully created " +
                         $"in {config.FilePath} for your TwinCAT solution, do you want to " +

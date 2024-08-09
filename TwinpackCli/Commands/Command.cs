@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Models;
 using Twinpack.Protocol;
