@@ -106,7 +106,7 @@ namespace Twinpack.Core
             _logger.Info(new string('-', 3) + $" open-solution:{config.Solution}");
 
             OutputTcVersion = tcversion;
-            var used_rm_version = FindTargetSystem(tcversion);
+            var remoteManagerTcVersion = FindTargetSystem(tcversion);
 
             _solution.Open(Path.GetFullPath($"{config.WorkingDirectory}\\{config.Solution}"));
             CloseAllWindows();
@@ -192,7 +192,7 @@ namespace Twinpack.Core
 
         private string FindTargetSystem(string requestedTcVersion = "TC3.1")
         {
-            string remotemanager_tcversion = requestedTcVersion?.Replace("TC", "") ?? "TC3.1"; // TC3.1.4024.10
+            string tcversion = requestedTcVersion?.Replace("TC", "") ?? "TC3.1"; // TC3.1.4024.10
 
             dynamic remote = _dte.GetObject("TcRemoteManager");
             // set target system - check if the target system is installed. If not, abort
@@ -210,9 +210,9 @@ namespace Twinpack.Core
                     {
                         var versionArray = version.Split('.');
                         Array.Resize(ref versionArray, len);
-                        if (remotemanager_tcversion == string.Join(".", versionArray))
+                        if (tcversion == string.Join(".", versionArray))
                         {
-                            remotemanager_tcversion = version;
+                            tcversion = version;
                             found = true;
                             break;
                         }
@@ -221,13 +221,13 @@ namespace Twinpack.Core
                 }
 
                 if (!found)
-                    throw new System.ArgumentException($"Output target system {remotemanager_tcversion} not found in {string.Join(",", remote.Versions)}");
+                    throw new System.ArgumentException($"Output target system {tcversion} not found in {string.Join(",", remote.Versions)}");
 
-                _logger.Info($"Using target system:  TC{remotemanager_tcversion}");
+                _logger.Info($"Using target system:  TC{tcversion}");
 
-                if(remote.Version != remotemanager_tcversion)
-                    remote.Version = remotemanager_tcversion;
-                return remotemanager_tcversion;
+                if(remote.Version != tcversion)
+                    remote.Version = tcversion;
+                return tcversion;
             }
             else
             {
