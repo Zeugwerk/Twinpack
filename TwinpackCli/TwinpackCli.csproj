@@ -49,6 +49,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\UpdateCommand.cs" />
+    <Compile Include="Commands\RestoreCommand.cs" />
     <Compile Include="Commands\RemoveCommand.cs" />
     <Compile Include="Commands\AddCommand.cs" />
     <Compile Include="Commands\Command.cs" />

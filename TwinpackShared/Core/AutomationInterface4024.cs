@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Management;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -104,13 +105,20 @@ namespace Twinpack.Core
             var ready = false;
             while (!ready)
             {
-                ready = true;
-                foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
+                try
                 {
-                    if (project == null)
-                        ready = false;
-                    else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
-                        return project.Object as ITcSysManager;
+                    ready = true;
+                    foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
+                    {
+                        if (project == null)
+                            ready = false;
+                        else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
+                            return project.Object as ITcSysManager;
+                    }
+                }
+                catch(COMException ex)
+                {
+                    _logger.Trace(ex);
                 }
 
                 if (!ready)
@@ -123,33 +131,49 @@ namespace Twinpack.Core
         private ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)
         {
             var systemManager = SystemManager(projectName);
-            
-            if (plcName == null)
+
+            bool ready = false;
+            while(!ready)
             {
-                var plcConfiguration = systemManager.LookupTreeItem("TIPC");
-                for (var j = 1; j <= plcConfiguration.ChildCount; j++)
+                try
                 {
-                    var plc = (plcConfiguration.Child[j] as ITcProjectRoot)?.NestedProject;
-                    for (var k = 1; k <= (plc?.ChildCount ?? 0); k++)
+                    if (plcName == null)
                     {
-                        if (plc.Child[k] as ITcPlcLibraryManager != null)
+                        var plcConfiguration = systemManager.LookupTreeItem("TIPC");
+                        for (var j = 1; j <= plcConfiguration.ChildCount; j++)
                         {
-                            return plc.Child[k] as ITcPlcLibraryManager;
+                            var plc = (plcConfiguration.Child[j] as ITcProjectRoot)?.NestedProject;
+                            for (var k = 1; k <= (plc?.ChildCount ?? 0); k++)
+                            {
+                                if (plc.Child[k] as ITcPlcLibraryManager != null)
+                                {
+                                    return plc.Child[k] as ITcPlcLibraryManager;
+                                }
+                            }
                         }
                     }
-                }
-            }
-            else
-            {
-                var projectRoot = systemManager.LookupTreeItem($"TIPC^{plcName}");
-                var plc = (projectRoot as ITcProjectRoot)?.NestedProject;
-                for (var k = 1; k <= (plc?.ChildCount ?? 0); k++)
-                {
-                    if (plc.Child[k] as ITcPlcLibraryManager != null)
+                    else
                     {
-                        return plc.Child[k] as ITcPlcLibraryManager;
+                        var projectRoot = systemManager.LookupTreeItem($"TIPC^{plcName}");
+                        var plc = (projectRoot as ITcProjectRoot)?.NestedProject;
+                        for (var k = 1; k <= (plc?.ChildCount ?? 0); k++)
+                        {
+                            if (plc.Child[k] as ITcPlcLibraryManager != null)
+                            {
+                                return plc.Child[k] as ITcPlcLibraryManager;
+                            }
+                        }
                     }
+
+                    ready = true;
                 }
+                catch (COMException ex)
+                {
+                    _logger.Trace(ex);
+                }
+
+                if (!ready)
+                    System.Threading.Thread.Sleep(1000);
             }
 
             return null;
@@ -255,7 +279,6 @@ namespace Twinpack.Core
 
             await RemovePackageAsync(package);
 
-            _logger.Info($"Adding {package.PackageVersion.Name} {version} (distributor: {distributorName})");
             if (options?.LibraryReference == true)
                 libraryManager.AddLibrary(libraryName, version, distributorName);
             else
@@ -350,7 +373,6 @@ namespace Twinpack.Core
 
             if (uninstall)
             {
-                _logger.Info($"Uninstalling package {package.PackageVersion.Name} from system ...");
                 await UninstallPackageAsync(package);
             }
         }
@@ -361,8 +383,6 @@ namespace Twinpack.Core
 
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             var packageVersion = package.PackageVersion;
-
-            _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
 
             var suffix = package.PackageVersion.Compiled == 1 ? "compiled-library" : "library";
             var path = Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}");

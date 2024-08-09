@@ -3,6 +3,7 @@ using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
 using NLog;
 using NLog.Filters;
+using NuGet.Common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -171,22 +172,22 @@ namespace Twinpack.Core
 
         public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(Config config, string searchTerm = null, bool includeMetadata = false, CancellationToken token = default)
         {
-
             foreach (var project in config.Projects)
             {
-                var packages = project.Plcs.SelectMany(x => x.Packages);
-
-                foreach (var package in packages.Where(x => _usedPackagesCache.Any(y => y.Name == x.Name) == false))
+                foreach (var plc in project.Plcs)
                 {
-                    PackageItem catalogItem = await _packageServers.ResolvePackageAsync(package, includeMetadata, _automationInterface, token);
+                    foreach (var package in plc.Packages.Where(x => _usedPackagesCache.Any(y => y.Name == x.Name) == false))
+                    {
+                        PackageItem catalogItem = await _packageServers.ResolvePackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, token);
 
-                    _usedPackagesCache.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
-                    _usedPackagesCache.Add(catalogItem);
+                        _usedPackagesCache.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
+                        _usedPackagesCache.Add(catalogItem);
 
-                    if (catalogItem.PackageServer == null)
-                        _logger.Warn($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) referenced in the configuration can not be found on any package server");
-                    else
-                        _logger.Info($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) located on {catalogItem.PackageServer.UrlBase}");
+                        if (catalogItem.PackageServer == null)
+                            _logger.Warn($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) referenced in the configuration can not be found on any package server");
+                        else
+                            _logger.Info($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) located on {catalogItem.PackageServer.UrlBase}");
+                    }
                 }
             }
 
@@ -232,6 +233,11 @@ namespace Twinpack.Core
 
             foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Name == y.Name)))
             {
+                _logger.Info($"Removing {package.PackageVersion.Name}");
+
+                if (uninstall)
+                    _logger.Info($"Uninstalling {package.PackageVersion.Name} from system ...");
+
                 await _automationInterface.RemovePackageAsync(package, uninstall: uninstall);
 
                 _usedPackagesCache.RemoveAll(x => string.Equals(x.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
@@ -243,6 +249,22 @@ namespace Twinpack.Core
 
             _automationInterface.SaveAll();
             ConfigFactory.Save(_config);
+        }
+
+        public async System.Threading.Tasks.Task RestorePackagesAsync(AddPackageOptions options = default, CancellationToken cancellationToken = default)
+        {
+            var usedPackages = await RetrieveUsedPackagesAsync(_config, token: cancellationToken);
+
+            var packages = usedPackages.Select(x => new PackageItem(x) { PackageVersion = x.Used }).ToList();
+            await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
+        }
+
+        public async System.Threading.Tasks.Task UpdatePackagesAsync(AddPackageOptions options = default, CancellationToken cancellationToken = default)
+        {
+            var usedPackages = await RetrieveUsedPackagesAsync(_config, token: cancellationToken);
+
+            var packages = usedPackages.Select(x => new PackageItem(x) { PackageVersion = x.Update }).ToList();
+            await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
         }
 
         public async System.Threading.Tasks.Task AddPackageAsync(PackageItem package, AddPackageOptions options = default, CancellationToken cancellationToken = default)
@@ -270,6 +292,7 @@ namespace Twinpack.Core
             // install downloaded packages
             foreach (var package in downloadedPackageVersions)
             {
+                _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
                 await _automationInterface.InstallPackageAsync(package, cachePath: cachePath);
                 cancellationToken.ThrowIfCancellationRequested();
             }
@@ -277,6 +300,7 @@ namespace Twinpack.Core
             // add affected packages as references
             foreach (var package in options?.AddDependencies == true ? affectedPackages : packages)
             {
+                _logger.Info($"Adding {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName})");
                 await _automationInterface.AddPackageAsync(package);
                 cancellationToken.ThrowIfCancellationRequested();
 

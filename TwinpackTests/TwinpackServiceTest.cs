@@ -219,6 +219,26 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task RetrieveInstalledPackagesAsync_LinkToConfig()
+        {
+            var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Name = "MyProject", Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { Name = "MyPlc" } } } } };
+            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            {
+                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+            };
+
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: null)).ToList();
+
+            Assert.AreEqual(3, packages.Count);
+            Assert.AreEqual(2, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used == null).Count());
+            CollectionAssert.AreEqual(new List<string> { "MyProject" }, packages.Select(x => x.ProjectName).Distinct().ToList());
+            CollectionAssert.AreEqual(new List<string> { "MyPlc" }, packages.Select(x => x.PlcName).Distinct().ToList());
+        }
+
+        [TestMethod]
         public async Task RetrieveInstalledPackagesAsync_WithSearchTerm_PackageName()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };

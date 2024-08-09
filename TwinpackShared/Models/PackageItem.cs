@@ -16,6 +16,27 @@ namespace Twinpack.Models
 
         }
 
+        public PackageItem(PackageItem p)
+        {
+            PackageServer = p.PackageServer;
+            PackageId = p.PackageId;
+            Repository = p.Repository;
+            Description = p.Description;
+            IconUrl = p.IconUrl;
+            Name = p.Name;
+            DisplayName = p.DisplayName;
+            DistributorName = p.DistributorName;
+            RuntimeLicense = p.RuntimeLicense;
+            Downloads = p.Downloads;
+            Used = p.Used;
+            Config = p.Config;
+            Package = p.Package;
+            PackageVersion = p.PackageVersion;
+            ProjectName = p.ProjectName;
+            PlcName = p.PlcName;
+            IsPlaceholder = p.IsPlaceholder;
+        }
+
         public PackageItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package) : base(package)
         {
             PackageServer = packageServer;
