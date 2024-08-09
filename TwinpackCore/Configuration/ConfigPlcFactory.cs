@@ -116,7 +116,6 @@ namespace Twinpack.Configuration
             // Fallback
             plc.Version = plc.Version ?? xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "ProjectVersion").FirstOrDefault()?.Value;
             plc.Version = plc.Version ?? "1.0.0.0";
-            plc.Type = GuessPlcType(plc).ToString();
 
             AddPlcLibraryOptions ParseOptions(XElement element, bool isLibraryReference)
             {
@@ -266,6 +265,7 @@ namespace Twinpack.Configuration
                 plc.References["*"].Add($"{r.Name}={r.Version ?? "*"}");
             }
 
+            plc.Type = GuessPlcType(plc).ToString();
             return plc;
         }
 
