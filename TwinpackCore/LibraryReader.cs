@@ -300,7 +300,7 @@ namespace Twinpack
                                   ReadProjectInformationBin(zipArchive, stringTable, dumpFilenamePrefix);
 
                 if (libraryInfo == null)
-                    throw new Exceptions.LibraryInvalid("Fileformat is not supported, project information could not be extracted");
+                    throw new Exceptions.LibraryFileInvalidException("Fileformat is not supported, project information could not be extracted");
 
                 libraryInfo.Dependencies = stringTable.Select(x => Regex.Match(x, @"^([A-Za-z].*?),\s*(.*?)\s*\(([A-Za-z].*)\)$"))
                                         .Where(x => x.Success)

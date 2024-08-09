@@ -288,7 +288,7 @@ namespace Twinpack.Protocol
 
                                 if(files.Count() != 1)
                                 {
-                                    throw new Exceptions.GetException("nupkg contains a msi file that contains more than one library!");
+                                    throw new Exceptions.ProtocolException("nupkg contains a msi file that contains more than one library!");
                                 }
                                 foreach (var f in files)
                                 {
@@ -308,7 +308,7 @@ namespace Twinpack.Protocol
                     }
                     else
                     {
-                        throw new Exceptions.GetException($"nupkg should contain a single .msi or {(packageVersion.Compiled == 1 ? ".compiled-library" : ".library")} file!");
+                        throw new Exceptions.ProtocolException($"nupkg should contain a single .msi or {(packageVersion.Compiled == 1 ? ".compiled-library" : ".library")} file!");
                     }
                 }
             }

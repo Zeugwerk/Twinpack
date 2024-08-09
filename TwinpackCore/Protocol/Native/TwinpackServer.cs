@@ -118,14 +118,14 @@ namespace Twinpack.Protocol
             catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
-                throw new PostException("Response could not be parsed");
+                throw new ProtocolException("Response could not be parsed");
             }
 
             if (result.Meta?.Message != null)
-                throw new PostException(result.Meta.Message.ToString());
+                throw new ProtocolException(result.Meta.Message.ToString());
 
             if (result.PackageVersionId == null)
-                throw new PostException("Error occured while pushing to the Twinpack server");
+                throw new ProtocolException("Error occured while pushing to the Twinpack server");
 
             return result;
         }
@@ -155,7 +155,7 @@ namespace Twinpack.Protocol
                 catch (JsonException)
                 {
                     _logger.Trace($"Unparseable response: {data}");
-                    throw new GetException("Response could not be parsed");
+                    throw new ProtocolException("Response could not be parsed");
                 }
 
                 var linkHeader = response.Headers.GetValues("Link");
@@ -170,7 +170,7 @@ namespace Twinpack.Protocol
                     catch (JsonException)
                     {
                         _logger.Trace($"Unparseable response: {linkHeader.First()}");
-                        throw new GetException("Response could not be parsed");
+                        throw new ProtocolException("Response could not be parsed");
                     }
 
                     if (pagination.Next == null)
@@ -231,11 +231,11 @@ namespace Twinpack.Protocol
             catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
-                throw new GetException("Response could not be parsed");
+                throw new ProtocolException("Response could not be parsed");
             }
 
             if (result.Meta?.Message != null)
-                throw new GetException(result.Meta.Message.ToString());
+                throw new ProtocolException(result.Meta.Message.ToString());
 
             return result;
         }
@@ -273,7 +273,7 @@ namespace Twinpack.Protocol
                     }
                     else
                     {
-                        throw new ChecksumException($"Checksum of downloaded file is mismatching, library was changed after its release!", packageVersion.BinarySha256, chk);
+                        throw new ChecksumMismatchException($"Checksum of downloaded file is mismatching, library was changed after its release!", packageVersion.BinarySha256, chk);
                     }
                 }
             }
@@ -281,7 +281,7 @@ namespace Twinpack.Protocol
             {
                 throw;
             }
-            catch (ChecksumException)
+            catch (ChecksumMismatchException)
             {
                 return false;
             }
@@ -311,7 +311,7 @@ namespace Twinpack.Protocol
                     if (downloadOk)
                         return;
                 }
-                catch (ChecksumException)
+                catch (ChecksumMismatchException)
                 {
                     if (ChecksumMode.IgnoreMismatchAndFallack != checksumMode)
                         throw;
@@ -335,11 +335,11 @@ namespace Twinpack.Protocol
             catch
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
-                throw new GetException("Response could not be parsed");
+                throw new ProtocolException("Response could not be parsed");
             }
 
             if (result.Meta?.Message != null)
-                throw new GetException(result.Meta.Message.ToString());
+                throw new ProtocolException(result.Meta.Message.ToString());
 
             if (result.PackageId != null)
             {
@@ -355,7 +355,7 @@ namespace Twinpack.Protocol
                     }
                     else
                     {
-                        throw new ChecksumException($"Checksum of downloaded file is mismatching, library was changed after its release!", packageVersion.BinarySha256, chk);
+                        throw new ChecksumMismatchException($"Checksum of downloaded file is mismatching, library was changed after its release!", packageVersion.BinarySha256, chk);
                     }
                 }
 
@@ -391,11 +391,11 @@ namespace Twinpack.Protocol
             catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
-                throw new GetException("Response could not be parsed");
+                throw new ProtocolException("Response could not be parsed");
             }
 
             if (result.Meta?.Message != null)
-                throw new GetException(result.Meta.Message.ToString());
+                throw new ProtocolException(result.Meta.Message.ToString());
 
             return result;
         }
@@ -423,11 +423,11 @@ namespace Twinpack.Protocol
             catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
-                throw new PutException("Response could not be parsed");
+                throw new ProtocolException("Response could not be parsed");
             }
 
             if (result.Meta?.Message != null)
-                throw new PutException(result.Meta.Message.ToString());
+                throw new ProtocolException(result.Meta.Message.ToString());
 
             return result;
         }
@@ -452,11 +452,11 @@ namespace Twinpack.Protocol
             catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
-                throw new GetException("Response could not be parsed");
+                throw new ProtocolException("Response could not be parsed");
             }
 
             if (result.Meta?.Message != null)
-                throw new GetException(result.Meta.Message.ToString());
+                throw new ProtocolException(result.Meta.Message.ToString());
 
             return result;
         }
@@ -483,11 +483,11 @@ namespace Twinpack.Protocol
             catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
-                throw new PutException("Response could not be parsed");
+                throw new ProtocolException("Response could not be parsed");
             }
 
             if (result.Meta?.Message != null)
-                throw new PutException(result.Meta.Message.ToString());
+                throw new ProtocolException(result.Meta.Message.ToString());
 
             return result;
         }
@@ -515,11 +515,11 @@ namespace Twinpack.Protocol
             catch (JsonException)
             {
                 _logger.Trace($"Unparseable response: {responseBody}");
-                throw new PutException("Response could not be parsed");
+                throw new ProtocolException("Response could not be parsed");
             }
 
             if (result.Meta?.Message != null)
-                throw new PutException(result.Meta.Message.ToString());
+                throw new ProtocolException(result.Meta.Message.ToString());
 
             return result;
         }
@@ -672,7 +672,7 @@ namespace Twinpack.Protocol
 
             if (exceptions.Any())
             {
-                throw new PostException($"Pushing to Twinpack Server failed for {exceptions.Count()} packages!");
+                throw new ProtocolException($"Pushing to Twinpack Server failed for {exceptions.Count()} packages!");
             }
         }
 
