@@ -138,7 +138,7 @@
     <None Include="Twinpack.17.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\TwinpackShared\TwinpackShared.projitems" Label="Shared" />
+  <Import Project="..\TwinpackCore\TwinpackCore.projitems" Label="Shared" />
   <Target Name="BeforeBuild">
     <ItemGroup>
       <AssemblyAttributes Include="AssemblyVersion">
