@@ -17,6 +17,7 @@ using TCatSysManagerLib;
 using Task = System.Threading.Tasks.Task;
 using FontAwesome.WPF;
 using NLog.Layouts;
+using Twinpack.Core;
 
 namespace Twinpack
 {
@@ -26,6 +27,7 @@ namespace Twinpack
 
         public Solution Solution { get; set; }
         public DTE2 Dte { get; set; }
+        public VisualStudio VisualStudio { get; set; }
         public string Version
         {
             get
@@ -173,6 +175,7 @@ namespace Twinpack
                 }
 
                 Context.Solution = Context.Dte.Solution;
+                Context.VisualStudio = new VisualStudio(Context.Dte, Context.Solution);
                 var projects = Context.Solution.Projects;
 
                 if (projects.Count == 0)

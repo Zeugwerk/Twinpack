@@ -31,14 +31,11 @@ namespace Twinpack.Dialogs
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var plc = TwinpackUtils.ActiveProject(_context.Dte);
+            var plc = _context.VisualStudio.ActiveProject();
 
-            //if(plc != null)
-            //{
-                var catalogWindow = new CatalogWindow(_context);
-                Content = catalogWindow;
-                Caption = $"Twinpack: {plc?.Name ?? "No Context"}";
-            //}
+            var catalogWindow = new CatalogWindow(_context);
+            Content = catalogWindow;
+            Caption = $"Twinpack: {plc?.Name ?? "No Context"}";
         }
     }
 }

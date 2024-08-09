@@ -17,13 +17,11 @@ namespace Twinpack.Commands
         [Option('t', "take", Required = false, Default = null, HelpText = "Limit the number of results to return")]
         public int? Take { get; set; }
 
-        public override async Task<int> ExecuteAsync()
+        public override int Execute()
         {
-            await PackagingServerRegistry.InitializeAsync();
-            _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
+            Initialize(headed: false);
 
-            await _twinpack.LoginAsync();
-            foreach(var package in await _twinpack.RetrieveAvailablePackagesAsync(SearchTerm, Take))
+            foreach (var package in _twinpack.RetrieveAvailablePackagesAsync(SearchTerm, Take).GetAwaiter().GetResult())
             {
                 Console.WriteLine(package.Name);
             }

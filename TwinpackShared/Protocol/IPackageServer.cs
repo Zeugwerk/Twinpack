@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 using System.Threading;
 
 namespace Twinpack.Protocol

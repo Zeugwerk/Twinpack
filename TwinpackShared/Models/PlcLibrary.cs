@@ -12,7 +12,6 @@ namespace Twinpack.Models
     {
         public AddPlcLibraryOptions()
         {
-            AddDependenciesAsReferences = true;
             LibraryReference = false;
             Optional = false;
             HideWhenReferencedAsDependency = false;
@@ -25,7 +24,6 @@ namespace Twinpack.Models
             if (options == null)
                 return;
 
-            AddDependenciesAsReferences = options.AddDependenciesAsReferences;
             LibraryReference = options.LibraryReference;
             Optional = options.Optional;
             HideWhenReferencedAsDependency = options.HideWhenReferencedAsDependency;
@@ -33,10 +31,17 @@ namespace Twinpack.Models
             QualifiedOnly = options.QualifiedOnly;
         }
 
-        [DefaultValue(true)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        [JsonPropertyName("dependency-references")]
-        public bool AddDependenciesAsReferences { get; set; }
+        public AddPlcLibraryOptions CopyForDependency()
+        {
+            return new AddPlcLibraryOptions
+            {
+                LibraryReference = false,
+                Optional = false,
+                HideWhenReferencedAsDependency = false,
+                PublishSymbolsInContainer = false,
+                QualifiedOnly = this.QualifiedOnly,
+            };
+        }
 
         [DefaultValue(false)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]

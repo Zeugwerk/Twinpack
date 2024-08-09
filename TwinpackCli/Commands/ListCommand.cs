@@ -28,35 +28,17 @@ namespace Twinpack.Commands
         [Option("outdated", Required = false, Default = null, HelpText = "Only show outdated packages")]
         public bool Outdated { get; set; }
 
-        public override async Task<int> ExecuteAsync()
+        public override int Execute()
         {
-            await PackagingServerRegistry.InitializeAsync();
-            _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
+            Initialize(headed: false);
 
-            await _twinpack.LoginAsync();
-
-            var rootPath = Environment.CurrentDirectory;
-            var config = ConfigFactory.Load(rootPath);
-
-            if (config == null)
-            {
-                config = await ConfigFactory.CreateFromSolutionFileAsync(
-                    rootPath,
-                    continueWithoutSolution: false,
-                    packageServers: PackagingServerRegistry.Servers.Where(x => x.Connected),
-                    plcTypeFilter: null);
-            }
-
-            foreach (var project in config.Projects)
-            {
+            // remove projects accordingly to the filter
+            foreach (var project in _config.Projects)
                 project.Plcs = project.Plcs.Where(x => !PlcFilter.Any() || PlcFilter.Contains(x.Name)).ToList();
-            }
 
-            var packages = await _twinpack.RetrieveInstalledPackagesAsync(config, SearchTerm);
+            var packages = _twinpack.RetrieveUsedPackagesAsync(_config, SearchTerm).GetAwaiter().GetResult();
             foreach (var package in packages.Where(x => !Outdated || x.IsUpdateable))
-            {
                 Console.WriteLine($"{package.Name} {package.InstalledVersion} {(package.IsUpdateable ? $"-> {package.UpdateVersion}" : "")}");
-            }
 
             return 0;
         }

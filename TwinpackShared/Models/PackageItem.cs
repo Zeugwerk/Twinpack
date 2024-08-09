@@ -1,23 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using TCatSysManagerLib;
+using Twinpack.Models.Api;
 
 namespace Twinpack.Models
 {
-    public class CatalogItem : CatalogItemGetResponse
+    public class PackageItem : CatalogItemGetResponse, INotifyPropertyChanged
     {
-        public CatalogItem()
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        PackageGetResponse _package;
+        PackageVersionGetResponse _packageVersion;
+
+        public PackageItem()
         {
 
         }
 
-        public CatalogItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package) : base(package)
+        public PackageItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package) : base(package)
         {
             PackageServer = packageServer;
         }
 
-        public CatalogItem(Protocol.IPackageServer packageServer, PackageVersionGetResponse packageVersion)
+        public PackageItem(Protocol.IPackageServer packageServer, PackageVersionGetResponse packageVersion)
         {
             PackageServer = packageServer;
             PackageId = packageVersion.PackageId;
@@ -31,7 +35,7 @@ namespace Twinpack.Models
             Downloads = packageVersion.Downloads;
         }
 
-        public CatalogItem(ConfigPlcPackage package)
+        public PackageItem(ConfigPlcPackage package)
         {
             Name = package.Name;
             Repository = package.Version;
@@ -43,48 +47,16 @@ namespace Twinpack.Models
         }
 
         public Protocol.IPackageServer PackageServer { get; set; }
-        public string InstalledVersion { get { return Installed?.Version; } }
+        public string InstalledVersion { get { return Used?.Version; } }
         public bool IsPlaceholder { get; set; } // this may be null if the latest version should be used
-        public string InstalledBranch { get { return Installed?.Branch; } }
-        public string InstalledTarget { get { return Installed?.Target; } }
-        public string InstalledConfiguration { get { return Installed?.Configuration; } }
-
-        PackageVersionGetResponse _update;
+        public string InstalledBranch { get { return Used?.Branch; } }
+        public string InstalledTarget { get { return Used?.Target; } }
+        public string InstalledConfiguration { get { return Used?.Configuration; } }
         public PackageVersionGetResponse Update{ get; set; }
-        public PackageVersionGetResponse Installed { get; set; }
+        public PackageVersionGetResponse Used { get; set; }
+        public string ProjectName { get; set; }
+        public string PlcName { get; set; }
         public ConfigPlcPackage Config { get; set; }
-
-        public bool IsUpdateable
-        {
-            get
-            {
-                try
-                {
-                    return (Installed?.Version == null && Update?.Version != null) || (Update?.Version != null && new Version(Installed?.Version) < new Version(Update?.Version));
-                }
-                catch
-                {
-                    return true;
-                }
-            }
-        }
-        public string UpdateVersion { get { return Update?.Version; } }
-
-    }
-
-    public class PackageItem : INotifyPropertyChanged
-    {
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        PackageGetResponse _package = new PackageGetResponse();
-        PackageVersionGetResponse _packageVersion = new PackageVersionGetResponse();
-
-        public PackageItem()
-        {
-        }
-
-        public Protocol.IPackageServer PackageServer { get; set; }
-
         public PackageGetResponse Package
         {
             get { return _package; }
@@ -94,7 +66,6 @@ namespace Twinpack.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Package)));
             }
         }
-
         public PackageVersionGetResponse PackageVersion
         {
             get { return _packageVersion; }
@@ -104,11 +75,27 @@ namespace Twinpack.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
             }
         }
-
         public void Invalidate()
         {
             _package = new PackageGetResponse();
             _packageVersion = new PackageVersionGetResponse();
         }
+
+        public bool IsUpdateable
+        {
+            get
+            {
+                try
+                {
+                    return (Used?.Version == null && Update?.Version != null) || (Update?.Version != null && new Version(Used?.Version) < new Version(Update?.Version));
+                }
+                catch
+                {
+                    return true;
+                }
+            }
+        }
+        public string UpdateVersion { get { return Update?.Version; } }
+
     }
 }

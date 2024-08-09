@@ -1,9 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Twinpack.Core;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 
 namespace TwinpackTests
 {
@@ -31,10 +34,10 @@ namespace TwinpackTests
                 },
                 PackageVersionItems = new List<PackageVersionGetResponse>
                 {
-                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", DisplayName="My Displayname", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
                 },
                 Connected = true
             };
@@ -52,7 +55,7 @@ namespace TwinpackTests
                 PackageVersionItems = new List<PackageVersionGetResponse>
                 {
                     new PackageVersionGetResponse() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 5", DistributorName = "My Distributor", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse() { Name = "Package 5", DistributorName = "My Distributor 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
                 },
                 Connected = true
             };
@@ -208,11 +211,11 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: null)).ToList();
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: null)).ToList();
 
             Assert.AreEqual(3, packages.Count);
-            Assert.AreEqual(2, packages.Where(x => x.Installed != null).Count());
-            Assert.AreEqual(1, packages.Where(x => x.Installed == null).Count());
+            Assert.AreEqual(2, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used == null).Count());
         }
 
         [TestMethod]
@@ -226,11 +229,11 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: "4")).ToList();
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: "4")).ToList();
 
             Assert.AreEqual(1, packages.Count);
-            Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
-            Assert.AreEqual(0, packages.Where(x => x.Installed == null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(0, packages.Where(x => x.Used == null).Count());
         }
 
         [TestMethod]
@@ -244,11 +247,11 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: "My Distributor")).ToList();
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: "My Distributor 5")).ToList();
 
             Assert.AreEqual(1, packages.Count);
-            Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
-            Assert.AreEqual(0, packages.Where(x => x.Installed == null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(0, packages.Where(x => x.Used == null).Count());
         }
 
         [TestMethod]
@@ -262,11 +265,229 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveInstalledPackagesAsync(config, searchTerm: "My Displayname")).ToList();
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: "My Displayname")).ToList();
 
             Assert.AreEqual(1, packages.Count);
-            Assert.AreEqual(1, packages.Where(x => x.Installed != null).Count());
-            Assert.AreEqual(0, packages.Where(x => x.Installed == null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(0, packages.Where(x => x.Used == null).Count());
+        }
+
+        [TestMethod]
+        public async Task RetrieveInstalledPackagesAsync_ResolvingNeeded()
+        {
+            var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
+            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            {
+                new ConfigPlcPackage() { Name = "Package 4", Version = null, Branch = null, Target = null, Configuration = null },
+                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = null, Target = null, Configuration = null },
+                new ConfigPlcPackage() { Name = "Package 6", Version = "0.0.0.0", Branch = null, Target = null, Configuration = null },
+            };
+
+            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: null)).ToList();
+
+            Assert.AreEqual(3, packages.Count);
+            Assert.AreEqual(2, packages.Where(x => x.Used != null).Count());
+            Assert.AreEqual(1, packages.Where(x => x.Used == null).Count());
+
+            Assert.AreEqual("My Distributor 4", packages[0].Config.DistributorName);
+            Assert.AreEqual("main", packages[0].Config.Branch);
+            Assert.AreEqual("Snapshot", packages[0].Config.Configuration);
+            Assert.AreEqual("TC3.1", packages[0].Config.Target);
+            Assert.AreEqual(null, packages[0].Config.Version);
+            Assert.AreEqual("1.3.0.0", packages[0].Used.Version);
+
+            Assert.AreEqual("My Distributor 5", packages[1].Config.DistributorName);
+            Assert.AreEqual("main", packages[1].Config.Branch);
+            Assert.AreEqual("Release", packages[1].Config.Configuration);
+            Assert.AreEqual("TC3.1", packages[1].Config.Target);
+            Assert.AreEqual("1.0.0.0", packages[1].Config.Version);
+            Assert.AreEqual("1.0.0.0", packages[1].Used.Version);
+
+            Assert.AreEqual(null, packages[2].Config.DistributorName);
+            Assert.AreEqual(null, packages[2].Config.Branch);
+            Assert.AreEqual(null, packages[2].Config.Configuration);
+            Assert.AreEqual(null, packages[2].Config.Target);
+            Assert.AreEqual("0.0.0.0", packages[2].Config.Version);
+            Assert.AreEqual(null, packages[2].Used);
+        }
+
+        [TestMethod]
+        public async Task ResolvePackageAsync_PackageMetadataIsPopulated()
+        {
+            var packageServer = new PackageServerMock
+            {
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZAux",
+                        Version = "1.5.0.1",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ZCore" },
+                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                        }
+                    }
+                },
+                Connected = true
+            };
+
+            var packageServers = new PackageServerCollection { packageServer };
+            var twinpack = new TwinpackService(packageServers);
+
+            var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
+
+            await twinpack.ResolvePackageAsync(package);
+
+            Assert.AreEqual("ZAux", package.Package.Name);
+            Assert.AreEqual("ZAux", package.PackageVersion.Name);
+            Assert.AreEqual("1.5.0.1", package.PackageVersion.Version);
+            Assert.IsTrue(package.Package.Branches.Contains("main"));
+            Assert.IsTrue(package.Package.Branches.Contains("release/1.0"));
+        }
+
+        [DataTestMethod]
+        [DataRow("2.0.0.0", "1.0.0.0")]
+        [DataRow("1.0.0.0", "1.0.0.0")]
+        public async Task ResolvePackageAsync_EffectiveVersion(string effectiveVersion, string expectedPackageVersion)
+        {
+            var packageServer = new PackageServerMock
+            {
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZAux",
+                        Title = "ZAux",
+                        Version = "1.0.0.0",
+                        DistributorName = "My Company",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1"
+                    }
+                },
+                Connected = true
+            };
+
+            var automationInterfaceMock = new Mock<IAutomationInterface>();
+            automationInterfaceMock.Setup(x => x.ResolveEffectiveVersion("TestProject1", "Untitled1", "ZAux")).Returns("2.0.0.0");
+
+            var packageServers = new PackageServerCollection { packageServer };
+            var twinpack = new TwinpackService(packageServers, automationInterfaceMock.Object);
+
+            var package = new PackageItem { ProjectName = "TestProject1", PlcName = "Untitled1", Config = new ConfigPlcPackage { Name = "ZAux" } };
+
+            await twinpack.ResolvePackageAsync(package);
+
+            Assert.AreEqual("ZAux", package.Package.Name);
+            Assert.AreEqual("ZAux", package.PackageVersion.Name);
+            Assert.AreEqual("ZAux", package.PackageVersion.Title);
+            Assert.AreEqual("My Company", package.PackageVersion.DistributorName);
+            Assert.AreEqual(expectedPackageVersion, package.PackageVersion.Version);
+            Assert.IsTrue(package.Package.Branches.Contains("main"));
+            Assert.IsTrue(package.Package.Branches.Contains("release/1.0"));
+        }
+
+        [TestMethod]
+        public async Task DownloadPackageVersionAsync_PackagesWithDependencies()
+        {
+            var packageServer = new PackageServerMock
+            {
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZAux",
+                        Version = "1.5.0.1",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        { 
+                            new PackageVersionGetResponse() { Name = "ZCore" },
+                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZPlatform",
+                        Version = "1.5.0.1",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ZCore" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZCore",
+                        Version = "1.5.0.1",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ExternalLib1" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ExternalLib1",
+                        Version = "1.0.0.0",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ExternalLib2" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ExternalLib2",
+                        Version = "2.0.0.0",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ExternalLib3" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ExternalLib3",
+                        Version = "2.0.0.0",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1"
+                    }
+                },
+                Connected = true
+            };
+
+            var packageServers = new PackageServerCollection { packageServer };
+            var twinpack = new TwinpackService(packageServers);
+
+            var downloadedPackageVersions = new List<PackageItem>();
+            var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
+
+            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, includeDependencies: true, forceDownload: true);
+
+            Assert.AreEqual(6, downloadedPackageVersions.Count());
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZCore"));
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZPlatform"));
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZAux"));
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib1"));
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib2"));
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib3"));
+
+            Assert.IsTrue(downloadedPackageVersions.Select(x => x.Package.Branches).FirstOrDefault()?.Count() == 2);
         }
     }
 }

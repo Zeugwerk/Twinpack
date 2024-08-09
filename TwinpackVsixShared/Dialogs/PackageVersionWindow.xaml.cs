@@ -14,6 +14,8 @@ using System.Text.RegularExpressions;
 using Jdenticon.Wpf;
 using Jdenticon.Rendering;
 using System.Threading;
+using Twinpack.Core;
+using System.Xml;
 
 namespace Twinpack.Dialogs
 {
@@ -30,7 +32,7 @@ namespace Twinpack.Dialogs
         private bool _isLoading;
         private string _loadingText;
 
-        private Models.LoginPostResponse _userInfo;
+        private Models.Api.LoginPostResponse _userInfo;
         private bool _isPublishMode;
         private bool _isPublic;
         private bool _isGeneralDataReadOnly;
@@ -46,10 +48,10 @@ namespace Twinpack.Dialogs
         private Protocol.Authentication _auth;
 
         private List<string> _branches;
-        private IEnumerable<Models.PackageVersionGetResponse> _dependencies;
-        private Models.PackageGetResponse _package = new Models.PackageGetResponse();
-        private Models.PackageVersionGetResponse _packageVersion = new Models.PackageVersionGetResponse();
-        private Models.PackageVersionGetResponse _packageVersionLatest = new Models.PackageVersionGetResponse();
+        private IEnumerable<Models.Api.PackageVersionGetResponse> _dependencies;
+        private Models.Api.PackageGetResponse _package = new Models.Api.PackageGetResponse();
+        private Models.Api.PackageVersionGetResponse _packageVersion = new Models.Api.PackageVersionGetResponse();
+        private Models.Api.PackageVersionGetResponse _packageVersionLatest = new Models.Api.PackageVersionGetResponse();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -234,7 +236,7 @@ namespace Twinpack.Dialogs
                 Notes = _packageVersion?.Notes;
                 Version = _packageVersion?.Version;
                 LatestVersion = _packageVersionLatest?.Version;
-                Dependencies = _plcConfig?.Packages?.Select(x => new Models.PackageVersionGetResponse
+                Dependencies = _plcConfig?.Packages?.Select(x => new Models.Api.PackageVersionGetResponse
                 {
                     Repository = x.Repository,
                     DistributorName = x.DistributorName,
@@ -243,7 +245,7 @@ namespace Twinpack.Dialogs
                     Target = x.Target,
                     Configuration = x.Configuration,
                     Version = x.Version
-                }) ?? new List<Models.PackageVersionGetResponse>();
+                }) ?? new List<Models.Api.PackageVersionGetResponse>();
 
                 try
                 {
@@ -308,7 +310,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public Models.LoginPostResponse UserInfo
+        public Models.Api.LoginPostResponse UserInfo
         {
             get { return _userInfo; }
             set
@@ -668,7 +670,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public IEnumerable<Models.PackageVersionGetResponse> Dependencies
+        public IEnumerable<Models.Api.PackageVersionGetResponse> Dependencies
         {
             get { return _dependencies; }
             set
@@ -722,7 +724,7 @@ namespace Twinpack.Dialogs
                 if (openFileDialog.ShowDialog() == true)
                 {
                     var content = File.ReadAllText(openFileDialog.FileName);
-                    if (TwinpackUtils.ParseLicenseId(content) == null)
+                    if (TwinpackService.ParseRuntimeLicenseIdFromTmc(content) == null)
                         throw new InvalidDataException("The tmc file is not a valid license file!");
 
                     LicenseTmcFile = openFileDialog.FileName;
@@ -763,7 +765,7 @@ namespace Twinpack.Dialogs
             if (_package.PackageId == null)
                 return false;
 
-            var package = new Models.PackagePatchRequest()
+            var package = new Models.Api.PackagePatchRequest()
             {
                 PackageId = (int)_package.PackageId,
                 DisplayName = DisplayName,
@@ -771,7 +773,7 @@ namespace Twinpack.Dialogs
                 ProjectUrl = ProjectUrl,
                 Authors = Authors,
                 License = License,
-                Entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement).Name,
+                Entitlement = (EntitlementView.SelectedItem as Models.Api.LoginPostResponse.Entitlement).Name,
                 LicenseBinary = !string.IsNullOrEmpty(LicenseFile) && File.Exists(LicenseFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseFile)) : _packageVersion?.LicenseBinary,
                 LicenseTmcBinary = !string.IsNullOrEmpty(LicenseTmcFile) && File.Exists(LicenseTmcFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseTmcFile)) : _packageVersion?.LicenseTmcBinary,
                 IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
@@ -816,7 +818,7 @@ namespace Twinpack.Dialogs
             if (_packageVersion.PackageVersionId == null)
                 return false;
 
-            var packageVersion = new Models.PackageVersionPatchRequest()
+            var packageVersion = new Models.Api.PackageVersionPatchRequest()
             {
                 PackageVersionId = (int)_packageVersion.PackageVersionId,
                 Notes = Notes
@@ -859,9 +861,9 @@ namespace Twinpack.Dialogs
                 _logger.Info("Publishing package");
 
                 var branch = BranchesView.SelectedItem as string;
-                var configuration = (ConfigurationsView.SelectedItem as Models.LoginPostResponse.Configuration).Name;
-                var entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement).Name;
-                var target = (TargetsView.SelectedItem as Models.LoginPostResponse.Target).Name;
+                var configuration = (ConfigurationsView.SelectedItem as Models.Api.LoginPostResponse.Configuration).Name;
+                var entitlement = (EntitlementView.SelectedItem as Models.Api.LoginPostResponse.Entitlement).Name;
+                var target = (TargetsView.SelectedItem as Models.Api.LoginPostResponse.Target).Name;
                 var compiled = FileTypeView.SelectedIndex != 0;
 
                 IsEnabled = false;
@@ -869,14 +871,13 @@ namespace Twinpack.Dialogs
 
                 LoadingText = "Checking all objects ...";
                 var path = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\{target}\{_plcConfig.Name}_{_plcConfig.Version}.library";
-                var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
-                var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
-                
-                TwinpackUtils.SyncPlcProj(iec, _plcConfig);
+
+                ITcPlcIECProject2 iec = SetPlcProjProperties();
+
                 _logger.Info($"Checking all objects of PLC {_plcConfig.Name}");
                 if (!iec.CheckAllObjects())
                 {
-                    if (TwinpackUtils.BuildErrorCount(_context.Dte) > 0)
+                    if (_context.VisualStudio.BuildErrorCount() > 0)
                         throw new Exceptions.PostException($"{_plcConfig.Name} does not compile! Check all objects for your PLC failed. Please fix the errors in order to publish your library.");
                 }
 
@@ -892,8 +893,8 @@ namespace Twinpack.Dialogs
                     LoadingText = "Uploading to Twinpack ...";
 
                     var cachePath = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries";
-                    var suffix = compiled ? "compiled-library" : "library";                   
-                    var packageVersion = new Models.PackageVersionPostRequest()
+                    var suffix = compiled ? "compiled-library" : "library";
+                    var packageVersion = new Models.Api.PackageVersionPostRequest()
                     {
                         Name = PackageName,
                         Title = PackageTitle,
@@ -915,7 +916,7 @@ namespace Twinpack.Dialogs
                         IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
                         IconBinary = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Convert.ToBase64String(File.ReadAllBytes(IconFile)) : null,
                         Binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath}\{target}\{_plcConfig.Name}_{_plcConfig.Version}.{suffix}")),
-                        Dependencies = _plcConfig.Packages?.Select(x => new Models.PackageVersionDependency
+                        Dependencies = _plcConfig.Packages?.Select(x => new Models.Api.PackageVersionDependency
                         {
                             Repository = x.Repository,
                             DistributorName = x.DistributorName,
@@ -962,7 +963,7 @@ namespace Twinpack.Dialogs
                 }
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Publish failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -971,6 +972,30 @@ namespace Twinpack.Dialogs
                 IsEnabled = true;
                 IsLoading = false;
             }
+        }
+
+        private ITcPlcIECProject2 SetPlcProjProperties()
+        {
+            var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
+            var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
+
+            StringWriter stringWriter = new StringWriter();
+            using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
+            {
+                _logger.Info($"Updating plcproj, setting Version={_plcConfig.Version}, Company={_plcConfig.DistributorName}");
+                writer.WriteStartElement("TreeItem");
+                writer.WriteStartElement("IECProjectDef");
+                writer.WriteStartElement("ProjectInfo");
+                writer.WriteElementString("Title", _plcConfig.Title);
+                writer.WriteElementString("Version", (new Version(_plcConfig.Version)).ToString());
+                writer.WriteElementString("Company", _plcConfig.DistributorName);
+                writer.WriteEndElement();     // ProjectInfo
+                writer.WriteEndElement();     // IECProjectDef
+                writer.WriteEndElement();     // TreeItem 
+            }
+
+            (_plc as ITcSmTreeItem).ConsumeXml(stringWriter.ToString());
+            return iec;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
@@ -1055,7 +1080,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                var licenseDialog = new LicenseWindow(null, _packageVersion);
+                var licenseDialog = new LicenseWindow(_packageVersion);
                 licenseDialog.ShowLicense();
             }
             catch (Exception ex)
@@ -1069,7 +1094,7 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                var licenseDialog = new LicenseWindow(null, _packageVersion);
+                var licenseDialog = new LicenseWindow(_packageVersion);
                 licenseDialog.ShowLicense();
             }
             catch (Exception ex)
@@ -1099,9 +1124,9 @@ namespace Twinpack.Dialogs
 
         private void ValidateVisibility()
         {
-            var configuration = (ConfigurationsView.SelectedItem as Models.LoginPostResponse.Configuration);
-            var target = (TargetsView.SelectedItem as Models.LoginPostResponse.Target);
-            var entitlement = (EntitlementView.SelectedItem as Models.LoginPostResponse.Entitlement);
+            var configuration = (ConfigurationsView.SelectedItem as Models.Api.LoginPostResponse.Configuration);
+            var target = (TargetsView.SelectedItem as Models.Api.LoginPostResponse.Target);
+            var entitlement = (EntitlementView.SelectedItem as Models.Api.LoginPostResponse.Entitlement);
 
             IsPublic = configuration?.IsPublic == true && target?.IsPublic == true && entitlement?.IsPublic == true;
         }

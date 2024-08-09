@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
+using Twinpack.Models.Api;
 
 namespace Twinpack.Models
 {
@@ -46,6 +47,20 @@ namespace Twinpack.Models
 
     public class ConfigPlcPackage
     {
+        public ConfigPlcPackage(PackageVersionGetResponse pv)
+        {
+            Version = pv.Version;
+            Name = pv.Name;
+            Branch = pv.Branch;
+            Target = pv.Target;
+            Configuration = pv.Configuration;
+            DistributorName = pv.DistributorName;
+            Namespace = pv.Name;
+            Parameters = null;
+            Options = null;
+            Framework = pv.Framework;
+        }
+
         public ConfigPlcPackage()
         {
             Repository = "";
@@ -53,7 +68,7 @@ namespace Twinpack.Models
             Branch = "main";
             Target = "TC3.1";
             Configuration = "Release";
-            Version = "";
+            Version = null;
             DistributorName = null;
             Namespace = null;
             Parameters = null;
@@ -193,7 +208,7 @@ namespace Twinpack.Models
         public ConfigFrameworks Frameworks { get; set; }
 
         [JsonPropertyName("packages")]
-        public IEnumerable<ConfigPlcPackage> Packages { get; set; }
+        public List<ConfigPlcPackage> Packages { get; set; }
 
         [JsonPropertyName("references")]
         public Dictionary<String, List<String>> References { get; set; }

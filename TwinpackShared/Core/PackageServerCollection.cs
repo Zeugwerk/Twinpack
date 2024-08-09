@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Twinpack.Exceptions;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 using Twinpack.Protocol;
 
 namespace Twinpack.Core
@@ -36,7 +37,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async IAsyncEnumerable<CatalogItem> SearchAsync(string filter=null, int? maxPackages=null, int batchSize=5, CancellationToken token = default)
+        public async IAsyncEnumerable<PackageItem> SearchAsync(string filter=null, int? maxPackages=null, int batchSize=5, CancellationToken token = default)
         {
             var cache = new HashSet<string>();
             foreach(var packageServer in this.Where(x => x.Connected))
@@ -49,7 +50,7 @@ namespace Twinpack.Core
                     foreach (var package in packages.Item1.Where(x => !cache.Contains(x.Name)))
                     {
                         cache.Add(package.Name);
-                        yield return new CatalogItem(packageServer, package);
+                        yield return new PackageItem(packageServer, package);
                         if (maxPackages != null && cache.Count >= maxPackages)
                             yield break;
                     }
@@ -59,28 +60,56 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<CatalogItem> ResolvePackageAsync(string plcName, ConfigPlcPackage item, AutomationInterfaceService automationInterface=null, CancellationToken token = default)
+        public async Task<PackageItem> ResolvePackageAsync(ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, CancellationToken token = default)
         {
-            var catalogItem = new CatalogItem(item);
+            return await ResolvePackageAsync(null, null, item, includeMetadata, automationInterface, token);
+        }
+
+        public async Task<PackageItem> ResolvePackageAsync(string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken token = default)
+        {
+            var catalogItem = new PackageItem(item);
 
             foreach (var packageServer in this.Where(x => x.Connected))
             {
                 catalogItem.PackageServer = packageServer;
 
+                // if some data is not present, try to resolve the information
+                if(item.Branch == null || item.Configuration == null || item.Target == null || item.DistributorName == null)
+                {
+                    var resolvedPackageVersion = await packageServer.ResolvePackageVersionAsync(
+                        new PlcLibrary { Name = item.Name, DistributorName = item.DistributorName, Version = item.Version },
+                        item.Target,
+                        item.Configuration,
+                        item.Branch,
+                        cancellationToken: token);
+
+                    if(resolvedPackageVersion?.Name != null)
+                    {
+                        item.Branch ??= resolvedPackageVersion?.Branch;
+                        item.Configuration ??= resolvedPackageVersion?.Configuration;
+                        item.Target ??= resolvedPackageVersion?.Target;
+                        item.DistributorName ??= resolvedPackageVersion?.DistributorName;
+                    }
+                }
 
                 // try to get the installed package, if we can't find it at least try to resolve it
                 var packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },
                                                                                   item.Branch, item.Configuration, item.Target,
                                                                                   cancellationToken: token);
 
-                if (packageVersion != null && item.Version == null)
+                if (packageVersion?.Name != null && item.Version == null && projectName != null && plcName != null)
                 {
                     if (automationInterface != null)
                     {
-                        var effectiveVersion = automationInterface.ResolveEffectiveVersion(plcName, packageVersion.Title);
-                        packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
+                        var effectiveVersion = automationInterface.ResolveEffectiveVersion(projectName, plcName, packageVersion.Title);
+                        var effectivePackageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
                                                                                           item.Branch, item.Configuration, item.Target,
                                                                                           cancellationToken: token);
+
+                        if (effectivePackageVersion?.Name != null)
+                            packageVersion = effectivePackageVersion;
+                        else
+                            _logger.Warn($"Package {packageVersion?.Name} {effectiveVersion}* not available!");
                     }
                     else
                     {
@@ -93,11 +122,19 @@ namespace Twinpack.Core
                                                                                   cancellationToken: token);
 
                 // force the packageVersion references version even if the version was not found
-                if (packageVersion.Name != null)
+                if (packageVersion?.Name != null)
                 {
-                    catalogItem = new CatalogItem(packageServer, packageVersion);
-                    catalogItem.Installed = packageVersion;
+                    catalogItem = new PackageItem(packageServer, packageVersion);
+                    catalogItem.Used = packageVersion;
+                    catalogItem.Config = item;
                     catalogItem.IsPlaceholder = item.Version == null;
+
+                    if(includeMetadata)
+                    {
+                        catalogItem.Package = await packageServer.GetPackageAsync(packageVersion.DistributorName, packageVersion.Name, cancellationToken: token);
+                        catalogItem.PackageVersion = packageVersion;
+                        catalogItem.PackageVersion.Dependencies = (await ResolvePackageDependenciesAsync(catalogItem, automationInterface, token)).Select(x => x.PackageVersion).ToList();
+                    }
                 }
 
                 // a package might be updateable but not available on Twinpack
@@ -187,6 +224,69 @@ namespace Twinpack.Core
             {
                 throw new GetException($"Pulling for Package Server(s) failed for {exceptions.Count()} dependencies!");
             }
+        }
+
+        public async Task<List<PackageItem>> ResolvePackageDependenciesAsync(PackageItem package, IAutomationInterface automationInterface, CancellationToken cancellationToken = default)
+        {
+            var resolvedDependencies = new List<PackageVersionGetResponse>();
+            foreach (var dependency in package?.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
+            {
+                var version = dependency.Version;
+                foreach (var packageServer in this.Where(x => x.Connected))
+                {
+                    try
+                    {
+                        var resolvedDependency = await ResolvePackageAsync(
+                            package.ProjectName,
+                            package.PlcName,
+                            new ConfigPlcPackage
+                            {
+                                Name = dependency.Name,
+                                DistributorName = dependency.DistributorName,
+                                Version = dependency.Version,
+                                Branch = dependency.Branch,
+                                Configuration = dependency.Configuration,
+                                Target = dependency.Target
+                            },
+                            includeMetadata: true,
+                            automationInterface: automationInterface,
+                            token: cancellationToken);
+
+                        if (resolvedDependency?.PackageVersion?.Name != null)
+                        {
+                            resolvedDependencies.Add(resolvedDependency.PackageVersion);
+                            break;
+                        }
+                    }
+                    catch
+                    { }
+                }
+            }
+
+            return resolvedDependencies.Select(x => new PackageItem() { PackageVersion = x }).ToList();
+        }
+
+        public async Task<bool> DownloadPackageVersionAsync(PackageItem package, string cachePath=null, CancellationToken cancellationToken = default)
+        {
+            var success = false;
+            foreach (var packageServer in this.Where(x => x.Connected))
+            {
+                try
+                {
+                    await packageServer.DownloadPackageVersionAsync(package.PackageVersion, checksumMode: ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                    success = true;
+                    break;
+                }
+                catch
+                { }
+            }
+
+            if (!success)
+            {
+                _logger.Warn($"Package {package.PackageVersion.Title} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) not found on any package server!");
+            }
+
+            return success;
         }
     }
 }

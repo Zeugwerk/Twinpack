@@ -79,7 +79,7 @@ namespace TwinpackTests
 
             Assert.AreEqual(ConfigPlcProject.PlcProjectType.Application, ConfigPlcProjectFactory.GuessPlcType(plc));
 
-            plc.Packages = plc.Packages.ToList().Append(new ConfigPlcPackage { Name = "TcUnit" });
+            plc.Packages.Add(new ConfigPlcPackage { Name = "TcUnit" });
             Assert.AreEqual(ConfigPlcProject.PlcProjectType.UnitTestApplication, ConfigPlcProjectFactory.GuessPlcType(plc));
 
         }

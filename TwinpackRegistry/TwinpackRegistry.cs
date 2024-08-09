@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Twinpack.Models;
+using Twinpack.Models.Api;
 
 namespace Twinpack
 {
