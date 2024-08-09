@@ -59,6 +59,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddPlcLibraryOptionsTest.cs" />
     <Compile Include="ConfigFactoryTest.cs" />
     <Compile Include="mocks\PackageServerMock.cs" />
     <Compile Include="SystemTest.cs" />
