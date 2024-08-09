@@ -98,7 +98,7 @@ Global
 		TwinpackCore\TwinpackCore.projitems*{3d96f91e-afe2-4b62-bbcb-b2546aaa932e}*SharedItemsImports = 4
 		TwinpackVsixShared\TwinpackVsixShared.projitems*{710545a5-e083-4f4c-a7ac-c0f8b2e1f255}*SharedItemsImports = 4
 		TwinpackCore\TwinpackCore.projitems*{9607f8b7-e76a-452c-87f0-e804bae4e92f}*SharedItemsImports = 4
-		TwinpackCore\TwinpackShared.projitems*{963dd6a7-e9d8-4386-92e0-8b39cb7d8e9c}*SharedItemsImports = 13
+		TwinpackCore\TwinpackCore.projitems*{963dd6a7-e9d8-4386-92e0-8b39cb7d8e9c}*SharedItemsImports = 13
 		TwinpackCore\TwinpackCore.projitems*{c9f03787-eacd-4120-83e4-414ab7a8c695}*SharedItemsImports = 4
 	EndGlobalSection
 EndGlobal

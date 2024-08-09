@@ -14,8 +14,9 @@ using System.Web.UI;
 using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
+using Twinpack.Configuration;
 using Twinpack.Models;
-using Twinpack.Models.Api;
+using Twinpack.Protocol.Api;
 using VSLangProj;
 
 namespace Twinpack.Core

@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Models;
-using Twinpack.Models.Api;
+using Twinpack.Protocol.Api;
 
 namespace TwinpackTests
 {

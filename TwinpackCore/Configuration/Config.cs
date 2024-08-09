@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
-using Twinpack.Models.Api;
+using Twinpack.Models;
+using Twinpack.Protocol.Api;
 
-namespace Twinpack.Models
+namespace Twinpack.Configuration
 {
     // This class is used for deserializing a json config file
     public class Config

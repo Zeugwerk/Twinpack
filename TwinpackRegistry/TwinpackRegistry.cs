@@ -10,8 +10,9 @@ using System.Runtime.Remoting.Lifetime;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Twinpack.Configuration;
 using Twinpack.Models;
-using Twinpack.Models.Api;
+using Twinpack.Protocol.Api;
 
 namespace Twinpack
 {

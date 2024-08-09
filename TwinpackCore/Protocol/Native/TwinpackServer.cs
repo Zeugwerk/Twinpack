@@ -10,12 +10,13 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using Twinpack.Models;
-using Twinpack.Models.Api;
+using Twinpack.Protocol.Api;
 using Twinpack.Exceptions;
 using System.Reflection;
 using AdysTech.CredentialManager;
 using System.Threading;
 using System.Security.Cryptography;
+using Twinpack.Configuration;
 
 namespace Twinpack.Protocol
 {

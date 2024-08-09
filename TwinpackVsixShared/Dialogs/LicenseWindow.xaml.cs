@@ -24,7 +24,7 @@ namespace Twinpack.Dialogs
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private Models.Api.PackageVersionGetResponse _packageVersion;
+        private Protocol.Api.PackageVersionGetResponse _packageVersion;
         private string _licenseText;
         private string _licenseTmcText;
         private bool _isInstalling;
@@ -32,7 +32,7 @@ namespace Twinpack.Dialogs
         private bool _showLicenseTmcText;
 
 
-        public Models.Api.PackageVersionGetResponse PackageVersion
+        public Protocol.Api.PackageVersionGetResponse PackageVersion
         {
             get { return _packageVersion; }
             private set
@@ -107,7 +107,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public LicenseWindow(Models.Api.PackageVersionGetResponse packageVersion)
+        public LicenseWindow(Protocol.Api.PackageVersionGetResponse packageVersion)
         {
             PackageVersion = packageVersion;
 

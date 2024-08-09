@@ -16,7 +16,7 @@ using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Models;
-using Twinpack.Models.Api;
+using Twinpack.Protocol.Api;
 
 namespace Twinpack.Core
 {

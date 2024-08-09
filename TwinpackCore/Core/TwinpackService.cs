@@ -19,9 +19,10 @@ using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Exceptions;
 using Twinpack.Models;
-using Twinpack.Models.Api;
+using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
 using static System.Net.Mime.MediaTypeNames;
+using Twinpack.Configuration;
 
 namespace Twinpack.Core
 {

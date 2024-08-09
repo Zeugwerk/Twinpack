@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
 
-namespace Twinpack.Models.Api
+namespace Twinpack.Protocol.Api
 {
     public class JwtPayload
     {

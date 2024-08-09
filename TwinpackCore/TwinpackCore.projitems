@@ -9,10 +9,11 @@
     <Import_RootNamespace>TwinpackShared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterface.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterfaceHeadless.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)core\AutomationInterface4024.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)core\IAutomationInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigPlcFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterfaceHeadless.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface4024.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\IAutomationInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\MessageFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SynchronizationContextAwaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\VisualStudio.cs" />
@@ -28,9 +29,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\Exceptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LibraryReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PackageItem.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\Api.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\Config.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\ConfigFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Configuration\Config.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PlcLibrary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Plc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Project.cs" />

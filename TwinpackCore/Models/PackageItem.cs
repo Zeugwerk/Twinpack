@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
-using Twinpack.Models.Api;
+using Twinpack.Configuration;
+using Twinpack.Protocol.Api;
 
 namespace Twinpack.Models
 {

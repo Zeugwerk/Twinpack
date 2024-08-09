@@ -4,8 +4,9 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Twinpack.Core;
 using Twinpack.Models;
-using Twinpack.Models.Api;
+using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
+using Twinpack.Configuration;
 
 namespace TwinpackTests
 {
