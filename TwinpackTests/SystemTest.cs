@@ -144,7 +144,6 @@ namespace TwinpackTests
             Assert.AreEqual(plcprojPackages.Count, 1);
             Assert.AreEqual(true, plcprojPackages.Any(x => x.Name == "Tc3_Module"));
 
-
             // act remove Tc3_Module package
             await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module", Version = null } } });
 

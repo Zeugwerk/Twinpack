@@ -103,9 +103,9 @@ namespace Twinpack.Core
                 }
 
                 var library = new XElement(TcNs + "LibraryReference",
-                        new XAttribute("Include", $"{package.Config.Name},{(package.Config.Version ?? "*")},{package.Config.DistributorName}"),
+                        new XAttribute("Include", $"{package.PackageVersion.Title},{(package.PackageVersion.Version ?? "*")},{package.PackageVersion.DistributorName}"),
                         new List<XElement> {
-                            new XElement(TcNs + "Namespace", package.Config.Name),
+                            new XElement(TcNs + "Namespace", package.PackageVersion.Title),
                         });
 
                 AddOptions(library, package.Config?.Options);
@@ -126,10 +126,10 @@ namespace Twinpack.Core
                 }
 
                 var reference = new XElement(TcNs + "PlaceholderReference",
-                        new XAttribute("Include", package.Config.Name),
+                        new XAttribute("Include", package.PackageVersion.Title),
                         new List<XElement> {
-                            new XElement(TcNs + "DefaultResolution", $"{package.Config.Name}, {(package.Config.Version ?? "*")} ({package.Config.DistributorName})"),
-                            new XElement(TcNs + "Namespace", package.Config.Name),
+                            new XElement(TcNs + "DefaultResolution", $"{package.PackageVersion.Title}, {(package.PackageVersion.Version ?? "*")} ({package.PackageVersion.DistributorName})"),
+                            new XElement(TcNs + "Namespace", package.PackageVersion.Title),
                         }
                     );
 
@@ -138,8 +138,8 @@ namespace Twinpack.Core
 
                 resolutionsGroup.Add(
                     new XElement(TcNs + "PlaceholderResolution",
-                        new XAttribute("Include", package.Config.Name),
-                        new XElement(TcNs + "Resolution", $"{package.Config.Name}, {(package.Config.Version ?? "*")} ({package.Config.DistributorName})")
+                        new XAttribute("Include", package.PackageVersion.Title),
+                        new XElement(TcNs + "Resolution", $"{package.PackageVersion.Title}, {(package.PackageVersion.Version ?? "*")} ({package.PackageVersion.DistributorName})")
                      )
                 );
             }
@@ -163,7 +163,7 @@ namespace Twinpack.Core
                 if (match.Success)
                 {
                     var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
-                    if (library.Name == package.Config.Name)
+                    if (library.Name == package.PackageVersion.Title)
                         g.Remove();
                 }
             }
@@ -174,7 +174,7 @@ namespace Twinpack.Core
                 if (match.Success)
                 {
                     var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
-                    if (library.Name == package.Config.Name)
+                    if (library.Name == package.PackageVersion.Title)
                         g.Remove();
                 }
             }
@@ -190,7 +190,7 @@ namespace Twinpack.Core
                 if (match.Success)
                 {
                     var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
-                    if (library.Name == package.Config.Name)
+                    if (library.Name == package.PackageVersion.Title)
                         g.Remove();
                 }
             }

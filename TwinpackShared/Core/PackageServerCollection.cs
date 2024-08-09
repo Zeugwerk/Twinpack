@@ -128,8 +128,10 @@ namespace Twinpack.Core
                     catalogItem.Used = packageVersion;
                     catalogItem.Config = item;
                     catalogItem.IsPlaceholder = item.Version == null;
+                    catalogItem.ProjectName = projectName;
+                    catalogItem.PlcName = plcName;
 
-                    if(includeMetadata)
+                    if (includeMetadata)
                     {
                         catalogItem.Package = await packageServer.GetPackageAsync(packageVersion.DistributorName, packageVersion.Name, cancellationToken: token);
                         catalogItem.PackageVersion = packageVersion;
@@ -151,6 +153,8 @@ namespace Twinpack.Core
             }
 
             catalogItem.Config = item;
+            catalogItem.ProjectName = projectName;
+            catalogItem.PlcName = plcName;
             catalogItem.PackageServer = null;
             return catalogItem;
         }
