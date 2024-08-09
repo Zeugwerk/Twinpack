@@ -300,47 +300,47 @@ namespace Twinpack.Configuration
             if (!string.IsNullOrEmpty(plc.FilePath))
                 return plc.FilePath;
 
-            String plcproj_path = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}.plcproj";
-            if (File.Exists(plcproj_path))
+            var plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}.plcproj";
+            if (File.Exists(plcprojPath))
             {
-                plc.FilePath = plcproj_path;
-                return plcproj_path;
+                plc.FilePath = plcprojPath;
+                return plcprojPath;
             }
 
             string slnFolder = new DirectoryInfo(plc.RootPath).Name;
-            plcproj_path = $"{plc.RootPath}\\{slnFolder}\\{plc.ProjectName}\\{plc.Name}.plcproj";
-            if (File.Exists(plcproj_path))
+            plcprojPath = $"{plc.RootPath}\\{slnFolder}\\{plc.ProjectName}\\{plc.Name}.plcproj";
+            if (File.Exists(plcprojPath))
             {
-                plc.FilePath = plcproj_path;
-                return plcproj_path;
+                plc.FilePath = plcprojPath;
+                return plcprojPath;
             }
 
-            plcproj_path = $"{plc.RootPath}\\{plc.ProjectName}.plcproj";
-            if (File.Exists(plcproj_path))
+            plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}.plcproj";
+            if (File.Exists(plcprojPath))
             {
-                plc.FilePath = plcproj_path;
-                return plcproj_path;
+                plc.FilePath = plcprojPath;
+                return plcprojPath;
             }
 
-            plcproj_path = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}\\{plc.Name}.plcproj";
-            if (File.Exists(plcproj_path))
+            plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}\\{plc.Name}.plcproj";
+            if (File.Exists(plcprojPath))
             {
-                plc.FilePath = plcproj_path;
-                return plcproj_path;
+                plc.FilePath = plcprojPath;
+                return plcprojPath;
             }
 
-            plcproj_path = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}\\{plc.Name}\\{plc.Name}.plcproj";
-            if (File.Exists(plcproj_path))
+            plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}\\{plc.Name}\\{plc.Name}.plcproj";
+            if (File.Exists(plcprojPath))
             {
-                plc.FilePath = plcproj_path;
-                return plcproj_path;
+                plc.FilePath = plcprojPath;
+                return plcprojPath;
             }
 
-            plcproj_path = $"{plc.RootPath}\\{plc.Name}\\{plc.Name}.plcproj";
-            if (File.Exists(plcproj_path))
+            plcprojPath = $"{plc.RootPath}\\{plc.Name}\\{plc.Name}.plcproj";
+            if (File.Exists(plcprojPath))
             {
-                plc.FilePath = plcproj_path;
-                return plcproj_path;
+                plc.FilePath = plcprojPath;
+                return plcprojPath;
             }
 
             return null;

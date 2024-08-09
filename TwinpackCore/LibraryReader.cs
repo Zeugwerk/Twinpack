@@ -175,7 +175,7 @@ namespace Twinpack
                 var length = ReadLength(reader);
                 _logger.Trace($"Payload contains {length} bytes");
 
-                var section_header = reader.ReadBytes(7);
+                var sectionHeader = reader.ReadBytes(7);
                 _logger.Trace($"Read section " + BitConverter.ToString(header));
 
                 using (var libcatWriter = dumpFilenamePrefix == null ? null : new StreamWriter(dumpFilenamePrefix + ".libcat"))
