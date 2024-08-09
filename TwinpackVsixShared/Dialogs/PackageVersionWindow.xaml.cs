@@ -208,7 +208,7 @@ namespace Twinpack.Dialogs
                         _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name }, _packageVersion.Branch, _packageVersion.Configuration, _packageVersion.Target, cancellationToken: Token);
                         Dependencies = _packageVersion.Dependencies;
                     }
-                    catch (Exceptions.GetException ex)
+                    catch (Exceptions.ProtocolException ex)
                     {
                         MessageBox.Show(ex.Message, "Retrieving Package failed", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
@@ -793,7 +793,7 @@ namespace Twinpack.Dialogs
                 License = packageResult.License;
                 IconImage = IconCache.Icon(packageResult?.IconUrl ?? PackageName, isBeckhoffPackage: false);
             }
-            catch (Exceptions.GetException ex)
+            catch (Exceptions.ProtocolException ex)
             {
                 MessageBox.Show(ex.Message, "Retrieving Package failed", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
@@ -834,7 +834,7 @@ namespace Twinpack.Dialogs
                 License = packageVersionResult.License;
                 Notes = packageVersionResult.Notes;
             }
-            catch (Exceptions.GetException ex)
+            catch (Exceptions.ProtocolException ex)
             {
                 MessageBox.Show(ex.Message, "Retrieving Package failed", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
@@ -879,7 +879,7 @@ namespace Twinpack.Dialogs
                 if (!iec.CheckAllObjects())
                 {
                     if (_context.VisualStudio.BuildErrorCount() > 0)
-                        throw new Exceptions.PostException($"{_plcConfig.Name} does not compile! Check all objects for your PLC failed. Please fix the errors in order to publish your library.");
+                        throw new Exceptions.CompileException($"{_plcConfig.Name} does not compile! Check all objects for your PLC failed. Please fix the errors in order to publish your library.");
                 }
 
                 _logger.Info($"Saving and installing library to {path}");
@@ -951,7 +951,7 @@ namespace Twinpack.Dialogs
                     _logger.Trace(ex);
                     _logger.Error(ex.Message);
                 }
-                catch (Exceptions.PostException ex)
+                catch (Exceptions.ProtocolException ex)
                 {
                     MessageBox.Show(ex.Message, "Push failed", MessageBoxButton.OK, MessageBoxImage.Error);
                     _logger.Trace(ex);

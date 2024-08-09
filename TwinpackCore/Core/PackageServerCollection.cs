@@ -212,7 +212,7 @@ namespace Twinpack.Core
                             }
                             else if (packageServer == this.Last())
                             {
-                                throw new GetException($"Package not available on any package server");
+                                throw new ProtocolException($"Package not available on any package server");
                             }
                         }
                         catch (Exception ex)
@@ -227,7 +227,7 @@ namespace Twinpack.Core
 
             if (exceptions.Any())
             {
-                throw new GetException($"Pulling for Package Server(s) failed for {exceptions.Count()} dependencies!");
+                throw new ProtocolException($"Pulling for Package Server(s) failed for {exceptions.Count()} dependencies!");
             }
         }
 
