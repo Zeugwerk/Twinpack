@@ -25,13 +25,13 @@ namespace TwinpackTests
                 QualifiedOnly = true,
             };
 
-            var copy = options.CopyForDependency();
+            var dependencyOption = options.CopyForDependency();
 
-            Assert.AreEqual(false, options.LibraryReference);
-            Assert.AreEqual(false, options.Optional);
-            Assert.AreEqual(false, options.HideWhenReferencedAsDependency);
-            Assert.AreEqual(false, options.PublishSymbolsInContainer);
-            Assert.AreEqual(true, options.QualifiedOnly);
+            Assert.AreEqual(false, dependencyOption.LibraryReference);
+            Assert.AreEqual(false, dependencyOption.Optional);
+            Assert.AreEqual(false, dependencyOption.HideWhenReferencedAsDependency);
+            Assert.AreEqual(false, dependencyOption.PublishSymbolsInContainer);
+            Assert.AreEqual(true, dependencyOption.QualifiedOnly);
         }
     }
 }
