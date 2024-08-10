@@ -523,7 +523,7 @@ namespace Twinpack.Core
                         plcPackage.Target = requestedPackage?.Target;
                         plcPackage.Configuration = requestedPackage?.Configuration;
 
-                        packageToOverwrite.Add(new PackageItem(affectedPackage) { PackageVersion = requestedPackage, Config = plcPackage } );
+                        packageToOverwrite.Add(new PackageItem(affectedPackage) { Package = null, PackageVersion = null, Config = plcPackage } );
                     }
                     else
                     {
@@ -538,6 +538,7 @@ namespace Twinpack.Core
                     await AddPackageAsync(package);
             }
 
+            _automationInterface?.SaveAll();
             ConfigFactory.Save(_config);
         }
     }

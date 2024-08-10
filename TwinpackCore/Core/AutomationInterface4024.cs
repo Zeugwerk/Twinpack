@@ -412,8 +412,8 @@ namespace Twinpack.Core
         {
             await SwitchToMainThreadAsync();
             var systemManager = SystemManager(plc.ProjectName);
-            var projectRoot = systemManager.LookupTreeItem($"TIPC^{plc.Name}");
-            var iec = projectRoot as ITcPlcIECProject2;
+            var projectRoot = systemManager.LookupTreeItem($"TIPC^{plc.Name}") as ITcProjectRoot;
+            var iec = projectRoot.NestedProject;
 
             StringWriter stringWriter = new StringWriter();
             using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
@@ -429,7 +429,7 @@ namespace Twinpack.Core
                 writer.WriteEndElement();     // TreeItem 
             }
 
-            projectRoot.ConsumeXml(stringWriter.ToString());
+            iec.ConsumeXml(stringWriter.ToString());
         }
     }
 }
