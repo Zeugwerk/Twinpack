@@ -34,6 +34,16 @@ namespace Twinpack.Core
             public bool AddDependencies = true;
         }
 
+        public class SetPackageVersionOptions
+        {
+            public string? ProjectName;
+            public string? PlcName;
+            public bool SyncFrameworkPackages;
+            public string? PreferredFrameworkBranch;
+            public string? PreferredFrameworkTarget;
+            public string? PreferredFrameworkConfiguration;
+        }
+
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private List<PackageItem> _availablePackageCache = new List<PackageItem>();
         private List<PackageItem> _usedPackagesCache = new List<PackageItem>();
@@ -432,6 +442,71 @@ namespace Twinpack.Core
         public bool IsPackageInstalled(PackageItem package)
         {
             return _automationInterface.IsPackageInstalled(package);
+        }
+
+        public async System.Threading.Tasks.Task SetPackageVersionAsync(string version, SetPackageVersionOptions options = default, CancellationToken cancellationToken = default)
+        {
+            // set the version of all plcs in the project(s)
+            var plcs = _config.Projects
+                .Where(x => options.ProjectName == null || x.Name == options.ProjectName)
+                .SelectMany(x => x.Plcs)
+                .Where(x => options.PlcName == null || x.Name == options.PlcName);
+
+            foreach(var plc in plcs)
+            {
+                plc.Version = version;
+            }
+
+            // also include all framework packages if required
+            if (options.SyncFrameworkPackages)
+            {
+                // resolve the plcs as packages
+                var affectedPackages = plcs.Select(x => new PackageItem
+                {
+                    ProjectName = x.ProjectName,
+                    PlcName = x.Name,
+                    Config = new ConfigPlcPackage
+                    {
+                        Name = x.Name,
+                        Version = null,
+                        Branch = options?.PreferredFrameworkBranch,
+                        Target = options?.PreferredFrameworkTarget,
+                        Configuration = options?.PreferredFrameworkConfiguration
+                    }
+                }).ToList();
+
+                affectedPackages = affectedPackages.Concat(plcs.SelectMany(
+                    x => x.Packages.Select(y => new PackageItem
+                    {
+                        ProjectName = x.ProjectName,
+                        PlcName = x.Name,
+                        Config = new ConfigPlcPackage
+                        {
+                            Name = y.Name,
+                            Version = null,
+                            Branch = options?.PreferredFrameworkBranch,
+                            Target = options?.PreferredFrameworkTarget,
+                            Configuration = options?.PreferredFrameworkConfiguration
+                        }
+                    }))).ToList();
+
+                // resolve plcs packages to get dependencies and the framework they are part of
+                affectedPackages = await AffectedPackagesAsync(affectedPackages, cancellationToken);
+
+                var frameworks = affectedPackages
+                    .Where(x => x.PackageVersion.Framework != null && plcs.Any(y => y.Name == x.PackageVersion.Name))
+                    .Select(x => x.PackageVersion.Framework).Distinct().ToList();
+
+                affectedPackages = affectedPackages.Where(x => frameworks.Contains(x.PackageVersion.Framework)).ToList();
+
+                var plcPackages = _config.Projects.SelectMany(x => x.Plcs).SelectMany(x => x.Packages).Where(x => affectedPackages.Any(y => y.PackageVersion.Name == x.Name));
+                foreach(var plcPackage in plcPackages)
+                {
+                    plcPackage.Version = version;
+                }
+            }
+
+            ConfigFactory.Save(_config);
         }
     }
 }

@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
+using Twinpack.Configuration;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
 
@@ -405,6 +406,30 @@ namespace Twinpack.Core
             }
 
             return false;
+        }
+
+        public override async Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken)
+        {
+            await SwitchToMainThreadAsync();
+            var systemManager = SystemManager(plc.ProjectName);
+            var projectRoot = systemManager.LookupTreeItem($"TIPC^{plc.Name}");
+            var iec = projectRoot as ITcPlcIECProject2;
+
+            StringWriter stringWriter = new StringWriter();
+            using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
+            {
+                writer.WriteStartElement("TreeItem");
+                writer.WriteStartElement("IECProjectDef");
+                writer.WriteStartElement("ProjectInfo");
+                //writer.WriteElementString("Title", _plcConfig.Title);
+                writer.WriteElementString("Version", new Version(plc.Version).ToString());
+                //writer.WriteElementString("Company", _plcConfig.DistributorName);
+                writer.WriteEndElement();     // ProjectInfo
+                writer.WriteEndElement();     // IECProjectDef
+                writer.WriteEndElement();     // TreeItem 
+            }
+
+            projectRoot.ConsumeXml(stringWriter.ToString());
         }
     }
 }

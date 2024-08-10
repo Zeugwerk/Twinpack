@@ -209,5 +209,10 @@ namespace Twinpack.Core
             _logger.Warn("Headless AutomationInterface can not uninstall packages");
             return false;
         }
+
+        public override Task SetPackageVersionAsync(ConfigPlcProject package, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

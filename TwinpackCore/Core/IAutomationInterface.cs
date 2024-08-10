@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Management;
+using System.Threading;
 using System.Threading.Tasks;
+using Twinpack.Configuration;
 using Twinpack.Models;
 
 namespace Twinpack.Core
@@ -16,6 +18,7 @@ namespace Twinpack.Core
         public string BootFolderPath { get; }
         public string SolutionPath { get; }
         public string ResolveEffectiveVersion(string projectName, string plcName, string placeholderName);
+        public Task SetPackageVersionAsync(ConfigPlcProject packages, CancellationToken cancellationToken);
         public Task<bool> IsPackageInstalledAsync(PackageItem package);
         public bool IsPackageInstalled(PackageItem package);
         public Task AddPackageAsync(PackageItem package);

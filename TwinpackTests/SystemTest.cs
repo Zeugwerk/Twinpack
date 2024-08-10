@@ -51,7 +51,6 @@ namespace TwinpackTests
         protected static IAutomationInterface _automationInterface;
         protected static PackageServerMock _packageServer;
 
-
         protected static void SetUpRepository()
         {
             _packageServer = new PackageServerMock
@@ -60,10 +59,23 @@ namespace TwinpackTests
                 {
                     new PackageVersionGetResponse()
                     {
+                        Name = "Plc1",
+                        Title = "Plc1",
+                        Version = "1.2.3.3",
+                        Branch = "main",
+                        Framework = "My Framework",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        DistributorName = "My Company",
+                        Dependencies = new List<PackageVersionGetResponse> { new PackageVersionGetResponse() { Name = "Tc3_Module" } }
+                    },
+                    new PackageVersionGetResponse()
+                    {
                         Name = "PlcLibrary1",
                         Title = "PlcLibrary1",
                         Version = "1.2.3.3",
                         Branch = "main",
+                        Framework = "My Framework",
                         Configuration = "Release",
                         Target = "TC3.1",
                         DistributorName = "My Company",
@@ -75,6 +87,7 @@ namespace TwinpackTests
                         Title = "PlcLibrary1",
                         Version = "1.2.3.4",
                         Branch = "main",
+                        Framework = "My Framework",
                         Configuration = "Release",
                         Target = "TC3.1",
                         DistributorName = "My Company",
@@ -222,6 +235,50 @@ namespace TwinpackTests
             plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
             plcprojPackages = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
             Assert.AreEqual(plcprojPackages.Count, 1);
+        }
+
+        [DataTestMethod]
+        [DataRow("3.3.3.3", "3.3.3.5", "3.3.3.7")]
+        [DataRow("2.3.3.3", "3.3.3.5", "3.3.3.7")]
+        public async Task SetPackageVersion_Async(string newVersion1, string newVersion2, string newVersion3)
+        {
+            var packageServers = new PackageServerCollection { _packageServer };
+            var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
+
+            // cleanup
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+
+            // act - add package, including dependencies
+            await twinpack.SetPackageVersionAsync(newVersion1, new TwinpackService.SetPackageVersionOptions { ProjectName = "TestProject", PlcName = "Plc1", SyncFrameworkPackages = true });
+
+            // check if config was updated correctly
+            var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1");
+            var configPackages = plc.Packages;
+            Assert.AreEqual(newVersion1, plc?.Version);
+            Assert.AreEqual(newVersion1, configPackages.FirstOrDefault(x => x.Name == "PlcLibrary1")?.Version);
+            Assert.AreEqual(null, configPackages.FirstOrDefault(x => x.Name == "Tc3_Module")?.Version);
+
+            // act - add package, including dependencies
+            await twinpack.SetPackageVersionAsync(newVersion2, new TwinpackService.SetPackageVersionOptions { SyncFrameworkPackages = true });
+
+            // check if config was updated correctly
+            plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1");
+            configPackages = plc.Packages;
+            Assert.AreEqual(newVersion2, plc?.Version);
+            Assert.AreEqual(newVersion2, configPackages.FirstOrDefault(x => x.Name == "PlcLibrary1")?.Version);
+            Assert.AreEqual(null, configPackages.FirstOrDefault(x => x.Name == "Tc3_Module")?.Version);
+
+
+            // act - add package, including dependencies
+            await twinpack.SetPackageVersionAsync(newVersion3, new TwinpackService.SetPackageVersionOptions { SyncFrameworkPackages = false });
+
+            // check if config was updated correctly
+            plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1");
+            configPackages = plc.Packages;
+            Assert.AreEqual(newVersion3, plc?.Version);
+            Assert.AreEqual(newVersion2, configPackages.FirstOrDefault(x => x.Name == "PlcLibrary1")?.Version);
+            Assert.AreEqual(null, configPackages.FirstOrDefault(x => x.Name == "Tc3_Module")?.Version);
         }
     }
 }
