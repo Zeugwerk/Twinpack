@@ -169,7 +169,7 @@ namespace TwinpackTests
         [DataRow("1.1.0.0", "Package 4", "My Distributor", "1.0.0.0", "main", "Release", "TC3.1")]
         [DataRow("1.1.0.0", "Package 4", "My Distributor", "1.1.0.0", "main", "Release", "TC3.1")]
         [DataRow("1.3.0.0", "Package 4", "My Distributor", "1.2.0.0", "main", "Snapshot", "TC3.1")]
-        public async Task ResolvePackageAsync_NormalLookUp_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        public async Task FetchPackageAsync_NormalLookUp_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
             var package = new ConfigPlcPackage
             {
@@ -181,7 +181,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync(package);
+            var catalogItem = await _packageServers.FetchPackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
@@ -193,7 +193,7 @@ namespace TwinpackTests
 
         [DataTestMethod]
         [DataRow("1.0.0.0", "Package 5", "My Distributor", "1.0.0.0", "main", "Release", "TC3.1")]
-        public async Task ResolvePackageAsync_NormalLookUp_PackageServer2(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        public async Task FetchPackageAsync_NormalLookUp_PackageServer2(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
             var package = new ConfigPlcPackage
             {
@@ -205,7 +205,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync(package);
+            var catalogItem = await _packageServers.FetchPackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
@@ -218,7 +218,7 @@ namespace TwinpackTests
 
         [DataTestMethod]
         [DataRow("1.1.0.0", "Package 4", "My Distributor", "0.9.0.0", "main", "Release", "TC3.1")]
-        public async Task ResolvePackageAsync_KnownButUnresolveable_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        public async Task FetchPackageAsync_KnownButUnresolveable_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
             var package = new ConfigPlcPackage
             {
@@ -230,7 +230,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync(package);
+            var catalogItem = await _packageServers.FetchPackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
@@ -242,7 +242,7 @@ namespace TwinpackTests
 
         [DataTestMethod]
         [DataRow("1.0.0.0", "Package 5", "My Distributor", "0.9.0.0", "main", "Release", "TC3.1")]
-        public async Task ResolvePackageAsync_KnownButUnresolveable_PackageServer2(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        public async Task FetchPackageAsync_KnownButUnresolveable_PackageServer2(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
             var package = new ConfigPlcPackage
             {
@@ -254,7 +254,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync(package);
+            var catalogItem = await _packageServers.FetchPackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
@@ -266,7 +266,7 @@ namespace TwinpackTests
 
         [DataTestMethod]
         [DataRow(null, "Package 6", "My Distributor", "0.9.0.0", "main", "Release", "TC3.1")]
-        public async Task ResolvePackageAsync_Unknown_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
+        public async Task FetchPackageAsync_Unknown_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
             var package = new ConfigPlcPackage
             {
@@ -278,7 +278,7 @@ namespace TwinpackTests
                 Target = target
             };
 
-            var catalogItem = await _packageServers.ResolvePackageAsync(package);
+            var catalogItem = await _packageServers.FetchPackageAsync(package);
 
             Assert.AreEqual(package.Name, catalogItem.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);

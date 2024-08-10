@@ -62,6 +62,20 @@ namespace Twinpack.Configuration
             Framework = pv.Framework;
         }
 
+        public ConfigPlcPackage(ConfigPlcPackage pv)
+        {
+            Version = pv.Version;
+            Name = pv.Name;
+            Branch = pv.Branch;
+            Target = pv.Target;
+            Configuration = pv.Configuration;
+            DistributorName = pv.DistributorName;
+            Namespace = pv.Name;
+            Parameters = pv.Parameters;
+            Options = pv.Options;
+            Framework = pv.Framework;
+        }
+
         public ConfigPlcPackage()
         {
             Repository = "";

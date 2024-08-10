@@ -333,7 +333,7 @@ namespace TwinpackTests
         }
 
         [TestMethod]
-        public async Task ResolvePackageAsync_PackageMetadataIsPopulated()
+        public async Task FetchPackageAsync_PackageMetadataIsPopulated()
         {
             var packageServer = new PackageServerMock
             {
@@ -361,7 +361,7 @@ namespace TwinpackTests
 
             var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
 
-            await twinpack.ResolvePackageAsync(package);
+            await twinpack.FetchPackageAsync(package);
 
             Assert.AreEqual("ZAux", package.Package.Name);
             Assert.AreEqual("ZAux", package.PackageVersion.Name);
@@ -373,7 +373,7 @@ namespace TwinpackTests
         [DataTestMethod]
         [DataRow("2.0.0.0", "1.0.0.0")]
         [DataRow("1.0.0.0", "1.0.0.0")]
-        public async Task ResolvePackageAsync_EffectiveVersion(string effectiveVersion, string expectedPackageVersion)
+        public async Task FetchPackageAsync_EffectiveVersion(string effectiveVersion, string expectedPackageVersion)
         {
             var packageServer = new PackageServerMock
             {
@@ -401,7 +401,7 @@ namespace TwinpackTests
 
             var package = new PackageItem { ProjectName = "TestProject1", PlcName = "Untitled1", Config = new ConfigPlcPackage { Name = "ZAux" } };
 
-            await twinpack.ResolvePackageAsync(package);
+            await twinpack.FetchPackageAsync(package);
 
             Assert.AreEqual("ZAux", package.Package.Name);
             Assert.AreEqual("ZAux", package.PackageVersion.Name);
