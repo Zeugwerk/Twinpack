@@ -29,6 +29,7 @@ namespace Twinpack
                     DownloadCommand, 
                     AddCommand, RemoveCommand, 
                     RestoreCommand, UpdateCommand, 
+                    SetVersionCommand,
                     PullCommand, PushCommand>(args)
                     .MapResult(
                         (SearchCommand command) => Execute(command),
@@ -38,7 +39,7 @@ namespace Twinpack
                         (RemoveCommand command) => Execute(command),
                         (RestoreCommand command) => Execute(command),
                         (UpdateCommand command) => Execute(command),
-
+                        (SetVersionCommand command) => Execute(command),
                         (PullCommand command) => Execute(command),
                         (PushCommand command) => Execute(command),
                          errs => 1

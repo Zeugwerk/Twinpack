@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
+using Twinpack.Configuration;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
 
@@ -57,6 +58,7 @@ namespace Twinpack.Core
 
         public abstract string SolutionPath { get; }
         public abstract string ResolveEffectiveVersion(string projectName, string plcName, string placeholderName);
+        public abstract Task SetPackageVersionAsync(ConfigPlcProject package, CancellationToken cancellationToken);
         public abstract Task<bool> IsPackageInstalledAsync(PackageItem package);
         public abstract bool IsPackageInstalled(PackageItem package);
         public abstract Task AddPackageAsync(PackageItem package);
