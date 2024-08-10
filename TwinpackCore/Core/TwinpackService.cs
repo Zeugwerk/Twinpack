@@ -295,7 +295,7 @@ namespace Twinpack.Core
             CopyRuntimeLicenseIfNeeded(affectedPackages);
 
             var closeAllPackageRelatedWindowsTask = _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
-            var downloadPackagesTask = DownloadPackagesAsync(affectedPackages, includeDependencies: false, forceDownload: options?.ForceDownload == true, cachePath: cachePath, cancellationToken: cancellationToken);
+            var downloadPackagesTask = DownloadPackagesAsync(affectedPackages, downloadProvided: false, includeDependencies: false, forceDownload: options?.ForceDownload == true, cachePath: cachePath, cancellationToken: cancellationToken);
             await System.Threading.Tasks.Task.WhenAll(closeAllPackageRelatedWindowsTask, downloadPackagesTask);
 
             var downloadedPackageVersions = await downloadPackagesTask;
@@ -410,7 +410,7 @@ namespace Twinpack.Core
             return cache;
         }
 
-        public async Task<List<PackageItem>> DownloadPackagesAsync(List<PackageItem> packages, bool includeDependencies = true, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task<List<PackageItem>> DownloadPackagesAsync(List<PackageItem> packages, bool downloadProvided, bool includeDependencies = true, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
         {
             List<PackageItem> downloadedPackages = new List<PackageItem> { };
             List<PackageItem> affectedPackages = packages.ToList();
@@ -421,8 +421,11 @@ namespace Twinpack.Core
                 _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
 
             // ignore packages, which are provided by the loaded configuration
-            var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
-            affectedPackages = affectedPackages.Where(x => providedPackageNames.Any(y => y == x.PackageVersion.Name) == false).ToList();
+            if(!downloadProvided)
+            {
+                var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
+                affectedPackages = affectedPackages.Where(x => providedPackageNames.Any(y => y == x.PackageVersion.Name) == false).ToList();
+            }
 
             foreach(var affectedPackage in affectedPackages)
             {

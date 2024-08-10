@@ -29,6 +29,8 @@ namespace Twinpack.Commands
         public IEnumerable<string> Configurations { get; set; }
         [Option("force", Required = false, Default = null, HelpText = "Download packages even if they are already available on the system")]
         public bool ForceDownload { get; set; }
+        [Option("download-provided", Required = false, Default = null, HelpText = "Download packages, which are provided by the configuration (Plcs, which are also packages themselves)")]
+        public bool DownloadProvided { get; set; }
         [Option("headed", Required = false, Default = false, HelpText = "Use Beckhoff Automation Interface, some actions are not available without this argument")]
         public bool Headed { get; set; }
         public override int Execute()
@@ -41,7 +43,7 @@ namespace Twinpack.Commands
             var packages = CreatePackageItems(Packages, Versions, Branches, Targets, Configurations);
 
             // download packages
-            var downloadedPackageVersions = _twinpack.DownloadPackagesAsync(packages, includeDependencies: true, ForceDownload).GetAwaiter().GetResult();
+            var downloadedPackageVersions = _twinpack.DownloadPackagesAsync(packages, downloadProvided: DownloadProvided, includeDependencies: true, ForceDownload).GetAwaiter().GetResult();
 
             // visualize
             foreach (var package in downloadedPackageVersions)

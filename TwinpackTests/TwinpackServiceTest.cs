@@ -498,7 +498,7 @@ namespace TwinpackTests
             var downloadedPackageVersions = new List<PackageItem>();
             var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
 
-            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, includeDependencies: true, forceDownload: true);
+            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, downloadProvided: false, includeDependencies: true, forceDownload: true);
 
             Assert.AreEqual(6, downloadedPackageVersions.Count());
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZCore"));
@@ -613,9 +613,122 @@ namespace TwinpackTests
             var downloadedPackageVersions = new List<PackageItem>();
             var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
 
-            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, includeDependencies: true, forceDownload: true);
+            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, downloadProvided: false, includeDependencies: true, forceDownload: true);
 
             Assert.AreEqual(3, downloadedPackageVersions.Count());
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib1"));
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib2"));
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib3"));
+        }
+
+        [TestMethod]
+        public async Task DownloadPackageVersionAsync_DownloadProvidedPackages()
+        {
+            var packageServer = new PackageServerMock
+            {
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZAux",
+                        Version = "1.5.0.1",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ZCore" },
+                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZPlatform",
+                        Version = "1.5.0.1",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ZCore" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZCore",
+                        Version = "1.5.0.1",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ExternalLib1" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ExternalLib1",
+                        Version = "1.0.0.0",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ExternalLib2" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ExternalLib2",
+                        Version = "2.0.0.0",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ExternalLib3" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ExternalLib3",
+                        Version = "2.0.0.0",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1"
+                    }
+                },
+                Connected = true
+            };
+
+            var config = new Config
+            {
+                Projects = new List<ConfigProject>
+                {
+                    new ConfigProject
+                    {
+                        Plcs = new List<ConfigPlcProject>
+                        {
+                            new ConfigPlcProject { Name = "ZCore" },
+                            new ConfigPlcProject { Name = "ZPlatform" },
+                            new ConfigPlcProject { Name = "ZAux" }
+                        }
+                    }
+                }
+            };
+
+            var packageServers = new PackageServerCollection { packageServer };
+            var twinpack = new TwinpackService(packageServers, null, config);
+
+            var downloadedPackageVersions = new List<PackageItem>();
+            var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
+
+            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, downloadProvided: true, includeDependencies: true, forceDownload: true);
+
+            Assert.AreEqual(6, downloadedPackageVersions.Count());
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZCore"));
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZPlatform"));
+            Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZAux"));
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib1"));
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib2"));
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib3"));
