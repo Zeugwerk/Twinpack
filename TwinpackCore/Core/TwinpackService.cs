@@ -485,10 +485,11 @@ namespace Twinpack.Core
                 affectedPackages = affectedPackages.Concat(plcs.SelectMany(
                     x => x.Packages.Select(y => new PackageItem
                     {
-                        ProjectName = x.ProjectName,
-                        PlcName = x.Name,
                         Config = new ConfigPlcPackage { Name = y.Name }
-                    }))).ToList();
+                    })))
+                .GroupBy(x => x.Config.Name)
+                .Select(x => x.FirstOrDefault())
+                .ToList();
 
                 // resolve plcs packages to get dependencies and the framework they are part of
                 affectedPackages = await AffectedPackagesAsync(affectedPackages, cancellationToken);
@@ -499,43 +500,49 @@ namespace Twinpack.Core
 
                 affectedPackages = affectedPackages.Where(x => frameworks.Contains(x.PackageVersion.Framework)).ToList();
 
-                var plcPackages = _config.Projects.SelectMany(x => x.Plcs).SelectMany(x => x.Packages).Where(x => affectedPackages.Any(y => y.PackageVersion.Name == x.Name));
-                var packageToOverwrite = new List<PackageItem>();
-                foreach(var plcPackage in plcPackages)
+                foreach(var project in _config.Projects)
                 {
-                    var affectedPackage = affectedPackages.First(x => x.PackageVersion.Name == plcPackage.Name);
-
-                    // check if the requested version is actually on a package server already
-                    var requestedPackage = await _packageServers.ResolvePackageAsync(plcPackage.Name,
-                        new ResolvePackageOptions
+                    foreach(var plc in project.Plcs)
+                    {
+                        var plcPackages = plc.Packages.Where(x => affectedPackages.Any(y => y.PackageVersion.Name == x.Name)).ToList();
+                        var packageToOverwrite = new List<PackageItem>();
+                        foreach (var plcPackage in plcPackages)
                         {
-                            PreferredVersion = version,
-                            PreferredBranch = options?.PreferredFrameworkBranch,
-                            PreferredTarget = options?.PreferredFrameworkTarget,
-                            PreferredConfiguration = options?.PreferredFrameworkConfiguration
-                        });
+                            var affectedPackage = affectedPackages.First(y => y.PackageVersion.Name == plcPackage.Name);
 
-                    if(requestedPackage?.Version == version)
-                    {
-                        // since the package actually exists, we can add it to the plcproj file
-                        plcPackage.Version = version;
-                        plcPackage.Branch = requestedPackage?.Branch;
-                        plcPackage.Target = requestedPackage?.Target;
-                        plcPackage.Configuration = requestedPackage?.Configuration;
+                            // check if the requested version is actually on a package server already
+                            var requestedPackage = await _packageServers.ResolvePackageAsync(plcPackage.Name,
+                                new ResolvePackageOptions
+                                {
+                                    PreferredVersion = version,
+                                    PreferredBranch = options?.PreferredFrameworkBranch,
+                                    PreferredTarget = options?.PreferredFrameworkTarget,
+                                    PreferredConfiguration = options?.PreferredFrameworkConfiguration
+                                });
 
-                        packageToOverwrite.Add(new PackageItem(affectedPackage) { Package = null, PackageVersion = null, Config = plcPackage } );
-                    }
-                    else
-                    {
-                        plcPackage.Version = version;
-                        plcPackage.Branch = options?.PreferredFrameworkBranch;
-                        plcPackage.Target = options?.PreferredFrameworkTarget;
-                        plcPackage.Configuration = options?.PreferredFrameworkConfiguration;
+                            if (requestedPackage?.Version == version)
+                            {
+                                // since the package actually exists, we can add it to the plcproj file
+                                plcPackage.Version = version;
+                                plcPackage.Branch = requestedPackage?.Branch;
+                                plcPackage.Target = requestedPackage?.Target;
+                                plcPackage.Configuration = requestedPackage?.Configuration;
+
+                                packageToOverwrite.Add(new PackageItem(affectedPackage) { ProjectName = project.Name, PlcName = plc.Name, Package = null, PackageVersion = null, Config = plcPackage });
+                            }
+                            else
+                            {
+                                plcPackage.Version = version;
+                                plcPackage.Branch = options?.PreferredFrameworkBranch;
+                                plcPackage.Target = options?.PreferredFrameworkTarget;
+                                plcPackage.Configuration = options?.PreferredFrameworkConfiguration;
+                            }
+                        }
+
+                        foreach (var package in packageToOverwrite)
+                            await AddPackageAsync(package);
                     }
                 }
-
-                foreach(var package in packageToOverwrite)
-                    await AddPackageAsync(package);
             }
 
             _automationInterface?.SaveAll();

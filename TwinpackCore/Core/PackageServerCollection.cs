@@ -104,10 +104,10 @@ namespace Twinpack.Core
 
                     if(resolvedPackageVersion?.Name != null)
                     {
-                        item.Branch ??= resolvedPackageVersion?.Branch;
-                        item.Configuration ??= resolvedPackageVersion?.Configuration;
-                        item.Target ??= resolvedPackageVersion?.Target;
-                        item.DistributorName ??= resolvedPackageVersion?.DistributorName;
+                        item.Branch = resolvedPackageVersion?.Branch;
+                        item.Configuration = resolvedPackageVersion?.Configuration;
+                        item.Target = resolvedPackageVersion?.Target;
+                        item.DistributorName = resolvedPackageVersion?.DistributorName;
                     }
                 }
 
