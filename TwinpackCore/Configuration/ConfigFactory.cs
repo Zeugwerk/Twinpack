@@ -194,6 +194,7 @@ namespace Twinpack.Configuration
                 foreach (var plc in project.Plcs)
                 {
                     var plcConfig = await ConfigPlcProjectFactory.CreateAsync(plc.FilePath, packageServers, cancellationToken);
+                    plcConfig.ProjectName = project.Name;
 
                     if(plcTypeFilter == null || plcTypeFilter.Contains(plcConfig.PlcType))
                         projectConfig.Plcs.Add(plcConfig);

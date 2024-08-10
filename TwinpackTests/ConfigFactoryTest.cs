@@ -59,6 +59,7 @@ namespace TwinpackTests
             Assert.AreEqual(1, project?.Plcs.Count);
 
             var plc = project.Plcs.FirstOrDefault();
+            Assert.AreEqual(@"TestProject2", plc?.ProjectName);
             Assert.AreEqual(@"PlcLibrary1", plc?.Name);
             Assert.AreEqual(@"PlcLibrary1", plc?.Title);
             Assert.AreEqual(ConfigPlcProject.PlcProjectType.Library, plc?.PlcType);

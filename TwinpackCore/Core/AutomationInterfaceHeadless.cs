@@ -165,7 +165,7 @@ namespace Twinpack.Core
                 {
                     var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
                     if (library.Name == package.PackageVersion.Title)
-                        g.Remove();
+                        g.Parent.Remove();
                 }
             }
 
@@ -176,7 +176,7 @@ namespace Twinpack.Core
                 {
                     var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
                     if (library.Name == package.PackageVersion.Title)
-                        g.Remove();
+                        g.Parent.Remove();
                 }
             }
 
@@ -210,9 +210,25 @@ namespace Twinpack.Core
             return false;
         }
 
-        public override Task SetPackageVersionAsync(ConfigPlcProject package, CancellationToken cancellationToken)
+        public override async Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var xdoc = XDocument.Load(plc.FilePath);
+            var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
+            if (project == null)
+                throw new InvalidDataException($"{plc.FilePath} is not a valid plcproj file");
+
+            var versionNode = project.Elements(TcNs + "PropertyGroup").Elements(TcNs + "Version")?.FirstOrDefault();
+            versionNode ??= project.Elements(TcNs + "PropertyGroup").Elements(TcNs + "ProjectVersion").FirstOrDefault();
+
+            if (versionNode == null)
+            {
+                var propertyGroup = project.Elements(TcNs + "PropertyGroup").Where(x => x.Elements(TcNs + "FileVersion").Any())?.FirstOrDefault();
+                versionNode = new XElement(TcNs + "ProjectVersion");
+                propertyGroup.Add(versionNode);
+            }
+
+            versionNode.Value = plc.Version;
+            xdoc.Save(plc.FilePath);
         }
     }
 }
