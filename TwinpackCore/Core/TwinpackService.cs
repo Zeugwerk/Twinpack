@@ -410,6 +410,10 @@ namespace Twinpack.Core
             if (!forceDownload && _automationInterface == null)
                 _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
 
+            // ignore packages, which are provided by the loaded configuration
+            var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
+            affectedPackages = affectedPackages.Where(x => providedPackageNames.Any(y => y == x.PackageVersion.Name) == false).ToList();
+
             foreach(var affectedPackage in affectedPackages)
             {
                 // check if we find the package on the system
