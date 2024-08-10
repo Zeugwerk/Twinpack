@@ -83,7 +83,7 @@ namespace Twinpack.Core
                     root.Add(new XElement(TcNs + "QualifiedOnly", options.QualifiedOnly.ToString().ToLower()));
             }
 
-            var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault();
+            var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault(x => x.Name == package.PlcName);
 
             var xdoc = XDocument.Load(plcConfig.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
