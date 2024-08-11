@@ -288,7 +288,7 @@ namespace Twinpack.Core
             ConfigFactory.Save(_config);
         }
 
-        public async System.Threading.Tasks.Task RestorePackagesAsync(RestorePackageOptions options = default, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<List<PackageItem>> RestorePackagesAsync(RestorePackageOptions options = default, CancellationToken cancellationToken = default)
         {
             var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
 
@@ -301,10 +301,10 @@ namespace Twinpack.Core
                 packages = packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList();
             }
 
-            await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
+            return await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
         }
 
-        public async System.Threading.Tasks.Task UpdatePackagesAsync(UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
         {
             var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
 
@@ -317,26 +317,27 @@ namespace Twinpack.Core
                 packages = packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList();
             }
 
-            await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
+            return await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
         }
 
-        public async System.Threading.Tasks.Task AddPackageAsync(PackageItem package, AddPackageOptions options = default, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<List<PackageItem>> AddPackageAsync(PackageItem package, AddPackageOptions options = default, CancellationToken cancellationToken = default)
         {
-            await AddPackagesAsync(new List<PackageItem> { package }, options, cancellationToken);
+            return await AddPackagesAsync(new List<PackageItem> { package }, options, cancellationToken);
         }
 
-        public async System.Threading.Tasks.Task AddPackagesAsync(List<PackageItem> packages, AddPackageOptions options = default, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<List<PackageItem>> AddPackagesAsync(List<PackageItem> packages, AddPackageOptions options = default, CancellationToken cancellationToken = default)
         {
+            var addedPackages = new List<PackageItem>();
             if (packages.Any(x => x.Config.Name == null) == true)
                 throw new Exception("Invalid package(s) should be added or updated!");
 
             var affectedPackages = await AffectedPackagesAsync(packages, cancellationToken);
-            var downloadPath = options?.DownloadPath ?? $@"{_automationInterface.SolutionPath}\.Zeugwerk\libraries";
+            var downloadPath = options?.DownloadPath ?? $@"{_automationInterface?.SolutionPath ?? "."}\.Zeugwerk\libraries";
 
             // copy runtime licenses
             CopyRuntimeLicenseIfNeeded(affectedPackages);
 
-            var closeAllPackageRelatedWindowsTask = _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
+            var closeAllPackageRelatedWindowsTask = _automationInterface?.CloseAllPackageRelatedWindowsAsync(affectedPackages) ?? System.Threading.Tasks.Task.Delay(new TimeSpan(0));
             var downloadPackagesTask = DownloadPackagesAsync(affectedPackages, 
                 new DownloadPackageOptions
                 {
@@ -353,7 +354,8 @@ namespace Twinpack.Core
             foreach (var package in downloadedPackageVersions)
             {
                 _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
-                await _automationInterface.InstallPackageAsync(package, cachePath: downloadPath);
+                if(_automationInterface != null)
+                    await _automationInterface.InstallPackageAsync(package, cachePath: downloadPath);
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
@@ -361,9 +363,14 @@ namespace Twinpack.Core
             // add affected packages as references
             foreach (var package in options?.IncludeDependencies == true ? affectedPackages : packages)
             {
+                
                 _logger.Info($"Adding {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName})");
-                await _automationInterface.RemovePackageAsync(package);
-                await _automationInterface.AddPackageAsync(package);
+
+                if (_automationInterface != null)
+                {
+                    await _automationInterface.RemovePackageAsync(package);
+                    await _automationInterface.AddPackageAsync(package);
+                }
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var parameters = package.Config.Parameters;
@@ -376,6 +383,9 @@ namespace Twinpack.Core
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
                 var newPackageConfig = new ConfigPlcPackage(package.PackageVersion) { Options = package.Config.Options };
 
+                package.Config = newPackageConfig;
+                addedPackages.Add(package);
+
                 if (packageIndex.HasValue && packageIndex.Value >= 0)
                     plcConfig.Packages[packageIndex.Value] = newPackageConfig;
                 else
@@ -384,13 +394,19 @@ namespace Twinpack.Core
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            _automationInterface.SaveAll();
+            _automationInterface?.SaveAll();
             ConfigFactory.Save(_config);
+
+            return addedPackages;
         }
 
         public HashSet<string> KnownRuntimeLicenseIds()
         {
             var result = new HashSet<string>();
+
+            if (_automationInterface == null)
+                return result;
+
             if (!Directory.Exists(_automationInterface.LicensesPath))
                 return result;
 
