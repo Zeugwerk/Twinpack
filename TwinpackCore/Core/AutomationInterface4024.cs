@@ -240,7 +240,7 @@ namespace Twinpack.Core
 
                         if (obj.EditorViewFactoryGuid == _libraryManagerGuid)
                         {
-                            _logger.Trace($"Closing {package.Name} library manager window");
+                            _logger.Trace($"Closing {package.Catalog?.Name} library manager window");
                             window.Close(vsSaveChanges.vsSaveChangesNo);
                             continue;
                         }

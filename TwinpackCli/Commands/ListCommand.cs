@@ -38,7 +38,7 @@ namespace Twinpack.Commands
 
             var packages = _twinpack.RetrieveUsedPackagesAsync(SearchTerm).GetAwaiter().GetResult();
             foreach (var package in packages.Where(x => !Outdated || x.IsUpdateable))
-                Console.WriteLine($"{package.ProjectName}:{package.PlcName}: {package.Name} {package.InstalledVersion} {(package.IsUpdateable ? $"-> {package.UpdateVersion}" : "")}");
+                Console.WriteLine($"{package.ProjectName}:{package.PlcName}: {package.Catalog?.Name} {package.InstalledVersion} {(package.IsUpdateable ? $"-> {package.UpdateVersion}" : "")}");
 
             return 0;
         }

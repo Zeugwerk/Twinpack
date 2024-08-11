@@ -89,14 +89,14 @@ namespace TwinpackTests
             var packages = (await twinpack.RetrieveAvailablePackagesAsync()).ToList();
 
             Assert.AreEqual(8, packages.Count);
-            Assert.AreEqual("Package 1", packages[0].Name);
-            Assert.AreEqual("Package 2", packages[1].Name);
-            Assert.AreEqual("Package 3", packages[2].Name);
-            Assert.AreEqual("Package 4", packages[3].Name);
-            Assert.AreEqual("Package 5", packages[4].Name);
-            Assert.AreEqual("Package 6", packages[5].Name);
-            Assert.AreEqual("Package 7", packages[6].Name);
-            Assert.AreEqual("Package 8", packages[7].Name);
+            Assert.AreEqual("Package 1", packages[0].Catalog?.Name);
+            Assert.AreEqual("Package 2", packages[1].Catalog?.Name);
+            Assert.AreEqual("Package 3", packages[2].Catalog?.Name);
+            Assert.AreEqual("Package 4", packages[3].Catalog?.Name);
+            Assert.AreEqual("Package 5", packages[4].Catalog?.Name);
+            Assert.AreEqual("Package 6", packages[5].Catalog?.Name);
+            Assert.AreEqual("Package 7", packages[6].Catalog?.Name);
+            Assert.AreEqual("Package 8", packages[7].Catalog?.Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
             Assert.AreEqual(_packageServer1, packages[1].PackageServer);
@@ -119,10 +119,10 @@ namespace TwinpackTests
             var packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(4, packages.Count);
-            Assert.AreEqual("Package 1", packages[0].Name);
-            Assert.AreEqual("Package 2", packages[1].Name);
-            Assert.AreEqual("Package 3", packages[2].Name);
-            Assert.AreEqual("Package 4", packages[3].Name);
+            Assert.AreEqual("Package 1", packages[0].Catalog?.Name);
+            Assert.AreEqual("Package 2", packages[1].Catalog?.Name);
+            Assert.AreEqual("Package 3", packages[2].Catalog?.Name);
+            Assert.AreEqual("Package 4", packages[3].Catalog?.Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
             Assert.AreEqual(_packageServer1, packages[1].PackageServer);
@@ -140,10 +140,10 @@ namespace TwinpackTests
 
             Assert.AreEqual(8, packages.Count);
 
-            Assert.AreEqual("Package 5", packages[4].Name);
-            Assert.AreEqual("Package 6", packages[5].Name);
-            Assert.AreEqual("Package 7", packages[6].Name);
-            Assert.AreEqual("Package 8", packages[7].Name);
+            Assert.AreEqual("Package 5", packages[4].Catalog?.Name);
+            Assert.AreEqual("Package 6", packages[5].Catalog?.Name);
+            Assert.AreEqual("Package 7", packages[6].Catalog?.Name);
+            Assert.AreEqual("Package 8", packages[7].Catalog?.Name);
 
             Assert.AreEqual(_packageServer1, packages[4].PackageServer);
             Assert.AreEqual(_packageServer2, packages[5].PackageServer);
@@ -162,7 +162,7 @@ namespace TwinpackTests
             var packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: "Package 5", maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(1, packages.Count);
-            Assert.AreEqual("Package 5", packages[0].Name);
+            Assert.AreEqual("Package 5", packages[0].Catalog?.Name);
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
             Assert.AreEqual(false, twinpack.HasMoreAvailablePackages);
 
@@ -170,11 +170,11 @@ namespace TwinpackTests
 
             Assert.AreEqual(5, packages.Count);
 
-            Assert.AreEqual("Package 5", packages[0].Name);
-            Assert.AreEqual("Package 1", packages[1].Name);
-            Assert.AreEqual("Package 2", packages[2].Name);
-            Assert.AreEqual("Package 3", packages[3].Name);
-            Assert.AreEqual("Package 4", packages[4].Name);
+            Assert.AreEqual("Package 5", packages[0].Catalog?.Name);
+            Assert.AreEqual("Package 1", packages[1].Catalog?.Name);
+            Assert.AreEqual("Package 2", packages[2].Catalog?.Name);
+            Assert.AreEqual("Package 3", packages[3].Catalog?.Name);
+            Assert.AreEqual("Package 4", packages[4].Catalog?.Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
             Assert.AreEqual(_packageServer1, packages[1].PackageServer);

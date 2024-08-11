@@ -91,7 +91,7 @@ namespace Twinpack.Core
 
         public IEnumerable<IPackageServer> PackageServers { get => _packageServers; }
         public bool IsClientUpdateAvailable { get => _packageServers.Any(x => (x as TwinpackServer)?.IsClientUpdateAvailable == true); }
-        public bool HasUnknownPackages { get => UsedPackages.Any(x => x.Name == null) == true; }
+        public bool HasUnknownPackages { get => UsedPackages.Any(x => x.Catalog?.Name == null) == true; }
         public IEnumerable<PackageItem> UsedPackages { get => _usedPackagesCache; }
 
         private void CopyRuntimeLicenseIfNeeded(IEnumerable<PackageItem> packages)
@@ -194,16 +194,16 @@ namespace Twinpack.Core
                 PackageItem item = _availablePackagesIt.Current;
 
                 // only add if we don't have this package cached already
-                if(!_availablePackageCache.Any(x => item.Name == x.Name))
+                if(!_availablePackageCache.Any(x => item.Catalog?.Name == x.Catalog?.Name))
                     _availablePackageCache.Add(item);
             }
 
             return _availablePackageCache
                     .Where(x =>
                         searchTerm == null ||
-                        x.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                        x.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                        x.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                        x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                        x.Catalog?.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                        x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
                     ;
         }
 
@@ -213,11 +213,11 @@ namespace Twinpack.Core
             {
                 foreach (var plc in project.Plcs)
                 {
-                    foreach (var package in plc.Packages.Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Name == x.Name) == false))
+                    foreach (var package in plc.Packages.Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
                     {
                         PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, token);
 
-                        _usedPackagesCache.RemoveAll(x => x.ProjectName == project.Name && x.PlcName == plc.Name && !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
+                        _usedPackagesCache.RemoveAll(x => x.ProjectName == project.Name && x.PlcName == plc.Name && !string.IsNullOrEmpty(x.Catalog?.Name) && x.Catalog?.Name == catalogItem.Catalog?.Name);
                         _usedPackagesCache.Add(catalogItem);
 
                         if (catalogItem.PackageServer == null)
@@ -231,9 +231,9 @@ namespace Twinpack.Core
             return _usedPackagesCache
                     .Where(x =>
                         searchTerm == null ||
-                        x.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                        x.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                        x.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                        x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                        x.Catalog?.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                        x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
                     ;
         }
 
@@ -250,7 +250,7 @@ namespace Twinpack.Core
             await _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
 
             var uninstalled = true;
-            foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Name == y.Name)))
+            foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Catalog?.Name == y.Catalog?.Name)))
                 uninstalled &= await _automationInterface.UninstallPackageAsync(package);
 
             return uninstalled;
@@ -268,7 +268,7 @@ namespace Twinpack.Core
 
             await _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
 
-            foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Name == y.Name)))
+            foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Catalog?.Name == y.Catalog?.Name)))
             {
                 _logger.Info($"Removing {package.PackageVersion.Name}");
 
@@ -277,7 +277,7 @@ namespace Twinpack.Core
 
                 await _automationInterface.RemovePackageAsync(package, uninstall: uninstall);
 
-                _usedPackagesCache.RemoveAll(x => string.Equals(x.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
+                _usedPackagesCache.RemoveAll(x => string.Equals(x.Catalog?.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
 
                 // update configuration
                 var plcConfig = _config?.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
@@ -369,7 +369,7 @@ namespace Twinpack.Core
                 var parameters = package.Config.Parameters;
 
                 // delete from package cache so the pac
-                _usedPackagesCache.RemoveAll(x => string.Equals(x.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
+                _usedPackagesCache.RemoveAll(x => string.Equals(x.Catalog?.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
 
                 // update configuration
                 var plcConfig = _config?.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
@@ -448,9 +448,9 @@ namespace Twinpack.Core
                     dependencies.Select(x =>
                                 new PackageItem()
                                 {
-                                    Name = x.Name,
                                     ProjectName = package.ProjectName,
                                     PlcName = package.PlcName,
+                                    Catalog = new CatalogItemGetResponse { Name = x.Name },
                                     Package = x,
                                     PackageVersion = x,
                                     Config = new ConfigPlcPackage(x) { Options = package.Config.Options?.CopyForDependency() }

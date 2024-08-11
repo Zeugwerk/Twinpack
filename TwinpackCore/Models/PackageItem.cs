@@ -5,10 +5,11 @@ using Twinpack.Protocol.Api;
 
 namespace Twinpack.Models
 {
-    public class PackageItem : CatalogItemGetResponse, INotifyPropertyChanged
+    public class PackageItem : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
+        CatalogItemGetResponse _catalog;
         PackageGetResponse _package;
         PackageVersionGetResponse _packageVersion;
 
@@ -20,15 +21,21 @@ namespace Twinpack.Models
         public PackageItem(PackageItem p)
         {
             PackageServer = p.PackageServer;
-            PackageId = p.PackageId;
-            Repository = p.Repository;
-            Description = p.Description;
-            IconUrl = p.IconUrl;
-            Name = p.Name;
-            DisplayName = p.DisplayName;
-            DistributorName = p.DistributorName;
-            RuntimeLicense = p.RuntimeLicense;
-            Downloads = p.Downloads;
+
+            var catalog = new CatalogItemGetResponse
+            {
+                PackageId = p.Catalog?.PackageId,
+                Repository = p.Catalog?.Repository,
+                Description = p.Catalog?.Description,
+                IconUrl = p.Catalog?.IconUrl,
+                Name = p.Catalog?.Name,
+                DisplayName = p.Catalog?.DisplayName,
+                DistributorName = p.Catalog?.DistributorName,
+                RuntimeLicense = p.Catalog.RuntimeLicense,
+                Downloads = p.Catalog?.Downloads,
+            };
+
+            Catalog = catalog;
             Used = p.Used;
             Config = p.Config;
             Package = p.Package;
@@ -38,33 +45,44 @@ namespace Twinpack.Models
             IsPlaceholder = p.IsPlaceholder;
         }
 
-        public PackageItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package) : base(package)
+        public PackageItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package)
         {
+            Catalog = package;
             PackageServer = packageServer;
         }
 
         public PackageItem(Protocol.IPackageServer packageServer, PackageVersionGetResponse packageVersion)
         {
             PackageServer = packageServer;
-            PackageId = packageVersion.PackageId;
-            Repository = packageVersion.Repository;
-            Description = packageVersion.Description;
-            IconUrl = packageVersion.IconUrl;
-            Name = packageVersion.Name;
-            DisplayName = packageVersion.DisplayName;
-            DistributorName = packageVersion.DistributorName;
-            RuntimeLicense = packageVersion.LicenseTmcBinary != null ? 1 : 0;
-            Downloads = packageVersion.Downloads;
+
+            var catalog = new CatalogItemGetResponse
+            {
+                PackageId = packageVersion.PackageId,
+                Repository = packageVersion.Repository,
+                Description = packageVersion.Description,
+                IconUrl = packageVersion.IconUrl,
+                Name = packageVersion.Name,
+                DisplayName = packageVersion.DisplayName,
+                DistributorName = packageVersion.DistributorName,
+                RuntimeLicense = packageVersion.LicenseTmcBinary != null ? 1 : 0,
+                Downloads = packageVersion.Downloads
+            };
+
+            Catalog = catalog;
         }
 
         public PackageItem(ConfigPlcPackage package)
         {
-            Name = package.Name;
-            Repository = package.Version;
-            DistributorName = package.DistributorName;
-            DisplayName = Name;
-            Config = package;
+            var catalog = new CatalogItemGetResponse
+            {
+                Name = package.Name,
+                Repository = package.Version,
+                DistributorName = package.DistributorName,
+                DisplayName = package.Name,
+            };
 
+            Catalog = catalog;
+            Config = package;
             IsPlaceholder = package.Version == null;
         }
 
@@ -79,6 +97,17 @@ namespace Twinpack.Models
         public string ProjectName { get; set; }
         public string PlcName { get; set; }
         public ConfigPlcPackage Config { get; set; }
+
+        public CatalogItemGetResponse Catalog
+        {
+            get { return _catalog; }
+            set
+            {
+                _catalog = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Catalog)));
+            }
+        }
+
         public PackageGetResponse Package
         {
             get { return _package; }
