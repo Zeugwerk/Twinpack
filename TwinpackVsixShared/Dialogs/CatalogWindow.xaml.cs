@@ -304,7 +304,7 @@ namespace Twinpack.Dialogs
             set
             {
                 _isCatalogEnabled = value;
-                _isRestoreAllEnabled = !_twinpack.HasUnknownPackages;
+                _isRestoreAllEnabled = !_twinpack?.HasUnknownPackages == true;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCatalogEnabled)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsRestoreAllEnabled)));
             }
