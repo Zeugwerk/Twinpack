@@ -23,7 +23,7 @@ namespace Twinpack.Commands
 
             foreach (var package in _twinpack.RetrieveAvailablePackagesAsync(SearchTerm, Take).GetAwaiter().GetResult())
             {
-                Console.WriteLine(package.Name);
+                Console.WriteLine(package.Catalog.Name);
             }
 
             return 0;

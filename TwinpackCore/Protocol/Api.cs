@@ -78,7 +78,7 @@ namespace Twinpack.Protocol.Api
         [JsonPropertyName("icon-url")]
         public string IconUrl { get; set; }
         [JsonPropertyName("runtime-license")]
-        public int RuntimeLicense { get; set; }
+        public int? RuntimeLicense { get; set; }
         [JsonPropertyName("display-name")]
         public string DisplayName { get; set; }
 
