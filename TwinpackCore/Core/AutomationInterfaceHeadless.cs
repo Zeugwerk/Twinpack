@@ -150,7 +150,7 @@ namespace Twinpack.Core
 
         public override async Task RemovePackageAsync(PackageItem package, bool uninstall=false)
         {
-            var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault();
+            var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault(x => x.Name == package.PlcName);
 
             var xdoc = XDocument.Load(plcConfig.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
