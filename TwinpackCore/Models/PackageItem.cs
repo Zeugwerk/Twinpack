@@ -31,7 +31,7 @@ namespace Twinpack.Models
                 Name = p.Catalog?.Name,
                 DisplayName = p.Catalog?.DisplayName,
                 DistributorName = p.Catalog?.DistributorName,
-                RuntimeLicense = p.Catalog.RuntimeLicense,
+                RuntimeLicense = p.Catalog?.RuntimeLicense,
                 Downloads = p.Catalog?.Downloads,
             };
 
