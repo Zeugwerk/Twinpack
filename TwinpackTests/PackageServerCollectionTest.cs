@@ -88,14 +88,14 @@ namespace TwinpackTests
                 packages.Add(p);
             }
             Assert.AreEqual(8, packages.Count);
-            Assert.AreEqual("Package 1", packages[0].Name);
-            Assert.AreEqual("Package 2", packages[1].Name);
-            Assert.AreEqual("Package 3", packages[2].Name);
-            Assert.AreEqual("Package 4", packages[3].Name);
-            Assert.AreEqual("Package 5", packages[4].Name);
-            Assert.AreEqual("Package 6", packages[5].Name);
-            Assert.AreEqual("Package 7", packages[6].Name);
-            Assert.AreEqual("Package 8", packages[7].Name);
+            Assert.AreEqual("Package 1", packages[0].Catalog?.Name);
+            Assert.AreEqual("Package 2", packages[1].Catalog?.Name);
+            Assert.AreEqual("Package 3", packages[2].Catalog?.Name);
+            Assert.AreEqual("Package 4", packages[3].Catalog?.Name);
+            Assert.AreEqual("Package 5", packages[4].Catalog?.Name);
+            Assert.AreEqual("Package 6", packages[5].Catalog?.Name);
+            Assert.AreEqual("Package 7", packages[6].Catalog?.Name);
+            Assert.AreEqual("Package 8", packages[7].Catalog?.Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
             Assert.AreEqual(_packageServer1, packages[1].PackageServer);
@@ -116,10 +116,10 @@ namespace TwinpackTests
                 packages.Add(p);
             }
             Assert.AreEqual(4, packages.Count);
-            Assert.AreEqual("Package 1", packages[0].Name);
-            Assert.AreEqual("Package 2", packages[1].Name);
-            Assert.AreEqual("Package 3", packages[2].Name);
-            Assert.AreEqual("Package 4", packages[3].Name);
+            Assert.AreEqual("Package 1", packages[0].Catalog?.Name);
+            Assert.AreEqual("Package 2", packages[1].Catalog?.Name);
+            Assert.AreEqual("Package 3", packages[2].Catalog?.Name);
+            Assert.AreEqual("Package 4", packages[3].Catalog?.Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
             Assert.AreEqual(_packageServer1, packages[1].PackageServer);
@@ -136,12 +136,12 @@ namespace TwinpackTests
                 packages.Add(p);
             }
             Assert.AreEqual(6, packages.Count);
-            Assert.AreEqual("Package 1", packages[0].Name);
-            Assert.AreEqual("Package 2", packages[1].Name);
-            Assert.AreEqual("Package 3", packages[2].Name);
-            Assert.AreEqual("Package 4", packages[3].Name);
-            Assert.AreEqual("Package 5", packages[4].Name);
-            Assert.AreEqual("Package 6", packages[5].Name);
+            Assert.AreEqual("Package 1", packages[0].Catalog?.Name);
+            Assert.AreEqual("Package 2", packages[1].Catalog?.Name);
+            Assert.AreEqual("Package 3", packages[2].Catalog?.Name);
+            Assert.AreEqual("Package 4", packages[3].Catalog?.Name);
+            Assert.AreEqual("Package 5", packages[4].Catalog?.Name);
+            Assert.AreEqual("Package 6", packages[5].Catalog?.Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
             Assert.AreEqual(_packageServer1, packages[1].PackageServer);
@@ -160,7 +160,7 @@ namespace TwinpackTests
                 packages.Add(p);
             }
             Assert.AreEqual(1, packages.Count);
-            Assert.AreEqual("Package 4", packages[0].Name);
+            Assert.AreEqual("Package 4", packages[0].Catalog?.Name);
 
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
         }
@@ -183,7 +183,7 @@ namespace TwinpackTests
 
             var catalogItem = await _packageServers.FetchPackageAsync(package);
 
-            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
             Assert.AreEqual(package, catalogItem.Config);
@@ -207,7 +207,7 @@ namespace TwinpackTests
 
             var catalogItem = await _packageServers.FetchPackageAsync(package);
 
-            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
             Assert.AreEqual(package, catalogItem.Config);
@@ -232,7 +232,7 @@ namespace TwinpackTests
 
             var catalogItem = await _packageServers.FetchPackageAsync(package);
 
-            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
             Assert.AreEqual(package, catalogItem.Config);
@@ -256,7 +256,7 @@ namespace TwinpackTests
 
             var catalogItem = await _packageServers.FetchPackageAsync(package);
 
-            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
             Assert.AreEqual(package, catalogItem.Config);
@@ -280,7 +280,7 @@ namespace TwinpackTests
 
             var catalogItem = await _packageServers.FetchPackageAsync(package);
 
-            Assert.AreEqual(package.Name, catalogItem.Name);
+            Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
             Assert.AreEqual(package, catalogItem.Config);

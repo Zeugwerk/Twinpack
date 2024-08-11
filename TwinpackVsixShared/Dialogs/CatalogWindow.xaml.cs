@@ -39,8 +39,7 @@ namespace Twinpack.Dialogs
         private List<PlcVersion> _packageVersions = new List<PlcVersion>();
         private SemaphoreSlim _semaphorePackages = new SemaphoreSlim(1, 1);
         private SemaphoreSlim _semaphoreAction = new SemaphoreSlim(1, 1);
-
-        private PackageItem _catalogItem = null;
+        private PackageItem _catalogItem = new PackageItem();
 
         private int _currentCatalogPage = 1;
         private int _currentPackageVersionsPage = 1;
@@ -412,7 +411,6 @@ namespace Twinpack.Dialogs
             UpdateablePackagesCount = 0;
             ForcePackageVersionDownload = true;
             Catalog = new List<PackageItem>();
-            _catalogItem = new PackageItem();
             DataContext = this;
 
             InitializeComponent();
@@ -442,6 +440,8 @@ namespace Twinpack.Dialogs
 
             try
             {
+                _activeProject = _context.VisualStudio.ActiveProject();
+
                 var config = await LoadPlcConfigAsync(Token);
                 _twinpack = new TwinpackService(PackagingServerRegistry.Servers, _context.VisualStudio.AutomationInterface, config);
 
@@ -451,7 +451,6 @@ namespace Twinpack.Dialogs
                 IsCatalogLoading = true;
                 ResetServerSelection();
 
-                _activeProject = _context.VisualStudio.ActiveProject();
 
                 var projectItemAdapter = _activeProject?.Object as dynamic; // TwinCAT.XAE.Automation.TcProjectItemAdapter
                 _libraryManager = projectItemAdapter?.LookupChild("References") as ITcPlcLibraryManager;
@@ -665,7 +664,7 @@ namespace Twinpack.Dialogs
                 await AddOrUpdatePackageAsync(packages, showLicenseDialog: false, cancellationToken: Token);
 
                 installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
-                var item = installedPackages.Where(x => x.Name == _catalogItem.PackageVersion.Name).FirstOrDefault();
+                var item = installedPackages.Where(x => x.Catalog?.Name == _catalogItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
                 {
                     _catalogItem.Package = item.Update;
@@ -739,7 +738,7 @@ namespace Twinpack.Dialogs
                 await AddOrUpdatePackageAsync(packages, showLicenseDialog: false, cancellationToken: Token);
 
                 installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
-                var item = installedPackages.Where(x => x.Name == _catalogItem.PackageVersion.Name).FirstOrDefault();
+                var item = installedPackages.Where(x => x.Catalog?.Name == _catalogItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
                 {
                     _catalogItem.Package = item.Update;
@@ -855,12 +854,12 @@ namespace Twinpack.Dialogs
             // synchronize the list of installed packages with the list of available packages
             var zipped =
             availablePackages.GroupJoin(installedPackages,
-                item1 => item1.Name,
-                item2 => item2.Name, (item1, matchingItems) => new { Available = item1, Installed = matchingItems.FirstOrDefault() }).
+                item1 => item1.Catalog?.Name,
+                item2 => item2.Catalog?.Name, (item1, matchingItems) => new { Available = item1, Installed = matchingItems.FirstOrDefault() }).
             Union(
             installedPackages.GroupJoin(availablePackages,
-                item2 => item2.Name,
-                item1 => item1.Name, (item2, matchingItems) => new { Available = matchingItems.FirstOrDefault(), Installed = item2 })
+                item2 => item2.Catalog?.Name,
+                item1 => item1.Catalog?.Name, (item2, matchingItems) => new { Available = matchingItems.FirstOrDefault(), Installed = item2 })
             );
 
             foreach (var package in zipped)
@@ -876,25 +875,25 @@ namespace Twinpack.Dialogs
             if (IsBrowsingAvailablePackages)
             {
                 Catalog = availablePackages.Where(x =>
-                     x.DisplayName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                     x.DistributorName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                     x.Name.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
+                     x.Catalog?.DisplayName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.Catalog?.DistributorName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.Catalog?.Name.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
                 IsCatalogLoading = _isLoadingPlcConfig;
             }
             else if (IsBrowsingInstalledPackages)
             {
                 Catalog = installedPackages.Where(x =>
-                     x.DisplayName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                     x.DistributorName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                     x.Name.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
+                     x.Catalog?.DisplayName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.Catalog?.DistributorName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.Catalog?.Name.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
                 IsCatalogLoading = _isLoadingPlcConfig;
             }
             else if (IsBrowsingUpdatablePackages)
             {
                 Catalog = installedPackages.Where(x => x.IsUpdateable &&
-                    (x.DisplayName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                     x.DistributorName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                     x.Name.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0)).ToList();
+                    (x.Catalog?.DisplayName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.Catalog?.DistributorName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                     x.Catalog?.Name.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0)).ToList();
                 IsCatalogLoading = _isLoadingPlcConfig;
             }
 
@@ -904,8 +903,8 @@ namespace Twinpack.Dialogs
             // remap catalogItem
             if(_catalogItem != null)
             {
-                _catalogItem = Catalog.FirstOrDefault(x => x.Name == _catalogItem.Name);
-                if (_catalogItem?.Name == null || (_catalogItem.Name != _catalogItem.Package.Name || _catalogItem.Name != _catalogItem.PackageVersion.Name))
+                _catalogItem = Catalog.FirstOrDefault(x => x.Catalog?.Name == _catalogItem.Catalog?.Name);
+                if (_catalogItem?.Catalog?.Name == null || (_catalogItem.Catalog?.Name != _catalogItem.Package.Name || _catalogItem.Catalog?.Name != _catalogItem.PackageVersion.Name))
                 {
                     InstalledPackageVersion = null;
                     _catalogItem.Invalidate();
@@ -1131,14 +1130,9 @@ namespace Twinpack.Dialogs
                 IsPackageLoading = true;
                 IsPackageVersionLoading = true;
 
-                var package = await _catalogItem.PackageServer.GetPackageAsync(_catalogItem.DistributorName, _catalogItem.Name, Token);
-
-                _catalogItem.PackageServer = _catalogItem.PackageServer;
-                _catalogItem.Config = _catalogItem.Config;
-                _catalogItem.Package = package;
-                _catalogItem.ProjectName = _activeProject.Name; // todo: fixme
-                _catalogItem.PlcName = _activeProject.Name;
-                Options = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _catalogItem.Name)?.Options ?? new AddPlcLibraryOptions();
+                await _twinpack.FetchPackageAsync(_catalogItem, Token);
+                    
+                Options = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _catalogItem.Catalog?.Name)?.Options ?? new AddPlcLibraryOptions();
 
                 BranchesView.Visibility = _catalogItem.Package?.Branches.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
                 TargetsView.Visibility = _catalogItem.Package?.Targets.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
@@ -1238,7 +1232,7 @@ namespace Twinpack.Dialogs
                     _catalogItem.PackageVersion.Version = null;
 
                 IsNewReference = _catalogItem.PackageVersion.Name == null || 
-                    !_twinpack.UsedPackages.Any(x => x.Name == _catalogItem.Package.Name);
+                    !_twinpack.UsedPackages.Any(x => x.Catalog?.Name == _catalogItem.Package.Name);
             }
             catch (OperationCanceledException ex)
             {
@@ -1289,9 +1283,9 @@ namespace Twinpack.Dialogs
                 await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
                 _logger.Info("Reloading catalog");
 
-                _catalogItem = null;
                 IsPackageLoading = false;
 
+                _catalogItem.Invalidate();
                 _twinpack.InvalidateCache();
                 await UpdateCatalogAsync();
                 _context.Dte.ExecuteCommand("File.SaveAll");
