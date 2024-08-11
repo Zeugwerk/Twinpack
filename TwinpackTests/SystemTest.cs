@@ -128,7 +128,7 @@ namespace TwinpackTests
 
             // act - add package, including dependencies
             await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = null } } }, 
-                new TwinpackService.AddPackageOptions { AddDependencies = true, ForceDownload = false });
+                new TwinpackService.AddPackageOptions { IncludeDependencies = true, ForceDownload = false });
 
             // check if config was updated correctly
             var configPackages = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
@@ -199,7 +199,7 @@ namespace TwinpackTests
                         QualifiedOnly = qualifiedOnly
                     }
                 } 
-            } }, new TwinpackService.AddPackageOptions { AddDependencies = true, ForceDownload = false });
+            } }, new TwinpackService.AddPackageOptions { IncludeDependencies = true, ForceDownload = false });
 
             // check if config was updated correctly
             var configPackages = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;

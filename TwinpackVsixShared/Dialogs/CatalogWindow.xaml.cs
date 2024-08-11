@@ -946,7 +946,7 @@ namespace Twinpack.Dialogs
             // show licenses and wait for accept
             var affectedPackages = await _twinpack.AffectedPackagesAsync(packages, cancellationToken);
             if(ConfirmLicensesIfNeeded(affectedPackages, showLicenseDialog))
-                await _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, AddDependencies = AddDependencies }, cancellationToken);
+                await _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, cancellationToken);
 
             IsNewReference = false;
         }

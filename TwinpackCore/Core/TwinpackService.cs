@@ -28,10 +28,28 @@ namespace Twinpack.Core
 {
     public class TwinpackService : INotifyPropertyChanged
     {
+        public class DownloadPackageOptions
+        { 
+            public bool IncludeProvidedPackages = false;
+            public bool IncludeDependencies = true;
+            public bool ForceDownload = false;
+            public string? DownloadPath = null;
+        }
+
         public class AddPackageOptions
         {
             public bool ForceDownload = false;
-            public bool AddDependencies = true;
+            public bool IncludeDependencies = true;
+            public string? DownloadPath = null;
+        }
+        public class RestorePackageOptions : AddPackageOptions
+        {
+            public bool IncludeProvidedPackages = false;
+        }
+
+        public class UpdatePackageOptions : AddPackageOptions
+        {
+            public bool IncludeProvidedPackages = false;
         }
 
         public class SetPackageVersionOptions
@@ -195,11 +213,11 @@ namespace Twinpack.Core
             {
                 foreach (var plc in project.Plcs)
                 {
-                    foreach (var package in plc.Packages.Where(x => _usedPackagesCache.Any(y => y.Name == x.Name) == false))
+                    foreach (var package in plc.Packages.Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Name == x.Name) == false))
                     {
                         PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, token);
 
-                        _usedPackagesCache.RemoveAll(x => !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
+                        _usedPackagesCache.RemoveAll(x => x.ProjectName == project.Name && x.PlcName == plc.Name && !string.IsNullOrEmpty(x.Name) && x.Name == catalogItem.Name);
                         _usedPackagesCache.Add(catalogItem);
 
                         if (catalogItem.PackageServer == null)
@@ -270,19 +288,35 @@ namespace Twinpack.Core
             ConfigFactory.Save(_config);
         }
 
-        public async System.Threading.Tasks.Task RestorePackagesAsync(AddPackageOptions options = default, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task RestorePackagesAsync(RestorePackageOptions options = default, CancellationToken cancellationToken = default)
         {
             var usedPackages = await RetrieveUsedPackagesAsync(_config, token: cancellationToken);
 
-            var packages = usedPackages.Select(x => new PackageItem(x) { PackageVersion = x.Used }).ToList();
+            var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Used }).ToList();
+
+            // ignore packages, which are provided by the loaded configuration
+            if (!options.IncludeProvidedPackages)
+            {
+                var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
+                packages = packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList();
+            }
+
             await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
         }
 
-        public async System.Threading.Tasks.Task UpdatePackagesAsync(AddPackageOptions options = default, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task UpdatePackagesAsync(UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
         {
             var usedPackages = await RetrieveUsedPackagesAsync(_config, token: cancellationToken);
 
-            var packages = usedPackages.Select(x => new PackageItem(x) { PackageVersion = x.Update }).ToList();
+            var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Update, PackageVersion = x.Update }).ToList();
+
+            // ignore packages, which are provided by the loaded configuration
+            if (!options.IncludeProvidedPackages)
+            {
+                var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
+                packages = packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList();
+            }
+
             await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
         }
 
@@ -297,13 +331,20 @@ namespace Twinpack.Core
                 throw new Exception("Invalid package(s) should be added or updated!");
 
             var affectedPackages = await AffectedPackagesAsync(packages, cancellationToken);
-            var cachePath = $@"{_automationInterface.SolutionPath}\.Zeugwerk\libraries";
+            var downloadPath = options?.DownloadPath ?? $@"{_automationInterface.SolutionPath}\.Zeugwerk\libraries";
 
             // copy runtime licenses
             CopyRuntimeLicenseIfNeeded(affectedPackages);
 
             var closeAllPackageRelatedWindowsTask = _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
-            var downloadPackagesTask = DownloadPackagesAsync(affectedPackages, downloadProvided: true, includeDependencies: false, forceDownload: options?.ForceDownload == true, cachePath: cachePath, cancellationToken: cancellationToken);
+            var downloadPackagesTask = DownloadPackagesAsync(affectedPackages, 
+                new DownloadPackageOptions
+                {
+                    IncludeProvidedPackages = true, 
+                    IncludeDependencies = options?.IncludeDependencies == true, 
+                    ForceDownload = options?.ForceDownload == true, 
+                    DownloadPath = downloadPath
+                }, cancellationToken: cancellationToken);
             await System.Threading.Tasks.Task.WhenAll(closeAllPackageRelatedWindowsTask, downloadPackagesTask);
 
             var downloadedPackageVersions = await downloadPackagesTask;
@@ -312,13 +353,13 @@ namespace Twinpack.Core
             foreach (var package in downloadedPackageVersions)
             {
                 _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
-                await _automationInterface.InstallPackageAsync(package, cachePath: cachePath);
+                await _automationInterface.InstallPackageAsync(package, cachePath: downloadPath);
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
 
             // add affected packages as references
-            foreach (var package in options?.AddDependencies == true ? affectedPackages : packages)
+            foreach (var package in options?.IncludeDependencies == true ? affectedPackages : packages)
             {
                 _logger.Info($"Adding {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName})");
                 await _automationInterface.RemovePackageAsync(package);
@@ -333,11 +374,12 @@ namespace Twinpack.Core
                 // update configuration
                 var plcConfig = _config?.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
+                var newPackageConfig = new ConfigPlcPackage(package.PackageVersion) { Options = package.Config.Options };
 
                 if (packageIndex.HasValue && packageIndex.Value >= 0)
-                    plcConfig.Packages[packageIndex.Value] = package.Config;
+                    plcConfig.Packages[packageIndex.Value] = newPackageConfig;
                 else
-                    plcConfig.Packages.Add(package.Config);
+                    plcConfig.Packages.Add(newPackageConfig);
 
                 cancellationToken.ThrowIfCancellationRequested();
             }
@@ -398,7 +440,7 @@ namespace Twinpack.Core
                 if (package.PackageVersion?.Name == null)
                     break;
 
-                if (cache.Any(x => x.PackageVersion.Name == package.PackageVersion.Name) == false)
+                if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
                     cache.Add(package);
 
                 var dependencies = package.PackageVersion.Dependencies ?? new List<PackageVersionGetResponse>();
@@ -420,18 +462,29 @@ namespace Twinpack.Core
             return cache;
         }
 
-        public async Task<List<PackageItem>> DownloadPackagesAsync(List<PackageItem> packages, bool downloadProvided, bool includeDependencies = true, bool forceDownload = true, string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task<List<PackageItem>> DownloadPackagesAsync(List<PackageItem> packages, DownloadPackageOptions options = default, CancellationToken cancellationToken = default)
         {
             List<PackageItem> downloadedPackages = new List<PackageItem> { };
             List<PackageItem> affectedPackages = packages.ToList();
-            if (includeDependencies)
+
+            if (options.IncludeDependencies)
                 affectedPackages = await AffectedPackagesAsync(affectedPackages, cancellationToken);
 
-            if (!forceDownload && _automationInterface == null)
+            // avoid downloading duplicates
+            affectedPackages = affectedPackages.GroupBy(x => new
+            {
+                x.PackageVersion.Name,
+                x.PackageVersion.Version,
+                x.PackageVersion.Branch,
+                x.PackageVersion.Target,
+                x.PackageVersion.Configuration
+            }).Select(x => x.First()).ToList();
+
+            if (!options.ForceDownload && _automationInterface == null)
                 _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
 
             // ignore packages, which are provided by the loaded configuration
-            if(!downloadProvided)
+            if(!options.IncludeProvidedPackages)
             {
                 var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
                 affectedPackages = affectedPackages.Where(x => providedPackageNames.Any(y => y == x.PackageVersion.Name) == false).ToList();
@@ -440,11 +493,11 @@ namespace Twinpack.Core
             foreach(var affectedPackage in affectedPackages)
             {
                 // check if we find the package on the system
-                bool referenceFound = !forceDownload && _automationInterface != null && await _automationInterface.IsPackageInstalledAsync(affectedPackage);
+                bool referenceFound = !options.ForceDownload && _automationInterface != null && await _automationInterface.IsPackageInstalledAsync(affectedPackage);
 
-                if (!referenceFound || forceDownload)
+                if (!referenceFound || options.ForceDownload)
                 {
-                    if (await _packageServers.DownloadPackageVersionAsync(affectedPackage, cachePath, cancellationToken))
+                    if (await _packageServers.DownloadPackageVersionAsync(affectedPackage, options.DownloadPath, cancellationToken))
                         downloadedPackages.Add(affectedPackage);
                 }
             }

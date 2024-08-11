@@ -24,7 +24,7 @@ namespace TwinpackTests
                 PublishSymbolsInContainer = true,
                 QualifiedOnly = true,
             };
-
+            
             var dependencyOption = options.CopyForDependency();
 
             Assert.AreEqual(false, dependencyOption.LibraryReference);
