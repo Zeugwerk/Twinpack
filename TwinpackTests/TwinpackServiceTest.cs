@@ -18,7 +18,6 @@ namespace TwinpackTests
         PackageServerMock _packageServer1;
         PackageServerMock _packageServer2;
         PackageServerMock _packageServerNotConnected;
-        TwinpackService _twinpack;
 
         [TestInitialize]
         public void TestInitialize()
@@ -79,14 +78,15 @@ namespace TwinpackTests
                 _packageServer2,
             };
 
-            _twinpack = new TwinpackService(_packageServers);
         }
 
 
         [TestMethod]
         public async Task RetrieveAvailablePackagesAsync_AllPackages()
         {
-            var packages = (await _twinpack.RetrieveAvailablePackagesAsync()).ToList();
+            var twinpack = new TwinpackService(_packageServers);
+
+            var packages = (await twinpack.RetrieveAvailablePackagesAsync()).ToList();
 
             Assert.AreEqual(8, packages.Count);
             Assert.AreEqual("Package 1", packages[0].Name);
@@ -108,13 +108,15 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer2, packages[7].PackageServer);
 
             CollectionAssert.AreEqual(packages.ToList().AsReadOnly(), packages.ToList());
-            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
+            Assert.AreEqual(false, twinpack.HasMoreAvailablePackages);
         }
 
         [TestMethod]
         public async Task RetrieveAvailablePackagesAsync_LoadMorePackages()
         {
-            var packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            var twinpack = new TwinpackService(_packageServers);
+
+            var packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(4, packages.Count);
             Assert.AreEqual("Package 1", packages[0].Name);
@@ -127,14 +129,14 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer1, packages[2].PackageServer);
             Assert.AreEqual(_packageServer1, packages[3].PackageServer);
 
-            Assert.AreEqual(true, _twinpack.HasMoreAvailablePackages);
+            Assert.AreEqual(true, twinpack.HasMoreAvailablePackages);
 
 
-            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 5)).ToList();
+            packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 5)).ToList();
 
-            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
+            Assert.AreEqual(false, twinpack.HasMoreAvailablePackages);
 
-            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(8, packages.Count);
 
@@ -148,21 +150,23 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer2, packages[6].PackageServer);
             Assert.AreEqual(_packageServer2, packages[7].PackageServer);
 
-            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(8, packages.Count);
         }
 
         [TestMethod]
         public async Task RetrieveAvailablePackagesAsync_LoadMorePackages_WithSearchTerm()
         {
-            var packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: "Package 5", maxNewPackages: 4)).ToList();
+            var twinpack = new TwinpackService(_packageServers);
+
+            var packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: "Package 5", maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(1, packages.Count);
             Assert.AreEqual("Package 5", packages[0].Name);
             Assert.AreEqual(_packageServer1, packages[0].PackageServer);
-            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
+            Assert.AreEqual(false, twinpack.HasMoreAvailablePackages);
 
-            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
 
             Assert.AreEqual(5, packages.Count);
 
@@ -178,26 +182,28 @@ namespace TwinpackTests
             Assert.AreEqual(_packageServer1, packages[3].PackageServer);
             Assert.AreEqual(_packageServer1, packages[4].PackageServer);
 
-            Assert.AreEqual(true, _twinpack.HasMoreAvailablePackages);
+            Assert.AreEqual(true, twinpack.HasMoreAvailablePackages);
 
-            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(8, packages.Count);
-            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
+            Assert.AreEqual(false, twinpack.HasMoreAvailablePackages);
 
-            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(8, packages.Count);
-            Assert.AreEqual(false, _twinpack.HasMoreAvailablePackages);
+            Assert.AreEqual(false, twinpack.HasMoreAvailablePackages);
         }
 
         [TestMethod]
         public async Task InvalidateCacheAsync_AvailablePackagesIsReset()
         {
-            var packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            var twinpack = new TwinpackService(_packageServers);
+
+            var packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(4, packages.Count);
 
-            _twinpack.InvalidateCache();
+            twinpack.InvalidateCache();
 
-            packages = (await _twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
+            packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(4, packages.Count);
         }
 
@@ -212,7 +218,9 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: null)).ToList();
+            var twinpack = new TwinpackService(_packageServers, config: config);
+
+            var packages = (await twinpack.RetrieveUsedPackagesAsync(searchTerm: null)).ToList();
 
             Assert.AreEqual(3, packages.Count);
             Assert.AreEqual(2, packages.Where(x => x.Used != null).Count());
@@ -229,8 +237,9 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
+            var twinpack = new TwinpackService(_packageServers, config: config);
 
-            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: null)).ToList();
+            var packages = (await twinpack.RetrieveUsedPackagesAsync(searchTerm: null)).ToList();
 
             Assert.AreEqual(3, packages.Count);
             Assert.AreEqual(2, packages.Where(x => x.Used != null).Count());
@@ -249,8 +258,9 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
+            var twinpack = new TwinpackService(_packageServers, config: config);
 
-            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: "4")).ToList();
+            var packages = (await twinpack.RetrieveUsedPackagesAsync(searchTerm: "4")).ToList();
 
             Assert.AreEqual(1, packages.Count);
             Assert.AreEqual(1, packages.Where(x => x.Used != null).Count());
@@ -267,8 +277,9 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
+            var twinpack = new TwinpackService(_packageServers, config: config);
 
-            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: "My Distributor 5")).ToList();
+            var packages = (await twinpack.RetrieveUsedPackagesAsync(searchTerm: "My Distributor 5")).ToList();
 
             Assert.AreEqual(1, packages.Count);
             Assert.AreEqual(1, packages.Where(x => x.Used != null).Count());
@@ -286,7 +297,9 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
-            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: "My Displayname")).ToList();
+            var twinpack = new TwinpackService(_packageServers, config: config);
+
+            var packages = (await twinpack.RetrieveUsedPackagesAsync(searchTerm: "My Displayname")).ToList();
 
             Assert.AreEqual(1, packages.Count);
             Assert.AreEqual(1, packages.Where(x => x.Used != null).Count());
@@ -303,8 +316,9 @@ namespace TwinpackTests
                 new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = null, Target = null, Configuration = null },
                 new ConfigPlcPackage() { Name = "Package 6", Version = "0.0.0.0", Branch = null, Target = null, Configuration = null },
             };
+            var twinpack = new TwinpackService(_packageServers, config: config);
 
-            var packages = (await _twinpack.RetrieveUsedPackagesAsync(config, searchTerm: null)).ToList();
+            var packages = (await twinpack.RetrieveUsedPackagesAsync(searchTerm: null)).ToList();
 
             Assert.AreEqual(3, packages.Count);
             Assert.AreEqual(2, packages.Where(x => x.Used != null).Count());

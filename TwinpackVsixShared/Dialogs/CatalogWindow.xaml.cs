@@ -403,7 +403,6 @@ namespace Twinpack.Dialogs
         public CatalogWindow(PackageContext context)
         {
             _context = context;
-            _twinpack = new TwinpackService(PackagingServerRegistry.Servers, _context.VisualStudio.AutomationInterface);
 
             _packageServerChange = new SelectionChangedEventHandler(Reload);
 
@@ -413,6 +412,7 @@ namespace Twinpack.Dialogs
             UpdateablePackagesCount = 0;
             ForcePackageVersionDownload = true;
             Catalog = new List<PackageItem>();
+            _catalogItem = new PackageItem();
             DataContext = this;
 
             InitializeComponent();
@@ -442,6 +442,9 @@ namespace Twinpack.Dialogs
 
             try
             {
+                var config = await LoadPlcConfigAsync(Token);
+                _twinpack = new TwinpackService(PackagingServerRegistry.Servers, _context.VisualStudio.AutomationInterface, config);
+
                 _twinpack.InvalidateCache();
                 await UpdateCatalogAsync();
 
@@ -453,7 +456,6 @@ namespace Twinpack.Dialogs
                 var projectItemAdapter = _activeProject?.Object as dynamic; // TwinCAT.XAE.Automation.TcProjectItemAdapter
                 _libraryManager = projectItemAdapter?.LookupChild("References") as ITcPlcLibraryManager;
 
-                await LoadPlcConfigAsync(Token);
 
                 if (!IsConfigured)
                 {
@@ -485,7 +487,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async Task LoadPlcConfigAsync(CancellationToken cancellationToken)
+        public async Task<Config> LoadPlcConfigAsync(CancellationToken cancellationToken)
         {
             if (_activeProject != null)
             {
@@ -513,7 +515,6 @@ namespace Twinpack.Dialogs
                     IsCreateConfigVisible = true;
                     IsMigrateConfigVisible = false;
                     IsConfigured = false;
-                    _config = null;
                     _plcConfig = null;
                     _logger.Trace(ex);
                     _logger.Error(ex.Message);
@@ -531,8 +532,9 @@ namespace Twinpack.Dialogs
                 IsConfigured = false;
             }
 
-            _config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { _plcConfig } } } };
             cancellationToken.ThrowIfCancellationRequested();
+
+            return new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { _plcConfig } } } };
         }
 
         public void EditServersButton_Click(object sender, RoutedEventArgs e)
@@ -657,12 +659,12 @@ namespace Twinpack.Dialogs
                 _logger.Info("Restoring all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_config, _searchTerm, token: Token);
+                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
 
                 var packages = installedPackages.Select(x => new PackageItem { PackageVersion = x.Used, Config = x.Config }).ToList();
                 await AddOrUpdatePackageAsync(packages, showLicenseDialog: false, cancellationToken: Token);
 
-                installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_config, _searchTerm, token: Token);
+                installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
                 var item = installedPackages.Where(x => x.Name == _catalogItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
                 {
@@ -730,13 +732,13 @@ namespace Twinpack.Dialogs
                 _logger.Info("Updating all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_config, _searchTerm, token: Token);
+                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
 
                 var items = installedPackages.Where(x => x.IsUpdateable);
                 var packages = items.Select(x => new PackageItem { PackageVersion = x.Update, Config = x.Config }).ToList();
                 await AddOrUpdatePackageAsync(packages, showLicenseDialog: false, cancellationToken: Token);
 
-                installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_config, _searchTerm, token: Token);
+                installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
                 var item = installedPackages.Where(x => x.Name == _catalogItem.PackageVersion.Name).FirstOrDefault();
                 if (item != null)
                 {
@@ -847,7 +849,7 @@ namespace Twinpack.Dialogs
             if (searchText == null)
                 searchText = _searchTerm;
 
-            var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_config, searchText, token: Token);
+            var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(searchText, token: Token);
             var availablePackages = await _twinpack.RetrieveAvailablePackagesAsync(searchText, maxNewPackages, 5, Token);
 
             // synchronize the list of installed packages with the list of available packages
@@ -1363,7 +1365,7 @@ namespace Twinpack.Dialogs
                     }
 
                     await LoadPlcConfigAsync(Token);
-                    await _twinpack.RetrieveUsedPackagesAsync(_config, _searchTerm, token: Token);
+                    await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
                 }
             }
             catch (Exception ex)

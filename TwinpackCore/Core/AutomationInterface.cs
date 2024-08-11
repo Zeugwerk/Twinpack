@@ -51,7 +51,7 @@ namespace Twinpack.Core
 
         public bool IsSupported(string tcversion)
         {
-            var split = tcversion.Replace("TC", "").Split('.').Select(x => int.Parse(x)).ToArray();
+            var split = tcversion?.Replace("TC", "").Split('.').Select(x => int.Parse(x)).ToArray();
             var v = new Version(split[0], split[1], split[2], split[3]);
             return (MinVersion == null || v >= MinVersion) && (MaxVersion == null || v <= MaxVersion);
         }

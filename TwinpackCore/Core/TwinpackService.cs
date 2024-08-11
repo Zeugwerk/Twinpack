@@ -207,9 +207,9 @@ namespace Twinpack.Core
                     ;
         }
 
-        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(Config config, string searchTerm = null, bool includeMetadata = false, CancellationToken token = default)
+        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, CancellationToken token = default)
         {
-            foreach (var project in config.Projects)
+            foreach (var project in _config.Projects)
             {
                 foreach (var plc in project.Plcs)
                 {
@@ -290,7 +290,7 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task RestorePackagesAsync(RestorePackageOptions options = default, CancellationToken cancellationToken = default)
         {
-            var usedPackages = await RetrieveUsedPackagesAsync(_config, token: cancellationToken);
+            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
 
             var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Used }).ToList();
 
@@ -306,7 +306,7 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task UpdatePackagesAsync(UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
         {
-            var usedPackages = await RetrieveUsedPackagesAsync(_config, token: cancellationToken);
+            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
 
             var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Update, PackageVersion = x.Update }).ToList();
 
