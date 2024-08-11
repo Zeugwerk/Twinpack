@@ -53,7 +53,7 @@ namespace Twinpack.Commands
 
             var packages = CreatePackageItems(Packages, Versions, Branches, Targets, Configurations, ProjectName, PlcName);
 
-            _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload=ForceDownload, AddDependencies=AddDependencies }).GetAwaiter().GetResult();
+            _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload=ForceDownload, IncludeDependencies=AddDependencies }).GetAwaiter().GetResult();
 
             return 0;
         }
