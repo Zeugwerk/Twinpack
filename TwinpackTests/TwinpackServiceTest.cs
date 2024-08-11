@@ -498,7 +498,13 @@ namespace TwinpackTests
             var downloadedPackageVersions = new List<PackageItem>();
             var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
 
-            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, downloadProvided: false, includeDependencies: true, forceDownload: true);
+            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, 
+                new TwinpackService.DownloadPackageOptions
+                {
+                    IncludeProvidedPackages = false,
+                    IncludeDependencies = true,
+                    ForceDownload = true
+                });
 
             Assert.AreEqual(6, downloadedPackageVersions.Count());
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZCore"));
@@ -613,7 +619,14 @@ namespace TwinpackTests
             var downloadedPackageVersions = new List<PackageItem>();
             var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
 
-            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, downloadProvided: false, includeDependencies: true, forceDownload: true);
+            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package },
+                new TwinpackService.DownloadPackageOptions
+                {
+                    IncludeProvidedPackages = false,
+                    IncludeDependencies = true,
+                    ForceDownload = true
+                });
+
 
             Assert.AreEqual(3, downloadedPackageVersions.Count());
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib1"));
@@ -723,7 +736,13 @@ namespace TwinpackTests
             var downloadedPackageVersions = new List<PackageItem>();
             var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
 
-            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, downloadProvided: true, includeDependencies: true, forceDownload: true);
+            downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package },
+                new TwinpackService.DownloadPackageOptions
+                {
+                    IncludeProvidedPackages = true,
+                    IncludeDependencies = true,
+                    ForceDownload = true
+                });
 
             Assert.AreEqual(6, downloadedPackageVersions.Count());
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ZCore"));

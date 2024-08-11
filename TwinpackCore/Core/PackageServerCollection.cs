@@ -86,7 +86,12 @@ namespace Twinpack.Core
 
         public async Task<PackageItem> FetchPackageAsync(string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken cancellationToken = default)
         {
-            var catalogItem = new PackageItem(item);
+            var catalogItem = new PackageItem(item)
+            {
+                ProjectName = projectName,
+                PlcName = plcName
+            };
+
 
             foreach (var packageServer in this.Where(x => x.Connected))
             {
@@ -224,7 +229,7 @@ namespace Twinpack.Core
 
                             if (packageVersion?.Name != null)
                             {
-                                await packageServer.DownloadPackageVersionAsync(packageVersion, checksumMode: ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                                await packageServer.DownloadPackageVersionAsync(packageVersion, checksumMode: ChecksumMode.IgnoreMismatch, downloadPath: cachePath, cancellationToken: cancellationToken);
 
                                 
                             }
@@ -289,14 +294,14 @@ namespace Twinpack.Core
             return resolvedDependencies.Select(x => new PackageItem() { PackageVersion = x }).ToList();
         }
 
-        public async Task<bool> DownloadPackageVersionAsync(PackageItem package, string cachePath=null, CancellationToken cancellationToken = default)
+        public async Task<bool> DownloadPackageVersionAsync(PackageItem package, string downloadPath=null, CancellationToken cancellationToken = default)
         {
             var success = false;
             foreach (var packageServer in this.Where(x => x.Connected))
             {
                 try
                 {
-                    await packageServer.DownloadPackageVersionAsync(package.PackageVersion, checksumMode: ChecksumMode.IgnoreMismatch, cachePath: cachePath, cancellationToken: cancellationToken);
+                    await packageServer.DownloadPackageVersionAsync(package.PackageVersion, checksumMode: ChecksumMode.IgnoreMismatch, downloadPath: downloadPath, cancellationToken: cancellationToken);
                     success = true;
                     break;
                 }
