@@ -152,6 +152,8 @@ namespace Twinpack.Core
             if (_automationInterface != null)
                 return _automationInterface;
 
+            UsedTcVersion ??= CurrentTcVersion();
+
             var automationInterfaces = new List<IAutomationInterface>
             {
                 new AutomationInterface4024(this),
