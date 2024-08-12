@@ -90,7 +90,7 @@
                 <Border BorderThickness="1" BorderBrush="#4757b8" Grid.Row="2" Margin="0 10 0 5">
                     <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto">
                         <TextBox Margin="5 0 0 0" IsReadOnly="True" d:Text=""
-                             Text="{Binding LicenseTmcText}"  TextWrapping="NoWrap" FontSize="12"/>
+                             Text="{Binding LicenseTmcText, Mode=OneTime}"  TextWrapping="NoWrap" FontSize="12"/>
                     </ScrollViewer>
                 </Border>
 
