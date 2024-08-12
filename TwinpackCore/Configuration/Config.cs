@@ -48,6 +48,22 @@ namespace Twinpack.Configuration
 
     public class ConfigPlcPackage
     {
+        public ConfigPlcPackage(PackageItem pv)
+        {
+            Name = pv.PackageVersion?.Name ?? pv.Package?.Name ?? pv.Config?.Name ?? pv.Catalog?.Name;
+            DistributorName = pv.PackageVersion?.DistributorName ?? pv.Package?.DistributorName ?? pv.Config?.DistributorName ?? pv.Catalog?.DistributorName;
+            Framework = pv.PackageVersion?.Framework ?? pv.Package?.Framework ?? pv.Config?.Framework;
+
+            Version = pv.PackageVersion?.Version;
+            Branch = pv.PackageVersion?.Branch;
+            Target = pv.PackageVersion?.Target;
+            Configuration = pv.PackageVersion?.Configuration;
+
+            Namespace = pv.Config?.Namespace;
+            Parameters = pv.Config?.Parameters;
+            Options = pv.Config?.Options;
+        }
+
         public ConfigPlcPackage(PackageVersionGetResponse pv)
         {
             Version = pv.Version;

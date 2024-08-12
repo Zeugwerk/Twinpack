@@ -71,7 +71,7 @@
                 <Border BorderThickness="1" BorderBrush="#4757b8" Grid.Row="2" Margin="0 10 0 5">
                     <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto">
                         <TextBox BorderThickness="0" Margin="5 0 0 0" IsReadOnly="True" d:Text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-                             Text="{Binding LicenseText}" TextWrapping="Wrap" FontSize="12"/>
+                             Text="{Binding LicenseText, Mode=OneTime}" TextWrapping="Wrap" FontSize="12"/>
                     </ScrollViewer>
                 </Border>
             </Grid>

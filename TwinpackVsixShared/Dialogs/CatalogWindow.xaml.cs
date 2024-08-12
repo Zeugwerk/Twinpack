@@ -496,18 +496,18 @@ namespace Twinpack.Dialogs
                     await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
                     var config = ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
-                    if (config != null)
+                    if(config == null)
                     {
-                        _plcConfig = ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, _activeProject);
+                        config = await ConfigFactory.CreateFromSolutionFileAsync(Path.GetDirectoryName(_context.Solution.FullName), continueWithoutSolution: false, packageServers: _twinpack.PackageServers.Where(x => x.Connected), cancellationToken: cancellationToken);
+                        config.FilePath = null; // we don't want to save to a file
                     }
-                    else
-                    {
-                        _plcConfig = await ConfigPlcProjectFactory.CreateAsync(_context.Solution, _activeProject, _twinpack.PackageServers.Where(x => x.Connected), cancellationToken);
-                    }
+                    _plcConfig = ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, _activeProject);
 
                     IsCreateConfigVisible = config == null || _plcConfig == null;
                     IsMigrateConfigVisible = config != null && _plcConfig?.Packages?.Any() == false && _plcConfig?.Frameworks?.Zeugwerk?.References?.Any() == true;
                     IsConfigured = _plcConfig != null;
+
+                    return config;
                 }
                 catch (Exception ex)
                 {
@@ -531,9 +531,8 @@ namespace Twinpack.Dialogs
                 IsConfigured = false;
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { _plcConfig } } } };
+            _plcConfig = null;
+            return null;
         }
 
         public void EditServersButton_Click(object sender, RoutedEventArgs e)
@@ -570,12 +569,10 @@ namespace Twinpack.Dialogs
 
                 // update config
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                var config = await WritePlcConfigToConfigAsync(_plcConfig, Token);
                 await UpdateCatalogAsync();
 
                 _logger.Info($"Successfully removed {_catalogItem.PackageVersion.Name} from {_activeProject.Name} references");
                 _logger.Info("Finished\n");
-
             }
             catch (Exception ex)
             {
@@ -604,17 +601,22 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
                 _catalogItem.Config.Options = Options;
-                await AddOrUpdatePackageAsync(new List<PackageItem> { _catalogItem }, showLicenseDialog: true, cancellationToken: Token);
+
+                // show licenses and wait for accept
+                var affectedPackages = await _twinpack.AffectedPackagesAsync(new List<PackageItem> { _catalogItem }, Token);
+                if (ConfirmLicensesIfNeeded(affectedPackages, true))
+                    await _twinpack.AddPackagesAsync(affectedPackages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, Token);
+
+                IsNewReference = false;
+
                 _catalogItem.Package = _catalogItem.PackageVersion;
                 _catalogItem.PackageVersion = _catalogItem.PackageVersion;
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                var config = await WritePlcConfigToConfigAsync(_plcConfig, Token);
                 await UpdateCatalogAsync();
 
                 _logger.Info($"Successfully added {_catalogItem.PackageVersion.Name} to {_activeProject.Name} references");
                 _logger.Info("Finished\n");
-
             }
             catch (OperationCanceledException ex)
             {
@@ -658,18 +660,9 @@ namespace Twinpack.Dialogs
                 _logger.Info("Restoring all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
 
-                var packages = installedPackages.Select(x => new PackageItem { PackageVersion = x.Used, Config = x.Config }).ToList();
-                await AddOrUpdatePackageAsync(packages, showLicenseDialog: false, cancellationToken: Token);
-
-                installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
-                var item = installedPackages.Where(x => x.Catalog?.Name == _catalogItem.PackageVersion.Name).FirstOrDefault();
-                if (item != null)
-                {
-                    _catalogItem.Package = item.Update;
-                    _catalogItem.PackageVersion = item.Update;
-                }
+                await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, Token);
+                await UpdateCatalogAsync();
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully restored all references");
@@ -688,26 +681,6 @@ namespace Twinpack.Dialogs
             finally
             {
                 _semaphorePackages.Release();
-            }
-
-            try
-            {
-                var config = await WritePlcConfigToConfigAsync(_plcConfig, Token);
-                SelectPackageVersionFilter(_catalogItem.PackageVersion);
-                await UpdateCatalogAsync();
-
-                _logger.Info("Finished\n");
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
-            {
-                IsPackageVersionPanelEnabled = true;
-                IsCatalogEnabled = true;
-                _semaphoreAction.Release();
             }
         }
 
@@ -731,19 +704,10 @@ namespace Twinpack.Dialogs
                 _logger.Info("Updating all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
 
-                var items = installedPackages.Where(x => x.IsUpdateable);
-                var packages = items.Select(x => new PackageItem { PackageVersion = x.Update, Config = x.Config }).ToList();
-                await AddOrUpdatePackageAsync(packages, showLicenseDialog: false, cancellationToken: Token);
+                await _twinpack.UpdatePackagesAsync(new TwinpackService.UpdatePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, Token);
+                await UpdateCatalogAsync();
 
-                installedPackages = await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
-                var item = installedPackages.Where(x => x.Catalog?.Name == _catalogItem.PackageVersion.Name).FirstOrDefault();
-                if (item != null)
-                {
-                    _catalogItem.Package = item.Update;
-                    _catalogItem.PackageVersion = item.Update;
-                }
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully updated references to their latest version");
             }
@@ -761,25 +725,6 @@ namespace Twinpack.Dialogs
             finally
             {
                 _semaphorePackages.Release();
-            }
-
-            try
-            {
-                var config = await WritePlcConfigToConfigAsync(_plcConfig, cancellationToken: Token);
-                await UpdateCatalogAsync();
-
-                _logger.Info("Finished\n");
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
-            {
-                IsPackageVersionPanelEnabled = true;
-                IsCatalogEnabled = true;
-                _semaphoreAction.Release();
             }
         }
 
@@ -903,7 +848,7 @@ namespace Twinpack.Dialogs
             // remap catalogItem
             if(_catalogItem != null)
             {
-                _catalogItem = Catalog.FirstOrDefault(x => x.Catalog?.Name == _catalogItem.Catalog?.Name);
+                _catalogItem.Catalog = Catalog.FirstOrDefault(x => x.Catalog?.Name == _catalogItem.Catalog?.Name)?.Catalog;
                 if (_catalogItem?.Catalog?.Name == null || (_catalogItem.Catalog?.Name != _catalogItem.Package.Name || _catalogItem.Catalog?.Name != _catalogItem.PackageVersion.Name))
                 {
                     InstalledPackageVersion = null;
@@ -938,37 +883,6 @@ namespace Twinpack.Dialogs
             }
 
             return true;
-        }
-
-        public async Task AddOrUpdatePackageAsync(List<PackageItem> packages, bool showLicenseDialog = true, CancellationToken cancellationToken = default)
-        {
-            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-
-            // show licenses and wait for accept
-            var affectedPackages = await _twinpack.AffectedPackagesAsync(packages, cancellationToken);
-            if(ConfirmLicensesIfNeeded(affectedPackages, showLicenseDialog))
-                await _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, cancellationToken);
-
-            IsNewReference = false;
-        }
-
-        public async Task<Config> WritePlcConfigToConfigAsync(ConfigPlcProject plcConfig, CancellationToken cancellationToken)
-        {
-            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-            var config = ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
-
-            if (config != null)
-            {
-                ConfigFactory.UpdatePlcProject(config, plcConfig);
-                ConfigFactory.Save(config);
-            }
-            else
-            {
-                _logger.Warn($"The solution doesn't have a package configuration");
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            return config;
         }
 
         public void ShowLicenseButton_Click(object sender, RoutedEventArgs e)
@@ -1115,8 +1029,18 @@ namespace Twinpack.Dialogs
         private async void Catalog_SelectionChanged(object sender, SelectionChangedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            _catalogItem = (sender as ListView).SelectedItem as Models.PackageItem;
-            if (_catalogItem == null)
+            var packageItem = ((sender as ListView).SelectedItem as Models.PackageItem);
+            _catalogItem.Catalog = packageItem?.Catalog;
+            _catalogItem.ProjectName = packageItem?.ProjectName;
+            _catalogItem.PlcName = packageItem?.PlcName;
+            _catalogItem.PackageServer = packageItem?.PackageServer;
+            _catalogItem.Config = packageItem?.Config;
+            _catalogItem.Used = packageItem?.Used;
+            _catalogItem.Update = packageItem?.Update;
+            _catalogItem.Package = packageItem?.Package;
+            _catalogItem.PackageVersion = packageItem?.PackageVersion;
+
+            if (_catalogItem?.Catalog == null)
                 return;
 
             InstalledPackageVersion = _catalogItem.IsPlaceholder ? _catalogItem.InstalledVersion + "*" : _catalogItem.InstalledVersion;
@@ -1162,7 +1086,7 @@ namespace Twinpack.Dialogs
         private async void PackageFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            if (_catalogItem.Package.Name == null ||
+            if (_catalogItem.Package?.Name == null ||
                 BranchesView.SelectedIndex < 0 || TargetsView.SelectedIndex < 0 || ConfigurationsView.SelectedIndex < 0)
                 return;
 
@@ -1222,6 +1146,7 @@ namespace Twinpack.Dialogs
 
                 if (item != null)
                 {
+                    _catalogItem.Config.Version = item?.Version;
                     _catalogItem.Config.Branch = BranchesView.SelectedItem as string;
                     _catalogItem.Config.Configuration = ConfigurationsView.SelectedItem as string;
                     _catalogItem.Config.Target = TargetsView.SelectedItem as string;
@@ -1288,10 +1213,6 @@ namespace Twinpack.Dialogs
                 _catalogItem.Invalidate();
                 _twinpack.InvalidateCache();
                 await UpdateCatalogAsync();
-                _context.Dte.ExecuteCommand("File.SaveAll");
-
-                await LoadPlcConfigAsync(Token);
-                await UpdateCatalogAsync(null, 10);
             }
             catch (Exception ex)
             {

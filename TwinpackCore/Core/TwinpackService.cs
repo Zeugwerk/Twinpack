@@ -432,9 +432,11 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task FetchPackageAsync(PackageItem packageItem, CancellationToken cancellationToken = default)
         {
-            var resolvedPackage = await _packageServers.FetchPackageAsync(packageItem.ProjectName, packageItem.PlcName, packageItem.Config, includeMetadata: true, automationInterface: _automationInterface, cancellationToken: cancellationToken);
-            packageItem.Package ??= resolvedPackage.Package;
-            packageItem.PackageVersion ??= resolvedPackage.PackageVersion;
+            var resolvedPackage = await _packageServers.FetchPackageAsync(packageItem.ProjectName, packageItem.PlcName, packageItem.Config ?? new ConfigPlcPackage(packageItem), includeMetadata: true, automationInterface: _automationInterface, cancellationToken: cancellationToken);
+            packageItem.Config ??= resolvedPackage.Config;
+            packageItem.Package = resolvedPackage.Package;
+            packageItem.PackageVersion = resolvedPackage.PackageVersion;
+            packageItem.PackageServer = resolvedPackage.PackageServer;
         }
 
         public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, CancellationToken cancellationToken = default)
