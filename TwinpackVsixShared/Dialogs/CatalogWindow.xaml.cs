@@ -1031,8 +1031,8 @@ namespace Twinpack.Dialogs
         {
             var packageItem = ((sender as ListView).SelectedItem as Models.PackageItem);
             _catalogItem.Catalog = packageItem?.Catalog;
-            _catalogItem.ProjectName = packageItem?.ProjectName;
-            _catalogItem.PlcName = packageItem?.PlcName;
+            _catalogItem.ProjectName = packageItem?.ProjectName ?? _plcConfig?.ProjectName;
+            _catalogItem.PlcName = packageItem?.PlcName ?? _plcConfig?.Name;
             _catalogItem.PackageServer = packageItem?.PackageServer;
             _catalogItem.Config = packageItem?.Config;
             _catalogItem.Used = packageItem?.Used;
