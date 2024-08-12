@@ -57,15 +57,15 @@ namespace Twinpack.Models
 
             var catalog = new CatalogItemGetResponse
             {
-                PackageId = packageVersion.PackageId,
-                Repository = packageVersion.Repository,
-                Description = packageVersion.Description,
-                IconUrl = packageVersion.IconUrl,
-                Name = packageVersion.Name,
-                DisplayName = packageVersion.DisplayName,
-                DistributorName = packageVersion.DistributorName,
-                RuntimeLicense = packageVersion.LicenseTmcBinary != null ? 1 : 0,
-                Downloads = packageVersion.Downloads
+                PackageId = packageVersion?.PackageId,
+                Repository = packageVersion?.Repository,
+                Description = packageVersion?.Description,
+                IconUrl = packageVersion?.IconUrl,
+                Name = packageVersion?.Name,
+                DisplayName = packageVersion?.DisplayName,
+                DistributorName = packageVersion?.DistributorName,
+                RuntimeLicense = packageVersion?.LicenseTmcBinary != null ? 1 : 0,
+                Downloads = packageVersion?.Downloads
             };
 
             Catalog = catalog;
@@ -75,15 +75,15 @@ namespace Twinpack.Models
         {
             var catalog = new CatalogItemGetResponse
             {
-                Name = package.Name,
-                Repository = package.Version,
-                DistributorName = package.DistributorName,
-                DisplayName = package.Name,
+                Name = package?.Name,
+                Repository = package?.Version,
+                DistributorName = package?.DistributorName,
+                DisplayName = package?.Name,
             };
 
             Catalog = catalog;
             Config = package;
-            IsPlaceholder = package.Version == null;
+            IsPlaceholder = package?.Version == null;
         }
 
         public Protocol.IPackageServer PackageServer { get; set; }
