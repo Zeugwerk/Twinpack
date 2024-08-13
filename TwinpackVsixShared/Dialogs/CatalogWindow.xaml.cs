@@ -743,17 +743,17 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async Task UpdateCatalogAsync(string searchText=null, int maxNewPackages = 0)
+        public async Task UpdateCatalogAsync(string searchTerm=null, int maxNewPackages = 0)
         {
             try
             {
                 IsCatalogLoading = true;
 
-                if (searchText == null)
-                    searchText = _searchTerm;
+                if (searchTerm == null)
+                    searchTerm = _searchTerm;
 
-                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(searchText, token: Token);
-                var availablePackages = await _twinpack.RetrieveAvailablePackagesAsync(searchText, maxNewPackages, 5, Token);
+                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(searchTerm, token: Token);
+                var availablePackages = await _twinpack.RetrieveAvailablePackagesAsync(searchTerm, maxNewPackages, 5, Token);
 
                 // synchronize the list of installed packages with the list of available packages
                 var zipped =
@@ -779,23 +779,23 @@ namespace Twinpack.Dialogs
                 if (IsBrowsingAvailablePackages)
                 {
                     Catalog = availablePackages.Where(x =>
-                         x.Catalog?.DisplayName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.DistributorName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.Name.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
+                         x.Catalog?.DisplayName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                         x.Catalog?.DistributorName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
                 }
                 else if (IsBrowsingInstalledPackages)
                 {
                     Catalog = installedPackages.Where(x =>
-                         x.Catalog?.DisplayName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.DistributorName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.Name.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
+                         x.Catalog?.DisplayName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                         x.Catalog?.DistributorName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
                 }
                 else if (IsBrowsingUpdatablePackages)
                 {
                     Catalog = installedPackages.Where(x => x.IsUpdateable &&
-                        (x.Catalog?.DisplayName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.DistributorName.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.Name.IndexOf(searchText, StringComparison.InvariantCultureIgnoreCase) >= 0)).ToList();
+                        (x.Catalog?.DisplayName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                         x.Catalog?.DistributorName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)).ToList();
                 }
 
                 IsUpdateAllVisible = IsBrowsingUpdatablePackages && Catalog.Any();
@@ -953,8 +953,7 @@ namespace Twinpack.Dialogs
         private async void ShowMoreAvailablePackagesButton_Click(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            await _twinpack.RetrieveAvailablePackagesAsync(_searchTerm, 5);
-            await UpdateCatalogAsync();
+            await UpdateCatalogAsync(maxNewPackages: 10);
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
@@ -1156,10 +1155,10 @@ namespace Twinpack.Dialogs
 
                 IsPackageLoading = false;
 
-                var packageCount = _twinpack.AvailablePackages.Count();
+                var packageCount = Math.Max(10, _twinpack.AvailablePackages.Count());
                 _catalogItem.Invalidate();
                 _twinpack.InvalidateCache();
-                await UpdateCatalogAsync(searchText: _searchTerm, maxNewPackages: packageCount);
+                await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: packageCount);
             }
             catch (Exception ex)
             {
@@ -1259,18 +1258,17 @@ namespace Twinpack.Dialogs
             try
             {
                 var text = ((TextBox)sender).Text;
-                await UpdateCatalogAsync();
 
-                // this will only add additional items
-                if (IsBrowsingAvailablePackages)
+                _searchTerm = text;
+                await Task.Delay(250);
+
+                if (_searchTerm == text)
                 {
-                    _searchTerm = text;
-                    await Task.Delay(250);
-
-                    if (_searchTerm == text)
-                        await UpdateCatalogAsync();
+                    _cancellationTokenSource?.Cancel();
+                    await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: 10);
                 }
             }
+            catch (TaskCanceledException) { }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
