@@ -27,7 +27,8 @@ namespace TwinpackTests
         {
             SetUpRepository();
             _config = ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution").GetAwaiter().GetResult();
-            _automationInterface = new VisualStudio().Open(_config);
+            _visualStudio = new VisualStudio();
+            _automationInterface = _visualStudio.Open(_config);
         }
     }
 
@@ -40,6 +41,7 @@ namespace TwinpackTests
         {
             SetUpRepository();
             _config = ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution").GetAwaiter().GetResult();
+            _visualStudio = null;
             _automationInterface = new AutomationInterfaceHeadless(_config);
         }
     }
@@ -48,6 +50,7 @@ namespace TwinpackTests
     public class SystemTest
     {
         protected static Config _config;
+        protected static VisualStudio _visualStudio;
         protected static IAutomationInterface _automationInterface;
         protected static PackageServerMock _packageServer;
 
@@ -235,6 +238,66 @@ namespace TwinpackTests
             plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
             plcprojPackages = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
             Assert.AreEqual(plcprojPackages.Count, 1);
+        }
+
+        [TestMethod]
+        public async Task AddPackage_WithPackageThatIsNotInstalled_Async()
+        {
+            _visualStudio?.Close();
+
+            // first prepare the plc, add a library, which does not exist
+            var packageServers = new PackageServerCollection { _packageServer };
+            var twinpackHeadless = new TwinpackService(packageServers, automationInterface: new AutomationInterfaceHeadless(_config), config: _config);
+
+            // cleanup
+            await twinpackHeadless.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpackHeadless.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+
+            await twinpackHeadless.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1",
+                Config = new ConfigPlcPackage
+                {
+                    Name = "PlcLibrary1", Version = "6.6.6.6",
+                }
+            } }, new TwinpackService.AddPackageOptions { IncludeDependencies = true, ForceDownload = false });
+
+            // check if config was updated correctly
+            var configPackages = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
+            var package = configPackages.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            Assert.AreEqual(configPackages.Count, 2);
+            Assert.AreEqual("6.6.6.6", package.Version);
+
+            // check if plcproj references were not updated
+            var plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
+            var plcprojPlc = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1");
+            var plcprojPackages = plcprojPlc.Packages;
+            var plcprojPackage = plcprojPackages.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            Assert.AreEqual(plcprojPackages.Count, 2);
+            Assert.AreEqual("6.6.6.6", plcprojPackage.Version);
+
+            _visualStudio?.Open(_config);
+            // now add package with the real automation interface and make sure it works
+            var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
+
+            await twinpackHeadless.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1",
+                Config = new ConfigPlcPackage
+                {
+                    Name = "PlcLibrary1", Version = "1.2.3.4",
+                }
+            } }, new TwinpackService.AddPackageOptions { IncludeDependencies = true, ForceDownload = false });
+
+            // check if config was updated correctly
+            configPackages = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
+            package = configPackages.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            Assert.AreEqual(configPackages.Count, 2);
+            Assert.AreEqual("1.2.3.4", package.Version);
+
+            // check if plcproj references were not updated
+            plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
+            plcprojPlc = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1");
+            plcprojPackages = plcprojPlc.Packages;
+            plcprojPackage = plcprojPackages.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            Assert.AreEqual(plcprojPackages.Count, 2);
+            Assert.AreEqual("1.2.3.4", plcprojPackage.Version);
         }
 
         [DataTestMethod]

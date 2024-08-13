@@ -157,7 +157,6 @@ namespace Twinpack.Core
 
                     if (includeMetadata)
                     {
-                        catalogItem.Package = await packageServer.GetPackageAsync(packageVersion.DistributorName, packageVersion.Name, cancellationToken: cancellationToken);
                         catalogItem.PackageVersion = packageVersion;
                         catalogItem.PackageVersion.Dependencies = (await ResolvePackageDependenciesAsync(catalogItem, automationInterface, cancellationToken)).Select(x => x.PackageVersion).ToList();
                     }
@@ -166,6 +165,11 @@ namespace Twinpack.Core
                 // a package might be updateable but not available on Twinpack
                 if (packageVersionLatest.Name != null)
                 {
+                    if (includeMetadata)
+                    {
+                        catalogItem.Package = await packageServer.GetPackageAsync(packageVersionLatest.DistributorName, packageVersionLatest.Name, cancellationToken: cancellationToken);
+                    }
+
                     catalogItem.Update = packageVersionLatest;
                     catalogItem.PackageServer = packageServer;
                 }

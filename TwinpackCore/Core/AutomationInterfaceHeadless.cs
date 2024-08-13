@@ -148,7 +148,7 @@ namespace Twinpack.Core
             xdoc.Save(plcConfig.FilePath);
         }
 
-        public override async Task RemovePackageAsync(PackageItem package, bool uninstall=false)
+        public override async Task RemovePackageAsync(PackageItem package, bool uninstall = false, bool forceRemoval = false)
         {
             var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault(x => x.Name == package.PlcName);
 
