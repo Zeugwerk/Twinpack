@@ -63,8 +63,31 @@ namespace Twinpack.Core
 
         private ITcPlcLibrary ResolvePlaceholder(ITcPlcLibraryManager libManager, string placeholderName, out string distributorName, out string effectiveVersion)
         {
+            // getter references might throw (Starting from TC3.1.4024.35)
+            ITcPlcReferences references;
+            try
+            {
+                references = libManager.References;
+            }
+            catch (FormatException ex) // TwinCAT throws a FormatException for some reason
+            {
+                _logger.Warn("PLC contains packages not available on the system, please update or remove them");
+                _logger.Trace(ex);
+                distributorName = null;
+                effectiveVersion = null;
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn(ex.Message);
+                _logger.Trace(ex);
+                distributorName = null;
+                effectiveVersion = null;
+                return null;
+            }
+
             // Try to remove the already existing reference
-            foreach (ITcPlcLibRef item in libManager.References)
+            foreach (ITcPlcLibRef item in references)
             {
                 string itemPlaceholderName;
                 ITcPlcLibrary plcLibrary;
@@ -278,7 +301,9 @@ namespace Twinpack.Core
             if (!IsPackageInstalled(package))
                 distributorName = GuessDistributorName(libraryManager, libraryName, version);
 
-            await RemovePackageAsync(package);
+            // make sure the package is not present before adding it, we have to
+            // force, because the package might not even be installed
+            await RemovePackageAsync(package, forceRemoval: true);
 
             if (options?.LibraryReference == true)
                 libraryManager.AddLibrary(libraryName, version, distributorName);
@@ -362,15 +387,24 @@ namespace Twinpack.Core
             }
         }
 
-        public override async Task RemovePackageAsync(PackageItem package, bool uninstall=false)
+        public override async Task RemovePackageAsync(PackageItem package, bool uninstall = false, bool forceRemoval = false)
         {
             await SwitchToMainThreadAsync();
 
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
-
             var plcLibrary = ResolvePlaceholder(libraryManager, package.PackageVersion.Title, out _, out _);
-            if (plcLibrary != null)
-                libraryManager.RemoveReference(package.PackageVersion.Title);
+
+            try
+            {
+                if (plcLibrary != null || forceRemoval)
+                    libraryManager.RemoveReference(package.PackageVersion.Title);
+            }
+            catch
+            {
+                if (!forceRemoval)
+                    throw;
+            }
+
 
             if (uninstall)
             {

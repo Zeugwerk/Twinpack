@@ -71,7 +71,7 @@ namespace Twinpack.Core
         }
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-        private List<PackageItem> _availablePackageCache = new List<PackageItem>();
+        private List<PackageItem> _availablePackagesCache = new List<PackageItem>();
         private List<PackageItem> _usedPackagesCache = new List<PackageItem>();
 
         private PackageServerCollection _packageServers;
@@ -93,6 +93,7 @@ namespace Twinpack.Core
         public bool IsClientUpdateAvailable { get => _packageServers.Any(x => (x as TwinpackServer)?.IsClientUpdateAvailable == true); }
         public bool HasUnknownPackages { get => UsedPackages.Any(x => x.Catalog?.Name == null) == true; }
         public IEnumerable<PackageItem> UsedPackages { get => _usedPackagesCache; }
+        public IEnumerable<PackageItem> AvailablePackages { get => _availablePackagesCache; }
 
         private void CopyRuntimeLicenseIfNeeded(IEnumerable<PackageItem> packages)
         {
@@ -157,7 +158,7 @@ namespace Twinpack.Core
 
         public void InvalidateCache()
         {
-            _availablePackageCache.Clear();
+            _availablePackagesCache.Clear();
             _usedPackagesCache.Clear();
             _availablePackagesIt = null;
             _packageServers.InvalidateCache();
@@ -188,17 +189,17 @@ namespace Twinpack.Core
                 _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize, token).GetAsyncEnumerator();
 
             _searchTerm = searchTerm;
-            var maxPackages = _availablePackageCache.Count + maxNewPackages;
-            while ((maxNewPackages == null || _availablePackageCache.Count < maxPackages) && (HasMoreAvailablePackages = await _availablePackagesIt.MoveNextAsync()))
+            var maxPackages = _availablePackagesCache.Count + maxNewPackages;
+            while ((maxNewPackages == null || _availablePackagesCache.Count < maxPackages) && (HasMoreAvailablePackages = await _availablePackagesIt.MoveNextAsync()))
             {
                 PackageItem item = _availablePackagesIt.Current;
 
                 // only add if we don't have this package cached already
-                if(!_availablePackageCache.Any(x => item.Catalog?.Name == x.Catalog?.Name))
-                    _availablePackageCache.Add(item);
+                if(!_availablePackagesCache.Any(x => item.Catalog?.Name == x.Catalog?.Name))
+                    _availablePackagesCache.Add(item);
             }
 
-            return _availablePackageCache
+            return _availablePackagesCache
                     .Where(x =>
                         searchTerm == null ||
                         x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
@@ -368,7 +369,6 @@ namespace Twinpack.Core
 
                 if (_automationInterface != null)
                 {
-                    await _automationInterface.RemovePackageAsync(package);
                     await _automationInterface.AddPackageAsync(package);
                 }
                 cancellationToken.ThrowIfCancellationRequested();

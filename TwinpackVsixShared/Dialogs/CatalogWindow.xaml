@@ -38,12 +38,12 @@
             <Button BorderThickness="{Binding IsBrowsingAvailablePackages, Converter={StaticResource BooleanToBorderThicknessConverter}}" Background="Transparent" Grid.Column="0" Click="ShowCatalog_Click" Padding="15 5 15 5" Margin="50 0 0 0" FontSize="14" FontWeight="SemiBold">Browse</Button>
             <Button BorderThickness="{Binding IsBrowsingInstalledPackages, Converter={StaticResource BooleanToBorderThicknessConverter}}" Background="Transparent" Grid.Column="1"  Click="ShowInstalledPackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" FontSize="14" FontWeight="SemiBold">
                 <TextBlock>
-                    <Run>Referenced (</Run><Run Text="{Binding InstalledPackagesCount}"></Run><Run>)</Run>
+                    <Run>Referenced (</Run><Run Text="{Binding InstalledPackagesCount, Mode=OneWay}"></Run><Run>)</Run>
                 </TextBlock>
             </Button>
             <Button BorderThickness="{Binding IsBrowsingUpdatablePackages, Converter={StaticResource BooleanToBorderThicknessConverter}}" Background="Transparent" Grid.Column="2"  Click="ShowUpdateablePackages_Click" Padding="15 5 15 5" Margin="30 0 0 0" FontSize="14" FontWeight="SemiBold">
                 <TextBlock>
-                    <Run>Updates (</Run><Run Text="{Binding UpdateablePackagesCount}"></Run><Run>)</Run>
+                    <Run>Updates (</Run><Run Text="{Binding UpdateablePackagesCount, Mode=OneWay}"></Run><Run>)</Run>
                 </TextBlock>
             </Button>
 
@@ -130,7 +130,7 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <Grid DataContext="{Binding Catalog}">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
                                 <ColumnDefinition></ColumnDefinition>
@@ -140,16 +140,18 @@
                             <Image d:Source="Images/Twinpack.png" 
                                    RenderOptions.BitmapScalingMode="HighQuality" 
                                    x:Name="ImageIcon"
+                                   DataContext="{Binding Catalog}"
                                    Visibility="{Binding IconUrl, Converter={StaticResource NullToVisibilityConverter}}"
                                    Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
 
 
                             <Image d:Source="Images/Twinpack.png" 
                                    RenderOptions.BitmapScalingMode="HighQuality" 
+                                   DataContext="{Binding Catalog}"
                                    Visibility="{Binding Visibility, ElementName=ImageIcon, Converter={StaticResource VisibilityToInverseVisibilityConverter}}"
                                    Source="{Binding Name, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
 
-                            <Grid Grid.Column="1">
+                            <Grid Grid.Column="1" DataContext="{Binding Catalog}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="auto"></RowDefinition>
                                     <RowDefinition Height="*" MaxHeight="100"></RowDefinition>

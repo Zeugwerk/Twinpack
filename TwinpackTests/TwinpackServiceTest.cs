@@ -347,6 +347,45 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task FetchPackageAsync_OnlyWithCatalog()
+        {
+            var packageServer = new PackageServerMock
+            {
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZAux",
+                        Version = "1.5.0.1",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ZCore" },
+                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                        }
+                    }
+                },
+                Connected = true
+            };
+
+            var packageServers = new PackageServerCollection { packageServer };
+            var twinpack = new TwinpackService(packageServers);
+
+            var package = new PackageItem { Catalog = new CatalogItemGetResponse { Name = "ZAux" } };
+
+            await twinpack.FetchPackageAsync(package);
+
+            Assert.AreEqual("ZAux", package.Config.Name);
+            Assert.AreEqual("ZAux", package.Package.Name);
+            Assert.AreEqual("ZAux", package.PackageVersion.Name);
+            Assert.AreEqual("1.5.0.1", package.PackageVersion.Version);
+            Assert.IsTrue(package.Package.Branches.Contains("main"));
+            Assert.IsTrue(package.Package.Branches.Contains("release/1.0"));
+        }
+
+        [TestMethod]
         public async Task FetchPackageAsync_PackageMetadataIsPopulated()
         {
             var packageServer = new PackageServerMock
@@ -387,6 +426,51 @@ namespace TwinpackTests
         [DataTestMethod]
         [DataRow("2.0.0.0", "1.0.0.0")]
         [DataRow("1.0.0.0", "1.0.0.0")]
+        public async Task FetchPackageAsync_EffectiveVersion_WithCatalog(string effectiveVersion, string expectedPackageVersion)
+        {
+            var packageServer = new PackageServerMock
+            {
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZAux",
+                        Title = "ZAux",
+                        Version = "1.0.0.0",
+                        DistributorName = "My Company",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1"
+                    }
+                },
+                Connected = true
+            };
+
+            var automationInterfaceMock = new Mock<IAutomationInterface>();
+            automationInterfaceMock.Setup(x => x.ResolveEffectiveVersion("TestProject1", "Untitled1", "ZAux")).Returns(effectiveVersion);
+
+            var packageServers = new PackageServerCollection { packageServer };
+            var twinpack = new TwinpackService(packageServers, automationInterfaceMock.Object);
+
+            var package = new PackageItem { ProjectName = "TestProject1", PlcName = "Untitled1", Catalog = new CatalogItemGetResponse { Name = "ZAux" } };
+
+            await twinpack.FetchPackageAsync(package);
+
+            Assert.AreEqual("TestProject1", package.ProjectName);
+            Assert.AreEqual("Untitled1", package.PlcName);
+            Assert.AreEqual("ZAux", package.Config.Name);
+            Assert.AreEqual("ZAux", package.Package.Name);
+            Assert.AreEqual("ZAux", package.PackageVersion.Name);
+            Assert.AreEqual("ZAux", package.PackageVersion.Title);
+            Assert.AreEqual("My Company", package.PackageVersion.DistributorName);
+            Assert.AreEqual(expectedPackageVersion, package.PackageVersion.Version);
+            Assert.IsTrue(package.Package.Branches.Contains("main"));
+            Assert.IsTrue(package.Package.Branches.Contains("release/1.0"));
+        }
+
+        [TestMethod]
+        [DataRow("2.0.0.0", "1.0.0.0")]
+        [DataRow("1.0.0.0", "1.0.0.0")]
         public async Task FetchPackageAsync_EffectiveVersion(string effectiveVersion, string expectedPackageVersion)
         {
             var packageServer = new PackageServerMock
@@ -408,7 +492,7 @@ namespace TwinpackTests
             };
 
             var automationInterfaceMock = new Mock<IAutomationInterface>();
-            automationInterfaceMock.Setup(x => x.ResolveEffectiveVersion("TestProject1", "Untitled1", "ZAux")).Returns("2.0.0.0");
+            automationInterfaceMock.Setup(x => x.ResolveEffectiveVersion("TestProject1", "Untitled1", "ZAux")).Returns(effectiveVersion);
 
             var packageServers = new PackageServerCollection { packageServer };
             var twinpack = new TwinpackService(packageServers, automationInterfaceMock.Object);
