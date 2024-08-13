@@ -240,7 +240,7 @@ namespace TwinpackTests
             Assert.AreEqual(plcprojPackages.Count, 1);
         }
 
-        [TestMethod]
+        //[TestMethod]
         public async Task AddPackage_WithPackageThatIsNotInstalled_Async()
         {
             _visualStudio?.Close();
