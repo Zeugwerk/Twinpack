@@ -71,13 +71,17 @@ namespace Twinpack.Core
         }
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
+        private SemaphoreSlim _availablePackagesMutex = new SemaphoreSlim(1, 1);
         private List<PackageItem> _availablePackagesCache = new List<PackageItem>();
+        private IAsyncEnumerator<PackageItem> _availablePackagesIt;
+        private string _searchTerm;
+
+        private SemaphoreSlim _usedPackagesMutex = new SemaphoreSlim(1,1);
         private List<PackageItem> _usedPackagesCache = new List<PackageItem>();
 
         private PackageServerCollection _packageServers;
         private Config _config;
-        private IAsyncEnumerator<PackageItem> _availablePackagesIt;
-        private string _searchTerm;
         private IAutomationInterface _automationInterface;
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -185,57 +189,75 @@ namespace Twinpack.Core
 
         public async Task<IEnumerable<PackageItem>> RetrieveAvailablePackagesAsync(string searchTerm = null, int? maxNewPackages = null, int batchSize = 5, CancellationToken token = default)
         {
-            if(_availablePackagesIt == null || _searchTerm != searchTerm)
-                _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize, token).GetAsyncEnumerator();
-
-            _searchTerm = searchTerm;
-            var maxPackages = _availablePackagesCache.Count + maxNewPackages;
-            while ((maxNewPackages == null || _availablePackagesCache.Count < maxPackages) && (HasMoreAvailablePackages = await _availablePackagesIt.MoveNextAsync()))
+            try
             {
-                PackageItem item = _availablePackagesIt.Current;
+                await _availablePackagesMutex.WaitAsync();
 
-                // only add if we don't have this package cached already
-                if(!_availablePackagesCache.Any(x => item.Catalog?.Name == x.Catalog?.Name))
-                    _availablePackagesCache.Add(item);
+                if (_availablePackagesIt == null || _searchTerm != searchTerm)
+                    _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize, token).GetAsyncEnumerator();
+
+                _searchTerm = searchTerm;
+                var maxPackages = _availablePackagesCache.Count + maxNewPackages;
+                while ((maxNewPackages == null || _availablePackagesCache.Count < maxPackages) && (HasMoreAvailablePackages = await _availablePackagesIt.MoveNextAsync()))
+                {
+                    PackageItem item = _availablePackagesIt.Current;
+
+                    // only add if we don't have this package cached already
+                    if (!_availablePackagesCache.Any(x => item.Catalog?.Name == x.Catalog?.Name))
+                        _availablePackagesCache.Add(item);
+                }
+
+                return _availablePackagesCache
+                        .Where(x =>
+                            searchTerm == null ||
+                            x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                            x.Catalog?.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                            x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                        ;
             }
-
-            return _availablePackagesCache
-                    .Where(x =>
-                        searchTerm == null ||
-                        x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                        x.Catalog?.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                        x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                    ;
+            finally
+            {
+                _availablePackagesMutex.Release();
+            }
         }
 
         public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, CancellationToken token = default)
         {
-            foreach (var project in _config.Projects)
+            try
             {
-                foreach (var plc in project.Plcs)
+                await _usedPackagesMutex.WaitAsync();
+
+                foreach (var project in _config.Projects)
                 {
-                    foreach (var package in plc.Packages.Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
+                    foreach (var plc in project.Plcs)
                     {
-                        PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, token);
+                        foreach (var package in plc.Packages.Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
+                        {
+                            PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, token);
 
-                        _usedPackagesCache.RemoveAll(x => x.ProjectName == project.Name && x.PlcName == plc.Name && !string.IsNullOrEmpty(x.Catalog?.Name) && x.Catalog?.Name == catalogItem.Catalog?.Name);
-                        _usedPackagesCache.Add(catalogItem);
+                            _usedPackagesCache.RemoveAll(x => x.ProjectName == project.Name && x.PlcName == plc.Name && !string.IsNullOrEmpty(x.Catalog?.Name) && x.Catalog?.Name == catalogItem.Catalog?.Name);
+                            _usedPackagesCache.Add(catalogItem);
 
-                        if (catalogItem.PackageServer == null)
-                            _logger.Warn($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) referenced in the configuration can not be found on any package server");
-                        else
-                            _logger.Info($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) located on {catalogItem.PackageServer.UrlBase}");
+                            if (catalogItem.PackageServer == null)
+                                _logger.Warn($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) referenced in the configuration can not be found on any package server");
+                            else
+                                _logger.Info($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) located on {catalogItem.PackageServer.UrlBase}");
+                        }
                     }
                 }
-            }
 
-            return _usedPackagesCache
-                    .Where(x =>
-                        searchTerm == null ||
-                        x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                        x.Catalog?.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                        x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                    ;
+                return _usedPackagesCache
+                        .Where(x =>
+                            searchTerm == null ||
+                            x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                            x.Catalog?.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
+                            x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                        ;
+            }
+            finally
+            {
+                _usedPackagesMutex.Release();
+            }
         }
 
         public async System.Threading.Tasks.Task<bool> UninstallPackagesAsync(List<PackageItem> packages, CancellationToken cancellationToken = default)

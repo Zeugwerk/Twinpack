@@ -52,7 +52,7 @@ namespace Twinpack.Protocol
             catch (TaskCanceledException ex)
             {
                 if (cancellationToken.IsCancellationRequested)
-                    throw ex;
+                    throw;
 
                 throw new TimeoutException($"Timed out during request to {request.RequestUri.Scheme}://{request.RequestUri.Host}\nTwinpack Server is unresponsive! There might be no internet connection or the server may be temporarily down! " +
                         "Please check your connection or try again later.");
