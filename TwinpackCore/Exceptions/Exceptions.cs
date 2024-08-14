@@ -48,9 +48,9 @@ namespace Twinpack.Exceptions
         }
     }
 
-    public class PackageServerTypeNotFoundException : Exception
+    public class PackageServerTypeException : Exception
     {
-        public PackageServerTypeNotFoundException(string message) : base(message)
+        public PackageServerTypeException(string message) : base(message)
         {
         }
     }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using NLog;
+using NLog.Targets;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,18 +8,21 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Twinpack.Core;
+using Twinpack.Exceptions;
 
 namespace Twinpack.Protocol
 {
     public class PackagingServerRegistry
     {
-        static string _filePath = @"%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json";
-        static List<IPackagingServerFactory> _factories;
-        static PackageServerCollection _servers;
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public static async Task InitializeAsync(bool useDefaults=false)
+        const string _filePath = @"%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json";
+        static List<IPackagingServerFactory> _factories = new List<IPackagingServerFactory>();
+        static PackageServerCollection _servers = new PackageServerCollection();
+
+        private static string FilePath { get => Environment.ExpandEnvironmentVariables(_filePath); }
+        public static async Task InitializeAsync(bool useDefaults=false, bool login=true)
         {
-            _filePath = Environment.ExpandEnvironmentVariables(_filePath);
             _factories = new List<IPackagingServerFactory>() { new NativePackagingServerFactory(), new NugetPackagingServerFactory(), new BeckhoffPackagingServerFactory() };
             _servers = new PackageServerCollection();
 
@@ -25,33 +30,48 @@ namespace Twinpack.Protocol
             {
                 await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase, login: false);
                 await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable", login: false);
+                Save();
             }
             else
             {
                 try
                 {
-                    if (!File.Exists(_filePath))
-                        throw new FileNotFoundException("Configuration file not found");
+                    if (!File.Exists(FilePath))
+                        throw new FileNotFoundException($"Configuration {FilePath} file not found");
 
-                    var sourceRepositories = JsonSerializer.Deserialize<Models.SourceRepositories>(File.ReadAllText(_filePath),
+                    var sourceRepositories = JsonSerializer.Deserialize<Models.SourceRepositories>(File.ReadAllText(FilePath),
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     foreach (var server in sourceRepositories.PackagingServers)
-                        await AddServerAsync(server.ServerType, server.Name, server.Url);
+                        await AddServerAsync(server.ServerType, server.Name, server.Url, login);
                 }
-                catch
+                catch(FileNotFoundException)
                 {
-                    await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase);
-                    await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable");
+                    throw;
+                }
+                catch(Exception ex)
+                {
+                    _logger.Trace(ex);
+                    _logger.Warn($"Failed to load {FilePath}, using default repositories");
+
+                    if(useDefaults)
+                    {
+                        await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase);
+                        await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable");
+                        Save();
+                    }
                 }
             }
         }
         public static IEnumerable<string> ServerTypes { get { return _factories.Select(x => x.ServerType); } }
-        public static PackageServerCollection Servers { get { return _servers; } }
+        public static PackageServerCollection Servers { get => _servers; }
         public static IPackageServer CreateServer(string type, string name, string uri)
         {
+            if (string.IsNullOrEmpty(name))
+                throw new PackageServerTypeException("Invalid package server type!");
+
             var factory = _factories.Where(x => x.ServerType == type).FirstOrDefault();
             if (factory == null)
-                throw new Exceptions.PackageServerTypeNotFoundException($"Generator for package server with type {type} not found");
+                throw new PackageServerTypeException($"Factory for package server with type '{type}' not found (use one of {string.Join(",", ServerTypes.Select(x => "'" + x + "'"))})");
 
             return factory.Create(name, uri);
         }
@@ -76,10 +96,23 @@ namespace Twinpack.Protocol
             Servers.ForEach(x =>
                 sourceRepositories.PackagingServers.Add(new Models.PackagingServer() { Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase }));
 
-            if (!Directory.Exists(Path.GetDirectoryName(_filePath)))
-                Directory.CreateDirectory(Path.GetDirectoryName(_filePath));
+            if (!Directory.Exists(Path.GetDirectoryName(FilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
 
-            File.WriteAllText(_filePath, JsonSerializer.Serialize(sourceRepositories, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(FilePath, JsonSerializer.Serialize(sourceRepositories, new JsonSerializerOptions { WriteIndented = true }));
+        }
+
+        public static async Task PurgeAsync()
+        {
+            if (File.Exists(FilePath))
+            {
+                foreach (var packageServer in Servers)
+                    await packageServer.LogoutAsync();
+
+                Servers.Clear();
+                File.Delete(FilePath);
+            }
+
         }
     }
 }

@@ -36,6 +36,7 @@ namespace Twinpack.Protocol
         public const string DefaultUrlBase = "https://twinpack.dev";
 
         private CachedHttpClient _client = new CachedHttpClient();
+        private bool _clientUpdateInformed;
 
         public string ServerType { get; } = "Twinpack Repository";
         public string Name { get; set; }
@@ -564,12 +565,15 @@ namespace Twinpack.Protocol
                 if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
                     CredentialManager.SaveCredentials(UrlBase, new System.Net.NetworkCredential(Username, Password));
 
-                if (IsClientUpdateAvailable)
-                    _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Download and install the lastest version at {UserInfo.UpdateUrl}");
+                if (IsClientUpdateAvailable && !_clientUpdateInformed)
+                {
+                    _clientUpdateInformed = true;
+                    _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Update at '{UserInfo.UpdateUrl}'");
+                }
 
-                //_ = RefreshTokenAsync();
+                _ = RefreshTokenAsync();
 
-                _logger.Info("Log in to Twinpack Server successful");
+                _logger.Info($"Log in to '{UrlBase}' successful");
                 return UserInfo;
             }
             catch
@@ -692,7 +696,7 @@ namespace Twinpack.Protocol
         public async Task LogoutAsync()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            _logger.Trace("Log out from Twinpack Server");
+            _logger.Info($"Removing credentials for {UrlBase}");
 
             UserInfo = new LoginPostResponse();
             Username = "";

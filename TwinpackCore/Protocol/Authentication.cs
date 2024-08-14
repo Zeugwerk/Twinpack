@@ -20,7 +20,6 @@ namespace Twinpack.Protocol
             _packageServer = packageServer;
         }
 
-
         public async Task LoginAsync(bool onlyTry = false, CancellationToken cancellationToken = default)
         {
             if (_packageServer.LoggedIn)

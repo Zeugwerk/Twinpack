@@ -19,7 +19,7 @@ namespace Twinpack.Commands
 
         public override int Execute()
         {
-            Initialize(headed: false);
+            Initialize(headed: false, requiresConfig: false);
 
             foreach (var package in _twinpack.RetrieveAvailablePackagesAsync(SearchTerm, Take).GetAwaiter().GetResult())
             {

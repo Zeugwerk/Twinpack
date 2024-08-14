@@ -19,6 +19,7 @@ using WixToolset.Dtf.WindowsInstaller.Package;
 using NuGet.Packaging.Core;
 using System.Data;
 using EnvDTE;
+using Twinpack.Exceptions;
 
 namespace Twinpack.Protocol
 {
@@ -512,6 +513,14 @@ namespace Twinpack.Protocol
 
                 if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
                     CredentialManager.SaveCredentials(Url, new System.Net.NetworkCredential(Username, Password));
+
+                _logger.Info($"Log in to '{UrlBase}' successful");
+            }
+            catch(FatalProtocolException ex)
+            {
+                _logger.Trace(ex);
+                DeleteCredential();
+                throw new LoginException(ex.Message);
             }
             catch
             {
@@ -538,7 +547,7 @@ namespace Twinpack.Protocol
         public async Task LogoutAsync()
 #pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         {
-            _logger.Trace("Log out from NuGet Server");
+            _logger.Info($"Removing credentials for {UrlBase}");
 
             UserInfo = new LoginPostResponse();
             Username = "";

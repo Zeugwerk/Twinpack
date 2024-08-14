@@ -1,6 +1,7 @@
 ﻿using NLog;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Twinpack.Configuration;
@@ -20,9 +21,9 @@ namespace Twinpack.Commands
 
         public abstract int Execute();
 
-        protected void Initialize(bool headed)
+        protected void Initialize(bool headed, bool requiresConfig = true)
         {
-            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
+            PackagingServerRegistry.InitializeAsync(useDefaults: false).GetAwaiter().GetResult();
             var rootPath = Environment.CurrentDirectory;
 
             _config = ConfigFactory.Load(rootPath);
@@ -36,10 +37,12 @@ namespace Twinpack.Commands
                     plcTypeFilter: null).GetAwaiter().GetResult();
 
                 // set filepath is null, because we don't want to save this config
-                _config.FilePath = null;
+                if(_config != null)
+                    _config.FilePath = null;
             }
 
-            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
+            if (_config == null && requiresConfig)
+                throw new FileNotFoundException($@"Configuration file (.\Zeugwerk\config.json) and/or .sln file not found");
 
             _twinpack = new TwinpackService(
                 PackagingServerRegistry.Servers,
@@ -47,8 +50,6 @@ namespace Twinpack.Commands
                     ? new VisualStudio(hidden: true).Open(_config) 
                     : new AutomationInterfaceHeadless(_config),
                 _config);
-
-            _twinpack.LoginAsync().GetAwaiter().GetResult();
         }
 
         protected List<PackageItem> CreatePackageItems(IEnumerable<string> packages, string projectName = null, string plcName = null)

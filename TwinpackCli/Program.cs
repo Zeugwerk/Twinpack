@@ -25,6 +25,7 @@ namespace Twinpack
             try
             {
                 return Parser.Default.ParseArguments<
+                    ConfigCommand,
                     SearchCommand, ListCommand,
                     DownloadCommand, 
                     AddCommand, RemoveCommand, 
@@ -32,6 +33,7 @@ namespace Twinpack
                     SetVersionCommand,
                     PullCommand, PushCommand>(args)
                     .MapResult(
+                        (ConfigCommand command) => Execute(command),
                         (SearchCommand command) => Execute(command),
                         (ListCommand command) => Execute(command),
                         (DownloadCommand command) => Execute(command),
@@ -47,8 +49,9 @@ namespace Twinpack
             }
             catch(Exception ex)
             {
-                _logger.Error(ex);
-                throw;
+                _logger.Error(ex.Message);
+                _logger.Trace(ex);
+                return -1;
             }
             finally
             {

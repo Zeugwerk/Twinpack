@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\ConfigCommand.cs" />
     <Compile Include="Commands\SetVersionCommand.cs" />
     <Compile Include="Commands\UpdateCommand.cs" />
     <Compile Include="Commands\RestoreCommand.cs" />
