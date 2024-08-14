@@ -83,6 +83,10 @@ namespace Twinpack.Core
                     root.Add(new XElement(TcNs + "QualifiedOnly", options.QualifiedOnly.ToString().ToLower()));
             }
 
+            // make sure the package is not present before adding it, we have to
+            // force, because the package might not even be installed
+            await RemovePackageAsync(package, forceRemoval: true);
+
             var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault(x => x.Name == package.PlcName);
 
             var xdoc = XDocument.Load(plcConfig.FilePath);
