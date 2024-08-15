@@ -2,7 +2,8 @@
 
 Thank you for your interest in contributing to Twinpack! We welcome contributions of all kinds—whether they are bug reports, 
 new features, documentation improvements, unit tests or system tests. To maintain a high quality of contributions and streamline 
-the development process, we follow a specific workflow. Please read through the following guidelines before getting started.
+the development process, we as maintainers follow a specific workflow. Please read through the following guidelines before getting started. Note that we are not strict regarding this flow, every contribution is welcome, wheather this guideline is followed or not by the contributor.
+The main purpose of this page is so that you understand how we, as the maintainers of this project, develop this project.
 
 ---
 
