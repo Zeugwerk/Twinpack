@@ -208,7 +208,7 @@ namespace TwinpackTests
         }
 
         [TestMethod]
-        public async Task RetrieveInstalledPackagesAsync_WithoutSearchTerm()
+        public async Task RetrieveUsedPackagesAsync_WithoutSearchTerm()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
             config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
@@ -228,7 +228,7 @@ namespace TwinpackTests
         }
 
         [TestMethod]
-        public async Task RetrieveInstalledPackagesAsync_LinkToConfig()
+        public async Task RetrieveUsedPackagesAsync_LinkToConfig()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Name = "MyProject", Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { Name = "MyPlc" } } } } };
             config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
@@ -249,7 +249,7 @@ namespace TwinpackTests
         }
 
         [TestMethod]
-        public async Task RetrieveInstalledPackagesAsync_WithSearchTerm_PackageName()
+        public async Task RetrieveUsedPackagesAsync_WithSearchTerm_PackageName()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
             config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
@@ -268,7 +268,7 @@ namespace TwinpackTests
         }
 
         [TestMethod]
-        public async Task RetrieveInstalledPackagesAsync_WithSearchTerm_DistributorName()
+        public async Task RetrieveUsedPackagesAsync_WithSearchTerm_DistributorName()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
             config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
@@ -287,7 +287,7 @@ namespace TwinpackTests
         }
 
         [TestMethod]
-        public async Task RetrieveInstalledPackagesAsync_WithSearchTerm_DisplayName()
+        public async Task RetrieveUsedPackagesAsync_WithSearchTerm_DisplayName()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
             config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
@@ -307,7 +307,7 @@ namespace TwinpackTests
         }
 
         [TestMethod]
-        public async Task RetrieveInstalledPackagesAsync_ResolvingNeeded()
+        public async Task RetrieveUsedPackagesAsync_ResolvingNeeded()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
             config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
@@ -344,6 +344,33 @@ namespace TwinpackTests
             Assert.AreEqual(null, packages[2].Config.Target);
             Assert.AreEqual("0.0.0.0", packages[2].Config.Version);
             Assert.AreEqual(null, packages[2].Used);
+        }
+
+        [DataTestMethod]
+        [DataRow(null, null, 6)]
+        [DataRow("MyProject1", "MyPlc1", 1)]
+        [DataRow("MyProject2", "MyPlc2", 1)]
+        [DataRow("MyProject3", "MyPlc3", 0)]
+        [DataRow(null, "MyPlc1", 3)]
+        public async Task RetrieveUsedPackagesAsync_ProjectAndPlcFilter(string projectName, string plcName, int expectedPackageCount)
+        {
+            var config = new Config { Projects = new List<ConfigProject> {
+                new ConfigProject { Name = "MyProject1", Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { Name = "MyPlc1" }, new ConfigPlcProject { Name = "MyPlc2" } } } ,
+                new ConfigProject { Name = "MyProject2", Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { Name = "MyPlc1" }, new ConfigPlcProject { Name = "MyPlc2" } } } ,
+                new ConfigProject { Name = "MyProject3", Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { Name = "MyPlc1" }, new ConfigPlcProject { Name = "MyPlc2" } } } ,
+                }
+            };
+            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[0].Plcs[1].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[1].Plcs[0].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[1].Plcs[1].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[2].Plcs[0].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[2].Plcs[1].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
+
+            var twinpack = new TwinpackService(_packageServers, config: config, projectName: projectName, plcName: plcName);
+            var packages = (await twinpack.RetrieveUsedPackagesAsync(searchTerm: null)).ToList();
+
+            Assert.AreEqual(expectedPackageCount, packages.Count);
         }
 
         [TestMethod]

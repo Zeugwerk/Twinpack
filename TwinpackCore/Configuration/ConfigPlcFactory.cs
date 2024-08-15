@@ -23,32 +23,9 @@ namespace Twinpack.Configuration
 
         public static XNamespace TcNs = "http://schemas.microsoft.com/developer/msbuild/2003";
 
-        public static ConfigPlcProject MapPlcConfigToPlcProj(Config config, EnvDTE.Project prj)
+        public static ConfigPlcProject MapPlcConfigToPlcProj(Config config, string plcName)
         {
-#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-
-            string xml = null;
-            ITcSysManager2 systemManager = (prj.Object as dynamic).SystemManager as ITcSysManager2;
-            ITcSmTreeItem plcs = systemManager.LookupTreeItem("TIPC");
-            foreach (ITcSmTreeItem9 plc in plcs)
-            {
-                if (plc is ITcProjectRoot && plc.Name == prj.Name)
-                {
-                    xml = plc.ProduceXml();
-                    break;
-                }
-            }
-
-            if (xml != null)
-            {
-                string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
-                var plcName = System.IO.Path.GetFileNameWithoutExtension(projectPath);
-                return config.Projects.SelectMany(x => x.Plcs).FirstOrDefault(x => x.Name == plcName);
-                //return config.Projects.FirstOrDefault(x => x.Name == prj.Name)?.Plcs?.FirstOrDefault(x => x.Name == plcName);
-            }
-#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
-
-            return null;
+            return config.Projects.SelectMany(x => x.Plcs).FirstOrDefault(x => x.Name == plcName);
         }
 
         public static Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, Protocol.IPackageServer packageServer, CancellationToken cancellationToken = default)
@@ -265,8 +242,9 @@ namespace Twinpack.Configuration
                 plc.References["*"].Add($"{r.Name}={r.Version ?? "*"}");
             }
 
-            plc.Type = GuessPlcType(plc).ToString();
-            return plc;
+         
+
+            plc.Type = GuessPlcType(plc).ToString();return plc;
         }
 
         public static ConfigPlcProject.PlcProjectType GuessPlcType(ConfigPlcProject plc)

@@ -121,7 +121,7 @@ namespace Twinpack.Dialogs
                         if (config != null)
                         {
                             LoadingText = "Loading package configuration ...";
-                            _plcConfig = ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, _plc);
+                            _plcConfig = ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, _plc?.Name);
                         }
                         else
                         {

@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.Shell;
 using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Data;
 
 namespace Twinpack.Dialogs
@@ -19,22 +20,24 @@ namespace Twinpack.Dialogs
     [Guid("41e9fc85-6fd5-4cfb-86cc-808fb1ebdbf9")]
     public class CatalogPane : ToolWindowPane
     {
+        private CatalogWindow _catalogWindow;
         private PackageContext _context;
         public CatalogPane(PackageContext context) : base(null)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
+            _catalogWindow = new CatalogWindow(_context);
             _context = context;
-            Update();
+
+            Content = _catalogWindow;
         }
 
-        public void Update()
+        public async System.Threading.Tasks.Task InitializeAsync()
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var plc = _context.VisualStudio.ActiveProject();
+            var plc = _context.VisualStudio.ActivePlc();
+            await _catalogWindow.InitializeAsync();
 
-            var catalogWindow = new CatalogWindow(_context);
-            Content = catalogWindow;
             Caption = $"Twinpack: {plc?.Name ?? "No Context"}";
         }
     }

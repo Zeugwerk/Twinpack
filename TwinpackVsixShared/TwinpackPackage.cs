@@ -73,8 +73,9 @@ namespace Twinpack
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(TwinpackPackage.PackageGuidString)]
     [ProvideToolWindow(typeof(Dialogs.CatalogPane), 
-        Orientation = ToolWindowOrientation.Right,
-        Window = EnvDTE.Constants.vsWindowKindMainWindow,
+        Orientation = ToolWindowOrientation.Left,
+        MultiInstances = false,
+        Transient = true,
         Style = VsDockStyle.Tabbed)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class TwinpackPackage : AsyncPackage, IVsSolutionEvents

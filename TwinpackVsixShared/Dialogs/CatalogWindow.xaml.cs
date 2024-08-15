@@ -30,8 +30,8 @@ namespace Twinpack.Dialogs
         SelectionChangedEventHandler _packageServerChange;
 
         private PackageContext _context;
-        private EnvDTE.Project _activeProject;
 
+        private string _configFilePath;
         private ConfigPlcProject _plcConfig;
 
         private List<PlcVersion> _packageVersions = new List<PlcVersion>();
@@ -42,7 +42,7 @@ namespace Twinpack.Dialogs
         private const int _itemsPerPage = 10;
 
         private bool _isUpdateAvailable = false;
-        private bool _isLoadingPlcConfig = false;
+        private bool _isLoadingConfig = false;
         private bool _isPackageVersionsAvailable = false;
 
         private string _searchTerm = "";
@@ -52,6 +52,7 @@ namespace Twinpack.Dialogs
         private bool _isBrowsingInstalledPackages;
         private bool _isBrowsingUpdatablePackages;
 
+        private bool _isDialogLoaded;
         private bool _isCatalogLoading;
         private bool _isPackageLoading;
         private bool _isPackageVersionLoading;
@@ -404,17 +405,25 @@ namespace Twinpack.Dialogs
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
+            await InitializeAsync();
+            _isDialogLoaded = true;
+        }
+
+        public async Task InitializeAsync()
+        {
+            if (!_isDialogLoaded)
+                return;
+
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
+
+            var activePlc = _context.VisualStudio.ActivePlc();
 
             try
             {
-                _activeProject = _context.VisualStudio.ActiveProject();
-
-                var config = await LoadPlcConfigAsync(Token);
-                _twinpack = new TwinpackService(PackagingServerRegistry.Servers, _context.VisualStudio.AutomationInterface, config);
+                var config = await LoadConfigAsync(activePlc?.Name, Token);
+                _twinpack = new TwinpackService(PackagingServerRegistry.Servers, _context.VisualStudio.AutomationInterface, config, plcName: activePlc?.Name);
 
                 _twinpack.InvalidateCache();
-                await UpdateCatalogAsync();
                 ResetServerSelection();
 
                 if (!IsConfigured)
@@ -428,8 +437,7 @@ namespace Twinpack.Dialogs
                     IsBrowsingAvailablePackages = !IsBrowsingInstalledPackages;
                 }
 
-                await _twinpack.RetrieveAvailablePackagesAsync(_searchTerm, 10);
-                await UpdateCatalogAsync();
+                await UpdateCatalogAsync(_searchTerm, maxNewPackages: 10);
             }
             catch (Exception ex)
             {
@@ -446,52 +454,51 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async Task<Config> LoadPlcConfigAsync(CancellationToken cancellationToken)
+        public async Task<Config> LoadConfigAsync(string plcName, CancellationToken cancellationToken)
         {
-            if (_activeProject != null)
+            if (plcName == null)
             {
-                try
-                {
-                    _isLoadingPlcConfig = true;
-                    await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-
-                    var config = ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
-                    if(config == null)
-                    {
-                        config = await ConfigFactory.CreateFromSolutionFileAsync(Path.GetDirectoryName(_context.Solution.FullName), continueWithoutSolution: false, packageServers: _twinpack.PackageServers.Where(x => x.Connected), cancellationToken: cancellationToken);
-                        config.FilePath = null; // we don't want to save to a file
-                    }
-                    _plcConfig = ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, _activeProject);
-
-                    IsCreateConfigVisible = config == null || _plcConfig == null;
-                    IsMigrateConfigVisible = config != null && _plcConfig?.Packages?.Any() == false && _plcConfig?.Frameworks?.Zeugwerk?.References?.Any() == true;
-                    IsConfigured = _plcConfig != null;
-
-                    return config;
-                }
-                catch (Exception ex)
-                {
-                    IsCreateConfigVisible = true;
-                    IsMigrateConfigVisible = false;
-                    IsConfigured = false;
-                    _plcConfig = null;
-                    _logger.Trace(ex);
-                    _logger.Error(ex.Message);
-                }
-                finally
-                {
-                    _isLoadingPlcConfig = false;
-                }
-            }
-            else
-            {
-                _isLoadingPlcConfig = false;
+                _isLoadingConfig = false;
                 IsCreateConfigVisible = false;
                 IsMigrateConfigVisible = false;
                 IsConfigured = false;
+                return null;
             }
 
-            _plcConfig = null;
+            try
+            {
+                _isLoadingConfig = true;
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+                var config = ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
+                if(config == null)
+                {
+                    config = await ConfigFactory.CreateFromSolutionFileAsync(Path.GetDirectoryName(_context.Solution.FullName), continueWithoutSolution: false, packageServers: PackagingServerRegistry.Servers.Where(x => x.Connected), cancellationToken: cancellationToken);
+                    _configFilePath = config.FilePath;
+                    config.FilePath = null; // we don't want to save to a file
+                }
+                _plcConfig = ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, plcName);
+
+                IsCreateConfigVisible = config.FilePath == null;
+                IsMigrateConfigVisible = config != null && _plcConfig?.Packages?.Any() == false && _plcConfig?.Frameworks?.Zeugwerk?.References?.Any() == true;
+                IsConfigured = _plcConfig != null;
+
+                return config;
+            }
+            catch (Exception ex)
+            {
+                IsCreateConfigVisible = true;
+                IsMigrateConfigVisible = false;
+                IsConfigured = false;
+                _plcConfig = null;
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
+            finally
+            {
+                _isLoadingConfig = false;
+            }
+
             return null;
         }
 
@@ -531,7 +538,7 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 await UpdateCatalogAsync();
 
-                _logger.Info($"Successfully removed {_catalogItem.PackageVersion?.Name} from {_activeProject.Name} references");
+                _logger.Info($"Successfully removed {_catalogItem.PackageVersion?.Name}");
                 _logger.Info("Finished\n");
             }
             catch (Exception ex)
@@ -575,7 +582,7 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 await UpdateCatalogAsync();
 
-                _logger.Info($"Successfully added {_catalogItem.PackageVersion?.Name} to {_activeProject.Name} references");
+                _logger.Info($"Successfully added {_catalogItem.PackageVersion?.Name}");
                 _logger.Info("Finished\n");
             }
             catch (OperationCanceledException ex)
@@ -617,7 +624,7 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, Token);
+                await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, Token);
                 await UpdateCatalogAsync();
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -658,7 +665,7 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await _twinpack.UpdatePackagesAsync(new TwinpackService.UpdatePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, Token);
+                await _twinpack.UpdatePackagesAsync(new TwinpackService.UpdatePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, Token);
                 await UpdateCatalogAsync();
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -1189,54 +1196,16 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
                 await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
-                _logger.Info($"Creating package configuration");
+                _logger.Info($"Creating package configuration at {_configFilePath}");
 
-                var config = await ConfigFactory.CreateFromSolutionAsync(_context.Solution, _twinpack.PackageServers.Where(x => x.Connected), cancellationToken: Token);
-
-                if (config == null)
-                {
-                    throw new Exception("Generating the configuration file failed, please create the configuration file manually!");
-                }
-                else
-                {
-                    _logger.Info($"Detected {config?.Projects?.SelectMany(x => x.Plcs)?.SelectMany(x => x.Packages)?.Count()} Twinpack packages and {config?.Projects?.SelectMany(x => x.Plcs)?.SelectMany(x => x.References)?.Count()} other references");
-
-                    IsCreateConfigVisible = false;
-                    var path = ConfigFactory.Save(config);
-
-                    if (MessageBoxResult.Yes == MessageBox.Show($"The configuration file was successfully created " +
-                        $"in {config.FilePath} for your TwinCAT solution, do you want to " +
-                        $"review and/or edit it?", "Configuration", MessageBoxButton.YesNo))
-                    {
-                        var process = new System.Diagnostics.Process
-                        {
-                            StartInfo = new ProcessStartInfo
-                            {
-                                FileName = "notepad.exe",
-                                Arguments = path,
-                                UseShellExecute = true
-                            }
-                        };
-
-                        process.Start();
-                        process.WaitForExit();
-                    }
-
-                    await LoadPlcConfigAsync(Token);
-                    await _twinpack.RetrieveUsedPackagesAsync(_searchTerm, token: Token);
-                }
+                _twinpack.Save(_configFilePath);
+                IsCreateConfigVisible = false;
             }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
-            }
-            finally
-            {
-                IsCatalogEnabled = true;
-                IsPackageVersionPanelEnabled = _plcConfig != null;
             }
         }
 

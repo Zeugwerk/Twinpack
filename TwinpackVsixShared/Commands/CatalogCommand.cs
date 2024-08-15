@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using NLog;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Globalization;
 using System.Threading;
@@ -84,8 +85,15 @@ namespace Twinpack.Commands
                     throw new NotSupportedException("Cannot create tool window");
                 }
 
-                (window as Dialogs.CatalogPane).Update();
+                await (window as Dialogs.CatalogPane).InitializeAsync();
                 IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
+                if(windowFrame != null)
+                {
+                    windowFrame.GetProperty((int)__VSFPROPID.VSFPROPID_FrameMode, out object currentFrameMode);
+                    if((VSFRAMEMODE)currentFrameMode == VSFRAMEMODE.VSFM_Float)
+                        windowFrame.SetProperty((int)__VSFPROPID.VSFPROPID_FrameMode, VSFRAMEMODE.VSFM_Dock);
+
+                }
                 Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
             }
             catch(Exception ex)

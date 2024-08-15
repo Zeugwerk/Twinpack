@@ -82,15 +82,19 @@ namespace Twinpack.Core
 
         private PackageServerCollection _packageServers;
         private Config _config;
+        private string _projectName;
+        private string _plcName;
         private IAutomationInterface _automationInterface;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public TwinpackService(PackageServerCollection packageServers, IAutomationInterface automationInterface=null, Config config=null)
+        public TwinpackService(PackageServerCollection packageServers, IAutomationInterface automationInterface=null, Config config=null, string projectName=null, string plcName=null)
         {
             _packageServers = packageServers;
             _automationInterface = automationInterface;
             _config = config;
+            _projectName = projectName;
+            _plcName = plcName;
         }
 
         public IEnumerable<IPackageServer> PackageServers { get => _packageServers; }
@@ -98,7 +102,6 @@ namespace Twinpack.Core
         public bool HasUnknownPackages { get => UsedPackages.Any(x => x.Catalog?.Name == null) == true; }
         public IEnumerable<PackageItem> UsedPackages { get => _usedPackagesCache; }
         public IEnumerable<PackageItem> AvailablePackages { get => _availablePackagesCache; }
-
         private void CopyRuntimeLicenseIfNeeded(IEnumerable<PackageItem> packages)
         {
             var knownLicenseIds = KnownRuntimeLicenseIds();
@@ -143,6 +146,14 @@ namespace Twinpack.Core
                     }
                 }
             }
+        }
+
+        public void Save(string filePath)
+        {
+            _automationInterface?.SaveAll();
+
+            _config.FilePath = filePath;
+            ConfigFactory.Save(_config);
         }
 
         public static string ParseRuntimeLicenseIdFromTmc(string content)
@@ -227,9 +238,9 @@ namespace Twinpack.Core
             {
                 await _usedPackagesMutex.WaitAsync();
 
-                foreach (var project in _config.Projects)
+                foreach (var project in _config.Projects.Where(x => x.Name == _projectName || _projectName == null))
                 {
-                    foreach (var plc in project.Plcs)
+                    foreach (var plc in project.Plcs.Where(x => x.Name == _plcName || _plcName == null))
                     {
                         foreach (var package in plc.Packages.Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
                         {

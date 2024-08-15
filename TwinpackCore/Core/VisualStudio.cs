@@ -360,7 +360,7 @@ namespace Twinpack.Core
         }
 
         // todo: do we actually need to return EnvDTE.Project ?
-        public EnvDTE.Project ActiveProject()
+        public EnvDTE.Project ActivePlc()
         {
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
 
