@@ -196,7 +196,7 @@
 
             <Grid Margin="0 0 0 10" Grid.Column="0" Grid.Row="1" 
                   IsEnabled="{Binding IsCatalogEnabled}"
-                  Visibility="{Binding Twinpack.HasMoreAvailablePackages, Converter={StaticResource BooleanToVisibilityConverter}}">
+                  Visibility="{Binding HasMoreAvailablePackages, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="auto"></ColumnDefinition>

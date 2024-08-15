@@ -25,8 +25,8 @@ namespace Twinpack.Dialogs
         public CatalogPane(PackageContext context) : base(null)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            _catalogWindow = new CatalogWindow(_context);
             _context = context;
+            _catalogWindow = new CatalogWindow(_context);
 
             Content = _catalogWindow;
         }

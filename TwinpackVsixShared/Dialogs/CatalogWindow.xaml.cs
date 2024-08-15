@@ -131,6 +131,17 @@ namespace Twinpack.Dialogs
             }
         }
 
+        bool _hasMoreAvailablePackages;
+        public bool HasMoreAvailablePackages
+        {
+            get { return _hasMoreAvailablePackages; }
+            set
+            {
+                _hasMoreAvailablePackages = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasMoreAvailablePackages)));
+            }
+        }
+
         public int InstalledPackagesCount { get => _twinpack?.UsedPackages.Count() ?? 0; }
 
         public int UpdateablePackagesCount { get => _twinpack?.UsedPackages.Count(x => x.IsUpdateable) ?? 0; }
@@ -376,9 +387,10 @@ namespace Twinpack.Dialogs
 
             _packageServerChange = new SelectionChangedEventHandler(Reload);
 
-            IsInitializing = true;
             IsCatalogEnabled = true;
             ForcePackageVersionDownload = true;
+            AddDependencies = true;
+
             Catalog = new List<PackageItem>();
             DataContext = this;
 
@@ -405,7 +417,7 @@ namespace Twinpack.Dialogs
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            await InitializeAsync();
+            await InitializeInternalAsync();
             _isDialogLoaded = true;
         }
 
@@ -414,16 +426,25 @@ namespace Twinpack.Dialogs
             if (!_isDialogLoaded)
                 return;
 
+            await InitializeInternalAsync();
+        }
+
+        protected async Task InitializeInternalAsync()
+        {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
 
             var activePlc = _context.VisualStudio.ActivePlc();
 
             try
             {
+                IsInitializing = true;
+
+                Catalog = new List<PackageItem>();
+                _catalogItem.Invalidate();
+
                 var config = await LoadConfigAsync(activePlc?.Name, Token);
                 _twinpack = new TwinpackService(PackagingServerRegistry.Servers, _context.VisualStudio.AutomationInterface, config, plcName: activePlc?.Name);
 
-                _twinpack.InvalidateCache();
                 ResetServerSelection();
 
                 if (!IsConfigured)
@@ -807,6 +828,7 @@ namespace Twinpack.Dialogs
 
                 IsUpdateAllVisible = IsBrowsingUpdatablePackages && Catalog.Any();
                 IsRestoreAllVisible = IsBrowsingInstalledPackages && Catalog.Any();
+                HasMoreAvailablePackages = _twinpack.HasMoreAvailablePackages;
 
                 // remap catalogItem
                 if (_catalogItem != null)
