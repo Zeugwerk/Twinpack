@@ -547,7 +547,6 @@ namespace Twinpack.Protocol
         public async Task LogoutAsync()
 #pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         {
-            _logger.Info($"Removing credentials for {UrlBase}");
 
             UserInfo = new LoginPostResponse();
             Username = "";
@@ -555,7 +554,11 @@ namespace Twinpack.Protocol
 
             try
             {
-                CredentialManager.RemoveCredentials(UrlBase);
+                if (CredentialManager.GetCredentials(UrlBase) != null)
+                {
+                    _logger.Info($"Removing existing credentials for {UrlBase}");
+                    CredentialManager.RemoveCredentials(UrlBase);
+                }
             }
             catch (Exception) { }
         }

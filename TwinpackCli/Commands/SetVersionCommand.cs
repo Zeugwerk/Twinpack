@@ -27,7 +27,7 @@ namespace Twinpack.Commands
         [Option("configuration", Required = false, Default = null, HelpText = "Together with 'sync-framework-packages', the preferred configuration of framework packages")]
         public string? PreferredFrameworkConfiguration { get; set; }
 
-        [Option("headed", Required = false, Default = false, HelpText = "Use Beckhoff Automation Interface, some actions are not available without this argument")]
+        [Option("headed", Required = false, Default = false, HelpText = "Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
         public bool Headed { get; set; }
         public override int Execute()
         {

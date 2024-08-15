@@ -5,19 +5,19 @@ using Twinpack.Core;
 
 namespace Twinpack.Commands
 {
-    [Verb("remove", HelpText = @"Downloads package(s) using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    [Verb("remove", HelpText = @"Removes package(s) from the specified project and PLC using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
     public class RemoveCommand : Command
     {
-        [Option("project", Required = true, HelpText = "Name of the project, where packages should be added")]
+        [Option("project", Required = true, HelpText = "The name of the project from which the packages should be removed.")]
         public string ProjectName { get; set; }
 
-        [Option("plc", Required = true, HelpText = "Name of the plc, where packages should be added")]
+        [Option("plc", Required = true, HelpText = "The name of the PLC from which the packages should be removed.")]
         public string PlcName { get; set; }
 
-        [Option("package", Required = false, HelpText = "Package(s) to handle")]
+        [Option("package", Required = false, HelpText = "The package(s) to be removed. If not specified, all packages related to the project and PLC will be considered.")]
         public IEnumerable<string> Packages { get; set; }
 
-        [Option("headed", Required = false, Default = false, HelpText = "Use Beckhoff Automation Interface, some actions are not available without this argument")]
+        [Option("headed", Required = false, Default = false, HelpText = "Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
         public bool Headed { get; set; }
 
         public override int Execute()

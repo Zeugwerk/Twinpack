@@ -20,9 +20,9 @@ namespace Twinpack.Commands
         [Option("include-provided-packages", Required = false, Default = null, HelpText = "Restore packages, which are provided by the configuration (Plcs, which are also packages themselves)")]
         public bool IncludeProvidedPackages { get; set; }
         public IEnumerable<string> Configurations { get; set; }
-        [Option("force", Required = false, Default = null, HelpText = "Download packages even if they are already available on the system")]
+        [Option("force-download", Required = false, Default = null, HelpText = "Forces the download of package(s) even if they are already available on the system.")]
         public bool ForceDownload { get; set; }
-        [Option("headed", Required = false, Default = false, HelpText = "Use Beckhoff Automation Interface, some actions are not available without this argument")]
+        [Option("headed", Required = false, Default = false, HelpText = "Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
         public bool Headed { get; set; }
         public override int Execute()
         {

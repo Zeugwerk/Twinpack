@@ -8,7 +8,7 @@ using Twinpack.Protocol;
 
 namespace Twinpack.Commands
 {
-    [Verb("search", HelpText = @"Searches all given sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json using the query string provided")]
+    [Verb("list", HelpText = @"Searches all package sources defined in the configuration file located at ./Zeugwerk/config.json, or in the first solution found in the current directory.")]
     public class SearchCommand : Command
     {
         [Value(0, MetaName = "search term", Required = false)]

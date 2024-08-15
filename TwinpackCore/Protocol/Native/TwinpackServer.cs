@@ -696,15 +696,17 @@ namespace Twinpack.Protocol
         public async Task LogoutAsync()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            _logger.Info($"Removing credentials for {UrlBase}");
-
             UserInfo = new LoginPostResponse();
             Username = "";
             Password = "";
 
             try
             {
-                CredentialManager.RemoveCredentials(UrlBase);
+                if(CredentialManager.GetCredentials(UrlBase) != null)
+                {
+                    _logger.Info($"Removing existing credentials for {UrlBase}");
+                    CredentialManager.RemoveCredentials(UrlBase);
+                }
             }
             catch (Exception) { }
         }
