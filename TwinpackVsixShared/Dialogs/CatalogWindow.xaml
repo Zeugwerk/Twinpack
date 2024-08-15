@@ -445,8 +445,7 @@
                                     <RowDefinition Height="auto"></RowDefinition>
                                 </Grid.RowDefinitions>
                                 <CheckBox Grid.Row="0"
-                                          DataContext="{Binding Options}"
-                                          IsChecked="{Binding AddDependenciesAsReferences}">
+                                          IsChecked="{Binding AddDependencies}">
                                     <TextBlock>Add dependencies as references</TextBlock>
                                 </CheckBox>
                                 <Expander Grid.Row="1" Margin="-1" Padding="0" Header="Advanced" FlowDirection="RightToLeft" >
