@@ -17,7 +17,7 @@ The main purpose of this page is so that you understand how we, as the maintaine
 
 ---
 
-## 1. Getting Started
+## Getting Started
 
 1. **Fork the repository** to your own GitHub account.
 2. **Clone your fork**:
@@ -29,7 +29,7 @@ The main purpose of this page is so that you understand how we, as the maintaine
 4. Create a new branch to work on a specific feature or bugfix (see Branching Strategy).
 
 
-## 2. Branching Strategy
+## Branching Strategy
 We use a branching strategy, which is a combination of Release Flow and trunk-based development . Here's how to manage your branches:
 
 * **main branch:** This branch contains the latest development code and features that are under active development. Usually features and fixes are developed directly in the main branch (if they have only few number of expected commits). **This branch might not always be in a stable state**. 
@@ -38,7 +38,7 @@ We use a branching strategy, which is a combination of Release Flow and trunk-ba
 * **fix branches:** Use fix branches for fixes. Branch off from main using the prefix fix/. Example: fix/fix-crash-on-startup. If possible, fixes will be cherry-picked to at least to the latest, affected release branch.
 
 
-## 3. Conventional Commits
+## Conventional Commits
 We use the Conventional Commits specification to enforce a consistent commit history. For every commit that is merged into main or a release, the commit message must have the following format.
 Note that this does not include commits in branch IF the commits are squashed before merging.
 
