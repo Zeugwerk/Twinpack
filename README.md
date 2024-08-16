@@ -107,17 +107,17 @@ After the initial upload of your library as a package, you may publish newer ver
 
 ## Commandline interface (CLI)
 
-Twinpack provides several commands to manage and configure packages for your projects and PLCs via the commandline rather than the IDE - This is very useful for CI/CD. Note that all commands by default will not use Beckhoff's Automation Interface and instead manipulate files directly, installing and uninstalling packages on the system is not possible here, instead you have to manually install them via 'RepTool'. However, it is possible to a `--headed` argument to make twinpack perform the actions with the Automation Interface instead, which enables imstalling and uninstalling as well if needed.
+Twinpack provides several commands to manage and configure packages for your projects and PLCs via the commandline rather than the IDE - This is very useful for CI/CD. Note that all commands by default will not use Beckhoff's Automation Interface and instead manipulate files directly. Installing and uninstalling packages on the system is not possible with only file manipulations, instead you have to manually install the downloaded packages via 'RepTool'. However, it is also possible to pass a `--headed` argument to make twinpack perform the actions with the Automation Interface instead, which enables installing and uninstalling as well if needed.
 Below is a brief summary of the available commands, along with example usage. For more detailed information, you can always use the `--help` option with any command.
 
 ### `config`
 
-Configures or modifies the package source repositories used by Twinpack.
+Configures or modifies the package source repositories used by Twinpack. The configuration is saved in "%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json", login information is stored in the (Windows Credentials Manager)[https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0].
 
 **Example Usage:**
 ```bash
-twinpack.exe config --source https://my-packages.com
-twinpack.exe config --purge --source https://my-packages.com
+twinpack.exe config --source https://my-packages.com --type "Beckhoff Repository"
+twinpack.exe config --purge --source "https://my-packages.com" --type "NuGet Repository" --username "MyUsername" --password "MyPassword"
 twinpack.exe config --reset
 ```
 
