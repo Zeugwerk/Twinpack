@@ -101,6 +101,87 @@ This is the most straight forward way to publish a package if you want to publis
 
 After the initial upload of your library as a package, you may publish newer versions of your library or you can also modify the current version by right clicking on the PLC item and then on **Twinpack** -> **Modify...**. Users of Twinpack will be notified whenever a newer version is available in the Twinpack Catalog.
 
+## Commandline interface (CLI)
+
+Twinpack provides several commands to manage and configure packages for your projects and PLCs. Below is a brief summary of the available commands, along with example usage. For more detailed information, you can always use the `--help` option with any command.
+
+### `config`
+
+Configures or modifies the package source repositories used by Twinpack.
+
+**Example Usage:**
+```bash
+twinpack.exe config --source https://my-packages.com
+twinpack.exe config --purge --source https://my-packages.com
+twinpack.exe config --reset
+```
+
+### `search`
+Searches packages in all configured package sources
+
+**Example Usage:**
+```bash
+twinpack.exe search
+twinpack.exe search MySearchTerm
+```
+
+### `list`
+Lists packages configured in the .Zeugwerk/config.json file or the first solution found in the current directory.
+
+**Example Usage:**
+```bash
+twinpack.exe list --plc MainPLC
+twinpack.exe list MySearchTerm
+```
+
+### `download`
+Downloads package(s) from the configured sources to your system.
+
+**Example Usage:**
+```bash
+twinpack.exe download --package PackageName
+twinpack.exe download --package PackageName --version 2.3.4
+```
+
+### `set-version`
+
+Sets the version of the PLC(s). If a PLC is part of a larger framework, the command can also be used to update all packages, which are part of the same framework.
+
+**Example Usage:**
+```bash
+twinpack.exe set-version 1.1.0
+twinpack.exe set-version 1.1.0 --plc MyPlc
+twinpack.exe set-version 1.1.0 --plc MyPlc --sync-framework-packages
+```
+
+
+### `add`
+
+Adds package(s) to a specified project and PLC using the configured sources. The command downloads, installs and adds the packages to the PLĆ's references - including dependencies if requested
+
+**Example Usage:**
+```bash
+twinpack.exe add --project MyProject --plc MainPLC --package PackageName
+twinpack.exe add --project MyProject --plc MainPLC --package PackageName --version 1.0.0
+```
+
+### `remove`
+Removes package(s) from a specified project and PLC.
+
+**Example Usage:**
+```bash
+twinpack.exe remove --project MyProject --plc MainPLC --package PackageName
+twinpack.exe remove --project MyProject --plc MainPLC
+```
+
+### `help`
+For detailed information about each command and its available options, you can use the --help argument:
+
+**Example Usage:**
+```bash
+twinpack.exe <command> --help
+```
+
 
 ## Further information
 
