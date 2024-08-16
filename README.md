@@ -59,12 +59,12 @@ Twinpack supports the NuGet protocol for packages, including repositories hosted
 - Public Beckhoff Repository: `https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable`, log in in is mandatory. Use your Beckhoff credentials to connect. If you don't have a Beckhoff login, register [here](https://www.beckhoff.com/en-en/mybeckhoff-registration/index.aspx).
 
 
-## Share a Package ...
+## Share a Package
 
 There are multiple ways to publish a package on Twinpack and you can chose how you want to publish your packages depending on how you want to create releases.
 
 
-### with the Twinpack Registry
+### ... with the Twinpack Registry
 
 The most straight forward way to publish a package, which you release on GitHub anyway, is to use the [Twinpack Registry](https://github.com/Zeugwerk/Twinpack-Registry).
 
@@ -73,14 +73,14 @@ The most straight forward way to publish a package, which you release on GitHub 
 
 
 
-### with a GitHub workflow
+### ... with a GitHub workflow
 
 If you have a CI/CD environment it can be benefical to you to upload your package by using the Twinpack Commandline interface (see the `TwinpackCli` project in Twinpack). For GitHub, we tried to streamline this process as much as possible by providing a GitHub action, which will do this for you, see [twinpack-action](https://github.com/Zeugwerk/twinpack-action) for details.
 
 Note, if you don't have your own CI/CD environment, this [action](https://github.com/Zeugwerk/zkbuild-action) can be used to implement CI/CD on the Zeugwerk CI/CD environment, unlike Twinpack we can only provide this environment free of charge in a limited amount (at the moment 30 buildactions / month)
 
 
-### manually in your IDE
+### ... manually in your IDE
 
 This is the most straight forward way to publish a package if you want to publish your library directly from your IDE
 
@@ -103,7 +103,7 @@ After the initial upload of your library as a package, you may publish newer ver
 
 ## Commandline interface (CLI)
 
-Twinpack provides several commands to manage and configure packages for your projects and PLCs. Below is a brief summary of the available commands, along with example usage. For more detailed information, you can always use the `--help` option with any command.
+Twinpack provides several commands to manage and configure packages for your projects and PLCs - This is very useful for CI/CD. Below is a brief summary of the available commands, along with example usage. For more detailed information, you can always use the `--help` option with any command.
 
 ### `config`
 
