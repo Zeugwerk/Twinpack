@@ -112,7 +112,7 @@ Below is a brief summary of the available commands, along with example usage. Fo
 
 ### `config`
 
-Configures or modifies the package source repositories used by Twinpack. The configuration is saved in "%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json", login information is stored in the (Windows Credentials Manager)[https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0].
+Configures or modifies the package source repositories used by Twinpack. The configuration is saved in "%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json", login information is stored in the [Windows Credentials Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0).
 
 **Example Usage:**
 ```bash
