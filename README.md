@@ -10,6 +10,8 @@ The Twinpack Package Manager is a powerful and user-friendly package management 
 - [Registration](https://zeugwerk.dev/wp-login.php?action=register), only needed to "push" package, i.e. if you want to publish packages manually or with CI
 - [Contact us](mailto:info@zeugwerk.at)
 
+---
+
 ## Installation
 
 To use the Twinpack Package Manager, follow these steps:
