@@ -107,7 +107,8 @@ After the initial upload of your library as a package, you may publish newer ver
 
 ## Commandline interface (CLI)
 
-Twinpack provides several commands to manage and configure packages for your projects and PLCs - This is very useful for CI/CD. Below is a brief summary of the available commands, along with example usage. For more detailed information, you can always use the `--help` option with any command.
+Twinpack provides several commands to manage and configure packages for your projects and PLCs via the commandline rather than the IDE - This is very useful for CI/CD. Note that all commands by default will not use Beckhoff's Automation Interface and instead manipulate files directly, installing and uninstalling packages on the system is not possible here, instead you have to manually install them via 'RepTool'. However, it is possible to a `--headed` argument to make twinpack perform the actions with the Automation Interface instead, which enables imstalling and uninstalling as well if needed.
+Below is a brief summary of the available commands, along with example usage. For more detailed information, you can always use the `--help` option with any command.
 
 ### `config`
 
