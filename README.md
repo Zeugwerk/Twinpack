@@ -140,7 +140,7 @@ twinpack.exe list MySearchTerm
 ```
 
 ### `download`
-Downloads package(s) from the configured sources to your system.
+Downloads package(s) from the configured sources to your system, the download folder is ".Zeugwerk/libraries".
 
 **Example Usage:**
 ```bash
