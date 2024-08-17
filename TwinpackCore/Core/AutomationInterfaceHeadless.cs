@@ -39,7 +39,7 @@ namespace Twinpack.Core
         protected override Version MinVersion => new Version(3, 1, 4024, 0);
         protected override Version MaxVersion => null;
 
-        public override string SolutionPath { get => Path.GetDirectoryName(_config.FilePath); }
+        public override string SolutionPath { get => Path.GetFullPath(_config.WorkingDirectory); }
 
         public override void SaveAll()
         {

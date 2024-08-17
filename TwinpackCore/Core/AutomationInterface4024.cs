@@ -43,7 +43,7 @@ namespace Twinpack.Core
             await _synchronizationContext;
         }
 
-        public override string SolutionPath { get => Path.GetDirectoryName(_visualStudio.Solution.FullName); }
+        public override string SolutionPath { get => Path.GetFullPath(Path.GetDirectoryName(_visualStudio.Solution.FullName)); }
 
         public override void SaveAll()
         {

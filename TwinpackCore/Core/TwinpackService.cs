@@ -325,13 +325,13 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task<List<PackageItem>> RestorePackagesAsync(RestorePackageOptions options = default, CancellationToken cancellationToken = default)
         {
-            if (options?.PurgePackages == true)
+            if (options?.PurgePackages == true && _automationInterface != null)
             {
                 foreach(var project in _config.Projects)
                 {
                     foreach (var plc in project.Plcs)
                     {
-                        await _automationInterface?.RemoveAllPackagesAsync(project.Name, plc.Name);
+                        await _automationInterface.RemoveAllPackagesAsync(project.Name, plc.Name);
                     }
                 }
             }
@@ -584,7 +584,9 @@ namespace Twinpack.Core
             foreach(var plc in plcs)
             {
                 plc.Version = version;
-                await _automationInterface?.SetPackageVersionAsync(plc, cancellationToken);
+
+                if(_automationInterface != null)
+                    await _automationInterface.SetPackageVersionAsync(plc, cancellationToken);
             }
 
             // also include all framework packages if required

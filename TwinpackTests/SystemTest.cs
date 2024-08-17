@@ -113,6 +113,12 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task SolutionPath_Async()
+        {
+            Assert.AreEqual(System.Environment.CurrentDirectory + @"\assets\TestSolution", _automationInterface.SolutionPath);
+        }
+
+        [TestMethod]
         public async Task AddPackage_WithDependency_Async()
         {
             var packageServers = new PackageServerCollection { _packageServer };
