@@ -25,16 +25,23 @@ namespace Twinpack.Core
         protected System.Timers.Timer _timeout;
         MessageFilter _filter;
 
-        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        protected readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public string OutputTcVersion { get; private set; }
-        public string UsedTcVersion { get; private set; }
+        public string OutputTcVersion { get; protected set; }
+        public string UsedTcVersion { get; protected set; }
         public DTE2 Dte => _dte;
         public EnvDTE.Solution Solution => _solution;
+
+        protected List<IAutomationInterface> _automationInterfaces;
         public IAutomationInterface AutomationInterface { get { return _automationInterface ?? EnsureAutomationInterface(); } }
 
         public VisualStudio(bool hidden = true)
         {
+            _automationInterfaces = new List<IAutomationInterface>
+            {
+                new AutomationInterface4024(this),
+            };
+
             Initialize(hidden);
         }
 
@@ -86,7 +93,7 @@ namespace Twinpack.Core
             throw new NotSupportedException($"No supported Visual Studio ({string.Join(", ", shells)}) detected!");
         }
 
-        private void KillProcess(Object source, System.Timers.ElapsedEventArgs e)
+        protected void KillProcess(Object source, System.Timers.ElapsedEventArgs e)
         {
             _logger.Info($"Timeout occured ... killing processes");
             Environment.Exit(-1);
@@ -154,12 +161,7 @@ namespace Twinpack.Core
 
             UsedTcVersion ??= CurrentTcVersion();
 
-            var automationInterfaces = new List<IAutomationInterface>
-            {
-                new AutomationInterface4024(this),
-            };
-
-            foreach (var automationInterface in automationInterfaces)
+            foreach (var automationInterface in _automationInterfaces)
             {
                 if (automationInterface.IsSupported(UsedTcVersion))
                 {
@@ -192,7 +194,7 @@ namespace Twinpack.Core
             return $"TC{remoteManager.Version}";
         }
 
-        private string FindTargetSystem(string requestedTcVersion = "TC3.1")
+        protected string FindTargetSystem(string requestedTcVersion = "TC3.1")
         {
             string tcversion = requestedTcVersion?.Replace("TC", "") ?? "TC3.1"; // TC3.1.4024.10
 
@@ -338,7 +340,7 @@ namespace Twinpack.Core
             _dte.ExecuteCommand("File.SaveAll");
         }
 
-        private Projects WaitProjects()
+        protected Projects WaitProjects()
         {
             var ready = false;
             Projects projects = null;

@@ -25,9 +25,9 @@ namespace Twinpack.Core
     {
         public event EventHandler<ProgressEventArgs> ProgressedEvent = delegate { };
 
-        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        protected static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
+        protected static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
 
         VisualStudio _visualStudio;
         SynchronizationContext _synchronizationContext;
@@ -40,8 +40,7 @@ namespace Twinpack.Core
 
         protected override Version MinVersion => new Version(3, 1, 4024, 0);
         protected override Version MaxVersion => null;
-
-        private async Task SwitchToMainThreadAsync(CancellationToken cancellationToken=default)
+        protected async Task SwitchToMainThreadAsync(CancellationToken cancellationToken=default)
         {
             await _synchronizationContext;
         }
@@ -61,7 +60,7 @@ namespace Twinpack.Core
             return effectiveVersion;
         }
 
-        private ITcPlcLibrary ResolvePlaceholder(ITcPlcLibraryManager libManager, string placeholderName, out string distributorName, out string effectiveVersion)
+        protected ITcPlcLibrary ResolvePlaceholder(ITcPlcLibraryManager libManager, string placeholderName, out string distributorName, out string effectiveVersion)
         {
             // getter references might throw (Starting from TC3.1.4024.35)
             ITcPlcReferences references;
@@ -124,7 +123,7 @@ namespace Twinpack.Core
             return null;
         }
 
-        private ITcSysManager SystemManager(string projectName = null)
+        protected ITcSysManager SystemManager(string projectName = null)
         {
             var ready = false;
             while (!ready)
@@ -152,7 +151,7 @@ namespace Twinpack.Core
             return null;
         }
 
-        private ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)
+        protected ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)
         {
             var systemManager = SystemManager(projectName);
 
@@ -203,7 +202,7 @@ namespace Twinpack.Core
             return null;
         }
 
-        private string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
+        protected string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
         {
             // try to find the vendor
             foreach (ITcPlcLibrary r in libManager.ScanLibraries())

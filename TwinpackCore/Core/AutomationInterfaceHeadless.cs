@@ -25,11 +25,11 @@ namespace Twinpack.Core
     {
         public event EventHandler<ProgressEventArgs> ProgressedEvent = delegate { };
 
-        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        protected static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        private static XNamespace TcNs = ConfigPlcProjectFactory.TcNs;
+        protected static XNamespace TcNs = ConfigPlcProjectFactory.TcNs;
 
-        private Config _config;
+        protected Config _config;
 
         public AutomationInterfaceHeadless(Config config)
         {
