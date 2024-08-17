@@ -44,6 +44,7 @@ namespace Twinpack.Core
         }
         public class RestorePackageOptions : AddPackageOptions
         {
+            public bool PurgePackages = false;
             public bool IncludeProvidedPackages = false;
         }
 
@@ -324,6 +325,17 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task<List<PackageItem>> RestorePackagesAsync(RestorePackageOptions options = default, CancellationToken cancellationToken = default)
         {
+            if (options?.PurgePackages == true)
+            {
+                foreach(var project in _config.Projects)
+                {
+                    foreach (var plc in project.Plcs)
+                    {
+                        await _automationInterface?.RemoveAllPackagesAsync(project.Name, plc.Name);
+                    }
+                }
+            }
+
             var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
 
             var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Used }).ToList();

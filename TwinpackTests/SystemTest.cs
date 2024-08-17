@@ -240,7 +240,7 @@ namespace TwinpackTests
             plcprojPackages = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
             Assert.AreEqual(plcprojPackages.Count, 1);
         }
-
+            
         [TestMethod]
         public async Task AddPackage_WithPackageThatIsNotInstalled_Async()
         {

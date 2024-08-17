@@ -23,8 +23,6 @@ namespace Twinpack.Core
 {
     public class AutomationInterface4024 : AutomationInterface, IAutomationInterface
     {
-        public event EventHandler<ProgressEventArgs> ProgressedEvent = delegate { };
-
         protected static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         protected static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
@@ -409,6 +407,15 @@ namespace Twinpack.Core
             {
                 await UninstallPackageAsync(package);
             }
+        }
+
+        public override async Task RemoveAllPackagesAsync(string projectName, string plcName)
+        {
+            await SwitchToMainThreadAsync();
+
+            var libraryManager = LibraryManager(projectName, plcName);
+            foreach(ITcPlcLibRef reference in libraryManager.References)
+                libraryManager.RemoveReference(reference.Name);
         }
 
         public override async Task InstallPackageAsync(PackageItem package, string cachePath = null)

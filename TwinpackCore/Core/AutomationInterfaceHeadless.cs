@@ -203,6 +203,27 @@ namespace Twinpack.Core
             xdoc.Save(plcConfig.FilePath);
         }
 
+        public override async Task RemoveAllPackagesAsync(string projectName, string plcName)
+        {
+            var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == projectName).Plcs.FirstOrDefault(x => x.Name == plcName);
+
+            var xdoc = XDocument.Load(plcConfig.FilePath);
+            var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
+            if (project == null)
+                throw new InvalidDataException($"{plcConfig.FilePath} is not a valid plcproj file");
+
+            foreach (XElement g in xdoc.Elements(TcNs + "Project")?.Elements(TcNs + "ItemGroup")?.Elements(TcNs + "PlaceholderResolution")?.Elements(TcNs + "Resolution") ?? new List<XElement>())
+                g.Parent.Remove();
+
+            foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderReference").Elements(TcNs + "DefaultResolution"))
+                g.Parent.Remove();
+
+            foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "LibraryReference"))
+                g.Remove();
+
+            xdoc.Save(plcConfig.FilePath);
+        }
+
         public override async Task InstallPackageAsync(PackageItem package, string cachePath = null)
         {
             _logger.Warn("Headless AutomationInterface can not install packages");
