@@ -291,7 +291,7 @@ namespace Twinpack.Core
 
             var options = package.Config.Options;
             var libraryName = package.PackageVersion.Title;
-            var version = package.PackageVersion.Version;
+            var version = package.PackageVersion.Version ?? "*";
             var distributorName = package.PackageVersion.DistributorName ?? GuessDistributorName(libraryManager, libraryName, version);
 
             // if we can't find the reference with the distributor name from the package, fallback to looking it up
