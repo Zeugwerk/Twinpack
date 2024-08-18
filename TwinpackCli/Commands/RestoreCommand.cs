@@ -22,6 +22,8 @@ namespace Twinpack.Commands
         public IEnumerable<string> Configurations { get; set; }
         [Option("force-download", Required = false, Default = null, HelpText = "Forces the download of package(s) even if they are already available on the system.")]
         public bool ForceDownload { get; set; }
+        [Option("purge-packages", Required = false, Default = null, HelpText = "Removes all references that are not configured packages.")]
+        public bool PurgePackages { get; set; }
         [Option("headed", Required = false, Default = false, HelpText = "Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
         public bool Headed { get; set; }
         public override int Execute()
@@ -34,8 +36,9 @@ namespace Twinpack.Commands
             _twinpack.RestorePackagesAsync(
                 new TwinpackService.RestorePackageOptions
                 {
-                    IncludeProvidedPackages = IncludeProvidedPackages, 
-                    ForceDownload = ForceDownload, 
+                    PurgePackages = PurgePackages,
+                    IncludeProvidedPackages = IncludeProvidedPackages,
+                    ForceDownload = ForceDownload,
                     IncludeDependencies = true
                 }).GetAwaiter().GetResult();
 
