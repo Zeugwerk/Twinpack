@@ -355,7 +355,12 @@ namespace Twinpack.Core
             var providedPackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == true).ToList(), new AddPackageOptions(options) { SkipDownload = !options.IncludeProvidedPackages }, cancellationToken: cancellationToken);
 
             var installablePackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList(), options, cancellationToken: cancellationToken);
-            return options.IncludeProvidedPackages ? providedPackages.Concat(installablePackages).ToList() : installablePackages;
+            installablePackages = options.IncludeProvidedPackages ? providedPackages.Concat(installablePackages).ToList() : installablePackages;
+
+            return installablePackages.GroupBy(x => new { x.ProjectName, x.PlcName, x.PackageVersion.Name, x.PackageVersion.Version })
+                .Select(x => x.FirstOrDefault())
+                .Distinct()
+                .ToList();
         }
 
         public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
@@ -368,7 +373,12 @@ namespace Twinpack.Core
             var providedPackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == true).ToList(), new AddPackageOptions(options) { SkipDownload = !options.IncludeProvidedPackages }, cancellationToken: cancellationToken);
 
             var installablePackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList(), options, cancellationToken: cancellationToken);
-            return options.IncludeProvidedPackages ? providedPackages.Concat(installablePackages).ToList() : installablePackages;
+            installablePackages = options.IncludeProvidedPackages ? providedPackages.Concat(installablePackages).ToList() : installablePackages;
+
+            return installablePackages.GroupBy(x => new { x.ProjectName, x.PlcName, x.PackageVersion.Name, x.PackageVersion.Version })
+                .Select(x => x.FirstOrDefault())
+                .Distinct()
+                .ToList();
         }
 
         public async System.Threading.Tasks.Task<List<PackageItem>> AddPackageAsync(PackageItem package, AddPackageOptions options = default, CancellationToken cancellationToken = default)
@@ -389,7 +399,7 @@ namespace Twinpack.Core
             CopyRuntimeLicenseIfNeeded(affectedPackages);
 
             var closeAllPackageRelatedWindowsTask = _automationInterface?.CloseAllPackageRelatedWindowsAsync(affectedPackages) ?? System.Threading.Tasks.Task.Delay(new TimeSpan(0));
-            var downloadPackagesTask = options.SkipDownload
+            var downloadPackagesTask = options?.SkipDownload == true
                 ? System.Threading.Tasks.Task.Run(() => new List<PackageItem>())
                 : DownloadPackagesAsync(affectedPackages, 
                 new DownloadPackageOptions
