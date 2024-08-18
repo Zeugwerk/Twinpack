@@ -253,7 +253,7 @@ namespace Twinpack.Core
                             if (catalogItem.PackageServer == null)
                                 _logger.Warn($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) referenced in the configuration can not be found on any package server");
                             else
-                                _logger.Info($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) located on {catalogItem.PackageServer.UrlBase}");
+                                _logger.Debug($"Package {package.Name} {package.Version} (distributor: {package.DistributorName}) located on {catalogItem.PackageServer.UrlBase}");
                         }
                     }
                 }
