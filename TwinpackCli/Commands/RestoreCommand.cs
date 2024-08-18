@@ -20,6 +20,8 @@ namespace Twinpack.Commands
         [Option("include-provided-packages", Required = false, Default = null, HelpText = "Restore packages, which are provided by the configuration (Plcs, which are also packages themselves)")]
         public bool IncludeProvidedPackages { get; set; }
         public IEnumerable<string> Configurations { get; set; }
+        [Option("skip-download", Required = false, Default = null, HelpText = "Skips the download of package(s)")]
+        public bool SkipDownload { get; set; }
         [Option("force-download", Required = false, Default = null, HelpText = "Forces the download of package(s) even if they are already available on the system.")]
         public bool ForceDownload { get; set; }
         [Option("purge-packages", Required = false, Default = null, HelpText = "Removes all references that are not configured packages.")]
@@ -37,6 +39,7 @@ namespace Twinpack.Commands
                 new TwinpackService.RestorePackageOptions
                 {
                     PurgePackages = PurgePackages,
+                    SkipDownload = SkipDownload,
                     IncludeProvidedPackages = IncludeProvidedPackages,
                     ForceDownload = ForceDownload,
                     IncludeDependencies = true

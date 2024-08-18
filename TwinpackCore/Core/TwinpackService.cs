@@ -23,6 +23,7 @@ using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
 using static System.Net.Mime.MediaTypeNames;
 using Twinpack.Configuration;
+using System.Windows.Navigation;
 
 namespace Twinpack.Core
 {
@@ -38,6 +39,16 @@ namespace Twinpack.Core
 
         public class AddPackageOptions
         {
+            public AddPackageOptions() { }
+            public AddPackageOptions(AddPackageOptions rhs)
+            {
+                SkipDownload = rhs.SkipDownload;
+                ForceDownload = rhs.ForceDownload;
+                IncludeDependencies = rhs.IncludeDependencies;
+                DownloadPath = rhs.DownloadPath;
+            }
+
+            public bool SkipDownload = false;
             public bool ForceDownload = false;
             public bool IncludeDependencies = true;
             public string? DownloadPath = null;
@@ -337,33 +348,27 @@ namespace Twinpack.Core
             }
 
             var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
-
             var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Used }).ToList();
 
-            // ignore packages, which are provided by the loaded configuration
-            if (!options.IncludeProvidedPackages)
-            {
-                var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
-                packages = packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList();
-            }
+            // download and add all packages, which are not self references to the provided packages
+            var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
+            var providedPackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == true).ToList(), new AddPackageOptions(options) { SkipDownload = !options.IncludeProvidedPackages }, cancellationToken: cancellationToken);
 
-            return await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
+            var installablePackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList(), options, cancellationToken: cancellationToken);
+            return options.IncludeProvidedPackages ? providedPackages.Concat(installablePackages).ToList() : installablePackages;
         }
 
         public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
         {
             var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
+            var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Update }).ToList();
 
-            var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Update, PackageVersion = x.Update }).ToList();
+            // download and add all packages, which are not self references to the provided packages
+            var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
+            var providedPackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == true).ToList(), new AddPackageOptions(options) { SkipDownload = !options.IncludeProvidedPackages }, cancellationToken: cancellationToken);
 
-            // ignore packages, which are provided by the loaded configuration
-            if (!options.IncludeProvidedPackages)
-            {
-                var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
-                packages = packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList();
-            }
-
-            return await AddPackagesAsync(packages, options, cancellationToken: cancellationToken);
+            var installablePackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList(), options, cancellationToken: cancellationToken);
+            return options.IncludeProvidedPackages ? providedPackages.Concat(installablePackages).ToList() : installablePackages;
         }
 
         public async System.Threading.Tasks.Task<List<PackageItem>> AddPackageAsync(PackageItem package, AddPackageOptions options = default, CancellationToken cancellationToken = default)
@@ -384,7 +389,9 @@ namespace Twinpack.Core
             CopyRuntimeLicenseIfNeeded(affectedPackages);
 
             var closeAllPackageRelatedWindowsTask = _automationInterface?.CloseAllPackageRelatedWindowsAsync(affectedPackages) ?? System.Threading.Tasks.Task.Delay(new TimeSpan(0));
-            var downloadPackagesTask = DownloadPackagesAsync(affectedPackages, 
+            var downloadPackagesTask = options.SkipDownload
+                ? System.Threading.Tasks.Task.Run(() => new List<PackageItem>())
+                : DownloadPackagesAsync(affectedPackages, 
                 new DownloadPackageOptions
                 {
                     IncludeProvidedPackages = true, 
@@ -409,7 +416,6 @@ namespace Twinpack.Core
             // add affected packages as references
             foreach (var package in options?.IncludeDependencies == true ? affectedPackages : packages)
             {
-                
                 _logger.Info($"Adding {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName})");
 
                 if (_automationInterface != null)
