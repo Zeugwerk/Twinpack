@@ -25,7 +25,7 @@ namespace Twinpack.Commands
 
         public override int Execute()
         {
-            PackagingServerRegistry.InitializeAsync().GetAwaiter().GetResult();
+            PackagingServerRegistry.InitializeAsync(useDefaults: true, login: false).GetAwaiter().GetResult();
             _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 
             var config = ConfigFactory.Load();
