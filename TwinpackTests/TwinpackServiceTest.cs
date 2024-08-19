@@ -474,7 +474,7 @@ namespace TwinpackTests
             };
 
             var automationInterfaceMock = new Mock<IAutomationInterface>();
-            automationInterfaceMock.Setup(x => x.ResolveEffectiveVersion("TestProject1", "Untitled1", "ZAux")).Returns(effectiveVersion);
+            automationInterfaceMock.Setup(x => x.ResolveEffectiveVersionAsync("TestProject1", "Untitled1", "ZAux")).Returns(Task.Run(() => effectiveVersion));
 
             var packageServers = new PackageServerCollection { packageServer };
             var twinpack = new TwinpackService(packageServers, automationInterfaceMock.Object);
@@ -519,7 +519,7 @@ namespace TwinpackTests
             };
 
             var automationInterfaceMock = new Mock<IAutomationInterface>();
-            automationInterfaceMock.Setup(x => x.ResolveEffectiveVersion("TestProject1", "Untitled1", "ZAux")).Returns(effectiveVersion);
+            automationInterfaceMock.Setup(x => x.ResolveEffectiveVersionAsync("TestProject1", "Untitled1", "ZAux")).Returns(Task.Run(() => effectiveVersion));
 
             var packageServers = new PackageServerCollection { packageServer };
             var twinpack = new TwinpackService(packageServers, automationInterfaceMock.Object);

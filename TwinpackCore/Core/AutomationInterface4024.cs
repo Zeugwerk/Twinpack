@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
@@ -37,10 +38,8 @@ namespace Twinpack.Core
             _synchronizationContext = SynchronizationContext.Current;
         }
 
-        private Dictionary<string?, ITcSysManager> _systemManagerCache = new Dictionary<string?, ITcSysManager>();
-        private Dictionary<Tuple<string?, string?>, ITcPlcLibraryManager> _libraryManagerCache = new Dictionary<Tuple<string?, string?>, ITcPlcLibraryManager>();
         private List<PlcLibrary> _referenceCache = new List<PlcLibrary>();
-
+        private Dictionary<Tuple<string, string, string>, string> _effectiveVersionCache = new Dictionary<Tuple<string, string, string>, string>();
 
         protected override Version MinVersion => new Version(3, 1, 4024, 0);
         protected override Version MaxVersion => null;
@@ -56,11 +55,18 @@ namespace Twinpack.Core
             _visualStudio?.SaveAll();
         }
 
-        public override string ResolveEffectiveVersion(string projectName, string plcName, string placeholderName)
+        public override async Task<string> ResolveEffectiveVersionAsync(string projectName, string plcName, string placeholderName)
         {
+            var key = new Tuple<string, string, string>(projectName, plcName, placeholderName);
+            if (_effectiveVersionCache.ContainsKey(key))
+                return _effectiveVersionCache[key];
+
+            await SwitchToMainThreadAsync();
+
             ITcPlcLibraryManager libManager = LibraryManager(projectName, plcName);
             ResolvePlaceholder(libManager, placeholderName, out _, out var effectiveVersion);
 
+            _effectiveVersionCache[key] = effectiveVersion;
             return effectiveVersion;
         }
 
@@ -129,9 +135,6 @@ namespace Twinpack.Core
 
         protected ITcSysManager SystemManager(string projectName = null)
         {
-            //if (_systemManagerCache.ContainsKey(projectName))
-            //    return _systemManagerCache[projectName];
-
             var ready = false;
             while (!ready)
             {
@@ -144,7 +147,6 @@ namespace Twinpack.Core
                             ready = false;
                         else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
                         {
-                            //_systemManagerCache[projectName] = project.Object as ITcSysManager;
                             return project.Object as ITcSysManager;
                         }
                            
@@ -164,9 +166,7 @@ namespace Twinpack.Core
 
         protected ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)
         {
-            //var key = new Tuple<string?, string?>(projectName, plcName);
-            //if (_libraryManagerCache.ContainsKey(key))
-            //    return _libraryManagerCache[key];
+            var key = new Tuple<string?, string?>(projectName, plcName);
 
             var systemManager = SystemManager(projectName);
             bool ready = false;
@@ -184,7 +184,6 @@ namespace Twinpack.Core
                             {
                                 if (plc.Child[k] as ITcPlcLibraryManager != null)
                                 {
-                                    //_libraryManagerCache[key] = plc.Child[k] as ITcPlcLibraryManager;
                                     return plc.Child[k] as ITcPlcLibraryManager;
                                 }
                             }
@@ -198,7 +197,6 @@ namespace Twinpack.Core
                         {
                             if (plc.Child[k] as ITcPlcLibraryManager != null)
                             {
-                                //_libraryManagerCache[key] = plc.Child[k] as ITcPlcLibraryManager;
                                 return plc.Child[k] as ITcPlcLibraryManager;
                             }
                         }
@@ -427,6 +425,9 @@ namespace Twinpack.Core
                     throw;
             }
 
+            var key = new Tuple<string, string, string>(package.ProjectName, package.PlcName, package.PackageVersion.Title);
+            if (_effectiveVersionCache.ContainsKey(key))
+                _effectiveVersionCache.Remove(key);
 
             if (uninstall)
             {
@@ -441,6 +442,8 @@ namespace Twinpack.Core
             var libraryManager = LibraryManager(projectName, plcName);
             foreach(ITcPlcLibRef reference in libraryManager.References)
                 libraryManager.RemoveReference(reference.Name);
+
+            _effectiveVersionCache.Clear();
         }
 
         public override async Task InstallPackageAsync(PackageItem package, string cachePath = null)
@@ -465,6 +468,9 @@ namespace Twinpack.Core
 
             if (IsPackageInstalled(package))
             {
+                _referenceCache.RemoveAll(x => x.Name == package.PackageVersion.Title && x.DistributorName == package.PackageVersion.DistributorName
+                                          && x.Version == package.PackageVersion.Version);
+
                 var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
                 libraryManager.UninstallLibrary("System", package.PackageVersion.Title, package.PackageVersion.Version, package.PackageVersion.DistributorName);
                 return true;

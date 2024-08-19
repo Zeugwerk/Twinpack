@@ -57,7 +57,7 @@ namespace Twinpack.Core
         }
 
         public abstract string SolutionPath { get; }
-        public abstract string ResolveEffectiveVersion(string projectName, string plcName, string placeholderName);
+        public abstract Task<string> ResolveEffectiveVersionAsync(string projectName, string plcName, string placeholderName);
         public abstract Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken);
         public abstract Task<bool> IsPackageInstalledAsync(PackageItem package);
         public abstract bool IsPackageInstalled(PackageItem package);

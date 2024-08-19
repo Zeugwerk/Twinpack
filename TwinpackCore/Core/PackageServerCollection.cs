@@ -125,7 +125,7 @@ namespace Twinpack.Core
                 {
                     if (automationInterface != null)
                     {
-                        var effectiveVersion = automationInterface.ResolveEffectiveVersion(projectName, plcName, packageVersion.Title);
+                        var effectiveVersion = await automationInterface.ResolveEffectiveVersionAsync(projectName, plcName, packageVersion.Title);
                         var effectivePackageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
                                                                                           item.Branch, item.Configuration, item.Target,
                                                                                           cancellationToken: cancellationToken);

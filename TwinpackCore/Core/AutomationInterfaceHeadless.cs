@@ -46,7 +46,7 @@ namespace Twinpack.Core
             ;
         }
 
-        public override string ResolveEffectiveVersion(string projectName, string plcName, string placeholderName)
+        public override async Task<string> ResolveEffectiveVersionAsync(string projectName, string plcName, string placeholderName)
         {
             return null;
         }
