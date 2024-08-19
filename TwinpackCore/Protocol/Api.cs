@@ -112,9 +112,9 @@ namespace Twinpack.Protocol.Api
             License = package.License;
             LicenseTmcBinary = package.LicenseTmcBinary;
             LicenseBinary = package.LicenseBinary;
-            Branches = new List<string>(package.Branches);
-            Targets = new List<string>(package.Targets);
-            Configurations = new List<string>(package.Configurations);
+            Branches = package.Branches?.Any() == true ? new List<string>(package.Branches) : new List<string>();
+            Targets = package.Branches?.Any() == true ? new List<string>(package.Targets) : new List<string>();
+            Configurations = package.Branches?.Any() == true ? new List<string>(package.Configurations) : new List<string>();
         }
 
         [JsonPropertyName("package-id")]

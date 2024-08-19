@@ -29,6 +29,8 @@ namespace Twinpack.Commands
 
         [Option("headed", Required = false, Default = false, HelpText = "Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
         public bool Headed { get; set; }
+        [Option("purge-packages", Required = false, Default = null, HelpText = "Removes all references that are not configured packages.")]
+        public bool PurgePackages { get; set; }
         public override int Execute()
         {
             Initialize(Headed);
@@ -36,6 +38,7 @@ namespace Twinpack.Commands
             _twinpack.SetPackageVersionAsync(Version, 
                 new SetPackageVersionOptions
                 {
+                    PurgePackages = PurgePackages,
                     ProjectName = ProjectName,
                     PlcName = PlcName,
                     SyncFrameworkPackages = SyncFrameworkPackages,

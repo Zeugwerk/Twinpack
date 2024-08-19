@@ -9,6 +9,7 @@ using Twinpack.Protocol.Api;
 
 namespace TwinpackTests
 {
+    using Microsoft.VisualStudio.PlatformUI;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections.Generic;
     using System.Linq;
@@ -343,8 +344,18 @@ namespace TwinpackTests
             var plcprojPackages = plcprojPlc.Packages;
             var plcprojPackage = plcprojPackages.FirstOrDefault(x => x.Name == "PlcLibrary1");
             Assert.AreEqual(newVersion1, plcprojPlc?.Version);
-            Assert.AreEqual("1.2.3.4", plcprojPackages.FirstOrDefault(x => x.Name == "PlcLibrary1")?.Version);
-            Assert.AreEqual(null, plcprojPackages.FirstOrDefault(x => x.Name == "Tc3_Module")?.Version);
+
+            if (_automationInterface is AutomationInterfaceHeadless)
+            {
+                Assert.AreEqual(newVersion1, plcprojPackages.FirstOrDefault(x => x.Name == "PlcLibrary1")?.Version);
+                Assert.AreEqual(null, plcprojPackages.FirstOrDefault(x => x.Name == "Tc3_Module")?.Version);
+            }
+            else
+            {
+                Assert.AreEqual("1.2.3.4", plcprojPackages.FirstOrDefault(x => x.Name == "PlcLibrary1")?.Version);
+                Assert.AreEqual(null, plcprojPackages.FirstOrDefault(x => x.Name == "Tc3_Module")?.Version);
+            }
+
 
             // act - add package, including dependencies
             await twinpack.SetPackageVersionAsync(newVersion2, new TwinpackService.SetPackageVersionOptions { SyncFrameworkPackages = true,
