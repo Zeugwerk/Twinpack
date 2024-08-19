@@ -57,6 +57,7 @@ namespace Twinpack.Core
         {
             public bool PurgePackages = false;
             public bool IncludeProvidedPackages = false;
+            public List<string> ExcludedPackages;
         }
 
         public class UpdatePackageOptions : AddPackageOptions
@@ -352,6 +353,10 @@ namespace Twinpack.Core
 
             // download and add all packages, which are not self references to the provided packages
             var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
+
+            if (options?.ExcludedPackages != null)
+                providedPackageNames = providedPackageNames.Concat(options?.ExcludedPackages).ToList();
+
             var providedPackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == true).ToList(), new AddPackageOptions(options) { SkipDownload = !options.IncludeProvidedPackages }, cancellationToken: cancellationToken);
 
             var installablePackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList(), options, cancellationToken: cancellationToken);
