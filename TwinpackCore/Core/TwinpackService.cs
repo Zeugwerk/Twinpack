@@ -572,7 +572,7 @@ namespace Twinpack.Core
             foreach(var affectedPackage in affectedPackages)
             {
                 // check if we find the package on the system
-                bool referenceFound = !options.ForceDownload && _automationInterface != null && await _automationInterface.IsPackageInstalledAsync(affectedPackage);
+                bool referenceFound = (_automationInterface is AutomationInterfaceHeadless) || (!options.ForceDownload && _automationInterface != null && await _automationInterface.IsPackageInstalledAsync(affectedPackage));
 
                 if (!referenceFound || options.ForceDownload)
                 {
