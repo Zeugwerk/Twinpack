@@ -139,7 +139,7 @@ namespace Twinpack.Core
                         new XAttribute("Include", package.PackageVersion.Title),
                         new List<XElement> {
                             new XElement(TcNs + "DefaultResolution", $"{package.PackageVersion.Title}, {(package.PackageVersion.Version ?? "*")} ({package.PackageVersion.DistributorName})"),
-                            new XElement(TcNs + "Namespace", package.PackageVersion.Title),
+                            new XElement(TcNs + "Namespace", ns),
                         }
                     );
 
