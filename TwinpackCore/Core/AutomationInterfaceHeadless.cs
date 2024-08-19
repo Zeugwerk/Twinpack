@@ -68,6 +68,11 @@ namespace Twinpack.Core
 
         public override async Task AddPackageAsync(PackageItem package)
         {
+            await AddPackageAsync(package, ns: package.PackageVersion.Title);
+        }
+
+        public async Task AddPackageAsync(PackageItem package, string ns)
+        {
             static void AddOptions(XElement root, AddPlcLibraryOptions options)
             {
                 if (options?.Optional == true)
@@ -110,7 +115,7 @@ namespace Twinpack.Core
                 var library = new XElement(TcNs + "LibraryReference",
                         new XAttribute("Include", $"{package.PackageVersion.Title},{(package.PackageVersion.Version ?? "*")},{package.PackageVersion.DistributorName}"),
                         new List<XElement> {
-                            new XElement(TcNs + "Namespace", package.PackageVersion.Title),
+                            new XElement(TcNs + "Namespace", ns),
                         });
 
                 AddOptions(library, package.Config?.Options);
