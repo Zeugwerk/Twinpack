@@ -2,6 +2,7 @@ using EnvDTE;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
 using NLog;
+using NuGet.Protocol;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,6 +36,11 @@ namespace Twinpack.Core
             _visualStudio = visualStudio;
             _synchronizationContext = SynchronizationContext.Current;
         }
+
+        private Dictionary<string?, ITcSysManager> _systemManagerCache = new Dictionary<string?, ITcSysManager>();
+        private Dictionary<Tuple<string?, string?>, ITcPlcLibraryManager> _libraryManagerCache = new Dictionary<Tuple<string?, string?>, ITcPlcLibraryManager>();
+        private List<PlcLibrary> _referenceCache = new List<PlcLibrary>();
+
 
         protected override Version MinVersion => new Version(3, 1, 4024, 0);
         protected override Version MaxVersion => null;
@@ -123,6 +129,9 @@ namespace Twinpack.Core
 
         protected ITcSysManager SystemManager(string projectName = null)
         {
+            //if (_systemManagerCache.ContainsKey(projectName))
+            //    return _systemManagerCache[projectName];
+
             var ready = false;
             while (!ready)
             {
@@ -134,7 +143,11 @@ namespace Twinpack.Core
                         if (project == null)
                             ready = false;
                         else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
+                        {
+                            //_systemManagerCache[projectName] = project.Object as ITcSysManager;
                             return project.Object as ITcSysManager;
+                        }
+                           
                     }
                 }
                 catch(COMException ex)
@@ -151,8 +164,11 @@ namespace Twinpack.Core
 
         protected ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)
         {
-            var systemManager = SystemManager(projectName);
+            //var key = new Tuple<string?, string?>(projectName, plcName);
+            //if (_libraryManagerCache.ContainsKey(key))
+            //    return _libraryManagerCache[key];
 
+            var systemManager = SystemManager(projectName);
             bool ready = false;
             while(!ready)
             {
@@ -168,6 +184,7 @@ namespace Twinpack.Core
                             {
                                 if (plc.Child[k] as ITcPlcLibraryManager != null)
                                 {
+                                    //_libraryManagerCache[key] = plc.Child[k] as ITcPlcLibraryManager;
                                     return plc.Child[k] as ITcPlcLibraryManager;
                                 }
                             }
@@ -181,6 +198,7 @@ namespace Twinpack.Core
                         {
                             if (plc.Child[k] as ITcPlcLibraryManager != null)
                             {
+                                //_libraryManagerCache[key] = plc.Child[k] as ITcPlcLibraryManager;
                                 return plc.Child[k] as ITcPlcLibraryManager;
                             }
                         }
@@ -216,12 +234,18 @@ namespace Twinpack.Core
 
         public override async Task<bool> IsPackageInstalledAsync(PackageItem package)
         {
+            if (_referenceCache.Any(x => x.Name == package.PackageVersion.Title && x.DistributorName == package.PackageVersion.DistributorName && x.Version == package.PackageVersion.Version))
+                return true;
+
             await SwitchToMainThreadAsync();
             return IsPackageInstalled(package);
         }
 
         public override bool IsPackageInstalled(PackageItem package)
         {
+            if (_referenceCache.Any(x => x.Name == package.PackageVersion.Title && x.DistributorName == package.PackageVersion.DistributorName && x.Version == package.PackageVersion.Version))
+                return true;
+
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             bool referenceFound = false;
 
@@ -233,6 +257,7 @@ namespace Twinpack.Core
                         string.Equals(r.Distributor, package.PackageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
                         (r.Version == package.PackageVersion.Version || package.PackageVersion.Version == null))
                     {
+                        _referenceCache.Add(new PlcLibrary { Name = package.PackageVersion.Title, DistributorName = package.PackageVersion.DistributorName, Version = package.PackageVersion.Version });
                         referenceFound = true;
                         break;
                     }
