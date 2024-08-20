@@ -24,6 +24,7 @@ using Twinpack.Protocol;
 using static System.Net.Mime.MediaTypeNames;
 using Twinpack.Configuration;
 using System.Windows.Navigation;
+using Microsoft.VisualStudio.PlatformUI;
 
 namespace Twinpack.Core
 {
@@ -511,7 +512,7 @@ namespace Twinpack.Core
                 }
 
                 if (package.PackageVersion?.Name == null)
-                    break;
+                    continue;
 
                 if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
                     cache.Add(package);
@@ -599,9 +600,9 @@ namespace Twinpack.Core
 
             // set the version of all plcs in the project(s)
             var plcs = _config.Projects
-                .Where(x => options.ProjectName == null || x.Name == options.ProjectName)
+                .Where(x => options?.ProjectName == null || x.Name == options?.ProjectName)
                 .SelectMany(x => x.Plcs)
-                .Where(x => options.PlcName == null || x.Name == options.PlcName);
+                .Where(x => options?.PlcName == null || x.Name == options?.PlcName);
 
             foreach(var plc in plcs)
             {
@@ -612,7 +613,7 @@ namespace Twinpack.Core
             }
 
             // also include all framework packages if required
-            if (options.SyncFrameworkPackages)
+            if (options?.SyncFrameworkPackages == true)
             {
                 // resolve the plcs as packages
                 var affectedPackages = plcs.Select(x => new PackageItem
@@ -637,16 +638,40 @@ namespace Twinpack.Core
                 affectedPackages = await AffectedPackagesAsync(affectedPackages, cancellationToken);
 
                 var frameworks = affectedPackages
-                    .Where(x => x.PackageVersion.Framework != null && plcs.Any(y => y.Name == x.PackageVersion.Name))
-                    .Select(x => x.PackageVersion.Framework).Distinct().ToList();
+                    .Where(x => x.PackageVersion?.Framework != null && plcs.Any(y => y.Name == x.PackageVersion?.Name))
+                    .Select(x => x.PackageVersion?.Framework).Distinct().ToList();
 
-                var frameworkPackages = affectedPackages.Where(x => frameworks.Contains(x.PackageVersion.Framework)).ToList();
+                var frameworkPackages = affectedPackages.Where(x => frameworks.Contains(x.PackageVersion?.Framework)).ToList();
 
                 if (frameworkPackages.Any())
                     _logger.Info("Synchronizing framework packages");
 
-                var existingPackages = affectedPackages.Where(x => !frameworks.Contains(x.PackageVersion.Framework)).ToList();
-                var notExistingPackages = new List<PackageItem>();
+                var nonFrameworkPackages = affectedPackages.Where(x => !frameworks.Contains(x.PackageVersion?.Framework)).ToList();
+                var configuredPackages = plcs
+                    .SelectMany(
+                        x => x.Packages.Select(y => new PackageItem
+                        {
+                            ProjectName = x.ProjectName,
+                            PlcName = x.Name,
+                            Config = y
+                        }))
+                    .Where(x => frameworkPackages.Any(y => x.Config.Name == y.Config.Name) == false)
+                    .Select(
+                        x => new PackageItem(x)
+                        {
+                            Package = nonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && y.Config.Name == y.Config.Name).Package,
+                            PackageVersion = new PackageVersionGetResponse(nonFrameworkPackages.FirstOrDefault(z => z.ProjectName == x.ProjectName && z.PlcName == x.PlcName && z.Config.Name == x.Config.Name).PackageVersion)
+                            { 
+                                Version = x.Config.Version,
+                                Branch = x.Config.Branch,
+                                Target = x.Config.Target,
+                                Configuration = x.Config.Configuration
+                            }
+                        }
+                    )
+                    .ToList();
+
+                var frameworkPackagesToAdd = new List<PackageItem>();
                 foreach (var project in _config.Projects)
                 {
                     foreach(var plc in project.Plcs)
@@ -675,7 +700,7 @@ namespace Twinpack.Core
                                 plcPackage.Configuration = requestedPackage?.Configuration;
 
                                 // since the package actually exists, we can add it to the plcproj file
-                                existingPackages.Add(new PackageItem(affectedPackage) { ProjectName = project.Name, PlcName = plc.Name, Package = null, PackageVersion = null, Config = plcPackage });
+                                configuredPackages.Add(new PackageItem(affectedPackage) { ProjectName = project.Name, PlcName = plc.Name, Package = null, PackageVersion = null, Config = plcPackage });
                             }
                             else
                             {
@@ -687,7 +712,7 @@ namespace Twinpack.Core
                                 // only a headless interface allows to add not existing packages
                                 if (_automationInterface is AutomationInterfaceHeadless)
                                 {
-                                    notExistingPackages.Add(new PackageItem(affectedPackage)
+                                    frameworkPackagesToAdd.Add(new PackageItem(affectedPackage)
                                     {
                                         ProjectName = project.Name,
                                         PlcName = plc.Name,
@@ -706,8 +731,9 @@ namespace Twinpack.Core
                     }
                 }
 
-                await AddPackagesAsync(existingPackages);
-                await AddPackagesAsync(notExistingPackages, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
+                // add the packages accordingly to the configuration, which might not exist on the serer
+                await AddPackagesAsync(configuredPackages);
+                await AddPackagesAsync(frameworkPackagesToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
             }
 
             _automationInterface?.SaveAll();

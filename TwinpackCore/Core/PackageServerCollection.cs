@@ -98,23 +98,23 @@ namespace Twinpack.Core
                 catalogItem.PackageServer = packageServer;
 
                 // if some data is not present, try to resolve the information
-                if(item.Branch == null || item.Configuration == null || item.Target == null || item.DistributorName == null)
-                {
-                    var resolvedPackageVersion = await packageServer.ResolvePackageVersionAsync(
+                PackageVersionGetResponse resolvedPackageVersion = await packageServer.ResolvePackageVersionAsync(
                         new PlcLibrary { Name = item.Name, DistributorName = item.DistributorName, Version = item.Version },
                         item.Target,
                         item.Configuration,
                         item.Branch,
                         cancellationToken: cancellationToken);
 
-                    if(resolvedPackageVersion?.Name != null)
-                    {
-                        item.Branch = resolvedPackageVersion?.Branch;
-                        item.Configuration = resolvedPackageVersion?.Configuration;
-                        item.Target = resolvedPackageVersion?.Target;
-                        item.DistributorName = resolvedPackageVersion?.DistributorName;
-                    }
+                if (resolvedPackageVersion?.Name != null && (item.Branch == null || item.Configuration == null || item.Target == null || item.DistributorName == null))
+                {
+                    item.Branch = resolvedPackageVersion?.Branch;
+                    item.Configuration = resolvedPackageVersion?.Configuration;
+                    item.Target = resolvedPackageVersion?.Target;
+                    item.DistributorName = resolvedPackageVersion?.DistributorName;
                 }
+
+                if (resolvedPackageVersion == null)
+                    continue;
 
                 // try to get the installed package, if we can't find it at least try to resolve it
                 var packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },

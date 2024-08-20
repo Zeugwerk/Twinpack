@@ -315,6 +315,34 @@ namespace TwinpackTests
         }
 
         [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataRow(null)]
+        public async Task SetPackageVersion_NotAPackage_Async(bool? syncFrameworkPackages)
+        {
+            var packageServers = new PackageServerCollection { _packageServer };
+            var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
+
+            // cleanup
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+
+            // act - add package, including dependencies
+            await twinpack.SetPackageVersionAsync("1.1.1.1", syncFrameworkPackages == null ? null : new TwinpackService.SetPackageVersionOptions { SyncFrameworkPackages = true });
+
+            // check if config was updated correctly
+            var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1");
+            Assert.AreEqual("1.1.1.1", plc?.Version);
+
+            // check if plcproj references were not updated
+            var plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
+            var plcprojPlc = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1");
+            Assert.AreEqual("1.1.1.1", plcprojPlc?.Version);
+        }
+
+        [DataTestMethod]
         [DataRow("3.3.3.3", "3.3.3.5", "3.3.3.7")]
         [DataRow("2.3.3.3", "3.3.3.5", "3.3.3.7")]
         public async Task SetPackageVersion_VersionNotExistingOnPackageServers_Async(string newVersion1, string newVersion2, string newVersion3)
