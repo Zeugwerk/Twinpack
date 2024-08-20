@@ -659,9 +659,10 @@ namespace Twinpack.Core
                     .Select(
                         x => new PackageItem(x)
                         {
-                            Package = nonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && y.Config.Name == y.Config.Name).Package,
-                            PackageVersion = new PackageVersionGetResponse(nonFrameworkPackages.FirstOrDefault(z => z.ProjectName == x.ProjectName && z.PlcName == x.PlcName && z.Config.Name == x.Config.Name).PackageVersion)
+                            Package = nonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && y.Config.Name == y.Config.Name)?.Package,
+                            PackageVersion = new PackageVersionGetResponse(nonFrameworkPackages.FirstOrDefault(z => z.ProjectName == x.ProjectName && z.PlcName == x.PlcName && z.Config.Name == x.Config.Name)?.PackageVersion)
                             { 
+                                Name = x.Config.Name,
                                 Version = x.Config.Version,
                                 Branch = x.Config.Branch,
                                 Target = x.Config.Target,
