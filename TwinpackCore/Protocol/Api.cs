@@ -98,23 +98,23 @@ namespace Twinpack.Protocol.Api
 
         public PackageGetResponse(PackageGetResponse package)
         {
-            PackageId = package.PackageId;
-            Name = package.Name;
-            Title = package.Title;
-            Repository = package.Repository;
-            DistributorName = package.DistributorName;
-            DisplayName = package.DisplayName;
-            Description = package.Description;
-            Entitlement = package.Entitlement;
-            ProjectUrl = package.ProjectUrl;
-            IconUrl = package.IconUrl;
-            Authors = package.Authors;
-            License = package.License;
-            LicenseTmcBinary = package.LicenseTmcBinary;
-            LicenseBinary = package.LicenseBinary;
-            Branches = package.Branches?.Any() == true ? new List<string>(package.Branches) : new List<string>();
-            Targets = package.Branches?.Any() == true ? new List<string>(package.Targets) : new List<string>();
-            Configurations = package.Branches?.Any() == true ? new List<string>(package.Configurations) : new List<string>();
+            PackageId = package?.PackageId;
+            Name = package?.Name;
+            Title = package?.Title;
+            Repository = package?.Repository;
+            DistributorName = package?.DistributorName;
+            DisplayName = package?.DisplayName;
+            Description = package?.Description;
+            Entitlement = package?.Entitlement;
+            ProjectUrl = package?.ProjectUrl;
+            IconUrl = package?.IconUrl;
+            Authors = package?.Authors;
+            License = package?.License;
+            LicenseTmcBinary = package?.LicenseTmcBinary;
+            LicenseBinary = package?.LicenseBinary;
+            Branches = package?.Branches?.Any() == true ? new List<string>(package.Branches) : new List<string>();
+            Targets = package?.Branches?.Any() == true ? new List<string>(package.Targets) : new List<string>();
+            Configurations = package?.Branches?.Any() == true ? new List<string>(package.Configurations) : new List<string>();
         }
 
         [JsonPropertyName("package-id")]
@@ -182,18 +182,18 @@ namespace Twinpack.Protocol.Api
 
         public PackageVersionGetResponse(PackageVersionGetResponse packageVersion) : base(packageVersion)
         {
-            PackageVersionId = packageVersion.PackageVersionId;
-            Version = packageVersion.Version;
-            Branch = packageVersion.Branch;
-            Target = packageVersion.Target;
-            Configuration = packageVersion.Configuration;
-            Compiled = packageVersion.Compiled;
-            Notes = packageVersion.Notes;
-            PackageType = packageVersion.PackageType;
-            Binary = packageVersion.Binary;
-            BinaryDownloadUrl = packageVersion.BinaryDownloadUrl;
-            BinarySha256 = packageVersion.BinarySha256;
-            Dependencies = new List<PackageVersionGetResponse>(packageVersion.Dependencies);
+            PackageVersionId = packageVersion?.PackageVersionId;
+            Version = packageVersion?.Version;
+            Branch = packageVersion?.Branch;
+            Target = packageVersion?.Target;
+            Configuration = packageVersion?.Configuration;
+            Compiled = packageVersion?.Compiled ?? 0;
+            Notes = packageVersion?.Notes;
+            PackageType = packageVersion?.PackageType;
+            Binary = packageVersion?.Binary;
+            BinaryDownloadUrl = packageVersion?.BinaryDownloadUrl;
+            BinarySha256 = packageVersion?.BinarySha256;
+            Dependencies = packageVersion?.Dependencies == null ? new List<PackageVersionGetResponse>() : new List<PackageVersionGetResponse>(packageVersion?.Dependencies);
         }
 
         [JsonPropertyName("package-version-id")]

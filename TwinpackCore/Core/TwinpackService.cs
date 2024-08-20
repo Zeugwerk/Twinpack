@@ -647,8 +647,8 @@ namespace Twinpack.Core
                     _logger.Info("Synchronizing framework packages");
 
                 var nonFrameworkPackages = affectedPackages.Where(x => !frameworks.Contains(x.PackageVersion?.Framework)).ToList();
-                var configuredPackages = plcs
-                    .SelectMany(
+                var configuredPackages = options?.PurgePackages == true
+                    ? plcs.SelectMany(
                         x => x.Packages.Select(y => new PackageItem
                         {
                             ProjectName = x.ProjectName,
@@ -659,18 +659,21 @@ namespace Twinpack.Core
                     .Select(
                         x => new PackageItem(x)
                         {
-                            Package = nonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && y.Config.Name == y.Config.Name)?.Package,
-                            PackageVersion = new PackageVersionGetResponse(nonFrameworkPackages.FirstOrDefault(z => z.ProjectName == x.ProjectName && z.PlcName == x.PlcName && z.Config.Name == x.Config.Name)?.PackageVersion)
+                            Package = new PackageGetResponse(nonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.Package),
+                            PackageVersion = new PackageVersionGetResponse(nonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.PackageVersion)
                             { 
+                                Title = x.PackageVersion?.Title ?? x.Config.Name,
                                 Name = x.Config.Name,
+                                DistributorName = x.Config.DistributorName,
                                 Version = x.Config.Version,
                                 Branch = x.Config.Branch,
                                 Target = x.Config.Target,
-                                Configuration = x.Config.Configuration
+                                Configuration = x.Config.Configuration,
                             }
                         }
                     )
-                    .ToList();
+                    .ToList()
+                  : new List<PackageItem>();
 
                 var frameworkPackagesToAdd = new List<PackageItem>();
                 foreach (var project in _config.Projects)
