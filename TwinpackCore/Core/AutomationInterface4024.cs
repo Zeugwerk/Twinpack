@@ -44,16 +44,12 @@ namespace Twinpack.Core
 
         protected override Version MinVersion => new Version(3, 1, 4024, 0);
         protected override Version MaxVersion => null;
-        protected async Task SwitchToMainThreadAsync(CancellationToken cancellationToken=default)
-        {
-            await _synchronizationContext;
-        }
 
         public override string SolutionPath { get => Path.GetFullPath(Path.GetDirectoryName(_visualStudio.Solution.FullName)); }
 
         public override async Task SaveAllAsync()
         {
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
             _visualStudio?.SaveAll();
         }
 
@@ -63,7 +59,7 @@ namespace Twinpack.Core
             if (_effectiveVersionCache.ContainsKey(key))
                 return _effectiveVersionCache[key];
 
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
 
             ITcPlcLibraryManager libManager = LibraryManager(projectName, plcName);
             ResolvePlaceholder(libManager, placeholderName, out _, out var effectiveVersion);
@@ -254,7 +250,7 @@ namespace Twinpack.Core
             if (_referenceCache.Any(x => x.Name == package.PackageVersion.Title && x.DistributorName == package.PackageVersion.DistributorName && x.Version == package.PackageVersion.Version))
                 return true;
 
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
             return IsPackageInstalled(package);
         }
 
@@ -290,7 +286,7 @@ namespace Twinpack.Core
         public override async Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages)
         {
             await SaveAllAsync();
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
             // Close all windows that have been opened with a library manager
             foreach (EnvDTE.Window window in _visualStudio.Dte.Windows)
             {
@@ -328,7 +324,7 @@ namespace Twinpack.Core
             Justification = "IsPackageInstalled always has to switch to the main context, so it is better to just call it right away")]
         public override async Task AddPackageAsync(PackageItem package)
         {
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
 
             // add actual packages
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
@@ -430,7 +426,7 @@ namespace Twinpack.Core
 
         public override async Task RemovePackageAsync(PackageItem package, bool uninstall = false, bool forceRemoval = false)
         {
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
 
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             var plcLibrary = ResolvePlaceholder(libraryManager, package.PackageVersion.Title, out _, out _);
@@ -458,7 +454,7 @@ namespace Twinpack.Core
 
         public override async Task RemoveAllPackagesAsync(string projectName, string plcName)
         {
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
 
             var libraryManager = LibraryManager(projectName, plcName);
             foreach(ITcPlcLibRef reference in libraryManager.References)
@@ -469,7 +465,7 @@ namespace Twinpack.Core
 
         public override async Task InstallPackageAsync(PackageItem package, string cachePath = null)
         {
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
 
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             var packageVersion = package.PackageVersion;
@@ -485,7 +481,7 @@ namespace Twinpack.Core
 
         public override async Task<bool> UninstallPackageAsync(PackageItem package)
         {
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
 
             if (IsPackageInstalled(package))
             {
@@ -502,7 +498,7 @@ namespace Twinpack.Core
 
         public override async Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken)
         {
-            await SwitchToMainThreadAsync();
+            await _synchronizationContext;
             var systemManager = SystemManager(plc.ProjectName);
             var projectRoot = systemManager.LookupTreeItem($"TIPC^{plc.Name}") as ITcProjectRoot;
             var iec = projectRoot.NestedProject;
