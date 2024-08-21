@@ -41,7 +41,7 @@ namespace Twinpack.Core
 
         public override string SolutionPath { get => Path.GetFullPath(_config.WorkingDirectory); }
 
-        public override void SaveAll()
+        public override async Task SaveAllAsync()
         {
             ;
         }

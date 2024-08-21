@@ -1221,7 +1221,7 @@ namespace Twinpack.Dialogs
                 await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
                 _logger.Info($"Creating package configuration at {_configFilePath}");
 
-                _twinpack.Save(_configFilePath);
+                await _twinpack.SaveAsync(_configFilePath);
                 IsCreateConfigVisible = false;
             }
             catch (Exception ex)

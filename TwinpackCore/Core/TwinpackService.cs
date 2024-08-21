@@ -162,9 +162,10 @@ namespace Twinpack.Core
             }
         }
 
-        public void Save(string filePath)
+        public async System.Threading.Tasks.Task SaveAsync(string filePath)
         {
-            _automationInterface?.SaveAll();
+            if(_automationInterface != null)
+                await _automationInterface.SaveAllAsync();
 
             _config.FilePath = filePath;
             ConfigFactory.Save(_config);
@@ -332,7 +333,9 @@ namespace Twinpack.Core
                 plcConfig?.Packages.RemoveAll(x => x.Name == package.PackageVersion.Name);
             }
 
-            _automationInterface.SaveAll();
+            if(_automationInterface != null)
+                await _automationInterface.SaveAllAsync();
+
             ConfigFactory.Save(_config);
         }
 
@@ -450,7 +453,9 @@ namespace Twinpack.Core
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            _automationInterface?.SaveAll();
+            if(_automationInterface != null)
+                await _automationInterface.SaveAllAsync();
+
             ConfigFactory.Save(_config);
 
             return addedPackages;
@@ -740,7 +745,9 @@ namespace Twinpack.Core
                 await AddPackagesAsync(frameworkPackagesToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
             }
 
-            _automationInterface?.SaveAll();
+            if(_automationInterface != null)
+                await _automationInterface.SaveAllAsync();
+
             ConfigFactory.Save(_config);
         }
     }

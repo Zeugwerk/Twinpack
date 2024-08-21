@@ -51,11 +51,9 @@ namespace Twinpack.Core
 
         public override string SolutionPath { get => Path.GetFullPath(Path.GetDirectoryName(_visualStudio.Solution.FullName)); }
 
-        public override void SaveAll()
+        public override async Task SaveAllAsync()
         {
-            if (_synchronizationContext != SynchronizationContext.Current)
-                throw new Exception("Invalid synchronization context!");
-
+            await SwitchToMainThreadAsync();
             _visualStudio?.SaveAll();
         }
 
@@ -160,7 +158,7 @@ namespace Twinpack.Core
                     ready = true;
                     foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
                     {
-                        if (project == null || project.Object == null || project.Kind == EnvDTE.Constants.vsProjectKindSolutionItems)
+                        if (project == null || project.Object == null || project.Object as ITcSysManager == null || project.Kind == EnvDTE.Constants.vsProjectKindSolutionItems)
                             ready = false;
                             
                         else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
@@ -291,9 +289,8 @@ namespace Twinpack.Core
 
         public override async Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages)
         {
+            await SaveAllAsync();
             await SwitchToMainThreadAsync();
-
-            SaveAll();
             // Close all windows that have been opened with a library manager
             foreach (EnvDTE.Window window in _visualStudio.Dte.Windows)
             {
