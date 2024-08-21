@@ -53,6 +53,9 @@ namespace Twinpack.Core
 
         public override void SaveAll()
         {
+            if (_synchronizationContext != SynchronizationContext.Current)
+                throw new Exception("Invalid synchronization context!");
+
             _visualStudio?.SaveAll();
         }
 
@@ -73,6 +76,9 @@ namespace Twinpack.Core
 
         protected ITcPlcLibrary ResolvePlaceholder(ITcPlcLibraryManager libManager, string placeholderName, out string distributorName, out string effectiveVersion)
         {
+            if (_synchronizationContext != SynchronizationContext.Current)
+                throw new Exception("Invalid synchronization context!");
+
             // getter references might throw (Starting from TC3.1.4024.35)
             ITcPlcReferences references;
             try
@@ -136,6 +142,9 @@ namespace Twinpack.Core
 
         protected ITcSysManager SystemManager(string projectName = null)
         {
+            if (_synchronizationContext != SynchronizationContext.Current)
+                throw new Exception("Invalid synchronization context!");
+
             var ready = false;
             while (!ready)
             {
@@ -187,6 +196,9 @@ namespace Twinpack.Core
 
         protected ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)
         {
+            if (_synchronizationContext != SynchronizationContext.Current)
+                throw new Exception("Invalid synchronization context!");
+
             var key = new Tuple<string?, string?>(projectName, plcName);
 
             var systemManager = SystemManager(projectName);
@@ -262,6 +274,9 @@ namespace Twinpack.Core
 
         public override bool IsPackageInstalled(PackageItem package)
         {
+            if (_synchronizationContext != SynchronizationContext.Current)
+                throw new Exception("Invalid synchronization context!");
+
             if (_referenceCache.Any(x => x.Name == package.PackageVersion.Title && x.DistributorName == package.PackageVersion.DistributorName && x.Version == package.PackageVersion.Version))
                 return true;
 
