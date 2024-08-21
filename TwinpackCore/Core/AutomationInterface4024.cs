@@ -140,6 +140,9 @@ namespace Twinpack.Core
             {
                 try
                 {
+                    if (_visualStudio.Dte.Solution.Projects.Count == null)
+                        _logger.Warn("There are no projects in this solution!");
+
                     ready = true;
                     foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
                     {
