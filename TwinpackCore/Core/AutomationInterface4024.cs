@@ -1,4 +1,5 @@
 using EnvDTE;
+using EnvDTE80;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
 using NLog;
@@ -140,6 +141,22 @@ namespace Twinpack.Core
             {
                 try
                 {
+                    bool allProjectsLoaded = true;
+                    foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
+                    {
+                        if (project.Kind == EnvDTE.Constants.vsProjectKindSolutionItems)
+                        {
+                            allProjectsLoaded = false;
+                            break;
+                        }
+                    }
+
+                    if(!_visualStudio.Dte.Solution.IsOpen)
+                        _logger.Warn("Solution is not open!");
+
+                    if (!allProjectsLoaded)
+                        _logger.Warn("Some projects are not fully loaded yet!");
+
                     if (_visualStudio.Dte.Solution.Projects.Count == 0)
                         _logger.Warn("There are no projects in this solution!");
 
