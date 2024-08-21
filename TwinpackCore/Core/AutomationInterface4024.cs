@@ -151,7 +151,6 @@ namespace Twinpack.Core
                     if (_visualStudio.Dte.Solution.Projects.Count == 0)
                         throw new InvalidOperationException("There are no projects in this solution!");
 
-                    ready = true;
                     foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
                     {
                         if (project == null || project.Object == null || project.Object as ITcSysManager == null || project.Kind == EnvDTE.Constants.vsProjectKindSolutionItems)
@@ -159,6 +158,7 @@ namespace Twinpack.Core
                             
                         else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
                         {
+                            ready = true;
                             return project.Object as ITcSysManager;
                         }
                            
