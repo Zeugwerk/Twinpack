@@ -144,7 +144,7 @@ namespace Twinpack.Core
                     bool allProjectsLoaded = true;
                     foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
                     {
-                        if (project.Kind == EnvDTE.Constants.vsProjectKindSolutionItems)
+                        if (project == null || project.Kind == EnvDTE.Constants.vsProjectKindSolutionItems)
                         {
                             allProjectsLoaded = false;
                             break;
@@ -163,8 +163,9 @@ namespace Twinpack.Core
                     ready = true;
                     foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
                     {
-                        if (project == null)
+                        if (project == null || project.Kind == EnvDTE.Constants.vsProjectKindSolutionItems)
                             ready = false;
+                            
                         else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
                         {
                             return project.Object as ITcSysManager;
