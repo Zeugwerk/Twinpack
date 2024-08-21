@@ -140,7 +140,7 @@ namespace Twinpack.Core
             {
                 try
                 {
-                    if (_visualStudio.Dte.Solution.Projects.Count == null)
+                    if (_visualStudio.Dte.Solution.Projects.Count == 0)
                         _logger.Warn("There are no projects in this solution!");
 
                     ready = true;
