@@ -31,7 +31,7 @@ namespace Twinpack.Core
         protected static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
 
         VisualStudio _visualStudio;
-        SynchronizationContext _synchronizationContext;
+        protected SynchronizationContext _synchronizationContext;
 
         public AutomationInterface4024(VisualStudio visualStudio)
         {
