@@ -151,20 +151,18 @@ namespace Twinpack.Core
                     if (_visualStudio.Dte.Solution.Projects.Count == 0)
                         throw new InvalidOperationException("There are no projects in this solution!");
 
+                    ready = true;
                     foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
                     {
                         if (project == null || project.Object == null || project.Object as ITcSysManager == null || project.Kind == EnvDTE.Constants.vsProjectKindSolutionItems)
                             ready = false;
                             
                         else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
-                        {
-                            ready = true;
                             return project.Object as ITcSysManager;
-                        }
                            
                     }
                 }
-                catch(COMException ex)
+                catch(Exception ex)
                 {
                     _logger.Trace(ex);
                 }
@@ -172,6 +170,9 @@ namespace Twinpack.Core
                 if (!ready)
                     System.Threading.Thread.Sleep(1000);
             }
+
+            if (System.Diagnostics.Process.GetProcessesByName("TcXaeShell").Count() == 0)
+                throw new InvalidOperationException("TcXaeShell is no longer available - process crashed!");
 
             throw new InvalidOperationException("No system manager detected!");
         }
