@@ -23,6 +23,11 @@ namespace Twinpack.Core
     {
         public event EventHandler<ProgressEventArgs> ProgressedEvent = delegate { };
 
+        protected virtual void OnProgressdEvent(ProgressEventArgs args)
+        {
+            ProgressedEvent?.Invoke(this, args);
+        }
+
         public string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
         public string TwincatPath

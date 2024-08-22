@@ -24,6 +24,7 @@ namespace Twinpack.Core
         protected IAutomationInterface _automationInterface;
         protected System.Timers.Timer _timeout;
         MessageFilter _filter;
+        protected SynchronizationContext _synchronizationContext;
 
         protected readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -37,6 +38,7 @@ namespace Twinpack.Core
 
         public VisualStudio(bool hidden = true)
         {
+            _synchronizationContext = SynchronizationContext.Current;
             _automationInterfaces = new List<IAutomationInterface>
             {
                 new AutomationInterface4024(this),
@@ -47,17 +49,28 @@ namespace Twinpack.Core
 
         public VisualStudio(DTE2 dte, EnvDTE.Solution solution)
         {
+            _synchronizationContext = SynchronizationContext.Current;
             _dte = dte;
             _solution = solution;
         }
 
-        public void Close(bool save=true)
+        public void ThrowIfNotMainThread()
         {
+            if (_synchronizationContext != SynchronizationContext.Current)
+                throw new SynchronizationLockException("Method call from wrong synchronization context!");
+        }
+
+        public async void Close(bool save=true)
+        {
+            ThrowIfNotMainThread();
+
             _solution?.Close(save);
         }
 
         protected bool Initialize(bool hidden = true)
         {
+            ThrowIfNotMainThread();
+
             if (_dte != null)
                 return true;
 
@@ -110,6 +123,8 @@ namespace Twinpack.Core
 
         public IAutomationInterface Open(Config config, string tcversion="TC3.1")
         {
+            ThrowIfNotMainThread();
+
             _logger.Info(new string('-', 3) + $" open-solution:{config.Solution}");
 
             OutputTcVersion = tcversion;
@@ -182,6 +197,8 @@ namespace Twinpack.Core
 
         public string CurrentTcVersion()
         {
+            ThrowIfNotMainThread();
+
             dynamic remoteManager = _dte.GetObject("TcRemoteManager");
             if (string.IsNullOrEmpty(remoteManager.Version))
             {
@@ -196,6 +213,8 @@ namespace Twinpack.Core
 
         protected string FindTargetSystem(string requestedTcVersion = "TC3.1")
         {
+            ThrowIfNotMainThread();
+
             string tcversion = requestedTcVersion?.Replace("TC", "") ?? "TC3.1"; // TC3.1.4024.10
 
             dynamic remote = _dte.GetObject("TcRemoteManager");
@@ -242,6 +261,8 @@ namespace Twinpack.Core
 
         public void CloseAllWindows()
         {
+            ThrowIfNotMainThread();
+
             try
             {
                 while (!_dte.ActiveWindow.Caption.Contains("EnvDTE.Solution Explorer"))
@@ -252,6 +273,8 @@ namespace Twinpack.Core
 
         public void UnloadProject(string projectName)
         {
+            ThrowIfNotMainThread();
+
             try
             {
                 var solutionName = Path.GetFileNameWithoutExtension(_solution.FileName);
@@ -266,6 +289,8 @@ namespace Twinpack.Core
 
         public void ReloadProject(string projectName)
         {
+            ThrowIfNotMainThread();
+
             try
             {
                 var solutionName = Path.GetFileNameWithoutExtension(_solution.FileName);
@@ -279,6 +304,8 @@ namespace Twinpack.Core
 
         public bool ProjectExists(string projectName)
         {
+            ThrowIfNotMainThread();
+
             try
             {
                 var solutionName = Path.GetFileNameWithoutExtension(_solution.FileName);
@@ -293,6 +320,8 @@ namespace Twinpack.Core
 
         public void RemoveProject(string projectName)
         {
+            ThrowIfNotMainThread();
+
             EnvDTE.Project prj = null;
             foreach (EnvDTE.Project p in _solution.Projects)
             {
@@ -310,6 +339,8 @@ namespace Twinpack.Core
         // check the DTE2 for potential build errors
         public int BuildErrorCount()
         {
+            ThrowIfNotMainThread();
+
             int errorCount = 0;
             ErrorItems errors = _dte.ToolWindows.ErrorList.ErrorItems;
             for (int i = 1; i <= errors.Count; i++)
@@ -337,11 +368,15 @@ namespace Twinpack.Core
 
         public void SaveAll()
         {
+            ThrowIfNotMainThread();
+
             _dte.ExecuteCommand("File.SaveAll");
         }
 
         protected Projects WaitProjects()
         {
+            ThrowIfNotMainThread();
+
             var ready = false;
             Projects projects = null;
             while (!ready)
@@ -365,6 +400,7 @@ namespace Twinpack.Core
         public EnvDTE.Project ActivePlc()
         {
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+            ThrowIfNotMainThread();
 
             if (_dte?.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects?.Length > 0)
             {
