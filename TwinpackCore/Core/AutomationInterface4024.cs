@@ -164,6 +164,7 @@ namespace Twinpack.Core
                 }
                 catch(Exception ex)
                 {
+                    ready = false;
                     _logger.Trace(ex);
                 }
 
