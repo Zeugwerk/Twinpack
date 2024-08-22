@@ -23,8 +23,6 @@ namespace Twinpack.Core
 {
     public class AutomationInterfaceHeadless : AutomationInterface, IAutomationInterface
     {
-        public event EventHandler<ProgressEventArgs> ProgressedEvent = delegate { };
-
         protected static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         protected static XNamespace TcNs = ConfigPlcProjectFactory.TcNs;

@@ -10,7 +10,7 @@ namespace Twinpack.Core
 {
     public interface IAutomationInterface
     {
-        event EventHandler<ProgressEventArgs> ProgressedEvent;
+        event EventHandler<EventArgs> ProgressedEvent;
         public bool IsSupported(string tcversion);
         public string DefaultLibraryCachePath { get; }
         public string TwincatPath { get; }

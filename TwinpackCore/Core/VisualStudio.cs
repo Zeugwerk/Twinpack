@@ -183,7 +183,7 @@ namespace Twinpack.Core
                     _logger.Info("Using " + automationInterface.GetType().FullName);
                     _automationInterface = automationInterface;
 
-                    _automationInterface.ProgressedEvent += new EventHandler<ProgressEventArgs>((s, e) => {
+                    _automationInterface.ProgressedEvent += new EventHandler<EventArgs>((s, e) => {
                         _timeout.Stop();
                         _timeout.Start();
                     });
