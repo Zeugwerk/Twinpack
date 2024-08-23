@@ -30,6 +30,9 @@ namespace Twinpack.Configuration
 
         [JsonPropertyName("projects")]
         public List<ConfigProject> Projects { get; set; }
+
+        [JsonPropertyName("directories")]
+        public List<string> Directories { get; set; }
     }
 
     public class ConfigProject
