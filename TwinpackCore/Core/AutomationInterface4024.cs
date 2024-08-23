@@ -16,6 +16,7 @@ using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Configuration;
+using Twinpack.Exceptions;
 using Twinpack.Models;
 
 namespace Twinpack.Core
@@ -150,7 +151,7 @@ namespace Twinpack.Core
                     ready = true;
                     foreach (EnvDTE.Project project in _visualStudio.Dte.Solution.Projects)
                     {
-                        if (project == null || project.Object == null || project.Kind == EnvDTE.Constants.vsProjectKindSolutionItems)
+                        if (project == null)
                             ready = false;
                             
                         else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
@@ -160,7 +161,6 @@ namespace Twinpack.Core
                 }
                 catch(Exception ex)
                 {
-                    ready = false;
                     _logger.Trace(ex);
                 }
 
@@ -169,9 +169,9 @@ namespace Twinpack.Core
             }
 
             if (System.Diagnostics.Process.GetProcessesByName("TcXaeShell").Count() == 0)
-                throw new InvalidOperationException("TcXaeShell is no longer available - process crashed!");
+                throw new AutomationInterfaceUnresponsiveException(projectName, "TcXaeShell is no longer available - process crashed!");
 
-            throw new InvalidOperationException("No system manager detected!");
+            throw new AutomationInterfaceUnresponsiveException(projectName, "No system manager detected!");
         }
 
         protected ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)

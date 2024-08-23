@@ -2,6 +2,18 @@
 
 namespace Twinpack.Exceptions
 {
+    public class AutomationInterfaceUnresponsiveException : Exception
+    {
+        public string ProjectName { get; private set; }
+        public AutomationInterfaceUnresponsiveException(string message) : base(message)
+        {
+            
+        }
+        public AutomationInterfaceUnresponsiveException(string projectName, string message) : base(message)
+        {
+            ProjectName = projectName;
+        }
+    }
     public class LibraryNotFoundException : Exception
     {
         public string Reference { get; private set; }
