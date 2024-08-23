@@ -156,21 +156,20 @@ namespace Twinpack.Core
                             
                         else if ((projectName == null || project?.Name == projectName) && project.Object as ITcSysManager != null)
                             return project.Object as ITcSysManager;
-                           
+
                     }
-                }
                 catch(Exception ex)
                 {
                     _logger.Trace(ex);
                 }
 
+                if (System.Diagnostics.Process.GetProcessesByName("TcXaeShell").Count() == 0)
+                        throw new AutomationInterfaceUnresponsiveException(projectName, "TcXaeShell is no longer available - process crashed!", restartHint: true);
+
                 if (!ready)
                     System.Threading.Thread.Sleep(1000);
             }
-
-            if (System.Diagnostics.Process.GetProcessesByName("TcXaeShell").Count() == 0)
-                throw new AutomationInterfaceUnresponsiveException(projectName, "TcXaeShell is no longer available - process crashed!", restartHint: true);
-
+            
             throw new AutomationInterfaceUnresponsiveException(projectName, "No system manager detected!", restartHint: true);
         }
 
