@@ -169,9 +169,9 @@ namespace Twinpack.Core
             }
 
             if (System.Diagnostics.Process.GetProcessesByName("TcXaeShell").Count() == 0)
-                throw new AutomationInterfaceUnresponsiveException(projectName, "TcXaeShell is no longer available - process crashed!");
+                throw new AutomationInterfaceUnresponsiveException(projectName, "TcXaeShell is no longer available - process crashed!", restartHint: true);
 
-            throw new AutomationInterfaceUnresponsiveException(projectName, "No system manager detected!");
+            throw new AutomationInterfaceUnresponsiveException(projectName, "No system manager detected!", restartHint: true);
         }
 
         protected ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)

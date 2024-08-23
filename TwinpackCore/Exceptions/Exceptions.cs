@@ -2,23 +2,36 @@
 
 namespace Twinpack.Exceptions
 {
-    public class ProjectException : Exception
+    public abstract class ProjectException : Exception
     {
         public string ProjectName { get; private set; }
+        public bool RestartHint { get; private set; }
+
         public ProjectException(string message) : base(message)
         {
-
+            ProjectName = null;
+            RestartHint = false;
         }
-        public ProjectException(string projectName, string message) : base(message)
+        public ProjectException(string projectName, string message, bool restartHint) : base(message)
         {
             ProjectName = projectName;
+            RestartHint = restartHint;
+        }
+    }
+
+
+    public class CompileException : ProjectException
+    {
+        public CompileException(string message) : base(message) { }
+        public CompileException(string projectName, string message, bool restartHint) : base(projectName, message, restartHint)
+        {
         }
     }
 
     public class AutomationInterfaceUnresponsiveException : ProjectException
     {
         public AutomationInterfaceUnresponsiveException(string message) : base(message) {}
-        public AutomationInterfaceUnresponsiveException(string projectName, string message) : base(projectName, message) {}
+        public AutomationInterfaceUnresponsiveException(string projectName, string message, bool restartHint) : base(projectName, message, restartHint) {}
     }
 
     public class LibraryNotFoundException : Exception
@@ -35,13 +48,6 @@ namespace Twinpack.Exceptions
     public class ProtocolException : Exception
     {
         public ProtocolException(string message) : base(message)
-        {
-        }
-    }
-
-    public class CompileException : Exception
-    {
-        public CompileException(string message) : base(message)
         {
         }
     }
