@@ -44,13 +44,17 @@ namespace Twinpack.Core
             public AddPackageOptions(AddPackageOptions rhs)
             {
                 SkipDownload = rhs.SkipDownload;
+                SkipInstall = rhs.SkipInstall;
                 ForceDownload = rhs.ForceDownload;
+                UpdatePlc = rhs.UpdatePlc;
                 IncludeDependencies = rhs.IncludeDependencies;
                 DownloadPath = rhs.DownloadPath;
             }
 
             public bool SkipDownload = false;
+            public bool SkipInstall = false;
             public bool ForceDownload = false;
+            public bool UpdatePlc = true;
             public bool IncludeDependencies = true;
             public string? DownloadPath = null;
         }
@@ -294,7 +298,7 @@ namespace Twinpack.Core
                     throw new Exception("No packages is selected that could be uninstalled!");
             }
 
-            var affectedPackages = await AffectedPackagesAsync(packages, cancellationToken);
+            var affectedPackages = await AffectedPackagesAsync(packages, includeDependencies: false, cancellationToken: cancellationToken);
 
             await _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
 
@@ -313,7 +317,7 @@ namespace Twinpack.Core
                     throw new Exception("No packages is selected that could be uninstalled!");
             }
 
-            var affectedPackages = await AffectedPackagesAsync(packages, cancellationToken);
+            var affectedPackages = await AffectedPackagesAsync(packages, includeDependencies: false,  cancellationToken: cancellationToken);
 
             await _automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
 
@@ -390,7 +394,7 @@ namespace Twinpack.Core
             if (packages.Any(x => x.Config.Name == null) == true)
                 throw new Exception("Invalid package(s) should be added or updated!");
 
-            var affectedPackages = await AffectedPackagesAsync(packages, cancellationToken);
+            var affectedPackages = await AffectedPackagesAsync(packages, includeDependencies: true, cancellationToken);
             var downloadPath = options?.DownloadPath ?? $@"{_automationInterface?.SolutionPath ?? "."}\.Zeugwerk\libraries";
 
             // copy runtime licenses
@@ -415,7 +419,7 @@ namespace Twinpack.Core
             foreach (var package in downloadedPackageVersions)
             {
                 _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
-                if(_automationInterface != null)
+                if(_automationInterface != null && (options?.SkipInstall == null || options?.SkipInstall == false))
                     await _automationInterface.InstallPackageAsync(package, cachePath: downloadPath);
                 cancellationToken.ThrowIfCancellationRequested();
             }
@@ -426,11 +430,10 @@ namespace Twinpack.Core
             {
                 _logger.Info($"Adding {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName})");
 
-                if (_automationInterface != null)
+                if (_automationInterface != null && (options?.UpdatePlc == null || options?.UpdatePlc == true))
                 {
                     await _automationInterface.AddPackageAsync(package);
                 }
-                cancellationToken.ThrowIfCancellationRequested();
 
                 var parameters = package.Config.Parameters;
 
@@ -500,12 +503,12 @@ namespace Twinpack.Core
             packageItem.PackageServer = resolvedPackage.PackageServer;
         }
 
-        public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, CancellationToken cancellationToken = default)
+        public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, bool includeDependencies = true, CancellationToken cancellationToken = default)
         {
-            return await AffectedPackagesAsync(packages, new List<PackageItem>(), cancellationToken);
+            return await AffectedPackagesAsync(packages, new List<PackageItem>(), includeDependencies, cancellationToken);
         }
 
-        private async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, List<PackageItem> cache, CancellationToken cancellationToken = default)
+        private async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, List<PackageItem> cache, bool includeDependencies = true, CancellationToken cancellationToken = default)
         {
             foreach(var package in packages)
             {
@@ -522,20 +525,24 @@ namespace Twinpack.Core
                 if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
                     cache.Add(package);
 
-                var dependencies = package.PackageVersion.Dependencies ?? new List<PackageVersionGetResponse>();
-                await AffectedPackagesAsync(
-                    dependencies.Select(x =>
-                                new PackageItem()
-                                {
-                                    ProjectName = package.ProjectName,
-                                    PlcName = package.PlcName,
-                                    Catalog = new CatalogItemGetResponse { Name = x.Name },
-                                    Package = x,
-                                    PackageVersion = x,
-                                    Config = new ConfigPlcPackage(x) { Options = package.Config.Options?.CopyForDependency() }
-                                }).ToList(),
-                                cache,
-                                cancellationToken: cancellationToken);
+                if(includeDependencies)
+                {
+                    var dependencies = package.PackageVersion.Dependencies ?? new List<PackageVersionGetResponse>();
+                    await AffectedPackagesAsync(
+                        dependencies.Select(x =>
+                                    new PackageItem()
+                                    {
+                                        ProjectName = package.ProjectName,
+                                        PlcName = package.PlcName,
+                                        Catalog = new CatalogItemGetResponse { Name = x.Name },
+                                        Package = x,
+                                        PackageVersion = x,
+                                        Config = new ConfigPlcPackage(x) { Options = package.Config.Options?.CopyForDependency() }
+                                    }).ToList(),
+                                    cache,
+                                    includeDependencies: true,
+                                    cancellationToken: cancellationToken);
+                }
             }
 
             return cache;
@@ -547,7 +554,7 @@ namespace Twinpack.Core
             List<PackageItem> affectedPackages = packages.ToList();
 
             if (options.IncludeDependencies)
-                affectedPackages = await AffectedPackagesAsync(affectedPackages, cancellationToken);
+                affectedPackages = await AffectedPackagesAsync(affectedPackages, includeDependencies: true, cancellationToken);
 
             // avoid downloading duplicates
             affectedPackages = affectedPackages.GroupBy(x => new
@@ -591,6 +598,9 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task SetPackageVersionAsync(string version, SetPackageVersionOptions options = default, CancellationToken cancellationToken = default)
         {
+            if (options?.PurgePackages == true && options?.SyncFrameworkPackages == false)
+                throw new InvalidOperationException("Purging is only viable when framework packages are synchronized!");
+
             if (options?.PurgePackages == true && _automationInterface != null)
             {
                 _logger.Info("Purging packages");
@@ -640,7 +650,7 @@ namespace Twinpack.Core
                 .ToList();
 
                 // resolve plcs packages to get dependencies and the framework they are part of
-                affectedPackages = await AffectedPackagesAsync(affectedPackages, cancellationToken);
+                affectedPackages = await AffectedPackagesAsync(affectedPackages, includeDependencies: false, cancellationToken);
 
                 var frameworks = affectedPackages
                     .Where(x => x.PackageVersion?.Framework != null && plcs.Any(y => y.Name == x.PackageVersion?.Name))

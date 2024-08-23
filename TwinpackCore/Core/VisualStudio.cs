@@ -370,6 +370,7 @@ namespace Twinpack.Core
         {
             ThrowIfNotMainThread();
 
+            System.Threading.Thread.Sleep(250);
             _dte.ExecuteCommand("File.SaveAll");
         }
 
