@@ -591,7 +591,7 @@ namespace Twinpack.Dialogs
                 _catalogItem.Config.Options = Options;
 
                 // show licenses and wait for accept
-                var affectedPackages = await _twinpack.AffectedPackagesAsync(new List<PackageItem> { _catalogItem }, Token);
+                var affectedPackages = await _twinpack.AffectedPackagesAsync(new List<PackageItem> { _catalogItem }, includeDependencies: true, Token);
                 if (ConfirmLicensesIfNeeded(affectedPackages, true))
                     await _twinpack.AddPackagesAsync(affectedPackages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, Token);
 
