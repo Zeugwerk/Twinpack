@@ -1,62 +1,62 @@
-﻿using CommandLine;
-using NLog.Fluent;
-using NuGet.Common;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Twinpack.Core;
-using Twinpack.Models;
-using Twinpack.Protocol;
-using NuGet.Packaging;
-using System.Xml.Linq;
+using System.ComponentModel;
+using Spectre.Console.Cli;
 
 namespace Twinpack.Commands
 {
-    [Verb("add", HelpText = @"Adds package(s) to the specified project and PLC by utilizing the sources listed in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json. " +
-                         "Ensure that the configuration file is properly set up using 'twinpack.exe config' before executing this command.")]
-    public class AddCommand : Command
+    [Description("Ensure that the configuration file is properly set up using 'twinpack.exe config' before executing this command.")]
+    public class AddCommand : AbstractCommand<AddCommand.Settings>
     {
-        [Option("project", Required = true, HelpText = "The name of the project where the packages should be added.")]
-        public string ProjectName { get; set; }
-
-        [Option("plc", Required = true, HelpText =" The name of the PLC where the packages will be added.")]
-        public string PlcName { get; set; }
-
-        [Option("package", Required = false, HelpText = "Specifies the package(s) to be added.")]
-        public IEnumerable<string> Packages { get; set; }
-
-        [Option("version", Required = false, Default = null, HelpText = "Defines the version(s) of the specified package(s). If omitted, Twinpack will automatically add the latest available version.")]
-        public IEnumerable<string> Versions { get; set; }
-
-        [Option("branch", Required = false, Default = null, HelpText = "Specifies the branch(es) of the package(s). If not provided, Twinpack will determine the appropriate branch automatically, i.e. 'main'")]
-        public IEnumerable<string> Branches { get; set; }
-
-        [Option("target", Required = false, Default = null, HelpText = "Indicates the target(s) for the package(s). If omitted, Twinpack will select the appropriate target(s) automatically, i.e. 'TC3.1'")]
-        public IEnumerable<string> Targets { get; set; }
-
-        [Option("configuration", Required = false, Default = null, HelpText = "Specifies the configuration(s) for the package(s). If not specified, Twinpack will handle the configuration automatically, i.e. 'Release'")]
-        public IEnumerable<string> Configurations { get; set; }
-
-        [Option("add-dependencies", Required = false, Default = true, HelpText = "If true, package dependencies will be added automatically to the PLC references.")]
-        public bool AddDependencies { get; set; }
-
-        [Option("force-download", Required = false, Default = null, HelpText = "Forces the download of package(s) even if they are already available on the system.")]
-        public bool ForceDownload { get; set; }
-
-        [Option("headed", Required = false, Default = false, HelpText = "Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
-        public bool Headed { get; set; }
-
-        public override int Execute()
+        public class Settings : CommandSettings
         {
-            Initialize(Headed);
+            [CommandOption("--project <PROJECT>")]
+            [Description("The name of the project where the packages should be added.")]
+            public string ProjectName { get; set; }
 
-            var packages = CreatePackageItems(Packages, Versions, Branches, Targets, Configurations, ProjectName, PlcName);
+            [CommandOption("--plc <PLC>")]
+            [Description("The name of the PLC where the packages will be added.")]
+            public string PlcName { get; set; }
 
-            _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload=ForceDownload, IncludeDependencies=AddDependencies }).GetAwaiter().GetResult();
+            [CommandOption("--package")]
+            [Description("Specifies the package(s) to be added.")]
+            public string[] Packages { get; set; }
 
+            [CommandOption("--version")]
+            [Description("Defines the version(s) of the specified package(s). If omitted, Twinpack will automatically add the latest available version.")]
+            public string[] Versions { get; set; }
+
+            [CommandOption("--branch")]
+            [Description("Specifies the branch(es) of the package(s). If not provided, Twinpack will determine the appropriate branch automatically, i.e. 'main'")]
+            public string[] Branches { get; set; }
+
+            [CommandOption("--target")]
+            [Description("Indicates the target(s) for the package(s). If omitted, Twinpack will select the appropriate target(s) automatically, i.e. 'TC3.1'")]
+            public string[] Targets { get; set; }
+
+            [CommandOption("--configuration")]
+            [Description("Specifies the configuration(s) for the package(s). If not specified, Twinpack will handle the configuration automatically, i.e. 'Release'")]
+            public string[] Configurations { get; set; }
+
+            [CommandOption("--add-dependencies")]
+            [Description("If true, package dependencies will be added automatically to the PLC references.")]
+            public bool AddDependencies { get; set; }
+
+            [CommandOption("--force-download")]
+            [Description("Forces the download of package(s) even if they are already available on the system.")]
+            public bool ForceDownload { get; set; }
+
+            [CommandOption("--headed")]
+            [Description("Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
+            public bool Headed { get; set; }
+        }
+
+        public override int Execute(CommandContext context, Settings settings)
+        {
+            Initialize(settings.Headed);
+
+            var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations, settings.ProjectName, settings.PlcName);
+            _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload=settings.ForceDownload, IncludeDependencies= settings.AddDependencies }).GetAwaiter().GetResult();
             return 0;
         }
     }

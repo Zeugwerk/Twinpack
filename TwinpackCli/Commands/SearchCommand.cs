@@ -1,6 +1,8 @@
-﻿using CommandLine;
-using NLog.Fluent;
+﻿using NLog.Fluent;
+using Spectre.Console;
+using Spectre.Console.Cli;
 using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Twinpack.Core;
 using Twinpack.Models;
@@ -8,23 +10,31 @@ using Twinpack.Protocol;
 
 namespace Twinpack.Commands
 {
-    [Verb("list", HelpText = @"Searches all package sources defined in the configuration file located at ./Zeugwerk/config.json, or in the first solution found in the current directory.")]
-    public class SearchCommand : Command
+    [Description(@"Searches all package sources defined in the configuration file located at ./Zeugwerk/config.json, or in the first solution found in the current directory.")]
+    public class SearchCommand : AbstractCommand<SearchCommand.Settings>
     {
-        [Value(0, MetaName = "search term", Required = false)]
-        public string? SearchTerm { get; set; }
+        public class Settings : CommandSettings
+        {
+            [CommandOption("-s|--search-term")]
+            [Description("Optional search term to filter the listed packages by name or keyword.")]
+            public string? SearchTerm { get; set; } = null;
 
-        [Option('t', "take", Required = false, Default = null, HelpText = "Limit the number of results to return")]
-        public int? Take { get; set; }
+            [CommandOption("--take")]
+            [Description("Limit the number of results to return")]
+            public int? Take { get; set; }
+        }
 
-        public override int Execute()
+        public override int Execute(CommandContext context, Settings settings)
         {
             Initialize(headed: false, requiresConfig: false);
 
-            foreach (var package in _twinpack.RetrieveAvailablePackagesAsync(SearchTerm, Take).GetAwaiter().GetResult())
-            {
-                Console.WriteLine(package.Catalog.Name);
-            }
+            var table = new Table();
+            table.AddColumns(new[] { "Package", "Distributor" });
+
+            foreach (var package in _twinpack.RetrieveAvailablePackagesAsync(settings.SearchTerm, settings.Take).GetAwaiter().GetResult())
+                table.AddRow(new[] { package.Catalog?.Name, package.Catalog?.DistributorName });
+
+            AnsiConsole.Write(table);
 
             return 0;
         }

@@ -1,30 +1,36 @@
-﻿using CommandLine;
-using System;
+﻿using Spectre.Console.Cli;
 using System.Collections.Generic;
-using Twinpack.Core;
+using System.ComponentModel;
 
 namespace Twinpack.Commands
 {
-    [Verb("remove", HelpText = @"Removes package(s) from the specified project and PLC using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
-    public class RemoveCommand : Command
+    [Description(@"Removes package(s) from the specified project and PLC using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    public class RemoveCommand : AbstractCommand<RemoveCommand.Settings>
     {
-        [Option("project", Required = true, HelpText = "The name of the project from which the packages should be removed.")]
-        public string ProjectName { get; set; }
-
-        [Option("plc", Required = true, HelpText = "The name of the PLC from which the packages should be removed.")]
-        public string PlcName { get; set; }
-
-        [Option("package", Required = false, HelpText = "The package(s) to be removed. If not specified, all packages related to the project and PLC will be considered.")]
-        public IEnumerable<string> Packages { get; set; }
-
-        [Option("headed", Required = false, Default = false, HelpText = "Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
-        public bool Headed { get; set; }
-
-        public override int Execute()
+        public class Settings : CommandSettings
         {
-            Initialize(Headed);
+            [CommandOption("--project")]
+            [Description("The name of the project where the packages should be added.")]
+            public string ProjectName { get; set; }
 
-            var packages = CreatePackageItems(Packages, ProjectName, PlcName);
+            [CommandOption("--plc <PLC>")]
+            [Description("The name of the PLC where the packages will be added.")]
+            public string PlcName { get; set; }
+
+            [CommandOption("--package")]
+            [Description("Specifies the package(s) to be added.")]
+            public string[] Packages { get; set; }
+
+            [CommandOption("--headed")]
+            [Description("Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
+            public bool Headed { get; set; }
+        }
+
+        public override int Execute(CommandContext context, Settings settings)
+        {
+            Initialize(settings.Headed);
+
+            var packages = CreatePackageItems(settings.Packages, settings.ProjectName, settings.PlcName);
 
             _twinpack.RemovePackagesAsync(packages, uninstall: false).GetAwaiter().GetResult();
 

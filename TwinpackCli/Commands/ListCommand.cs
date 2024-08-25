@@ -1,44 +1,51 @@
-﻿using CommandLine;
-using NLog.Fluent;
-using NuGet.Common;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading;
 using System.Linq;
-using System.Threading.Tasks;
-using Twinpack.Core;
-using Twinpack.Models;
-using Twinpack.Protocol;
+using System.ComponentModel;
+using Spectre.Console.Cli;
+using Spectre.Console;
 
 namespace Twinpack.Commands
 {
-    [Verb("list", HelpText = @"Lists all packages used in the configuration file located at ./Zeugwerk/config.json, or in the first solution found in the current directory.")]
-    public class ListCommand : Command
+    [Description(@"Lists all packages used in the configuration file located at ./Zeugwerk/config.json, or in the first solution found in the current directory.")]
+    public class ListCommand : AbstractCommand<ListCommand.Settings>
     {
-        [Value(0, MetaName = "search term", Required = false, HelpText = "Optional search term to filter the listed packages by name or keyword.")]
-        public string? SearchTerm { get; set; }
+        public class Settings : CommandSettings
+        {
+            [CommandOption("-s|--search-term")]
+            [Description("Optional search term to filter the listed packages by name or keyword.")]
+            public string? SearchTerm { get; set; } = null;
 
-        [Option("take", Required = false, Default = null, HelpText = "Limits the number of results returned from the search.")]
-        public int? Take { get; set; }
+            [CommandOption("--take")]
+            [Description("Limits the number of results returned from the search.")]
+            public int? Take { get; set; }
 
-        [Option("plc", Required = false, Default = null, HelpText = "Filters the results to show only packages related to specific PLC(s). By default, all PLCs are considered.")]
-        public IEnumerable<string> PlcFilter { get; set; }
+            [CommandOption("--plc <ITEM>")]
+            [Description("Filters the results to show only packages related to specific PLC(s). By default, all PLCs are considered.")]
+            public string[] PlcFilter { get; set; }
 
-        [Option("outdated", Required = false, Default = null, HelpText = "Displays only the packages that are outdated compared to their latest available versions, considering the configured branch/target/configuration")]
-        public bool Outdated { get; set; }
+            [CommandOption("--outdated")]
+            [Description("Displays only the packages that are outdated compared to their latest available versions, considering the configured branch/target/configuration")]
+            public bool Outdated { get; set; } = false;
+        }
 
-        public override int Execute()
+        public override int Execute(CommandContext context, Settings settings)
         {
             Initialize(headed: false);
 
             // remove projects accordingly to the filter
             foreach (var project in _config.Projects)
-                project.Plcs = project.Plcs.Where(x => !PlcFilter.Any() || PlcFilter.Contains(x.Name)).ToList();
+                project.Plcs = project.Plcs.Where(x => settings.PlcFilter == null || !settings.PlcFilter.Any() || settings.PlcFilter.Contains(x.Name)).ToList();
 
-            var packages = _twinpack.RetrieveUsedPackagesAsync(SearchTerm).GetAwaiter().GetResult();
-            foreach (var package in packages.Where(x => !Outdated || x.IsUpdateable))
-                Console.WriteLine($"{package.ProjectName}:{package.PlcName}: {package.Catalog?.Name} {package.InstalledVersion} {(package.IsUpdateable ? $"-> {package.UpdateVersion}" : "")}");
+            var packages = _twinpack.RetrieveUsedPackagesAsync(settings.SearchTerm).GetAwaiter().GetResult();
+
+            var table = new Table();
+            table.AddColumns(new[] { "Project", "Plc", "Package", "Installed Version", "Latest Version", "Updatable" });
+
+            foreach (var package in packages.Where(x => !settings.Outdated || x.IsUpdateable))
+                table.AddRow(new []{ package.ProjectName ?? "n/a", package.PlcName ?? "n/a", package.Catalog?.Name ?? "n/a", package.InstalledVersion ?? "n/a", package.UpdateVersion ?? "n/a", package.IsUpdateable.ToString() ?? "n/a" });
+
+            AnsiConsole.Write(table);
 
             return 0;
         }

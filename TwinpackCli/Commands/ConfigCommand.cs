@@ -1,5 +1,4 @@
-﻿using CommandLine;
-using NLog.Fluent;
+﻿using NLog.Fluent;
 using NuGet.Common;
 using System;
 using System.Collections.Generic;
@@ -15,27 +14,40 @@ using NuGet.Protocol.Plugins;
 using System.Net.PeerToPeer;
 using System.Diagnostics;
 using Twinpack.Exceptions;
+using System.ComponentModel;
+using Spectre.Console.Cli;
 
 namespace Twinpack.Commands
 {
-    [Verb("config", HelpText = @"Configure or modify package source repositories by updating the settings defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
-    public class ConfigCommand : Command
+    [Description(@"Configure or modify package source repositories by updating the settings defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    public class ConfigCommand : AbstractCommand<ConfigCommand.Settings>
     {
-        [Option("type", Required = false, HelpText = "Specifies the type(s) of package server(s), i.e. 'Twinpack Repository', 'NuGet Repository', 'Beckhoff Repository'")]
-        public IEnumerable<string> Types { get; set; }
-        [Option("source", Required = false, HelpText = "Specifies the URL(s) of the package server(s) from which packages will be handled.")]
-        public IEnumerable<string> Sources { get; set; }
-        [Option("name", Required = false, HelpText = "Specifies the name(s) for the package server(s). Defaults to the corresponding source URL if not provided.")]
-        public IEnumerable<string> Names { get; set; }
-        [Option("username", Required = false, HelpText = "Specifies the username(s) required to authenticate with the package server(s), if applicable.")]
-        public IEnumerable<string> Usernames { get; set; }
-        [Option("password", Required = false, HelpText = "Specifies the password(s) required to authenticate with the package server(s), if applicable.")]
-        public IEnumerable<string> Passwords { get; set; }
-        [Option("purge", Required = false, HelpText = "Deletes all currently configured package servers, clearing the configuration file and deleting stored credentials")]
-        public bool Purge { get; set; }
-        [Option("reset", Required = false, HelpText = "Resets the configuration by purging all currently configured package servers and restoring default settings.")]
-        public bool Reset { get; set; }
-        public override int Execute()
+        public class Settings : CommandSettings
+        {
+            [CommandOption("--type")]
+            [Description("Specifies the type(s) of package server(s), i.e. 'Twinpack Repository', 'NuGet Repository', 'Beckhoff Repository'")]
+            public string[] Types { get; set; }
+            [CommandOption("--source")]
+            [Description("Specifies the URL(s) of the package server(s) from which packages will be handled.")]
+            public string[] Sources { get; set; }
+            [CommandOption("--name")]
+            [Description("Specifies the name(s) for the package server(s). Defaults to the corresponding source URL if not provided.")]
+            public string[] Names { get; set; }
+            [CommandOption("--username")]
+            [Description("Specifies the username(s) required to authenticate with the package server(s), if applicable.")]
+            public string[] Usernames { get; set; }
+            [CommandOption("--password")]
+            [Description("Specifies the password(s) required to authenticate with the package server(s), if applicable.")]
+            public string[] Passwords { get; set; }
+            [CommandOption("--purge")]
+            [Description("Deletes all currently configured package servers, clearing the configuration file and deleting stored credentials")]
+            public bool Purge { get; set; }
+            [CommandOption("--reset")]
+            [Description("Resets the configuration by purging all currently configured package servers and restoring default settings.")]
+            public bool Reset { get; set; }
+
+        }
+        public override int Execute(CommandContext context, Settings settings)
         {
             // load existing configuration
             try
@@ -45,7 +57,7 @@ namespace Twinpack.Commands
             catch (FileNotFoundException) { }
 
             // purge if needed
-            if (Purge)
+            if (settings.Purge)
             {
                 _logger.Info("Purging existing configuration");
                 PackagingServerRegistry.PurgeAsync().GetAwaiter().GetResult();
@@ -54,25 +66,25 @@ namespace Twinpack.Commands
             // reset if needed
             try
             {
-                PackagingServerRegistry.InitializeAsync(useDefaults: Reset, login: false).GetAwaiter().GetResult();
+                PackagingServerRegistry.InitializeAsync(useDefaults: settings.Reset, login: false).GetAwaiter().GetResult();
             }
             catch (FileNotFoundException) { }
 
             // add new sources
-            for (int i = 0; i < Sources.Count(); i++)
+            for (int i = 0; i < settings.Sources.Count(); i++)
             {
-                var type = Types.ElementAtOrDefault(i) ?? null;
+                var type = settings.Types.ElementAtOrDefault(i) ?? null;
    
-                var uri = Sources.ElementAt(i);
+                var uri = settings.Sources.ElementAt(i);
                 _logger.Info($"Adding package server {uri}");
                 var packageServer = PackagingServerRegistry.AddServerAsync(
                     type,
-                    Names.ElementAtOrDefault(i) ?? uri,
+                    settings.Names.ElementAtOrDefault(i) ?? uri,
                     uri,
                     login: false).GetAwaiter().GetResult();
 
-                packageServer.Username = Usernames.ElementAtOrDefault(i);
-                packageServer.Password = Passwords.ElementAtOrDefault(i);
+                packageServer.Username = settings.Usernames.ElementAtOrDefault(i);
+                packageServer.Password = settings.Passwords.ElementAtOrDefault(i);
             }
 
             // try to login

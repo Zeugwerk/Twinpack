@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Models;
@@ -12,14 +11,12 @@ using Twinpack.Protocol;
 
 namespace Twinpack.Commands
 {
-    public abstract class Command
+    public abstract class AbstractCommand<TSettings> : Spectre.Console.Cli.Command<TSettings> where TSettings : Spectre.Console.Cli.CommandSettings
     {
         protected TwinpackService _twinpack;
         protected Config _config;
 
         protected static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-
-        public abstract int Execute();
 
         protected void Initialize(bool headed, bool requiresConfig = true)
         {
@@ -52,16 +49,15 @@ namespace Twinpack.Commands
                 _config);
         }
 
-        protected List<PackageItem> CreatePackageItems(IEnumerable<string> packages, string projectName = null, string plcName = null)
+        protected List<PackageItem> CreatePackageItems(string[] packages, string projectName = null, string plcName = null)
         {
-            return CreatePackageItems(packages, new List<string>(), new List<string>(), new List<string>(), new List<string>(), projectName, plcName);
+            return CreatePackageItems(packages, null, null, null, null, projectName, plcName);
         }
-
-        protected List<PackageItem> CreatePackageItems(IEnumerable<string> packages, IEnumerable<string> versions, IEnumerable<string> branches, IEnumerable<string> targets, IEnumerable<string> configurations, string projectName=null, string plcName=null)
+        protected List<PackageItem> CreatePackageItems(string[] packages, string[] versions, string[] branches, string[] targets, string[] configurations, string projectName=null, string plcName=null)
         {
             // create temporary configuration, which holds the packages, which should be downloaded
             List<PackageItem> packageItems = new List<PackageItem>();
-            for (int i = 0; i < packages.Count(); i++)
+            for (int i = 0; i < (packages?.Count() ?? 0); i++)
             {
                 packageItems.Add(new PackageItem
                 {
@@ -69,11 +65,11 @@ namespace Twinpack.Commands
                     PlcName = plcName,
                     Config = new ConfigPlcPackage
                     {
-                        Name = packages.ElementAt(i),
-                        Version = versions.ElementAtOrDefault(i) ?? null,
-                        Branch = branches.ElementAtOrDefault(i) ?? null,
-                        Target = targets.ElementAtOrDefault(i) ?? null,
-                        Configuration = configurations.ElementAtOrDefault(i) ?? null
+                        Name = packages?.ElementAt(i),
+                        Version = versions?.ElementAtOrDefault(i) ?? null,
+                        Branch = branches?.ElementAtOrDefault(i) ?? null,
+                        Target = targets?.ElementAtOrDefault(i) ?? null,
+                        Configuration = configurations?.ElementAtOrDefault(i) ?? null
                     }
                 });
             }

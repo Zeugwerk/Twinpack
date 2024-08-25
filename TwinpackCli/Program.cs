@@ -1,14 +1,8 @@
-﻿using CommandLine;
-using EnvDTE;
-using NLog;
+﻿using NLog;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Twinpack.Commands;
-using Twinpack.Models;
-using Twinpack.Protocol;
+using Spectre.Console.Cli;
+using NLog.Config;
 
 namespace Twinpack
 {
@@ -22,30 +16,28 @@ namespace Twinpack
         {
             LogManager.Setup();
 
+            var app = new CommandApp();
+            app.Configure(config =>
+            {
+                config.AddCommand<ConfigCommand>("config");
+                config.AddCommand<SearchCommand>("search");
+                config.AddCommand<ListCommand>("list");
+                config.AddCommand<DownloadCommand>("download");
+                config.AddCommand<AddCommand>("add");
+                config.AddCommand<RemoveCommand>("remove");
+                config.AddCommand<RestoreCommand>("restore");
+                config.AddCommand<UpdateCommand>("update");
+                config.AddCommand<SetVersionCommand>("set-version");
+                config.AddCommand<PullCommand>("pull");
+                config.AddCommand<PushCommand>("push");
+                config.Settings.StrictParsing = true;
+                config.Settings.ApplicationName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                config.Settings.ApplicationVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            });
+
             try
             {
-                return Parser.Default.ParseArguments<
-                    ConfigCommand,
-                    SearchCommand, ListCommand,
-                    DownloadCommand, 
-                    AddCommand, RemoveCommand, 
-                    RestoreCommand, UpdateCommand, 
-                    SetVersionCommand,
-                    PullCommand, PushCommand>(args)
-                    .MapResult(
-                        (ConfigCommand command) => Execute(command),
-                        (SearchCommand command) => Execute(command),
-                        (ListCommand command) => Execute(command),
-                        (DownloadCommand command) => Execute(command),
-                        (AddCommand command) => Execute(command),
-                        (RemoveCommand command) => Execute(command),
-                        (RestoreCommand command) => Execute(command),
-                        (UpdateCommand command) => Execute(command),
-                        (SetVersionCommand command) => Execute(command),
-                        (PullCommand command) => Execute(command),
-                        (PushCommand command) => Execute(command),
-                         errs => 1
-                    );
+                return app.Run(args);
             }
             catch(Exception ex)
             {
@@ -56,11 +48,6 @@ namespace Twinpack
             finally
             {
             }
-        }
-
-        private static int Execute<T>(T command) where T : Commands.Command
-        {
-            return command.Execute();
         }
     }
 }
