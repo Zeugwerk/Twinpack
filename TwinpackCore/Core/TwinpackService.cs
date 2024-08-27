@@ -621,6 +621,8 @@ namespace Twinpack.Core
 
             foreach(var plc in plcs)
             {
+                _logger.Info(new string('-', 3) + $" set-version:{plc.Name}");
+
                 plc.Version = version;
 
                 if(_automationInterface != null)
