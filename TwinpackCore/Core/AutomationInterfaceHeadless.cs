@@ -228,6 +228,9 @@ namespace Twinpack.Core
             while ((element = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "LibraryReference")?.Any() == true)?.FirstOrDefault()) != null)
                 element.Remove();
 
+            while ((element = project.Elements(TcNs + "ItemGroup")?.Where(e => !e.HasElements).FirstOrDefault()) != null)
+                element.Remove();
+
             xdoc.Save(plcConfig.FilePath);
         }
 
