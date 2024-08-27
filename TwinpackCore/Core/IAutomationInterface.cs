@@ -18,7 +18,7 @@ namespace Twinpack.Core
         public string BootFolderPath { get; }
         public string SolutionPath { get; }
         public Task<string> ResolveEffectiveVersionAsync(string projectName, string plcName, string placeholderName);
-        public Task SetPackageVersionAsync(ConfigPlcProject package, CancellationToken cancellationToken);
+        public Task SetPackageVersionAsync(ConfigPlcProject package, CancellationToken cancellationToken = default);
         public Task<bool> IsPackageInstalledAsync(PackageItem package);
         public bool IsPackageInstalled(PackageItem package);
         public Task AddPackageAsync(PackageItem package);

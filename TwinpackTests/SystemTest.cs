@@ -453,5 +453,63 @@ namespace TwinpackTests
             Assert.AreEqual(newVersion, plcprojPackages.FirstOrDefault(x => x.Name == "PlcLibrary1")?.Version);
             Assert.AreEqual(null, plcprojPackages.FirstOrDefault(x => x.Name == "Tc3_Module")?.Version);
         }
+
+
+        [DataTestMethod]
+        [DataRow("NewTitle", "NewCompany", "6.6.6.6", "NewTitle", "NewCompany", "6.6.6.6")]
+        [DataRow(null, null, null, null, null, null)]
+        [DataRow("New-Title", "New-Company", null, null, "New-Company", null)]
+        [DataRow("PlcLibrary1", "My Company", "1.2.3.4", "PlcLibrary1", "My Company", "1.2.3.4")]
+        public async Task SetPackageVersion_WithAutomationInterface_TitleCompanyVersionAreUpdated_Async(string newTitle, string newCompany, string newVersion,
+            string expectedTitle, string expectedCompany, string expectedVersion)
+        {
+            _config = ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution").GetAwaiter().GetResult();
+            var packageServers = new PackageServerCollection { _packageServer };
+
+            // act - add package, including dependencies
+            var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            plc.Title = newTitle;
+            plc.DistributorName = newCompany;
+            plc.Version = newVersion;
+            await _automationInterface.SetPackageVersionAsync(plc);
+            await _automationInterface.SaveAllAsync();
+
+            // check if plcproj was updated as well
+            var plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
+            var plcprojPlc = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            Assert.AreEqual(expectedTitle ?? plcprojPlc.Title, plcprojPlc?.Title);
+            Assert.AreEqual(expectedCompany ?? plcprojPlc.DistributorName, plcprojPlc?.DistributorName);
+            Assert.AreEqual(expectedVersion ?? plcprojPlc.Version, plcprojPlc?.Version);
+        }
+
+        [DataTestMethod]
+        [DataRow("NewTitle", "NewCompany", "6.6.6.6", "NewTitle", "NewCompany", "6.6.6.6")]
+        [DataRow(null, null, null, null, null, null)]
+        [DataRow("New-Title", "New-Company", null, null, "New-Company", null)]
+        [DataRow("PlcLibrary1", "My Company", "1.2.3.4", "PlcLibrary1", "My Company", "1.2.3.4")]
+        public async Task SetPackageVersion_WithTwinpack_TitleCompanyVersionAreUpdated_Async(string newTitle, string newCompany, string newVersion,
+            string expectedTitle, string expectedCompany, string expectedVersion)
+        {
+            _config = ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution").GetAwaiter().GetResult();
+            var packageServers = new PackageServerCollection { _packageServer };
+            var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
+
+            // cleanup
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+
+            // act - add package, including dependencies
+            var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            plc.Title = newTitle;
+            plc.DistributorName = newCompany;
+            await twinpack.SetPackageVersionAsync(newVersion);
+
+            // check if plcproj was updated as well
+            var plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
+            var plcprojPlc = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            Assert.AreEqual(expectedTitle ?? plcprojPlc.Title, plcprojPlc?.Title);
+            Assert.AreEqual(expectedCompany ?? plcprojPlc.DistributorName, plcprojPlc?.DistributorName);
+            Assert.AreEqual(expectedVersion ?? plcprojPlc.Version, plcprojPlc?.Version);
+        }
     }
 }

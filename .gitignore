@@ -8,6 +8,7 @@ GeneratedFiles
 *.libcat
 *.projectinfo.bin
 *.stringtable
+*.~u
 
 # User-specific files
 Output/

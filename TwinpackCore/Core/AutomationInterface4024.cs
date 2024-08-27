@@ -494,22 +494,62 @@ namespace Twinpack.Core
             return false;
         }
 
-        public override async Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken)
+        public override async Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken=default)
         {
             await _synchronizationContext;
             var systemManager = SystemManager(plc.ProjectName);
             var projectRoot = systemManager.LookupTreeItem($"TIPC^{plc.Name}") as ITcProjectRoot;
             var iec = projectRoot.NestedProject;
+            var allowedPlcNameRegex = new Regex("^[a-zA-Z]+[a-zA-Z0-9_]+$");
+            var allowedCompanyRegex = new Regex("^.*$");
+            var titleStr = plc.Title ?? plc.Name;
 
             StringWriter stringWriter = new StringWriter();
-            using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
+            using (XmlWriter writer = XmlWriter.Create(stringWriter))
             {
                 writer.WriteStartElement("TreeItem");
                 writer.WriteStartElement("IECProjectDef");
                 writer.WriteStartElement("ProjectInfo");
-                //writer.WriteElementString("Title", _plcConfig.Title);
-                writer.WriteElementString("Version", new Version(plc.Version).ToString());
-                //writer.WriteElementString("Company", _plcConfig.DistributorName);
+
+                if (!string.IsNullOrEmpty(plc.Name) && allowedPlcNameRegex.IsMatch(plc.Name))
+                {
+                    writer.WriteElementString("Name", plc.Name);
+                    _logger.Info($"Updated title to '{plc.Name}'");
+                }
+                else
+                {
+                    _logger.Warn($"Title '{plc.Name}' contains invalid characters - skipping PLC title update, the package might be broken!");
+                }
+
+                if (!string.IsNullOrEmpty(titleStr) && allowedPlcNameRegex.IsMatch(titleStr))
+                {
+                    writer.WriteElementString("Title", titleStr);
+                    _logger.Info($"Updated title to '{titleStr}'");
+                }
+                else
+                {
+                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update, the package might be broken!");
+                }
+
+                if (!string.IsNullOrEmpty(plc.Version))
+                {
+                    writer.WriteElementString("Version", new Version(plc.Version).ToString());
+                    _logger.Info($"Updated version to '{plc.Version}'");
+                }
+                else
+                {
+                    _logger.Warn($"Version '{plc.Version}' is empty - skipping PLC company update, the package might be broken!");
+                }
+
+                if (!string.IsNullOrEmpty(plc.DistributorName) && allowedCompanyRegex.IsMatch(plc.DistributorName))
+                {
+                    writer.WriteElementString("Company", plc.DistributorName);
+                    _logger.Info($"Updated company to '{plc.DistributorName}'");
+                }
+                else
+                {
+                    _logger.Warn($"Distributor name '{plc.DistributorName}' contains invalid characters - skipping PLC company update, the package might be broken!");
+                }
                 writer.WriteEndElement();     // ProjectInfo
                 writer.WriteEndElement();     // IECProjectDef
                 writer.WriteEndElement();     // TreeItem 

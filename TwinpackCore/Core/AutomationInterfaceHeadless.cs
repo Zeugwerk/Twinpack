@@ -16,6 +16,7 @@ using System.Xml.Linq;
 using TCatSysManagerLib;
 using Twinpack.Configuration;
 using Twinpack.Models;
+using Twinpack.Protocol;
 using Twinpack.Protocol.Api;
 using VSLangProj;
 
@@ -158,6 +159,8 @@ namespace Twinpack.Core
         public override async Task RemovePackageAsync(PackageItem package, bool uninstall = false, bool forceRemoval = false)
         {
             var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault(x => x.Name == package.PlcName);
+            if (plcConfig == null)
+                throw new InvalidOperationException($"Project '{package.ProjectName}' (Plc {package.PlcName}) is not configured in {_config.FilePath}");
 
             var xdoc = XDocument.Load(plcConfig.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
@@ -239,24 +242,86 @@ namespace Twinpack.Core
             return false;
         }
 
-        public override async Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken)
+        public override async Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken = default)
         {
             var xdoc = XDocument.Load(plc.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
             if (project == null)
                 throw new InvalidDataException($"{plc.FilePath} is not a valid plcproj file");
 
-            var versionNode = project.Elements(TcNs + "PropertyGroup").Elements(TcNs + "Version")?.FirstOrDefault();
-            versionNode ??= project.Elements(TcNs + "PropertyGroup").Elements(TcNs + "ProjectVersion").FirstOrDefault();
 
-            if (versionNode == null)
+            XElement propertyGroup = project.Elements(TcNs + "PropertyGroup").FirstOrDefault();
+            if (propertyGroup != null)
             {
-                var propertyGroup = project.Elements(TcNs + "PropertyGroup").Where(x => x.Elements(TcNs + "FileVersion").Any())?.FirstOrDefault();
-                versionNode = new XElement(TcNs + "ProjectVersion");
-                propertyGroup.Add(versionNode);
+                var title = propertyGroup.Elements(TcNs + "Title").FirstOrDefault();
+                var name = propertyGroup.Elements(TcNs + "Name").FirstOrDefault();
+                var projectVersion = propertyGroup.Elements(TcNs + "Version")?.FirstOrDefault()
+                                ?? propertyGroup.Elements(TcNs + "ProjectVersion").FirstOrDefault();
+                var company = propertyGroup.Elements(TcNs + "Company").FirstOrDefault();
+
+                var allowedPlcNameRegex = new Regex("^[a-zA-Z]+[a-zA-Z0-9_]+$");
+                var allowedCompanyRegex = new Regex("^.*$");
+                if (!string.IsNullOrEmpty(/*plc.Title ?? */plc.Name) && allowedPlcNameRegex.IsMatch(plc.Name))
+                {
+                    if (name != null)
+                        name.Value = plc.Name;
+                    else
+                        propertyGroup.Add(new XElement(TcNs + "Name", plc.Name));
+
+                    _logger.Info($"Updated name to '{plc.Name}'");
+                }
+                else
+                {
+                    _logger.Warn($"Name '{plc.Name}' contains invalid characters - skipping PLC Name update, the package might be broken!");
+
+                }
+
+                // config.packages do not have a title, only a name ...
+                var titleStr = plc.Title ?? plc.Name;
+                if (!string.IsNullOrEmpty(titleStr) && allowedPlcNameRegex.IsMatch(titleStr))
+                {
+                    if (title != null)
+                        title.Value = titleStr;
+                    else
+                        propertyGroup.Add(new XElement(TcNs + "Title", titleStr));
+
+                    _logger.Info($"Updated title to '{titleStr}'");
+                }
+                else
+                {
+                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update, the package might be broken!");
+
+                }
+
+                if (!string.IsNullOrEmpty(plc.DistributorName) && allowedCompanyRegex.IsMatch(plc.DistributorName))
+                {
+                    if (company != null)
+                        company.Value = plc.DistributorName;
+                    else
+                        propertyGroup.Add(new XElement(TcNs + "Company", plc.DistributorName));
+
+                    _logger.Info($"Updated company to '{plc.DistributorName}'");
+                }
+                else
+                {
+                    _logger.Warn($"Distributor name '{plc.DistributorName}' contains invalid characters - skipping PLC company update, the package might be broken!");
+                }
+
+                if (!string.IsNullOrEmpty(plc.Version))
+                {
+                    if (projectVersion != null)
+                        projectVersion.Value = plc.Version;
+                    else
+                        propertyGroup.Add(new XElement(TcNs + "ProjectVersion", plc.Version));
+
+                    _logger.Info($"Updated version to '{plc.Version}'");
+                }
+                else
+                {
+                    _logger.Warn($"Version '{plc.Version}' is empty - skipping PLC company update, the package might be broken!");
+                }
             }
 
-            versionNode.Value = plc.Version;
             xdoc.Save(plc.FilePath);
         }
     }
