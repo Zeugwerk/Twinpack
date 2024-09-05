@@ -1,4 +1,5 @@
 using EnvDTE;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.Win32;
 using NLog;
 using System;
@@ -40,7 +41,7 @@ namespace Twinpack.Core
 
         public override string SolutionPath { get => Path.GetFullPath(_config.WorkingDirectory); }
 
-        public override async Task SaveAllAsync()
+        public override async System.Threading.Tasks.Task SaveAllAsync()
         {
             ;
         }
@@ -60,17 +61,17 @@ namespace Twinpack.Core
             return true;
         }
 
-        public override async Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages)
+        public override async System.Threading.Tasks.Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages)
         {
             
         }
 
-        public override async Task AddPackageAsync(PackageItem package)
+        public override async System.Threading.Tasks.Task AddPackageAsync(PackageItem package)
         {
             await AddPackageAsync(package, ns: package.PackageVersion.Title);
         }
 
-        public async Task AddPackageAsync(PackageItem package, string ns)
+        public async System.Threading.Tasks.Task AddPackageAsync(PackageItem package, string ns)
         {
             static void AddOptions(XElement root, AddPlcLibraryOptions options)
             {
@@ -156,7 +157,7 @@ namespace Twinpack.Core
             xdoc.Save(plcConfig.FilePath);
         }
 
-        public override async Task RemovePackageAsync(PackageItem package, bool uninstall = false, bool forceRemoval = false)
+        public override async System.Threading.Tasks.Task RemovePackageAsync(PackageItem package, bool uninstall = false, bool forceRemoval = false)
         {
             var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault(x => x.Name == package.PlcName);
             if (plcConfig == null)
@@ -209,7 +210,7 @@ namespace Twinpack.Core
             xdoc.Save(plcConfig.FilePath);
         }
 
-        public override async Task RemoveAllPackagesAsync(string projectName, string plcName)
+        public override async System.Threading.Tasks.Task RemoveAllPackagesAsync(string projectName, string plcName)
         {
             var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == projectName).Plcs.FirstOrDefault(x => x.Name == plcName);
 
@@ -234,7 +235,7 @@ namespace Twinpack.Core
             xdoc.Save(plcConfig.FilePath);
         }
 
-        public override async Task InstallPackageAsync(PackageItem package, string cachePath = null)
+        public override async System.Threading.Tasks.Task InstallPackageAsync(PackageItem package, string cachePath = null)
         {
             _logger.Warn("Headless AutomationInterface can not install packages");
         }
@@ -245,7 +246,7 @@ namespace Twinpack.Core
             return false;
         }
 
-        public override async Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken = default)
+        public override async System.Threading.Tasks.Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken = default)
         {
             var xdoc = XDocument.Load(plc.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
@@ -290,6 +291,10 @@ namespace Twinpack.Core
 
                     _logger.Info($"Updated title to '{titleStr}'");
                 }
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
+                {
+                    throw new ArgumentException("Title is empty, but it is mandatory for libraries!");
+                }
                 else
                 {
                     _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update, the package might be broken!");
@@ -305,6 +310,10 @@ namespace Twinpack.Core
 
                     _logger.Info($"Updated company to '{plc.DistributorName}'");
                 }
+                else if((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.DistributorName))
+                {
+                    throw new ArgumentException("Distributor name is empty, but it is mandatory for libraries!");
+                }
                 else
                 {
                     _logger.Warn($"Distributor name '{plc.DistributorName}' contains invalid characters - skipping PLC company update, the package might be broken!");
@@ -318,6 +327,10 @@ namespace Twinpack.Core
                         propertyGroup.Add(new XElement(TcNs + "ProjectVersion", plc.Version));
 
                     _logger.Info($"Updated version to '{plc.Version}'");
+                }
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.Version))
+                {
+                    throw new ArgumentException("Version is empty, but it is mandatory for libraries!");
                 }
                 else
                 {

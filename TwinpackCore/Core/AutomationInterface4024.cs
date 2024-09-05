@@ -526,6 +526,10 @@ namespace Twinpack.Core
                     writer.WriteElementString("Title", titleStr);
                     _logger.Info($"Updated title to '{titleStr}'");
                 }
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
+                {
+                    throw new ArgumentException("Title is empty, but it is mandatory for libraries!");
+                }
                 else
                 {
                     _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update, the package might be broken!");
@@ -536,6 +540,10 @@ namespace Twinpack.Core
                     writer.WriteElementString("Version", new Version(plc.Version).ToString());
                     _logger.Info($"Updated version to '{plc.Version}'");
                 }
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.Version))
+                {
+                    throw new ArgumentException("Version is empty, but it is mandatory for libraries!");
+                }
                 else
                 {
                     _logger.Warn($"Version '{plc.Version}' is empty - skipping PLC company update, the package might be broken!");
@@ -545,6 +553,10 @@ namespace Twinpack.Core
                 {
                     writer.WriteElementString("Company", plc.DistributorName);
                     _logger.Info($"Updated company to '{plc.DistributorName}'");
+                }
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.DistributorName))
+                {
+                    throw new ArgumentException("Distributor name is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
