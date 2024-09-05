@@ -505,6 +505,8 @@ namespace TwinpackTests
             plc.DistributorName = newCompany;
             await twinpack.SetPackageVersionAsync(newVersion);
 
+            Assert.AreEqual(expectedVersion ?? plc.Version, plc?.Version);
+
             // check if plcproj was updated as well
             var plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
             var plcprojPlc = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
