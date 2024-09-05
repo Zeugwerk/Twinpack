@@ -130,7 +130,7 @@ namespace Twinpack.Core
             OutputTcVersion = tcversion;
             var remoteManagerTcVersion = FindTargetSystem(tcversion);
 
-            _solution.Open(Path.GetFullPath($"{config.WorkingDirectory}\\{config.Solution}"));
+            _solution.Open(Path.GetFullPath($"{config.WorkingDirectory}\\{config.Solution.Replace("/", "\\")}"));
             CloseAllWindows();
             var projects = WaitProjects();
 
