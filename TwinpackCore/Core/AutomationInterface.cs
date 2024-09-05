@@ -61,7 +61,7 @@ namespace Twinpack.Core
             return (MinVersion == null || v >= MinVersion) && (MaxVersion == null || v <= MaxVersion);
         }
 
-        public string NormalizedVersion(string version)
+        public static string NormalizedVersion(string version)
         {
             version = version?.Trim().TrimStart(new char[] { 'v', 'V', ' ', '\t' }).Replace('-', '.');
             if (version != null && !Version.TryParse(version, out _))

@@ -623,7 +623,7 @@ namespace Twinpack.Core
             {
                 _logger.Info(new string('-', 3) + $" set-version:{plc.Name}");
 
-                plc.Version = version;
+                plc.Version = AutomationInterface.NormalizedVersion(version);
 
                 if(_automationInterface != null)
                     await _automationInterface.SetPackageVersionAsync(plc, cancellationToken);
