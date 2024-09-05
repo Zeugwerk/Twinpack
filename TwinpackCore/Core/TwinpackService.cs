@@ -619,11 +619,6 @@ namespace Twinpack.Core
                 .SelectMany(x => x.Plcs)
                 .Where(x => options?.PlcName == null || x.Name == options?.PlcName);
 
-            version = version?.Trim().TrimStart(new char[] { 'v', 'V', ' ', '\t' }).Replace('-', '.');
-
-            if (version != null && !Version.TryParse(version, out _))
-                throw new ArgumentException("Version has wrong format! Valid formats include '1.0.0.0', 'v1.0.0.0', '1.0.0-0'");
-
             foreach(var plc in plcs)
             {
                 _logger.Info(new string('-', 3) + $" set-version:{plc.Name}");

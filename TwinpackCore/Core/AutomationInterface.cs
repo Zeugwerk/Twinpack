@@ -61,6 +61,15 @@ namespace Twinpack.Core
             return (MinVersion == null || v >= MinVersion) && (MaxVersion == null || v <= MaxVersion);
         }
 
+        public string NormalizedVersion(string version)
+        {
+            version = version?.Trim().TrimStart(new char[] { 'v', 'V', ' ', '\t' }).Replace('-', '.');
+            if (version != null && !Version.TryParse(version, out _))
+                throw new ArgumentException("Version has wrong format! Valid formats include '1.0.0.0', 'v1.0.0.0', '1.0.0-0'");
+
+            return version;
+        }
+
         public abstract string SolutionPath { get; }
         public abstract Task<string> ResolveEffectiveVersionAsync(string projectName, string plcName, string placeholderName);
         public abstract Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken = default);

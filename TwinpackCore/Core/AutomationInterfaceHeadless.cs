@@ -319,22 +319,23 @@ namespace Twinpack.Core
                     _logger.Warn($"Distributor name '{plc.DistributorName}' contains invalid characters - skipping PLC company update, the package might be broken!");
                 }
 
-                if (!string.IsNullOrEmpty(plc.Version))
+                var versionStr = NormalizedVersion(plc.Version);
+                if (!string.IsNullOrEmpty(versionStr))
                 {
                     if (projectVersion != null)
-                        projectVersion.Value = plc.Version;
+                        projectVersion.Value = versionStr;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "ProjectVersion", plc.Version));
+                        propertyGroup.Add(new XElement(TcNs + "ProjectVersion", versionStr));
 
-                    _logger.Info($"Updated version to '{plc.Version}'");
+                    _logger.Info($"Updated version to '{versionStr}'");
                 }
-                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.Version))
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))
                 {
                     throw new ArgumentException("Version is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Version '{plc.Version}' is empty - skipping PLC company update, the package might be broken!");
+                    _logger.Warn($"Version '{versionStr}' is empty - skipping PLC company update, the package might be broken!");
                 }
             }
 
