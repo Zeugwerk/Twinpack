@@ -486,6 +486,7 @@ namespace TwinpackTests
         [DataRow("NewTitle", "NewCompany", "6.6.6.6", "NewTitle", "NewCompany", "6.6.6.6")]
         [DataRow(null, null, null, null, null, null)]
         [DataRow("New-Title", "New-Company", null, null, "New-Company", null)]
+        [DataRow("PlcLibrary1", "My Company", "  v1.2.3-4", "PlcLibrary1", "My Company", "1.2.3.4")]
         [DataRow("PlcLibrary1", "My Company", "1.2.3.4", "PlcLibrary1", "My Company", "1.2.3.4")]
         public async Task SetPackageVersion_WithTwinpack_TitleCompanyVersionAreUpdated_Async(string newTitle, string newCompany, string newVersion,
             string expectedTitle, string expectedCompany, string expectedVersion)
