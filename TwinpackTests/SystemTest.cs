@@ -136,7 +136,6 @@ namespace TwinpackTests
 
             Assert.IsFalse(uninstalled, "Package that is not installed does not throw if trying to uninstall");
 
-
             // act - add package, including dependencies
             await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = null } } }, 
                 new TwinpackService.AddPackageOptions { IncludeDependencies = true, ForceDownload = false });

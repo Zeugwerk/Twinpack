@@ -42,7 +42,7 @@ namespace Twinpack.Configuration
                     usedPrefix = p;
                     config = new Config();
                     config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    config.WorkingDirectory = Path.GetDirectoryName($@"{path}\{config.Solution}");
+                    config.WorkingDirectory = Path.GetDirectoryName($@"{path}\.Zeugwerk");
                     config.FilePath = $@"{path}\{p}config.json";
 
                     var solution = new Models.Solution();
