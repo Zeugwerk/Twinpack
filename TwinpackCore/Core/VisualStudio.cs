@@ -129,8 +129,11 @@ namespace Twinpack.Core
 
             OutputTcVersion = tcversion;
             var remoteManagerTcVersion = FindTargetSystem(tcversion);
+            var filepath = Path.GetFullPath($"{config.WorkingDirectory}\\{config.Solution.Replace("/", "\\")}");
+            if (!File.Exists(filepath))
+                throw new FileNotFoundException("Solution could not be found in " + filepath);
 
-            _solution.Open(Path.GetFullPath($"{config.WorkingDirectory}\\{config.Solution.Replace("/", "\\")}"));
+            _solution.Open(filepath);
             CloseAllWindows();
             var projects = WaitProjects();
 
