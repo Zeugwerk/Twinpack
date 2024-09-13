@@ -369,6 +369,14 @@ namespace Twinpack.Core
         {
             var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
             var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Update }).ToList();
+            return await UpdatePackagesAsync(packages, options, cancellationToken);
+        }
+
+        public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(List<PackageItem> packages, UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
+        {
+            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
+            if (packages.Any(x => !usedPackages.Any(y => x.Config.Name == x.Config.Name)))
+                throw new ArgumentException("Package to be updated is not used in any project!");
 
             // download and add all packages, which are not self references to the provided packages
             var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
@@ -520,7 +528,10 @@ namespace Twinpack.Core
                 }
 
                 if (package.PackageVersion?.Name == null)
+                {
+                    _logger.Warn($"Package {package.Config.Name} {package.Config.Version} could not be found!");
                     continue;
+                }
 
                 if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
                     cache.Add(package);
