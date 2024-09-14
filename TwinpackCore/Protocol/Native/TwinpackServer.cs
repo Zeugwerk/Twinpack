@@ -655,7 +655,6 @@ namespace Twinpack.Protocol
                         Binary = binary,
                         Dependencies = plc.Packages?.Select(x => new PackageVersionDependency
                         {
-                            Repository = x.Repository,
                             DistributorName = x.DistributorName,
                             Name = x.Name,
                             Version = x.Version,

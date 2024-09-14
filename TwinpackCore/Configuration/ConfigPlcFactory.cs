@@ -193,7 +193,6 @@ namespace Twinpack.Configuration
                             packages.Add(new ConfigPlcPackage
                             {
                                 DistributorName = packageVersion.DistributorName,
-                                Repository = packageVersion.Repository,
                                 Branch = packageVersion.Branch,
                                 Configuration = packageVersion.Configuration,
                                 Name = packageVersion.Name,

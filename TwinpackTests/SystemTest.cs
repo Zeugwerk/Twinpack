@@ -12,6 +12,7 @@ namespace TwinpackTests
     using Microsoft.VisualStudio.PlatformUI;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using System.Xml.Linq;

@@ -67,53 +67,19 @@ namespace Twinpack.Commands
 
             Initialize(settings.Headed);
 
-            var usedPackages = _twinpack.RetrieveUsedPackagesAsync().GetAwaiter().GetResult();
-            List<PackageItem> packages;
-            if (settings.Packages != null || settings.Frameworks != null)
-            {
-                packages = usedPackages.Where(
-                    x => (settings.ProjectName == null || settings.ProjectName == x.ProjectName) &&
-                         (settings.ProjectName == null || settings.ProjectName == x.ProjectName) &&
-                         (settings.Packages == null || settings.Packages.Any(y => y == x.Update?.Name)) &&
-                         (settings.Frameworks == null || settings.Frameworks.Any(y => y == x.Update?.Framework)))
-                    .Select(x => new PackageItem(x) { Package = new Protocol.Api.PackageGetResponse(x.Update), PackageVersion = x.Update }).ToList();
-
-                foreach (var package in packages)
-                {
-                    var i = settings.Packages != null && package.Package.Name != null ? Array.IndexOf(settings.Packages, package.Package.Name) : -1;
-                    if (i >= 0)
-                    {
-                        package.Config.Version = settings.Versions?.ElementAtOrDefault(i) ?? package.PackageVersion.Version;
-                        package.Config.Branch = settings.Branches?.ElementAtOrDefault(i) ?? package.PackageVersion.Branch;
-                        package.Config.Configuration = settings.Configurations?.ElementAtOrDefault(i) ?? package.PackageVersion.Configuration;
-                        package.Config.Target = settings.Targets?.ElementAtOrDefault(i) ?? package.PackageVersion.Target;
-                    }
-
-                    i = settings.Frameworks != null && package.PackageVersion.Framework != null ? Array.IndexOf(settings.Frameworks, package.PackageVersion.Framework) : -1;
-                    if (i >= 0)
-                    {
-                        package.Config.Version = settings.Versions?.ElementAtOrDefault(i) ?? package.PackageVersion.Version;
-                        package.Config.Branch = settings.Branches?.ElementAtOrDefault(i) ?? package.PackageVersion.Branch;
-                        package.Config.Configuration = settings.Configurations?.ElementAtOrDefault(i) ?? package.PackageVersion.Configuration;
-                        package.Config.Target = settings.Targets?.ElementAtOrDefault(i) ?? package.PackageVersion.Target;
-                    }
-                }
-
-                // force new retrievable of metadata
-                foreach (var package in packages)
-                {
-                    package.Package = null;
-                    package.PackageVersion = null;
-                }
-            }
-            else
-            {
-                packages = usedPackages.Select(x => new PackageItem(x) { Package = new Protocol.Api.PackageGetResponse(x.Update), PackageVersion = x.Update }).ToList();
-            }
-
             // update all packages
             _twinpack.UpdatePackagesAsync(
-                packages,
+                new TwinpackService.UpdatePackageFilters
+                {
+                    ProjectName = settings.ProjectName,
+                    PlcName = settings.ProjectName,
+                    Packages = settings.Packages,
+                    Frameworks = settings.Frameworks,
+                    Versions = settings.Versions,
+                    Branches = settings.Branches,
+                    Configurations = settings.Configurations,
+                    Targets = settings.Targets,
+                },
                 new TwinpackService.UpdatePackageOptions
                 {
                     IncludeProvidedPackages = settings.IncludeProvidedPackages,

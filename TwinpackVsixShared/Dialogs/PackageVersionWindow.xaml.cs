@@ -239,7 +239,6 @@ namespace Twinpack.Dialogs
                 LatestVersion = _packageVersionLatest?.Version;
                 Dependencies = _plcConfig?.Packages?.Select(x => new Protocol.Api.PackageVersionGetResponse
                 {
-                    Repository = x.Repository,
                     DistributorName = x.DistributorName,
                     Name = x.Name,
                     Branch = x.Branch,
@@ -919,7 +918,6 @@ namespace Twinpack.Dialogs
                         Binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath}\{target}\{_plcConfig.Name}_{_plcConfig.Version}.{suffix}")),
                         Dependencies = _plcConfig.Packages?.Select(x => new Protocol.Api.PackageVersionDependency
                         {
-                            Repository = x.Repository,
                             DistributorName = x.DistributorName,
                             Name = x.Name,
                             Version = x.Version,

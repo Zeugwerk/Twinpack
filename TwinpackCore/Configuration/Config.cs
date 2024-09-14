@@ -55,7 +55,6 @@ namespace Twinpack.Configuration
         {
             Name = pv.PackageVersion?.Name ?? pv.Package?.Name ?? pv.Config?.Name ?? pv.Catalog?.Name;
             DistributorName = pv.PackageVersion?.DistributorName ?? pv.Package?.DistributorName ?? pv.Config?.DistributorName ?? pv.Catalog?.DistributorName;
-            Framework = pv.PackageVersion?.Framework ?? pv.Package?.Framework ?? pv.Config?.Framework;
 
             Version = pv.PackageVersion?.Version;
             Branch = pv.PackageVersion?.Branch;
@@ -78,7 +77,6 @@ namespace Twinpack.Configuration
             Namespace = pv.Name;
             Parameters = null;
             Options = null;
-            Framework = pv.Framework;
         }
 
         public ConfigPlcPackage(ConfigPlcPackage pv)
@@ -92,12 +90,10 @@ namespace Twinpack.Configuration
             Namespace = pv.Name;
             Parameters = pv.Parameters;
             Options = pv.Options;
-            Framework = pv.Framework;
         }
 
         public ConfigPlcPackage()
         {
-            Repository = "";
             Name = "";
             Branch = "main";
             Target = "TC3.1";
@@ -107,12 +103,10 @@ namespace Twinpack.Configuration
             Namespace = null;
             Parameters = null;
             Options = null;
-            Framework = null;
         }
         [JsonPropertyName("version")]
         public string Version { get; set; }
-        [JsonPropertyName("repository")]
-        public string Repository { get; set; }
+
         [JsonPropertyName("name")]
         public string Name { get; set; }
 
@@ -151,10 +145,6 @@ namespace Twinpack.Configuration
         [JsonPropertyName("options")]
         public AddPlcLibraryOptions Options { get; set; }
         
-        [DefaultValue(null)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]        
-        [JsonPropertyName("framework")]
-        public string Framework { get; set; }
     }
 
     // This class is used for deserializing a json config file

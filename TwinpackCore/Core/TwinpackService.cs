@@ -25,6 +25,7 @@ using static System.Net.Mime.MediaTypeNames;
 using Twinpack.Configuration;
 using System.Windows.Navigation;
 using Microsoft.VisualStudio.PlatformUI;
+using NuGet.Configuration;
 
 namespace Twinpack.Core
 {
