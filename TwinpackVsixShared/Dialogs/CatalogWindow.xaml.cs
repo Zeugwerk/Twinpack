@@ -686,7 +686,15 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await _twinpack.UpdatePackagesAsync(new TwinpackService.UpdatePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, Token);
+                await _twinpack.UpdatePackagesAsync(
+                    new TwinpackService.UpdatePackageFilters { },
+                    new TwinpackService.UpdatePackageOptions
+                    { 
+                        ForceDownload = ForcePackageVersionDownload, 
+                        IncludeDependencies = AddDependencies, 
+                        IncludeProvidedPackages = true 
+                    }, 
+                    Token);
                 await UpdateCatalogAsync();
 
                 _context.Dte.ExecuteCommand("File.SaveAll");

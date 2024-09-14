@@ -65,6 +65,18 @@ namespace Twinpack.Core
             public List<string> ExcludedPackages;
         }
 
+        public class UpdatePackageFilters
+        {
+            public string ProjectName;
+            public string PlcName;
+            public string[] Packages;
+            public string[] Frameworks;
+            public string[] Versions;
+            public string[] Branches;
+            public string[] Configurations;
+            public string[] Targets;
+        }
+
         public class UpdatePackageOptions : AddPackageOptions
         {
             public bool IncludeProvidedPackages = false;
@@ -366,14 +378,56 @@ namespace Twinpack.Core
                 .ToList();
         }
 
-        public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(UpdatePackageFilters filters = default, UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
         {
-            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
-            var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Update }).ToList();
+            var usedPackages = await RetrieveUsedPackagesAsync();
+            List<PackageItem> packages;
+            if (filters.Packages != null || filters.Frameworks != null)
+            {
+                packages = usedPackages.Where(
+                x => (filters.ProjectName == null || filters.ProjectName == x.ProjectName) &&
+                (filters.ProjectName == null || filters.ProjectName == x.ProjectName) &&
+                (filters.Packages == null || filters.Packages.Any(y => y == x.Update?.Name)) &&
+                (filters.Frameworks == null || filters.Frameworks.Any(y => y == x.Update?.Framework)))
+                    .Select(x => new PackageItem(x) { Package = new Protocol.Api.PackageGetResponse(x.Update), PackageVersion = x.Update }).ToList();
+
+                foreach (var package in packages)
+                {
+                    var i = filters.Packages != null && package.Package.Name != null ? Array.IndexOf(filters.Packages, package.Package.Name) : -1;
+                    if (i >= 0)
+                    {
+                        package.Config.Version = filters.Versions?.ElementAtOrDefault(i) ?? package.PackageVersion.Version;
+                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i) ?? package.PackageVersion.Branch;
+                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i) ?? package.PackageVersion.Configuration;
+                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i) ?? package.PackageVersion.Target;
+                    }
+
+                    i = filters.Frameworks != null && package.PackageVersion.Framework != null ? Array.IndexOf(filters.Frameworks, package.PackageVersion.Framework) : -1;
+                    if (i >= 0)
+                    {
+                        package.Config.Version = filters.Versions?.ElementAtOrDefault(i) ?? package.PackageVersion.Version;
+                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i) ?? package.PackageVersion.Branch;
+                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i) ?? package.PackageVersion.Configuration;
+                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i) ?? package.PackageVersion.Target;
+                    }
+                }
+
+                // force new retrievable of metadata
+                foreach (var package in packages)
+                {
+                    package.Package = null;
+                    package.PackageVersion = null;
+                }
+            }
+            else
+            {
+                packages = usedPackages.Select(x => new PackageItem(x) { Package = new Protocol.Api.PackageGetResponse(x.Update), PackageVersion = x.Update }).ToList();
+            }
+
             return await UpdatePackagesAsync(packages, options, cancellationToken);
         }
 
-        public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(List<PackageItem> packages, UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
+        protected async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(List<PackageItem> packages, UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
         {
             var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
             if (packages.Any(x => !usedPackages.Any(y => x.Config.Name == x.Config.Name)))
