@@ -185,6 +185,9 @@ namespace Twinpack.Configuration
                 }
             }
 
+            if (solution?.Projects?.FirstOrDefault()?.Plcs?.FirstOrDefault() == null)
+                return null;
+
             foreach (var project in solution.Projects)
             {
                 var projectConfig = new ConfigProject();

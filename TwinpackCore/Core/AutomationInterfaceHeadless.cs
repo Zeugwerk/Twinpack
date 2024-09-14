@@ -93,6 +93,8 @@ namespace Twinpack.Core
             await RemovePackageAsync(package, forceRemoval: true);
 
             var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault(x => x.Name == package.PlcName);
+            if (plcConfig.FilePath == null || !File.Exists(plcConfig.FilePath))
+                throw new FileNotFoundException($"Plc '{plcConfig.Name}' can not be found {(plcConfig.FilePath == null ? "" : "in " + plcConfig.FilePath)}");
 
             var xdoc = XDocument.Load(plcConfig.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
@@ -163,6 +165,9 @@ namespace Twinpack.Core
             if (plcConfig == null)
                 throw new InvalidOperationException($"Project '{package.ProjectName}' (Plc {package.PlcName}) is not configured in {_config.FilePath}");
 
+            if (plcConfig.FilePath == null || !File.Exists(plcConfig.FilePath))
+                throw new FileNotFoundException($"Plc '{plcConfig.Name}' can not be found {(plcConfig.FilePath == null ? "" : "in " + plcConfig.FilePath)}");
+
             var xdoc = XDocument.Load(plcConfig.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
             if (project == null)
@@ -214,6 +219,9 @@ namespace Twinpack.Core
         {
             var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == projectName).Plcs.FirstOrDefault(x => x.Name == plcName);
 
+            if (plcConfig.FilePath == null || !File.Exists(plcConfig.FilePath))
+                throw new FileNotFoundException($"Plc '{plcConfig.Name}' can not be found {(plcConfig.FilePath == null ? "" : "in " + plcConfig.FilePath)}");
+
             var xdoc = XDocument.Load(plcConfig.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
             if (project == null)
@@ -248,6 +256,9 @@ namespace Twinpack.Core
 
         public override async System.Threading.Tasks.Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken = default)
         {
+            if (plc.FilePath == null || !File.Exists(plc.FilePath))
+                throw new FileNotFoundException($"Plc '{plc.Name}' can not be found {(plc.FilePath == null ? "" : "in " + plc.FilePath)}");
+
             var xdoc = XDocument.Load(plc.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
             if (project == null)

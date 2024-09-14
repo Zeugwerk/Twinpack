@@ -878,7 +878,7 @@ namespace TwinpackTests
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib3"));
         }
 
-        private TwinpackService BuildMultiProjectConfig()
+        private TwinpackService BuildMultiProjectConfig(out Config config)
         {
             var packageServer = new PackageServerMock
             {
@@ -936,6 +936,14 @@ namespace TwinpackTests
                     },
                     new PackageVersionGetResponse()
                     {
+                        Name = "ZCore", Version = "1.5.0.3", Branch = "main", Configuration = "Release", Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ExternalLib1", Version = "2.2.3.4" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
                         Name = "ExternalLib1", Version = "1.2.3.4", Branch = "main", Configuration = "Release", Target = "TC3.1",
                     },
                     new PackageVersionGetResponse()
@@ -946,7 +954,7 @@ namespace TwinpackTests
                 Connected = true
             };
 
-            var config = new Config
+            config = new Config
             {
                 Projects = new List<ConfigProject>
                 {
@@ -994,7 +1002,7 @@ namespace TwinpackTests
         [TestMethod]
         public async Task RestoreAsync_NoIncludedProvidedPackages_NoIncludedDependencies()
         {
-            var twinpack = BuildMultiProjectConfig();
+            var twinpack = BuildMultiProjectConfig(out _);
 
             var packages = await twinpack.RestorePackagesAsync(
                 new TwinpackService.RestorePackageOptions
@@ -1016,7 +1024,7 @@ namespace TwinpackTests
         [TestMethod]
         public async Task RestoreAsync_IncludedProvidedPackages_NoIncludedDependencies()
         {
-            var twinpack = BuildMultiProjectConfig();
+            var twinpack = BuildMultiProjectConfig(out _);
 
             var packages = await twinpack.RestorePackagesAsync(
                 new TwinpackService.RestorePackageOptions
@@ -1052,7 +1060,7 @@ namespace TwinpackTests
         [TestMethod]
         public async Task RestoreAsync_IncludedProvidedPackages_IncludedDependencies()
         {
-            var twinpack = BuildMultiProjectConfig();
+            var twinpack = BuildMultiProjectConfig(out _);
 
             var packages = await twinpack.RestorePackagesAsync(
                 new TwinpackService.RestorePackageOptions

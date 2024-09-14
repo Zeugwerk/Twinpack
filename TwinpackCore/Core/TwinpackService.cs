@@ -433,9 +433,8 @@ namespace Twinpack.Core
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-
             // add affected packages as references
-            foreach (var package in options?.IncludeDependencies == true ? affectedPackages : packages)
+            foreach (var package in (options?.IncludeDependencies == true ? affectedPackages : packages).Where(x => x.PackageVersion?.Name != null))
             {
                 _logger.Info($"Adding {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName})");
 

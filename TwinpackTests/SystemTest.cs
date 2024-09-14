@@ -49,7 +49,6 @@ namespace TwinpackTests
         }
     }
 
-
     public class SystemTest
     {
         protected static Config _config;

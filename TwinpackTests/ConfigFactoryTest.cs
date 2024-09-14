@@ -43,6 +43,25 @@ namespace TwinpackTests
             Assert.AreEqual(@"Tc3_Module=*", references[2]);
         }
 
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task CreateFromSolution_DirectoryNotFound_Async(bool continueWithoutSolution)
+        {
+            await Assert.ThrowsExceptionAsync<DirectoryNotFoundException>(async () => await ConfigFactory.CreateFromSolutionFileAsync(@"assets\NoSuchDirectory", continueWithoutSolution));
+        }
+
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task CreateFromSolution_NoFiles_Async(bool continueWithoutSolution)
+        {
+            if (!Directory.Exists(@"assets\NoSolutionInside"))
+                Directory.CreateDirectory(@"assets\NoSolutionInside");
+
+            Assert.IsNull(await ConfigFactory.CreateFromSolutionFileAsync(@"assets\NoSolutionInside", continueWithoutSolution));
+        }
+
         [TestMethod]
         public async Task CreateFromSolutionFileWithFilterAsync()
         {
