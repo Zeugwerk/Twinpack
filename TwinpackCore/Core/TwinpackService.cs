@@ -482,12 +482,14 @@ namespace Twinpack.Core
             var downloadedPackageVersions = await downloadPackagesTask;
 
             // install downloaded packages
-            foreach (var package in downloadedPackageVersions)
+            if(_automationInterface != null && (options?.SkipInstall == null || options?.SkipInstall == false))
             {
-                _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
-                if(_automationInterface != null && (options?.SkipInstall == null || options?.SkipInstall == false))
-                    await _automationInterface.InstallPackageAsync(package, cachePath: downloadPath);
-                cancellationToken.ThrowIfCancellationRequested();
+                foreach (var package in downloadedPackageVersions)
+                {
+                    _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
+                    await _automationInterface.InstallPackageAsync(package, cachePath: downloadPath); 
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
             }
 
             // add affected packages as references
