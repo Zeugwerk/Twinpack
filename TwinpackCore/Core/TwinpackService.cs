@@ -135,6 +135,9 @@ namespace Twinpack.Core
         public IEnumerable<PackageItem> AvailablePackages { get => _availablePackagesCache; }
         private void CopyRuntimeLicenseIfNeeded(IEnumerable<PackageItem> packages)
         {
+            if (_automationInterface == null)
+                return;
+
             var knownLicenseIds = KnownRuntimeLicenseIds();
 
             foreach (var package in packages)
