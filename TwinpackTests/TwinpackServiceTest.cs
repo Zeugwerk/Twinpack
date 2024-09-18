@@ -920,6 +920,22 @@ namespace TwinpackTests
                     },
                     new PackageVersionGetResponse()
                     {
+                        Name = "ZPlatform", Version = "1.2.0.1", Branch = "release/1.2", Configuration = "Release", Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.2" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZPlatform", Version = "1.4.0.1", Branch = "release/1.4", Configuration = "Release", Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.2" },
+                        }
+                    },
+                    new PackageVersionGetResponse()
+                    {
                         Name = "ZCore", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1",
                         Dependencies = new List<PackageVersionGetResponse>
                         {
@@ -1130,6 +1146,42 @@ namespace TwinpackTests
             Assert.AreEqual("1.2.3.4", config.Projects.First(x => x.Name == "ZPlatform Project").Plcs.First(x => x.Name == "ZPlatform").Packages.First(x => x.Name == "ExternalLib1").Version );
             Assert.AreEqual("1.5.0.1", config.Projects.First(x => x.Name == "ZAux Project").Plcs.First(x => x.Name == "ZAux").Packages.First(x => x.Name == "ZCore").Version );
             Assert.AreEqual("1.5.0.1", config.Projects.First(x => x.Name == "ZAux Project").Plcs.First(x => x.Name == "ZAux").Packages.First(x => x.Name == "ZPlatform").Version );
+        }
+
+        [DataTestMethod]
+        [DataRow("release/1.2", null, "1.2.0.1")]
+        [DataRow("release/1.4", null, "1.4.0.1")]
+        [DataRow("release/1.4", "", "1.4.0.1")]
+        [DataRow(null, "1.5.0.2", "1.5.0.2")]
+        public async Task UpdateAsync_NoIncludedProvidedPackages_NoIncludedDependencies_WithBranch(string branch, string version, string expectedVersion)
+        {
+            Config config;
+            var twinpack = BuildMultiProjectConfig(out config);
+            config.Projects[2].Plcs[0].Packages.First(x => x.Name == "ZPlatform").Branch = "release/1.4";
+
+            var packages = await twinpack.UpdatePackagesAsync(
+                new TwinpackService.UpdatePackageFilters
+                {
+                    ProjectName = "ZAux Project",
+                    PlcName = "ZAux",
+                    Packages = new[] { "ZPlatform" },
+                    Versions = version == null ? null : new[] { version },
+                    Branches = new[] { branch }
+                },
+                new TwinpackService.UpdatePackageOptions
+                {
+                    IncludeProvidedPackages = false,
+                    IncludeDependencies = false,
+                    ForceDownload = false
+                });
+
+
+            Assert.AreEqual(0, packages.Count());
+            Assert.IsFalse(config.Projects.First(x => x.Name == "ZCore Project").Plcs.First(x => x.Name == "ZCore").Packages.Any());
+            Assert.AreEqual("1.5.0.1", config.Projects.First(x => x.Name == "ZPlatform Project").Plcs.First(x => x.Name == "ZPlatform").Packages.First(x => x.Name == "ZCore").Version);
+            Assert.AreEqual("1.2.3.4", config.Projects.First(x => x.Name == "ZPlatform Project").Plcs.First(x => x.Name == "ZPlatform").Packages.First(x => x.Name == "ExternalLib1").Version);
+            Assert.AreEqual("1.5.0.1", config.Projects.First(x => x.Name == "ZAux Project").Plcs.First(x => x.Name == "ZAux").Packages.First(x => x.Name == "ZCore").Version);
+            Assert.AreEqual(expectedVersion, config.Projects.First(x => x.Name == "ZAux Project").Plcs.First(x => x.Name == "ZAux").Packages.First(x => x.Name == "ZPlatform").Version);
         }
 
         [DataTestMethod]

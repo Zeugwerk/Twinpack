@@ -127,7 +127,14 @@ namespace TwinpackTests
         public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            return PackageVersionItems.Where(x => x.Name == library.Name)
+            if(string.IsNullOrEmpty(library.Version))
+                return PackageVersionItems.Where(x => x.Name == library.Name)
+                .OrderByDescending(x => preferredBranch == x.Branch)
+                .ThenByDescending(x => (string.IsNullOrEmpty(library.Version) || new Version(library.Version) == new Version(x.Version)))
+                .ThenByDescending(x => x.Version == null ? new Version(9, 9, 9, 9) : new Version(x.Version))
+                .FirstOrDefault();
+            else
+                return PackageVersionItems.Where(x => x.Name == library.Name)
                 .OrderByDescending(x => (string.IsNullOrEmpty(library.Version) || new Version(library.Version) == new Version(x.Version)))
                 .ThenByDescending(x => x.Version == null ? new Version(9,9,9,9) : new Version(x.Version))
                 .FirstOrDefault();
