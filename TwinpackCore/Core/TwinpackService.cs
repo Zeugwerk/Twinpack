@@ -399,7 +399,7 @@ namespace Twinpack.Core
                     var i = filters.Packages != null && package.Package.Name != null ? Array.IndexOf(filters.Packages, package.Package.Name) : -1;
                     if (i >= 0)
                     {
-                        package.Config.Version = filters.Versions?.ElementAtOrDefault(i);
+                        package.Config.Version = string.IsNullOrEmpty(filters.Versions?.ElementAtOrDefault(i)) ? null : filters.Versions?.ElementAtOrDefault(i);
                         package.Config.Branch = filters.Branches?.ElementAtOrDefault(i) ?? (string.IsNullOrEmpty(package.Config.Version) ? package.Config.Branch : null);
                         package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i) ?? (string.IsNullOrEmpty(package.Config.Version) ? package.Config.Configuration : null);
                         package.Config.Target = filters.Targets?.ElementAtOrDefault(i) ?? (string.IsNullOrEmpty(package.Config.Version) ? package.Config.Target : null);
