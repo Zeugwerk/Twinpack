@@ -66,10 +66,10 @@ namespace Twinpack.Commands
                     Config = new ConfigPlcPackage
                     {
                         Name = packages?.ElementAt(i),
-                        Version = versions?.ElementAtOrDefault(i) ?? null,
-                        Branch = branches?.ElementAtOrDefault(i) ?? null,
-                        Target = targets?.ElementAtOrDefault(i) ?? null,
-                        Configuration = configurations?.ElementAtOrDefault(i) ?? null
+                        Version = versions?.ElementAtOrDefault(i),
+                        Branch = branches?.ElementAtOrDefault(i),
+                        Target = targets?.ElementAtOrDefault(i),
+                        Configuration = configurations?.ElementAtOrDefault(i)
                     }
                 });
             }

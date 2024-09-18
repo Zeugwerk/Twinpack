@@ -399,19 +399,19 @@ namespace Twinpack.Core
                     var i = filters.Packages != null && package.Package.Name != null ? Array.IndexOf(filters.Packages, package.Package.Name) : -1;
                     if (i >= 0)
                     {
-                        package.Config.Version = filters.Versions?.ElementAtOrDefault(i) ?? package.PackageVersion.Version;
-                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i) ?? package.PackageVersion.Branch;
-                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i) ?? package.PackageVersion.Configuration;
-                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i) ?? package.PackageVersion.Target;
+                        package.Config.Version = filters.Versions?.ElementAtOrDefault(i);
+                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i);
+                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i);
+                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i);
                     }
 
                     i = filters.Frameworks != null && package.PackageVersion.Framework != null ? Array.IndexOf(filters.Frameworks, package.PackageVersion.Framework) : -1;
                     if (i >= 0)
                     {
-                        package.Config.Version = filters.Versions?.ElementAtOrDefault(i) ?? package.PackageVersion.Version;
-                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i) ?? package.PackageVersion.Branch;
-                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i) ?? package.PackageVersion.Configuration;
-                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i) ?? package.PackageVersion.Target;
+                        package.Config.Version = filters.Versions?.ElementAtOrDefault(i);
+                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i);
+                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i);
+                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i);
                     }
                 }
 
