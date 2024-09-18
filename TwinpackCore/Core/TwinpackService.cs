@@ -400,18 +400,18 @@ namespace Twinpack.Core
                     if (i >= 0)
                     {
                         package.Config.Version = filters.Versions?.ElementAtOrDefault(i);
-                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i);
-                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i);
-                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i);
+                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i) ?? (package.Config.Version == null ? package.Config.Branch : null);
+                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i) ?? (package.Config.Version == null ? package.Config.Configuration : null);
+                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i) ?? (package.Config.Version == null ? package.Config.Target : null);
                     }
 
                     i = filters.Frameworks != null && package.PackageVersion.Framework != null ? Array.IndexOf(filters.Frameworks, package.PackageVersion.Framework) : -1;
                     if (i >= 0)
                     {
                         package.Config.Version = filters.Versions?.ElementAtOrDefault(i);
-                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i);
-                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i);
-                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i);
+                        package.Config.Branch = filters.Branches?.ElementAtOrDefault(i) ?? (package.Config.Version == null ? package.Config.Branch : null);
+                        package.Config.Configuration = filters.Configurations?.ElementAtOrDefault(i) ?? (package.Config.Version == null ? package.Config.Configuration : null);
+                        package.Config.Target = filters.Targets?.ElementAtOrDefault(i) ?? (package.Config.Version == null ? package.Config.Target : null);
                     }
                 }
 
