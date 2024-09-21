@@ -343,7 +343,7 @@ begin
 	
     for i := 0 to DisplayNames17.Count-1 do
     begin
-      if (((GetCmdParam('SILENT') <> 'true') and VisualStudioOptionsPage.CheckListBox.Checked[i+3+DisplayNames15.Count]) or (GetCmdParam('VSIX17:'+IntToStr(i+DisplayNames15.Count)) = 'true')) then
+      if (((GetCmdParam('SILENT') <> 'true') and VisualStudioOptionsPage.CheckListBox.Checked[i+3+DisplayNames15.Count]) or (GetCmdParam('VSIX17:'+IntToStr(i)) = 'true')) then
       begin
         ShellExec('', InstallationPaths17[i] + '\Common7\IDE\VSIXInstaller.exe', '/u:'+TwinpackVsixGuid17+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
         ShellExec('', InstallationPaths17[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + ExpandConstant('{tmp}\TwinpackVsix.17.vsix'), '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
