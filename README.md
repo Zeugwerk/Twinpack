@@ -187,6 +187,17 @@ For detailed information about each command and its available options, you can u
 twinpack.exe <command> --help
 ```
 
+## Installation parameters
+
+The Twinpack installer supports for parameters to run a silent installation
+
+- `/SILENT` can be used to switch the installer into 'silent' mode, where no user interaction is required. With this argument, the following additional arguments can be used to configure the setup
+  - `/CLI` install command-line utilities in the (default) installation folder (`C:\Program Files (x86)\Zeugwerk GmbH\Twinpack`)
+  - `/TCXAE15` integrate Twinpack into TcXaeShell 32-bit
+  - `/TCXAE17` integrate Twinpack into TcXaeShell 64-bit
+  - `/VSIX15:0` integrate Twinpack into 32-bit versions of Visual Studio (e.g. Visual Studio 2017)
+  - `/VSIX17:0` integrate Twinpack into 32-bit versions of Visual Studio (e.g. Visual Studio 2022)
+
 
 ## Further information
 
