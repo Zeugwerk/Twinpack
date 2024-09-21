@@ -299,17 +299,17 @@ end;
 
 function InstallVsixInTcXaeShell15(): Boolean;
 begin
-  Result := VisualStudioOptionsPage.CheckListBox.Checked[0] = True;
+  Result := ((GetCmdParam('SILENT') <> 'true') and VisualStudioOptionsPage.CheckListBox.Checked[0] = True) or (GetCmdParam('TCXAE15') = 'true');
 end;
 
 function InstallCliInProgramFiles(): Boolean;
 begin
-  Result := VisualStudioOptionsPage.CheckListBox.Checked[2] = True;
+  Result := ((GetCmdParam('SILENT') <> 'true') and VisualStudioOptionsPage.CheckListBox.Checked[2] = True) or (GetCmdParam('CLI') = 'true');
 end;
 
 function InstallVsixInTcXaeShell17(): Boolean;
 begin
-  Result := VisualStudioOptionsPage.CheckListBox.Checked[1] = True;
+  Result := ((GetCmdParam('SILENT') <> 'true') and VisualStudioOptionsPage.CheckListBox.Checked[1] = True) or (GetCmdParam('TCXAE17') = 'true');
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
@@ -331,10 +331,10 @@ begin
   begin
     ExtractTemporaryFile('TwinpackVsix.15.vsix');
     ExtractTemporaryFile('TwinpackVsix.17.vsix');
-	
+
     for i := 0 to DisplayNames15.Count-1 do
     begin
-      if(VisualStudioOptionsPage.CheckListBox.Checked[i+3]) then
+      if (((GetCmdParam('SILENT') <> 'true') and VisualStudioOptionsPage.CheckListBox.Checked[i+3]) or (GetCmdParam('VSIX15:'+IntToStr(i)) = 'true')) then
       begin
         ShellExec('', InstallationPaths15[i] + '\Common7\IDE\VSIXInstaller.exe', '/u:'+TwinpackVsixGuid15+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
         ShellExec('', InstallationPaths15[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + ExpandConstant('{tmp}\TwinpackVsix.15.vsix'), '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
@@ -343,7 +343,7 @@ begin
 	
     for i := 0 to DisplayNames17.Count-1 do
     begin
-      if(VisualStudioOptionsPage.CheckListBox.Checked[i+3+DisplayNames15.Count]) then
+      if (((GetCmdParam('SILENT') <> 'true') and VisualStudioOptionsPage.CheckListBox.Checked[i+3+DisplayNames15.Count]) or (GetCmdParam('VSIX17:'+IntToStr(i+DisplayNames15.Count)) = 'true')) then
       begin
         ShellExec('', InstallationPaths17[i] + '\Common7\IDE\VSIXInstaller.exe', '/u:'+TwinpackVsixGuid17+' /quiet', '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
         ShellExec('', InstallationPaths17[i] + '\Common7\IDE\VSIXInstaller.exe', '/force ' + ExpandConstant('{tmp}\TwinpackVsix.17.vsix'), '', SW_HIDE, ewWaitUntilTerminated, ReturnCode);
