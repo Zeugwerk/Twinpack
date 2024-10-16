@@ -347,7 +347,10 @@ namespace Twinpack.Core
             else
                 libraryManager.AddPlaceholder(libraryName, libraryName, version, distributorName);
 
-            if (options != null)
+            if (options?.QualifiedOnly == true ||
+                options?.HideWhenReferencedAsDependency == true ||
+                options?.Optional == true ||
+                options?.PublishSymbolsInContainer == true)
             {
                 ITcSmTreeItem referenceItem = null;
                 ITcSmTreeItem libraryManagerItem = (libraryManager as ITcSmTreeItem);
