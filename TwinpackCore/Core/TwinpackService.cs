@@ -563,7 +563,7 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task FetchPackageAsync(PackageItem packageItem, CancellationToken cancellationToken = default)
         {
-            var resolvedPackage = await _packageServers.FetchPackageAsync(packageItem.ProjectName, packageItem.PlcName, packageItem.Config ?? new ConfigPlcPackage(packageItem), includeMetadata: true, automationInterface: _automationInterface, cancellationToken: cancellationToken);
+            var resolvedPackage = await _packageServers.FetchPackageAsync(packageItem.PackageServer, packageItem.ProjectName, packageItem.PlcName, packageItem.Config ?? new ConfigPlcPackage(packageItem), includeMetadata: true, automationInterface: _automationInterface, cancellationToken: cancellationToken);
             packageItem.Config ??= resolvedPackage.Config;
             packageItem.Package = resolvedPackage.Package;
             packageItem.PackageVersion = resolvedPackage.PackageVersion;
@@ -579,11 +579,12 @@ namespace Twinpack.Core
         {
             foreach(var package in packages)
             {
-                if (package.Package == null || package.PackageVersion == null)
+                if (package.Package == null || package.PackageVersion == null || package.PackageServer == null)
                 {
-                    var resolvedPackage = await _packageServers.FetchPackageAsync(package.ProjectName, package.PlcName, package.Config, includeMetadata: true, _automationInterface, cancellationToken);
+                    var resolvedPackage = await _packageServers.FetchPackageAsync(package.PackageServer, package.ProjectName, package.PlcName, package.Config, includeMetadata: true, _automationInterface, cancellationToken);
                     package.Package ??= resolvedPackage.Package;
                     package.PackageVersion ??= resolvedPackage.PackageVersion;
+                    package.PackageServer ??= resolvedPackage.PackageServer;
                 }
 
                 if (package.PackageVersion?.Name == null)
@@ -602,6 +603,7 @@ namespace Twinpack.Core
                         dependencies.Select(x =>
                                     new PackageItem()
                                     {
+                                        PackageServer = packages.Where(y => y.PackageVersion.Name == x.Name).FirstOrDefault()?.PackageServer,
                                         ProjectName = package.ProjectName,
                                         PlcName = package.PlcName,
                                         Catalog = new CatalogItemGetResponse { Name = x.Name },
@@ -774,7 +776,8 @@ namespace Twinpack.Core
                             var affectedPackage = frameworkPackages.First(y => y.PackageVersion.Name == plcPackage.Name);
 
                             // check if the requested version is actually on a package server already
-                            var requestedPackage = await _packageServers.ResolvePackageAsync(plcPackage.Name,
+                            var requestedPackage =await _packageServers.ResolvePackageAsync(
+                                plcPackage.Name,
                                 new ResolvePackageOptions
                                 {
                                     PreferredVersion = version,

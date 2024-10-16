@@ -81,10 +81,15 @@ namespace Twinpack.Core
 
         public async Task<PackageItem> FetchPackageAsync(ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, CancellationToken cancellationToken = default)
         {
-            return await FetchPackageAsync(null, null, item, includeMetadata, automationInterface, cancellationToken);
+            return await FetchPackageAsync(null, null, null, item, includeMetadata, automationInterface, cancellationToken);
         }
 
-        public async Task<PackageItem> FetchPackageAsync(string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken cancellationToken = default)
+        public async Task<PackageItem> FetchPackageAsync(string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, CancellationToken cancellationToken = default)
+        {
+            return await FetchPackageAsync(null, projectName, plcName, item, includeMetadata, automationInterface, cancellationToken);
+        }
+
+        public async Task<PackageItem> FetchPackageAsync(IPackageServer packageServer, string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken cancellationToken = default)
         {
             var catalogItem = new PackageItem(item)
             {
@@ -93,12 +98,12 @@ namespace Twinpack.Core
             };
 
 
-            foreach (var packageServer in this.Where(x => x.Connected))
+            foreach (var ps in packageServer != null ? new List<IPackageServer> { packageServer } : this.Where(x => x.Connected))
             {
-                catalogItem.PackageServer = packageServer;
+                catalogItem.PackageServer = ps;
 
                 // if some data is not present, try to resolve the information
-                PackageVersionGetResponse resolvedPackageVersion = await packageServer.ResolvePackageVersionAsync(
+                PackageVersionGetResponse resolvedPackageVersion = await ps.ResolvePackageVersionAsync(
                         new PlcLibrary { Name = item.Name, DistributorName = item.DistributorName, Version = item.Version },
                         item.Target,
                         item.Configuration,
@@ -117,7 +122,7 @@ namespace Twinpack.Core
                     continue;
 
                 // try to get the installed package, if we can't find it at least try to resolve it
-                var packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },
+                var packageVersion = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },
                                                                                   item.Branch, item.Configuration, item.Target,
                                                                                   cancellationToken: cancellationToken);
 
@@ -126,7 +131,7 @@ namespace Twinpack.Core
                     if (automationInterface != null)
                     {
                         var effectiveVersion = await automationInterface.ResolveEffectiveVersionAsync(projectName, plcName, packageVersion.Title);
-                        var effectivePackageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
+                        var effectivePackageVersion = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
                                                                                           item.Branch, item.Configuration, item.Target,
                                                                                           cancellationToken: cancellationToken);
 
@@ -141,14 +146,14 @@ namespace Twinpack.Core
                     }
                 }
 
-                var packageVersionLatest = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name },
+                var packageVersionLatest = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name },
                                                                                   item.Branch, item.Configuration, item.Target,
                                                                                   cancellationToken: cancellationToken);
 
                 // force the packageVersion references version even if the version was not found
                 if (packageVersion?.Name != null)
                 {
-                    catalogItem = new PackageItem(packageServer, packageVersion);
+                    catalogItem = new PackageItem(ps, packageVersion);
                     catalogItem.Used = packageVersion;
                     catalogItem.Config = item;
                     catalogItem.ProjectName = projectName;
@@ -166,11 +171,11 @@ namespace Twinpack.Core
                 {
                     if (includeMetadata)
                     {
-                        catalogItem.Package = await packageServer.GetPackageAsync(packageVersionLatest.DistributorName, packageVersionLatest.Name, cancellationToken: cancellationToken);
+                        catalogItem.Package = await ps.GetPackageAsync(packageVersionLatest.DistributorName, packageVersionLatest.Name, cancellationToken: cancellationToken);
                     }
 
                     catalogItem.Update = packageVersionLatest;
-                    catalogItem.PackageServer = packageServer;
+                    catalogItem.PackageServer = ps;
                 }
 
                 catalogItem.Config = item;
@@ -259,7 +264,8 @@ namespace Twinpack.Core
 
         public async Task<List<PackageItem>> ResolvePackageDependenciesAsync(PackageItem package, IAutomationInterface automationInterface, CancellationToken cancellationToken = default)
         {
-            var resolvedDependencies = new List<PackageVersionGetResponse>();
+            var resolvedDependencies = new List<PackageItem>();
+            var resolvedPackageServers = new List<IPackageServer>();
             foreach (var dependency in package?.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
             {
                 var version = dependency.Version;
@@ -285,7 +291,7 @@ namespace Twinpack.Core
 
                         if (resolvedDependency?.PackageVersion?.Name != null)
                         {
-                            resolvedDependencies.Add(resolvedDependency.PackageVersion);
+                            resolvedDependencies.Add(new PackageItem() { PackageServer = packageServer, PackageVersion = resolvedDependency.PackageVersion });
                             break;
                         }
                     }
@@ -294,13 +300,13 @@ namespace Twinpack.Core
                 }
             }
 
-            return resolvedDependencies.Select(x => new PackageItem() { PackageVersion = x }).ToList();
+            return resolvedDependencies;
         }
 
         public async Task<bool> DownloadPackageVersionAsync(PackageItem package, string downloadPath=null, CancellationToken cancellationToken = default)
         {
             var success = false;
-            foreach (var packageServer in this.Where(x => x.Connected))
+            foreach (var packageServer in package.PackageServer != null ? new List<IPackageServer> { package.PackageServer } : this.Where(x => x.Connected))
             {
                 try
                 {
