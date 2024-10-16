@@ -5,15 +5,11 @@ using System.Linq;
 using EnvDTE80;
 using System.Collections.Generic;
 using NLog;
-using System.Runtime.InteropServices;
-using Twinpack.Models;
-using System.Threading.Tasks;
 using System.Threading;
-using System.Text.Json;
-using Twinpack;
 using EnvDTE;
-using System.Management;
 using Twinpack.Configuration;
+using Microsoft.VisualStudio.Shell;
+using System.Runtime.InteropServices;
 
 namespace Twinpack.Core
 {
@@ -25,6 +21,7 @@ namespace Twinpack.Core
         protected System.Timers.Timer _timeout;
         MessageFilter _filter;
         protected SynchronizationContext _synchronizationContext;
+        protected System.Threading.Thread _thread;
 
         protected readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -39,6 +36,7 @@ namespace Twinpack.Core
         public VisualStudio(bool hidden = true)
         {
             _synchronizationContext = SynchronizationContext.Current;
+            _thread = System.Threading.Thread.CurrentThread;
             _automationInterfaces = new List<IAutomationInterface>
             {
                 new AutomationInterface4024(this),
@@ -50,14 +48,22 @@ namespace Twinpack.Core
         public VisualStudio(DTE2 dte, EnvDTE.Solution solution)
         {
             _synchronizationContext = SynchronizationContext.Current;
+            _thread = System.Threading.Thread.CurrentThread;
+
+            _automationInterfaces = new List<IAutomationInterface>
+            {
+                new AutomationInterface4024(this),
+            };
+
             _dte = dte;
             _solution = solution;
         }
 
         public void ThrowIfNotMainThread()
         {
-            if (_synchronizationContext != SynchronizationContext.Current)
-                throw new SynchronizationLockException("Method call from wrong synchronization context!");
+            if (_thread != System.Threading.Thread.CurrentThread)
+                throw new Exception("Invalid synchronization context!");
+
         }
 
         public async void Close(bool save=true)

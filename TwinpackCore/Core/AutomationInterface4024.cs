@@ -29,11 +29,13 @@ namespace Twinpack.Core
 
         VisualStudio _visualStudio;
         protected SynchronizationContext _synchronizationContext;
+        protected System.Threading.Thread _thread;
 
         public AutomationInterface4024(VisualStudio visualStudio)
         {
             _visualStudio = visualStudio;
             _synchronizationContext = SynchronizationContext.Current;
+            _thread = System.Threading.Thread.CurrentThread; 
         }
 
         private List<PlcLibrary> _referenceCache = new List<PlcLibrary>();
@@ -67,7 +69,7 @@ namespace Twinpack.Core
 
         protected ITcPlcLibrary ResolvePlaceholder(ITcPlcLibraryManager libManager, string placeholderName, out string distributorName, out string effectiveVersion)
         {
-            if (_synchronizationContext != SynchronizationContext.Current)
+            if (_thread != System.Threading.Thread.CurrentThread)
                 throw new Exception("Invalid synchronization context!");
 
             // getter references might throw (Starting from TC3.1.4024.35)
@@ -133,7 +135,7 @@ namespace Twinpack.Core
 
         protected ITcSysManager SystemManager(string projectName = null)
         {
-            if (_synchronizationContext != SynchronizationContext.Current)
+            if (_thread != System.Threading.Thread.CurrentThread)
                 throw new Exception("Invalid synchronization context!");
 
             var ready = false;
@@ -176,7 +178,7 @@ namespace Twinpack.Core
 
         protected ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)
         {
-            if (_synchronizationContext != SynchronizationContext.Current)
+            if (_thread != System.Threading.Thread.CurrentThread)
                 throw new Exception("Invalid synchronization context!");
 
             var key = new Tuple<string?, string?>(projectName, plcName);
@@ -254,7 +256,7 @@ namespace Twinpack.Core
 
         public override bool IsPackageInstalled(PackageItem package)
         {
-            if (_synchronizationContext != SynchronizationContext.Current)
+            if (_thread != System.Threading.Thread.CurrentThread)
                 throw new Exception("Invalid synchronization context!");
 
             if (_referenceCache.Any(x => x.Name == package.PackageVersion.Title && x.DistributorName == package.PackageVersion.DistributorName && x.Version == package.PackageVersion.Version))
