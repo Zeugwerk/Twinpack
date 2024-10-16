@@ -471,7 +471,7 @@ namespace Twinpack.Dialogs
                 IsInitializing = false;
                 IsCatalogEnabled = true;
                 IsPackageVersionPanelEnabled = _plcConfig != null;
-                IsUpdateAvailable = _twinpack.IsClientUpdateAvailable;
+                IsUpdateAvailable = _twinpack?.IsClientUpdateAvailable == true;
             }
         }
 
@@ -808,7 +808,6 @@ namespace Twinpack.Dialogs
                     {
                         package.Available.Used = package.Installed.Used;
                         package.Available.Update = package.Installed.Update;
-                        package.Available.IsPlaceholder = package.Installed.IsPlaceholder;
                     }
                 }
 

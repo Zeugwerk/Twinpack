@@ -42,7 +42,6 @@ namespace Twinpack.Models
             PackageVersion = p.PackageVersion;
             ProjectName = p.ProjectName;
             PlcName = p.PlcName;
-            IsPlaceholder = p.IsPlaceholder;
         }
 
         public PackageItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package)
@@ -83,12 +82,11 @@ namespace Twinpack.Models
 
             Catalog = catalog;
             Config = package;
-            IsPlaceholder = package?.Version == null;
         }
 
         public Protocol.IPackageServer PackageServer { get; set; }
         public string InstalledVersion { get { return Used?.Version; } }
-        public bool IsPlaceholder { get; set; } // this may be null if the latest version should be used
+        public bool IsPlaceholder { get => Used != null && Config?.Version == null; }
         public string InstalledBranch { get { return Used?.Branch; } }
         public string InstalledTarget { get { return Used?.Target; } }
         public string InstalledConfiguration { get { return Used?.Configuration; } }

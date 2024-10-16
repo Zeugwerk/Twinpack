@@ -151,7 +151,6 @@ namespace Twinpack.Core
                     catalogItem = new PackageItem(packageServer, packageVersion);
                     catalogItem.Used = packageVersion;
                     catalogItem.Config = item;
-                    catalogItem.IsPlaceholder = item.Version == null;
                     catalogItem.ProjectName = projectName;
                     catalogItem.PlcName = plcName;
 
