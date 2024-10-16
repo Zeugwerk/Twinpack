@@ -9,7 +9,7 @@ namespace Twinpack.Commands
     [Description("Downloads packages that are references in .Zeugwerk/config.json to .Zeugwerk/libraries, you can use RepTool.exe to install them into the TwinCAT library repository.")]
     public class PullCommand : AbstractCommand<PullCommand.Settings>
     {
-        public class Settings : CommandSettings
+        public class Settings : AbstractSettings
         {
             [CommandOption("-u|--username")]
             [Description("Username for Twinpack Server")]
@@ -26,6 +26,8 @@ namespace Twinpack.Commands
 
         public override int Execute(CommandContext context, Settings settings)
         {
+            SetUpLogger(settings);
+
             PackagingServerRegistry.InitializeAsync(useDefaults: true, login: false).GetAwaiter().GetResult();
             _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 

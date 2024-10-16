@@ -8,7 +8,7 @@ namespace Twinpack.Commands
     [Description("Ensure that the configuration file is properly set up using 'twinpack.exe config' before executing this command.")]
     public class AddCommand : AbstractCommand<AddCommand.Settings>
     {
-        public class Settings : CommandSettings
+        public class Settings : AbstractSettings
         {
             [CommandOption("--project <PROJECT>")]
             [Description("The name of the project where the packages should be added.")]
@@ -53,6 +53,7 @@ namespace Twinpack.Commands
 
         public override int Execute(CommandContext context, Settings settings)
         {
+            SetUpLogger(settings);
             Initialize(settings.Headed);
 
             var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations, settings.ProjectName, settings.PlcName);

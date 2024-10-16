@@ -10,7 +10,7 @@ namespace Twinpack.Commands
     [Description("Pushes libraries to a Twinpack Server")]
     public class PushCommand : AbstractCommand<PushCommand.Settings>
     {
-        public class Settings : CommandSettings
+        public class Settings : AbstractSettings
         {
             [CommandOption("-u|--username")]
             [Description("Username for Twinpack Server")]
@@ -55,6 +55,8 @@ namespace Twinpack.Commands
 
         public override int Execute(CommandContext context, Settings settings)
         {
+            SetUpLogger(settings);
+
             PackagingServerRegistry.InitializeAsync(useDefaults: true, login: false).GetAwaiter().GetResult();
             _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 

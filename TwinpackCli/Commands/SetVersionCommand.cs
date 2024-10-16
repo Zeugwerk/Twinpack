@@ -7,7 +7,7 @@ namespace Twinpack.Commands
     [Description(@"Downloads package(s) using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
     public class SetVersionCommand : AbstractCommand<SetVersionCommand.Settings>
     {
-        public class Settings : CommandSettings
+        public class Settings : AbstractSettings
         {
             [CommandArgument(0, "<VERSION>")]
             public string Version { get; set; }
@@ -53,6 +53,7 @@ namespace Twinpack.Commands
         }
         public override int Execute(CommandContext context, Settings settings)
         {
+            SetUpLogger(settings);
             Initialize(settings.Headed);
 
             _twinpack.SetPackageVersionAsync(settings.Version, 

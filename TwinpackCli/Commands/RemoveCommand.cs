@@ -7,7 +7,7 @@ namespace Twinpack.Commands
     [Description(@"Removes package(s) from the specified project and PLC using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
     public class RemoveCommand : AbstractCommand<RemoveCommand.Settings>
     {
-        public class Settings : CommandSettings
+        public class Settings : AbstractSettings
         {
             [CommandOption("--project")]
             [Description("The name of the project where the packages should be added.")]
@@ -28,6 +28,8 @@ namespace Twinpack.Commands
 
         public override int Execute(CommandContext context, Settings settings)
         {
+            SetUpLogger(settings);
+
             Initialize(settings.Headed);
 
             var packages = CreatePackageItems(settings.Packages, settings.ProjectName, settings.PlcName);

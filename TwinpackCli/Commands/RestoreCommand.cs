@@ -8,7 +8,7 @@ namespace Twinpack.Commands
     [Description(@"Restore package(s) using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
     public class RestoreCommand : AbstractCommand<RestoreCommand.Settings>
     {
-        public class Settings : CommandSettings
+        public class Settings : AbstractSettings
         {
             [CommandOption("--include-provided-packages")]
             [Description("Restore packages, which are provided by the configuration (Plcs, which are also packages themselves)")]
@@ -30,6 +30,8 @@ namespace Twinpack.Commands
 
         public override int Execute(CommandContext context, Settings settings)
         {
+            SetUpLogger(settings);
+
             if (!settings.ForceDownload && !settings.Headed)
                 _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
 

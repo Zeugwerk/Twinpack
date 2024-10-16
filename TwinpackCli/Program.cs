@@ -3,6 +3,7 @@ using System;
 using Twinpack.Commands;
 using Spectre.Console.Cli;
 using NLog.Config;
+using System.Runtime.Remoting.Contexts;
 
 namespace Twinpack
 {
@@ -14,8 +15,6 @@ namespace Twinpack
         static int Main(string[] args)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            LogManager.Setup();
-
             var app = new CommandApp();
             app.Configure(config =>
             {

@@ -22,7 +22,7 @@ namespace Twinpack.Commands
     [Description(@"Configure or modify package source repositories by updating the settings defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
     public class ConfigCommand : AbstractCommand<ConfigCommand.Settings>
     {
-        public class Settings : CommandSettings
+        public class Settings : AbstractSettings
         {
             [CommandOption("--type")]
             [Description("Specifies the type(s) of package server(s), i.e. 'Twinpack Repository', 'NuGet Repository', 'Beckhoff Repository'")]
@@ -49,6 +49,8 @@ namespace Twinpack.Commands
         }
         public override int Execute(CommandContext context, Settings settings)
         {
+            SetUpLogger(settings);
+
             // load existing configuration
             try
             {

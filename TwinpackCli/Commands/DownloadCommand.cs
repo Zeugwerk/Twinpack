@@ -10,7 +10,7 @@ namespace Twinpack.Commands
     [Description(@"Downloads package(s) from the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
     public class DownloadCommand : AbstractCommand<DownloadCommand.Settings>
     {
-        public class Settings : CommandSettings
+        public class Settings : AbstractSettings
         {
             [CommandOption("--package")]
             [Description("Specifies the package(s) to be downloaded. If not provided, all relevant packages will be handled.")]
@@ -39,6 +39,8 @@ namespace Twinpack.Commands
         }
         public override int Execute(CommandContext context, Settings settings)
         {
+            SetUpLogger(settings);
+
             if (!settings.ForceDownload && !settings.Headed)
                 _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
 
