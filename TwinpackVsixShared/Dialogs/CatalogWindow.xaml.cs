@@ -433,11 +433,11 @@ namespace Twinpack.Dialogs
         {
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
 
-            var activePlc = _context.VisualStudio.ActivePlc();
-
             try
             {
                 IsInitializing = true;
+
+                var activePlc = _context.VisualStudio.ActivePlc();
 
                 Catalog = new List<PackageItem>();
                 _catalogItem.Invalidate();
