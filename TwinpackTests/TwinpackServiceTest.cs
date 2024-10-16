@@ -639,12 +639,12 @@ namespace TwinpackTests
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib2"));
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib3"));
 
-            Assert.Equals(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ZCore").PackageServer);
-            Assert.Equals(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ZPlatform").PackageServer);
-            Assert.Equals(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ZAux").PackageServer);
-            Assert.Equals(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib1").PackageServer);
-            Assert.Equals(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib2").PackageServer);
-            Assert.Equals(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib3").PackageServer);
+            Assert.AreEqual(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ZCore").PackageServer);
+            Assert.AreEqual(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ZPlatform").PackageServer);
+            Assert.AreEqual(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ZAux").PackageServer);
+            Assert.AreEqual(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib1").PackageServer);
+            Assert.AreEqual(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib2").PackageServer);
+            Assert.AreEqual(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib3").PackageServer);
 
             Assert.IsTrue(downloadedPackageVersions.Select(x => x.Package.Branches).FirstOrDefault()?.Count() == 2);
         }
@@ -765,9 +765,9 @@ namespace TwinpackTests
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib2"));
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib3"));
 
-            Assert.Equals(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib1").PackageServer);
-            Assert.Equals(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib2").PackageServer);
-            Assert.Equals(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib3").PackageServer);
+            Assert.AreEqual(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib1").PackageServer);
+            Assert.AreEqual(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib2").PackageServer);
+            Assert.AreEqual(packageServer, downloadedPackageVersions.FirstOrDefault(x => x.PackageVersion.Name == "ExternalLib3").PackageServer);
         }
 
         [TestMethod]

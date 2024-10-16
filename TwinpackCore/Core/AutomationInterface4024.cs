@@ -69,7 +69,7 @@ namespace Twinpack.Core
 
         protected ITcPlcLibrary ResolvePlaceholder(ITcPlcLibraryManager libManager, string placeholderName, out string distributorName, out string effectiveVersion)
         {
-            if (_thread != System.Threading.Thread.CurrentThread)
+            if (_thread != System.Threading.Thread.CurrentThread && _synchronizationContext != SynchronizationContext.Current)
                 throw new Exception("Invalid synchronization context!");
 
             // getter references might throw (Starting from TC3.1.4024.35)
@@ -135,7 +135,7 @@ namespace Twinpack.Core
 
         protected ITcSysManager SystemManager(string projectName = null)
         {
-            if (_thread != System.Threading.Thread.CurrentThread)
+            if (_thread != System.Threading.Thread.CurrentThread && _synchronizationContext != SynchronizationContext.Current)
                 throw new Exception("Invalid synchronization context!");
 
             var ready = false;
@@ -178,7 +178,7 @@ namespace Twinpack.Core
 
         protected ITcPlcLibraryManager LibraryManager(string projectName = null, string plcName = null)
         {
-            if (_thread != System.Threading.Thread.CurrentThread)
+            if (_thread != System.Threading.Thread.CurrentThread && _synchronizationContext != SynchronizationContext.Current)
                 throw new Exception("Invalid synchronization context!");
 
             var key = new Tuple<string?, string?>(projectName, plcName);
@@ -256,7 +256,7 @@ namespace Twinpack.Core
 
         public override bool IsPackageInstalled(PackageItem package)
         {
-            if (_thread != System.Threading.Thread.CurrentThread)
+            if (_thread != System.Threading.Thread.CurrentThread && _synchronizationContext != SynchronizationContext.Current)
                 throw new Exception("Invalid synchronization context!");
 
             if (_referenceCache.Any(x => x.Name == package.PackageVersion.Title && x.DistributorName == package.PackageVersion.DistributorName && x.Version == package.PackageVersion.Version))

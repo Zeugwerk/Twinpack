@@ -61,7 +61,7 @@ namespace Twinpack.Core
 
         public void ThrowIfNotMainThread()
         {
-            if (_thread != System.Threading.Thread.CurrentThread)
+            if (_thread != System.Threading.Thread.CurrentThread && _synchronizationContext != SynchronizationContext.Current)
                 throw new Exception("Invalid synchronization context!");
 
         }
