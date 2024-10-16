@@ -53,7 +53,9 @@ namespace Twinpack.Protocol
 
         public override async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
         {
-            library.Name = "TwinCAT.XAE.PLC.Lib." + library.Name;
+            if(!library.Name.StartsWith("TwinCAT.XAE.PLC.Lib."))
+                library.Name = "TwinCAT.XAE.PLC.Lib." + library.Name;
+
             return await base.ResolvePackageVersionAsync(library, preferredTarget, preferredConfiguration, preferredBranch, cancellationToken);
         }
 

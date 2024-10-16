@@ -206,7 +206,7 @@ namespace Twinpack.Protocol
 
             using (MemoryStream packageStream = new MemoryStream())
             {
-                var version = new NuGetVersion(packageVersion.Version);
+                var version = packageVersion.Version == null ? null : new NuGetVersion(packageVersion.Version);
                 if (version == null)
                 {
                     PackageMetadataResource meta = await _sourceRepository.GetResourceAsync<PackageMetadataResource>();
