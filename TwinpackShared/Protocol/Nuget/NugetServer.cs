@@ -126,7 +126,9 @@ namespace Twinpack.Protocol
 
                 return
                     new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(
-                        results.Select(x =>
+                        results
+                        .Where(x => x.Tags.ToLower().Contains("library") || x.Tags.ToLower().Contains("plc-library"))
+                        .Select(x =>
                             new CatalogItemGetResponse()
                             {
                                 PackageId = null,
