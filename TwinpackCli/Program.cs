@@ -68,7 +68,7 @@ namespace Twinpack
             foreach (var twinpackServer in _packageServers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
             {
                 twinpackServer.LoginAsync(username, password).Wait();
-                if (!twinpackServer.LoggedIn && (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password)))
+                if (!twinpackServer.LoggedIn && !string.IsNullOrEmpty(password))
                     throw new Exception("Login to Twinpack Server failed!");
 
                 if(!twinpackServer.Connected)

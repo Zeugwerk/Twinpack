@@ -571,7 +571,7 @@ namespace Twinpack.Protocol
 
                 UserInfo = result;
 
-                if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                if (!string.IsNullOrEmpty(Password))
                     CredentialManager.SaveCredentials(UrlBase, new System.Net.NetworkCredential(Username, Password));
 
                 if (IsClientUpdateAvailable)

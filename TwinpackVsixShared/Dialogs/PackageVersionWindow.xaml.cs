@@ -281,7 +281,7 @@ namespace Twinpack.Dialogs
                 TargetsView.SelectedIndex = target != null ? UserInfo.Targets.IndexOf(target) : 0;
                 FileTypeView.SelectedIndex = _packageVersion?.Compiled == 1 ? 1 : 0;
 
-                IsConfigured = _plcConfig != null && (_package?.PackageId == null || _plcConfig.Name == _package.Name && _package.Repository == _twinpackServer.Username);
+                IsConfigured = _plcConfig != null && (_package?.PackageId == null || _plcConfig.Name == _package.Name);
                 IsNewPackage = _package.PackageId == null;
                 if (IsNewPackage)
                     License = (cmbLicense.Items[2] as ComboBoxItem).Content.ToString();

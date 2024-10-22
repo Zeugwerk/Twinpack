@@ -504,7 +504,7 @@ namespace Twinpack.Protocol
 
                 UserInfo = new LoginPostResponse() { User = Username };
 
-                if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                if (!string.IsNullOrEmpty(Password))
                     CredentialManager.SaveCredentials(Url, new System.Net.NetworkCredential(Username, Password));
             }
             catch
