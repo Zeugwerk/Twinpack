@@ -511,7 +511,7 @@ namespace Twinpack.Protocol
 
                 UserInfo = new LoginPostResponse() { User = Username };
 
-                if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                if (!string.IsNullOrEmpty(Password))
                     CredentialManager.SaveCredentials(Url, new System.Net.NetworkCredential(Username, Password));
 
                 _logger.Info($"Log in to '{UrlBase}' successful");
