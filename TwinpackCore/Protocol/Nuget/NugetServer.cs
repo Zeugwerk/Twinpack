@@ -337,7 +337,7 @@ namespace Twinpack.Protocol
             IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => p.Identity.Version.Version.ToString() == library.Version);
 
             if (x == null)
-                throw new Exceptions.LibraryNotFoundException(library.Name, library.Version, $"Package {library.Name} {library.Version} (distributor: {library.DistributorName}) not found!");
+                return new PackageVersionGetResponse();
 
             if (!x.Tags?.ToLower().Contains("library") == true && !x.Tags?.ToLower().Contains("plc-library") == true)
                 throw new Exceptions.LibraryFileInvalidException($"Package {library.Name} {library.Version} (distributor: {library.DistributorName}) does not have a 'plc-library' or 'library' tag!");
