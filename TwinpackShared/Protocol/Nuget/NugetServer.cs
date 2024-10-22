@@ -101,9 +101,9 @@ namespace Twinpack.Protocol
             }
         }
 
-#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgefÃ¼hrt.
         public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
-#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgefÃ¼hrt.
         {
             throw new NotImplementedException();
         }
@@ -352,7 +352,7 @@ namespace Twinpack.Protocol
                     NullLogger.Instance,
                     cancellationToken)).FirstOrDefault(p => version == null || version.ToString() == p.Identity.Version.ToString());
 
-                if(dependency?.Tags?.ToLower().Contains("library") == true)
+                if(dependency?.Tags?.ToLower().Contains("library") == true || dependency.Tags?.ToLower().Contains("plc-library") == true)
                 {
                     dependencies.Add(
                         new PackageVersionGetResponse()
@@ -459,17 +459,17 @@ namespace Twinpack.Protocol
             };
         }
 
-#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgefÃ¼hrt.
         public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package, CancellationToken cancellationToken = default)
-#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgefÃ¼hrt.
         {
             throw new NotImplementedException();
 
         }
 
-#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgefÃ¼hrt.
         public async Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package, CancellationToken cancellationToken = default)
-#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgefÃ¼hrt.
 
         {
             throw new NotImplementedException();
@@ -528,9 +528,9 @@ namespace Twinpack.Protocol
             catch { }
         }
 
-#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+#pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgefÃ¼hrt.
         public async Task LogoutAsync()
-#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
+#pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgefÃ¼hrt.
         {
             _logger.Trace("Log out from NuGet Server");
 
