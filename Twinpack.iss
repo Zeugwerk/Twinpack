@@ -39,7 +39,8 @@ InfoBeforeFile=DISCLAIMER
 [Files]
 Source: "TwinpackVsix.15\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder15}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell15;
 Source: "TwinpackVsix.17\bin\{#MyConfiguration}\Package\*"; DestDir: "{#TcXaeShellExtensionsFolder17}Zeugwerk\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallVsixInTcXaeShell17;
-Source: "TwinpackCli\bin\{#MyConfiguration}\*"; DestDir: "{commonpf}\{#MyAppPublisher}\Twinpack"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallCliInProgramFiles;
+Source: "TwinpackCli.Windows\bin\{#MyConfiguration}\*"; DestDir: "{commonpf}\{#MyAppPublisher}\Twinpack.Windows"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallCliInProgramFiles;
+Source: "TwinpackCli.Net\bin\{#MyConfiguration}\*"; DestDir: "{commonpf}\{#MyAppPublisher}\Twinpack.Net"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: InstallCliInProgramFiles;
 Source: "TwinpackVsix.15\bin\{#MyConfiguration}\TwinpackVsix.15.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
 Source: "TwinpackVsix.17\bin\{#MyConfiguration}\TwinpackVsix.17.vsix"; DestDir: "{tmp}"; Flags: deleteafterinstall;
 Source: "vswhere.exe"; DestDir: "{commonpf}\{#MyAppPublisher}\Utils"; Flags: ignoreversion;
