@@ -7,7 +7,7 @@ using Twinpack.Core;
 
 namespace Twinpack.Commands
 {
-    [Description(@"Downloads package(s) from the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    [Description(@"Downloads package(s) from the sources defined in '.\sourceRepositories.json' or '%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json'.")]
     public class DownloadCommand : AbstractCommand<DownloadCommand.Settings>
     {
         public class Settings : AbstractSettings

@@ -8,7 +8,7 @@ using Spectre.Console.Cli;
 
 namespace Twinpack.Commands
 {
-    [Description(@"Configure or modify package source repositories by updating the settings defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    [Description(@"Configure or modify package source repositories by updating the settings defined in '.\sourceRepositories.json' or '%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json'.")]
     public class ConfigCommand : AbstractCommand<ConfigCommand.Settings>
     {
         public class Settings : AbstractSettings

@@ -4,7 +4,7 @@ using Spectre.Console.Cli;
 
 namespace Twinpack.Commands
 {
-    [Description(@"Downloads package(s) using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    [Description(@"Downloads package(s) using the sources defined in '.\sourceRepositories.json' or '%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json'.")]
     public class UpdateCommand : AbstractCommand<UpdateCommand.Settings>
     {
         public class Settings : AbstractSettings

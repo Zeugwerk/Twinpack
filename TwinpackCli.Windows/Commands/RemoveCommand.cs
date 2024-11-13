@@ -4,7 +4,7 @@ using System.ComponentModel;
 
 namespace Twinpack.Commands
 {
-    [Description(@"Removes package(s) from the specified project and PLC using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    [Description(@"Removes package(s) from the specified project and PLC using the sources defined in '.\sourceRepositories.json' or '%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json'.")]
     public class RemoveCommand : AbstractCommand<RemoveCommand.Settings>
     {
         public class Settings : AbstractSettings

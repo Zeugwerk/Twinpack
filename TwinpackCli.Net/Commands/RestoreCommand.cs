@@ -5,7 +5,7 @@ using Spectre.Console.Cli;
 
 namespace Twinpack.Commands
 {
-    [Description(@"Restore package(s) using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    [Description(@"Restore package(s) using the sources defined in '.\sourceRepositories.json' or '%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json'.")]
     public class RestoreCommand : AbstractCommand<RestoreCommand.Settings>
     {
         public class Settings : AbstractSettings

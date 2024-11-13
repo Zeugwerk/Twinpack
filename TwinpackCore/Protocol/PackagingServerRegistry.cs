@@ -114,7 +114,7 @@ namespace Twinpack.Protocol
 
             var filePath = FilePath;
             if(filePath == null)
-                filePath = FilePaths.First();
+                filePath = FilePaths.Last();
 
             var dirPath = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(dirPath) && !Directory.Exists(dirPath))
