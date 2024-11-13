@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TwinpackCli.Net": {
+      "commandName": "Project",
+      "commandLineArgs": "search -s ZCore"
+    }
+  }
+}

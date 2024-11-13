@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32602.215
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twinpack.15", "Twinpack.15\Twinpack.15.csproj", "{3D96F91E-AFE2-4B62-BBCB-B2546AAA932E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twinpack.15", "Twinpack.15\Twinpack.15.csproj", "{3D96F91E-AFE2-4B62-BBCB-B2546AAA932E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackVsix.15", "TwinpackVsix.15\TwinpackVsix.15.csproj", "{1DC675D6-4139-4A77-B2F7-BEE8E4911D65}"
 EndProject
@@ -15,11 +15,15 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "TwinpackCore", "TwinpackCor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twinpack.17", "Twinpack.17\Twinpack.17.csproj", "{9607F8B7-E76A-452C-87F0-E804BAE4E92F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackCli", "TwinpackCli\TwinpackCli.csproj", "{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackCli.Windows", "TwinpackCli.Windows\TwinpackCli.Windows.csproj", "{0ACCAF6B-A62C-4051-AE4F-47461EAA4A2F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackRegistry", "TwinpackRegistry\TwinpackRegistry.csproj", "{DBBE37C9-0A4D-4EB9-B965-E03431A2FE43}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackTests", "TwinpackTests\TwinpackTests.csproj", "{C9F03787-EACD-4120-83E4-414AB7A8C695}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twinpack.Net", "Twinpack.Net\Twinpack.Net.csproj", "{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackCli.Net", "TwinpackCli.Net\TwinpackCli.Net.csproj", "{A9AF13EF-6D43-459A-B559-5C2856700025}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -85,6 +89,22 @@ Global
 		{C9F03787-EACD-4120-83E4-414AB7A8C695}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C9F03787-EACD-4120-83E4-414AB7A8C695}.Release|x86.ActiveCfg = Release|Any CPU
 		{C9F03787-EACD-4120-83E4-414AB7A8C695}.Release|x86.Build.0 = Release|Any CPU
+		{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}.Debug|x86.Build.0 = Debug|Any CPU
+		{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}.Release|x86.ActiveCfg = Release|Any CPU
+		{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}.Release|x86.Build.0 = Release|Any CPU
+		{A9AF13EF-6D43-459A-B559-5C2856700025}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9AF13EF-6D43-459A-B559-5C2856700025}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9AF13EF-6D43-459A-B559-5C2856700025}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A9AF13EF-6D43-459A-B559-5C2856700025}.Debug|x86.Build.0 = Debug|Any CPU
+		{A9AF13EF-6D43-459A-B559-5C2856700025}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9AF13EF-6D43-459A-B559-5C2856700025}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9AF13EF-6D43-459A-B559-5C2856700025}.Release|x86.ActiveCfg = Release|Any CPU
+		{A9AF13EF-6D43-459A-B559-5C2856700025}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -95,10 +115,11 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		TwinpackVsixShared\TwinpackVsixShared.projitems*{0fdb9f73-33c4-4cc7-9813-8d9a4bebbc0e}*SharedItemsImports = 13
 		TwinpackVsixShared\TwinpackVsixShared.projitems*{1dc675d6-4139-4a77-b2f7-bee8e4911d65}*SharedItemsImports = 4
-		TwinpackCore\TwinpackCore.projitems*{3d96f91e-afe2-4b62-bbcb-b2546aaa932e}*SharedItemsImports = 4
+		TwinpackCore\TwinpackCore.projitems*{3d96f91e-afe2-4b62-bbcb-b2546aaa932e}*SharedItemsImports = 5
 		TwinpackVsixShared\TwinpackVsixShared.projitems*{710545a5-e083-4f4c-a7ac-c0f8b2e1f255}*SharedItemsImports = 4
 		TwinpackCore\TwinpackCore.projitems*{9607f8b7-e76a-452c-87f0-e804bae4e92f}*SharedItemsImports = 4
 		TwinpackCore\TwinpackCore.projitems*{963dd6a7-e9d8-4386-92e0-8b39cb7d8e9c}*SharedItemsImports = 13
 		TwinpackCore\TwinpackCore.projitems*{c9f03787-eacd-4120-83e4-414ab7a8c695}*SharedItemsImports = 4
+		TwinpackCore\TwinpackCore.projitems*{fded33d8-3f68-4ac3-aa86-d61e20801c2f}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

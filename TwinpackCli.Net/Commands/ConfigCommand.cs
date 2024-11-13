@@ -1,18 +1,7 @@
-﻿using NLog.Fluent;
-using NuGet.Common;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Threading;
 using System.Linq;
-using System.Threading.Tasks;
-using Twinpack.Core;
-using Twinpack.Models;
 using Twinpack.Protocol;
-using NuGet.Packaging;
-using NuGet.Protocol.Plugins;
-using System.Net.PeerToPeer;
-using System.Diagnostics;
 using Twinpack.Exceptions;
 using System.ComponentModel;
 using Spectre.Console.Cli;
@@ -50,7 +39,6 @@ namespace Twinpack.Commands
         public override int Execute(CommandContext context, Settings settings)
         {
             SetUpLogger(settings);
-
             // load existing configuration
             try
             {
@@ -73,7 +61,8 @@ namespace Twinpack.Commands
             catch (FileNotFoundException) { }
 
             // add new sources
-            for (int i = 0; i < settings.Sources.Count(); i++)
+            var sources = settings.Sources ?? new string[0];
+            for (int i = 0; i < sources.Count(); i++)
             {
                 var type = settings.Types.ElementAtOrDefault(i) ?? null;
    
@@ -108,7 +97,6 @@ namespace Twinpack.Commands
             }
 
             PackagingServerRegistry.Save();
-
             return 0;
         }
     }

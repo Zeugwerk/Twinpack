@@ -1,3 +1,4 @@
+#if !NETSTANDARD2_1_OR_GREATER
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -577,3 +578,4 @@ namespace Twinpack.Core
         }
     }
 }
+#endif

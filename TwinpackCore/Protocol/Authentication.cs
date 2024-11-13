@@ -45,6 +45,7 @@ namespace Twinpack.Protocol
             if (onlyTry)
                 return;
 
+#if !NETSTANDARD2_1_OR_GREATER
             // then login with prompting if it didn't work
             while (!_packageServer.LoggedIn)
             {
@@ -78,6 +79,7 @@ namespace Twinpack.Protocol
                     _logger.Error(ex.Message);
                 }
 
+
                 if (!_packageServer.LoggedIn)
                 {
                     if (_packageServer.UrlRegister != null)
@@ -93,7 +95,8 @@ namespace Twinpack.Protocol
                             return;
                     }
                 }
-            }
+        }
+#endif
         }
 
         public async Task LogoutAsync()

@@ -18,7 +18,6 @@ using WixToolset.Dtf.WindowsInstaller;
 using WixToolset.Dtf.WindowsInstaller.Package;
 using NuGet.Packaging.Core;
 using System.Data;
-using EnvDTE;
 using Twinpack.Exceptions;
 
 namespace Twinpack.Protocol
@@ -488,10 +487,19 @@ namespace Twinpack.Protocol
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
             InvalidateCache();
-            var credentials = CredentialManager.GetCredentials(UrlBase);
-            
-            Username = username ?? credentials?.UserName;
-            Password = password ?? credentials?.Password;
+            try
+            {
+                var credentials = CredentialManager.GetCredentials(UrlBase);
+                Username = username ?? credentials?.UserName;
+                Password = password ?? credentials?.Password;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn("Failed to load credentials");
+                _logger.Trace(ex);
+                Username = username;
+                Password = password;
+            }
 
             // reset token to get a new one
             if (UserInfo?.Token != null)
@@ -514,7 +522,18 @@ namespace Twinpack.Protocol
                 UserInfo = new LoginPostResponse() { User = Username };
 
                 if (!string.IsNullOrEmpty(Password))
-                    CredentialManager.SaveCredentials(Url, new System.Net.NetworkCredential(Username, Password));
+                {
+                    try
+                    {
+                        CredentialManager.SaveCredentials(UrlBase, new System.Net.NetworkCredential(Username, Password));
+
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warn("Failed to save credentials");
+                        _logger.Trace(ex);
+                    }
+                }
 
                 _logger.Info($"Log in to '{UrlBase}' successful");
             }

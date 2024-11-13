@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !NETSTANDARD2_1_OR_GREATER
+using System;
 using System.IO;
 using TCatSysManagerLib;
 using System.Linq;
@@ -436,3 +437,5 @@ namespace Twinpack.Core
         }
     }
 }
+
+#endif

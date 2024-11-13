@@ -49,18 +49,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Commands\ConfigCommand.cs" />
-    <Compile Include="Commands\SetVersionCommand.cs" />
-    <Compile Include="Commands\UpdateCommand.cs" />
-    <Compile Include="Commands\RestoreCommand.cs" />
-    <Compile Include="Commands\RemoveCommand.cs" />
-    <Compile Include="Commands\AddCommand.cs" />
     <Compile Include="Commands\AbstractCommand.cs" />
+    <Compile Include="Commands\AddCommand.cs" />
+    <Compile Include="Commands\ConfigCommand.cs" />
     <Compile Include="Commands\DownloadCommand.cs" />
     <Compile Include="Commands\ListCommand.cs" />
-    <Compile Include="Commands\SearchCommand.cs" />
     <Compile Include="Commands\PullCommand.cs" />
     <Compile Include="Commands\PushCommand.cs" />
+    <Compile Include="Commands\RemoveCommand.cs" />
+    <Compile Include="Commands\RestoreCommand.cs" />
+    <Compile Include="Commands\SearchCommand.cs" />
+    <Compile Include="Commands\SetVersionCommand.cs" />
+    <Compile Include="Commands\UpdateCommand.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -1,19 +1,18 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using EnvDTE;
 using NLog;
-using NuGet.Common;
-using TCatSysManagerLib;
 using Twinpack.Models;
+
+#if !NETSTANDARD2_1_OR_GREATER
+using EnvDTE;
+using TCatSysManagerLib;
+#endif
 
 namespace Twinpack.Configuration
 {
@@ -87,7 +86,7 @@ namespace Twinpack.Configuration
 
             return config;
         }
-
+#if !NETSTANDARD2_1_OR_GREATER
         public static Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, Protocol.IPackageServer packageServer, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
         {
             return CreateFromSolutionAsync(solution, new List<Protocol.IPackageServer> { packageServer }, plcTypeFilter, cancellationToken);
@@ -138,6 +137,7 @@ namespace Twinpack.Configuration
 
             return config;
         }
+#endif
 
         public static async Task<Config> CreateFromSolutionFileAsync(string path=".", bool continueWithoutSolution=false, IEnumerable<Protocol.IPackageServer> packageServers=null, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter=null, CancellationToken cancellationToken = default)
         {

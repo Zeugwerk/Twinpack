@@ -1,21 +1,15 @@
-using EnvDTE;
-using Microsoft.Win32;
-using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Management;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
-using System.Xml.Linq;
-using TCatSysManagerLib;
 using Twinpack.Configuration;
 using Twinpack.Models;
-using Twinpack.Protocol.Api;
+
+#if !NETSTANDARD2_1_OR_GREATER
+using Microsoft.Win32;
+#endif
 
 namespace Twinpack.Core
 {
@@ -30,12 +24,15 @@ namespace Twinpack.Core
 
         public string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
-        public string TwincatPath
+        public string? TwincatPath
         {
             get
             {
                 try
                 {
+#if NETSTANDARD2_1_OR_GREATER
+                    return null;
+#else
                     using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))
                     {
                         var bootDir = key?.GetValue("BootDir") as string;
@@ -43,6 +40,7 @@ namespace Twinpack.Core
                         // need to do GetParent twice because of the trailing \
                         return bootDir == null ? null : new DirectoryInfo(bootDir)?.Parent?.FullName;
                     }
+#endif
                 }
                 catch
                 {

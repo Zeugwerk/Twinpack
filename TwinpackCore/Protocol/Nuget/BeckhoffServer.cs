@@ -1,24 +1,8 @@
 using NLog;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
-using Twinpack.Exceptions;
-using System.Reflection;
-using AdysTech.CredentialManager;
 using System.Threading;
-using System.Security.Cryptography;
-using System.Runtime.Remoting.Messaging;
-using System.Runtime.CompilerServices;
-using Microsoft.VisualStudio.Threading;
 
 namespace Twinpack.Protocol
 {

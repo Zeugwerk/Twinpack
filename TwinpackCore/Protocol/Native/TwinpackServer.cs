@@ -17,6 +17,7 @@ using AdysTech.CredentialManager;
 using System.Threading;
 using System.Security.Cryptography;
 using Twinpack.Configuration;
+using System.Net;
 
 namespace Twinpack.Protocol
 {
@@ -528,13 +529,24 @@ namespace Twinpack.Protocol
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
             _client.Invalidate(); // clear the cache
-            var credentials = CredentialManager.GetCredentials(UrlBase);
+
+            try
+            {
+                var credentials = CredentialManager.GetCredentials(UrlBase);
+                Username = username ?? credentials?.UserName;
+                Password = password ?? credentials?.Password;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn("Failed to load credentials from Windows Credential Storage");
+                _logger.Trace(ex);
+                Username = username;
+                Password = password;
+            }
 
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(Url + "/login"));
             _logger.Trace($"{request.Method.Method}: {request.RequestUri}");
 
-            Username = username ?? credentials?.UserName;
-            Password = password ?? credentials?.Password;
 
             // reset token to get a new one
             if (UserInfo?.Token != null)
@@ -563,7 +575,18 @@ namespace Twinpack.Protocol
                 UserInfo = result;
 
                 if (!string.IsNullOrEmpty(Password))
-                    CredentialManager.SaveCredentials(UrlBase, new System.Net.NetworkCredential(Username, Password));
+                {
+                    try
+                    {
+                        CredentialManager.SaveCredentials(UrlBase, new System.Net.NetworkCredential(Username, Password));
+
+                    }
+                    catch(Exception ex)
+                    {
+                        _logger.Warn("Failed to save credentials to Windows Credential Storage");
+                        _logger.Trace(ex);
+                    }
+                }
 
                 if (IsClientUpdateAvailable && !_clientUpdateInformed)
                 {

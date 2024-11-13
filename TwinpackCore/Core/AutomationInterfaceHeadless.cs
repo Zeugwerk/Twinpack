@@ -1,25 +1,14 @@
-using EnvDTE;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.Win32;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Management;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.UI;
-using System.Xml;
 using System.Xml.Linq;
-using TCatSysManagerLib;
 using Twinpack.Configuration;
 using Twinpack.Models;
-using Twinpack.Protocol;
-using Twinpack.Protocol.Api;
-using VSLangProj;
 
 namespace Twinpack.Core
 {

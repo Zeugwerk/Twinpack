@@ -1,10 +1,8 @@
 ﻿using NLog;
-using NLog.Targets;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Twinpack.Core;
@@ -16,11 +14,30 @@ namespace Twinpack.Protocol
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        const string _filePath = @"%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json";
+        private static readonly List<string> _filePaths = new List<string> {
+            @".\sourceRepositories.json",
+            @"%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json"
+        };
+
         static List<IPackagingServerFactory> _factories = new List<IPackagingServerFactory>();
         static PackageServerCollection _servers = new PackageServerCollection();
 
-        private static string FilePath { get => Environment.ExpandEnvironmentVariables(_filePath); }
+        private static IEnumerable<string> FilePaths { get => _filePaths.Select(x => Environment.ExpandEnvironmentVariables(x)); }
+
+        private static string FilePath
+        { 
+            get
+            {
+                foreach (var filePath in FilePaths)
+                {
+                    if (File.Exists(filePath))
+                        return filePath;
+
+                }
+
+                return null;
+            }
+        }
         public static async Task InitializeAsync(bool useDefaults=false, bool login=true)
         {
             _factories = new List<IPackagingServerFactory>() { new NativePackagingServerFactory(), new NugetPackagingServerFactory(), new BeckhoffPackagingServerFactory() };
@@ -36,8 +53,8 @@ namespace Twinpack.Protocol
             {
                 try
                 {
-                    if (!File.Exists(FilePath))
-                        throw new FileNotFoundException($"Configuration {FilePath} file not found");
+                    if (FilePath == null)
+                        throw new FileNotFoundException($"No configuration file not found (searched in {string.Join(",", FilePaths)})");
 
                     var sourceRepositories = JsonSerializer.Deserialize<Models.SourceRepositories>(File.ReadAllText(FilePath),
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -51,7 +68,7 @@ namespace Twinpack.Protocol
                 catch(Exception ex)
                 {
                     _logger.Trace(ex);
-                    _logger.Warn($"Failed to load {FilePath}, using default repositories");
+                    _logger.Warn($"Failed to load configuration, using default repositories");
 
                     if(useDefaults)
                     {
@@ -79,7 +96,6 @@ namespace Twinpack.Protocol
         public static async Task<IPackageServer> AddServerAsync(string type, string name, string uri, bool login=true)
         {
             var server = CreateServer(type, name, uri);
-
             if(login)
             {
                 var auth = new Authentication(server);
@@ -96,15 +112,21 @@ namespace Twinpack.Protocol
             Servers.ForEach(x =>
                 sourceRepositories.PackagingServers.Add(new Models.PackagingServer() { Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase }));
 
-            if (!Directory.Exists(Path.GetDirectoryName(FilePath)))
-                Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
+            var filePath = FilePath;
+            if(filePath == null)
+                filePath = FilePaths.First();
 
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(sourceRepositories, new JsonSerializerOptions { WriteIndented = true }));
+            var dirPath = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(dirPath) && !Directory.Exists(dirPath))
+                Directory.CreateDirectory(dirPath);
+
+            File.WriteAllText(filePath, JsonSerializer.Serialize(sourceRepositories, new JsonSerializerOptions { WriteIndented = true }));
+            _logger.Info($"Saved configuration in '{filePath}'");
         }
 
         public static async Task PurgeAsync()
         {
-            if (File.Exists(FilePath))
+            if (FilePath != null)
             {
                 foreach (var packageServer in Servers)
                     await packageServer.LogoutAsync();

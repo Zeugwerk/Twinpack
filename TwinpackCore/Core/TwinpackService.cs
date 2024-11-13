@@ -1,31 +1,18 @@
-using EnvDTE;
-using EnvDTE80;
-using Microsoft.VisualStudio.Shell;
 using NLog;
-using NLog.Filters;
-using NuGet.Common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.IO.Packaging;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Caching;
 using System.Xml.Linq;
-using TCatSysManagerLib;
-using Twinpack.Exceptions;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
-using static System.Net.Mime.MediaTypeNames;
 using Twinpack.Configuration;
-using System.Windows.Navigation;
-using Microsoft.VisualStudio.PlatformUI;
-using NuGet.Configuration;
 
 namespace Twinpack.Core
 {
@@ -252,6 +239,7 @@ namespace Twinpack.Core
                     if (!_availablePackagesCache.Any(x => item.Catalog?.Name == x.Catalog?.Name))
                         _availablePackagesCache.Add(item);
                 }
+
 
                 return _availablePackagesCache
                         .Where(x =>
