@@ -5,6 +5,8 @@ using Twinpack.Protocol;
 using Twinpack.Exceptions;
 using System.ComponentModel;
 using Spectre.Console.Cli;
+using System.IO.Packaging;
+using System.Text.Json;
 
 namespace Twinpack.Commands
 {
@@ -97,6 +99,15 @@ namespace Twinpack.Commands
             }
 
             PackagingServerRegistry.Save();
+
+            if (settings.JsonOutput == true)
+            {
+                Console.Write(JsonSerializer.Serialize(PackagingServerRegistry.Servers));
+            }
+            else
+            {
+            }
+
             return 0;
         }
     }
