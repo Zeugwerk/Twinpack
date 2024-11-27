@@ -585,9 +585,9 @@ namespace Twinpack.Core
                     cache.Add(package);
             }
 
-            foreach (var package in packages)
+            if (includeDependencies)
             {
-                if (includeDependencies)
+                foreach (var package in packages)
                 {
                     var dependencies = package.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>();
                     await AffectedPackagesAsync(
