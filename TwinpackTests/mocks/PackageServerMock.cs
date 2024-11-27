@@ -135,7 +135,8 @@ namespace TwinpackTests
                 .FirstOrDefault();
             else
                 return PackageVersionItems.Where(x => x.Name == library.Name)
-                .OrderByDescending(x => (string.IsNullOrEmpty(library.Version) || new Version(library.Version) == new Version(x.Version)))
+                .OrderByDescending(x => preferredBranch == x.Branch)
+                .ThenByDescending(x => (string.IsNullOrEmpty(library.Version) || new Version(library.Version) == new Version(x.Version)))
                 .ThenByDescending(x => x.Version == null ? new Version(9,9,9,9) : new Version(x.Version))
                 .FirstOrDefault();
         }

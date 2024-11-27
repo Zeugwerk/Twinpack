@@ -565,7 +565,7 @@ namespace Twinpack.Core
 
         private async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, List<PackageItem> cache, bool includeDependencies = true, CancellationToken cancellationToken = default)
         {
-            foreach(var package in packages)
+            foreach (var package in packages)
             {
                 if (package.Package == null || package.PackageVersion == null || package.PackageServer == null)
                 {
@@ -583,15 +583,18 @@ namespace Twinpack.Core
 
                 if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
                     cache.Add(package);
+            }
 
-                if(includeDependencies)
+            foreach (var package in packages)
+            {
+                if (includeDependencies)
                 {
-                    var dependencies = package.PackageVersion.Dependencies ?? new List<PackageVersionGetResponse>();
+                    var dependencies = package.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>();
                     await AffectedPackagesAsync(
                         dependencies.Select(x =>
                                     new PackageItem()
                                     {
-                                        PackageServer = packages.Where(y => y.PackageVersion.Name == x.Name).FirstOrDefault()?.PackageServer,
+                                        PackageServer = packages.Where(y => (y.Config?.Name ?? y.PackageVersion?.Name) == x.Name).FirstOrDefault()?.PackageServer,
                                         ProjectName = package.ProjectName,
                                         PlcName = package.PlcName,
                                         Catalog = new CatalogItemGetResponse { Name = x.Name },

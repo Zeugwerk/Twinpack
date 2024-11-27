@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32602.215
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twinpack.15", "Twinpack.15\Twinpack.15.csproj", "{3D96F91E-AFE2-4B62-BBCB-B2546AAA932E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twinpack.15", "Twinpack.15\Twinpack.15.csproj", "{3D96F91E-AFE2-4B62-BBCB-B2546AAA932E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackVsix.15", "TwinpackVsix.15\TwinpackVsix.15.csproj", "{1DC675D6-4139-4A77-B2F7-BEE8E4911D65}"
 EndProject

@@ -1330,5 +1330,62 @@ namespace TwinpackTests
             Assert.AreEqual("2.2.3.4", auxExternalPackage.Config.Version);
             Assert.AreEqual("2.2.3.4", auxExternalPackage.PackageVersion.Version);
         }
+
+        private TwinpackService BuildMultiBranchDependencies()
+        {
+            var packageServer = new PackageServerMock
+            {
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZCore", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>()
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZCore", Version = "1.5.0.1", Branch = "fix/some-fix", Configuration = "Release", Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>()
+                    },
+                    new PackageVersionGetResponse()
+                    {
+                        Name = "ZPlatform", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1",
+                        Dependencies = new List<PackageVersionGetResponse>
+                        {
+                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.1", Branch = "main" }
+                        }
+                    },
+                    
+                },
+                Connected = true
+            };
+
+
+            var packageServers = new PackageServerCollection { packageServer };
+            return new TwinpackService(packageServers);
+        }
+
+        [TestMethod]
+        public async Task AffectedPackages_PreferPassedPackageItems()
+        {
+            var twinpack = BuildMultiBranchDependencies();
+
+            var packages = await twinpack.AffectedPackagesAsync(
+                new List<PackageItem>()
+                {
+                    new PackageItem() { Config = new ConfigPlcPackage { Name = "ZPlatform", Version = "1.5.0.1", Branch = "main" } },
+                    new PackageItem() { Config = new ConfigPlcPackage { Name = "ZCore", Version = "1.5.0.1", Branch = "fix/some-fix" } }
+                });
+
+            Assert.AreEqual(2, packages.Count());
+
+            var corePackage = packages.FirstOrDefault(x => x.PackageVersion.Name == "ZCore");
+            Assert.AreEqual("ZCore", corePackage.PackageVersion.Name);
+            Assert.AreEqual("fix/some-fix", corePackage.PackageVersion.Branch);
+
+            var platformPackage = packages.FirstOrDefault(x => x.PackageVersion.Name == "ZPlatform");
+            Assert.AreEqual("ZPlatform", platformPackage.PackageVersion.Name);
+            Assert.AreEqual("main", platformPackage.PackageVersion.Branch);
+        }
     }
 }
