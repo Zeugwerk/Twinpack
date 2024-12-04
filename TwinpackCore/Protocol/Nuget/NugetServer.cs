@@ -118,11 +118,9 @@ namespace Twinpack.Protocol
                     logger,
                     cancellationToken);
 
-                return
-                    new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(
-                        results
+                var packages = await Task.WhenAll(results
                         .Where(x => x.Tags.ToLower().Contains("library") || x.Tags.ToLower().Contains("plc-library"))
-                        .Select(x =>
+                        .Select(async x =>
                             new CatalogItemGetResponse()
                             {
                                 PackageId = null,
@@ -135,8 +133,12 @@ namespace Twinpack.Protocol
                                 Downloads = x.DownloadCount.HasValue && x.DownloadCount.Value > 0 ? ((int?)x.DownloadCount.Value) : null,
                                 Created = x.Published?.ToString() ?? "Unknown",
                                 Modified = x.Published?.ToString() ?? "Unknown"
-                            }).ToList(),
-                        results.Any());
+#if !NETSTANDARD2_1_OR_GREATER
+//                                ,Icon = await GetPackageIconAsync(x.Identity, cancellationToken),
+#endif
+                            }));
+
+                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(packages, results.Any());
             }
             catch(Exception)
             {
@@ -144,6 +146,45 @@ namespace Twinpack.Protocol
             }
 
         }
+
+#if !NETSTANDARD2_1_OR_GREATER
+        private async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
+        {
+            FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
+
+            using (MemoryStream packageStream = new MemoryStream())
+            {
+                await resource.CopyNupkgToStreamAsync(
+                identity.Id,
+                identity.Version,
+                packageStream,
+                _cache,
+                NullLogger.Instance,
+                cancellationToken);
+
+                using (PackageArchiveReader packageReader = new PackageArchiveReader(packageStream))
+                {
+                    var iconPath = packageReader.NuspecReader.GetIcon();
+                    if (iconPath != null)
+                    {
+                        var zipEntry = packageReader.GetEntry(iconPath);
+                        if (zipEntry != null)
+                        {
+                            var image = new System.Windows.Media.Imaging.BitmapImage();
+                            image.BeginInit();
+                            image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                            image.StreamSource = zipEntry.Open();
+                            image.EndInit();
+                            image.Freeze();
+                            return image;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+#endif
 
         public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch = null, string configuration = null, string target = null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {

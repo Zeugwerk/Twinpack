@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
-using System.Xml.Linq;
 
 namespace Twinpack.Protocol.Api
 {
@@ -90,6 +89,11 @@ namespace Twinpack.Protocol.Api
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasRuntimeLicense { get { return RuntimeLicense > 0; } }
+
+#if !NETSTANDARD2_1_OR_GREATER
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public System.Windows.Media.Imaging.BitmapImage Icon { get; set; }
+#endif
     }
     public class PackageGetResponse : Response
     {

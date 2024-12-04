@@ -149,6 +149,11 @@
                                    Visibility="{Binding IconUrl, Converter={StaticResource NullToVisibilityConverter}}"
                                    Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
 
+                            <Image d:Source="Images/Twinpack.png" 
+                                   RenderOptions.BitmapScalingMode="HighQuality" 
+                                   DataContext="{Binding Catalog}"
+                                   Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
+                                   Source="{Binding Icon}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
 
                             <Image d:Source="Images/Twinpack.png" 
                                    RenderOptions.BitmapScalingMode="HighQuality" 
