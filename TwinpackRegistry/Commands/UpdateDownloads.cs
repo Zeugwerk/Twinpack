@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Twinpack.Protocol;
 
 namespace Twinpack.Commands
 {
@@ -15,6 +16,11 @@ namespace Twinpack.Commands
 
         [Option('p', "password", Required = false, Default = null, HelpText = "Password for Twinpack Server")]
         public string Password { get; set; }
+        [Option("beckhoff-username", Required = false, Default = null, HelpText = "Username for Beckhoff Repository")]
+        public string BeckhoffUsername { get; set; }
+
+        [Option("beckhoff-password", Required = false, Default = null, HelpText = "Password for Beckhoff Repository")]
+        public string BeckhoffPassword { get; set; }
 
         [Option('r', "owner", Required = false, Default = "Zeugwerk", HelpText = "")]
         public string RegistryOwner { get; set; }
@@ -31,9 +37,9 @@ namespace Twinpack.Commands
         public override async Task<int> ExecuteAsync()
         {
             _logger.Info(">>> twinpack-registry:update-downloads");
-            var registry = new TwinpackRegistry(_twinpackServer);
+            var registry = new TwinpackRegistry(new List<IPackageServer> { _twinpackServer, _beckhoffServer });
 
-            await LoginAsync(Username, Password);
+            await LoginAsync(Username, Password, BeckhoffUsername, BeckhoffPassword);
             await registry.UpdateDownloadsAsync(RegistryOwner, RegistryName, token: Token, dryRun: DryRun);
 
             return 0;

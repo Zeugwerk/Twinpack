@@ -1,13 +1,9 @@
 ﻿using CommandLine;
 using NLog;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
 using System.Threading.Tasks;
 using Twinpack.Commands;
-using Twinpack.Models;
+using Twinpack.Protocol;
 
 namespace Twinpack
 {
@@ -47,6 +43,7 @@ namespace Twinpack
             }
             finally
             {
+                PackagingServerRegistry.PurgeAsync().GetAwaiter().GetResult();
                 watch.Stop();
                 TimeSpan ts = watch.Elapsed;
                 string elapsedTime = string.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);

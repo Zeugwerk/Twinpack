@@ -10,5 +10,5 @@ jobs:
       - run: |
           curl.exe -s -o twinpack-registry-latest.tar.gz https://zeugwerk.dev/Tools/twinpack-registry-latest.tar.gz
           tar -xf twinpack-registry-latest.tar.gz
-          ./twinpack-registry.exe pull --username "${{ secrets.ACTIONS_ZGWK_USERNAME }}" --password "${{ secrets.ACTIONS_ZGWK_PASSWORD }}" --token "${{ secrets.GH_TOKEN }}"
+          ./twinpack-registry.exe pull --username "${{ secrets.ACTIONS_ZGWK_USERNAME }}" --password "${{ secrets.ACTIONS_ZGWK_PASSWORD }}" --beckhoff-username "${{ secrets.ACTIONS_BECKHOFF_USERNAME }}" --beckhoff-password "${{ secrets.ACTIONS_BECKHOFF_PASSWORD }}" --token "${{ secrets.GH_TOKEN }}"
         shell: bash
