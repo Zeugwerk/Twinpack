@@ -100,9 +100,6 @@ namespace Twinpack.Dialogs
             var auth = new Protocol.Authentication(server);
             await auth.LoginAsync(false);
 
-            if (server.LoggedIn)
-                MessageBox.Show("Login successful!", "Package server", MessageBoxButton.OK, MessageBoxImage.Information);
-
             int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
             PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
             PackagingServers.ElementAt(index).Connected = server.Connected;
