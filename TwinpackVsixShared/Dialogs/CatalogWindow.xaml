@@ -21,6 +21,9 @@
         <local:IntToVisibilityConverter x:Key="IntToVisibilityConverter"/>
         <local:BooleanToBorderThicknessConverter x:Key="BooleanToBorderThicknessConverter"/>
         <local:VersionToStringConverter x:Key="VersionToStringConverter"/>
+        <local:CatalogIconUrlVisibilityConverter x:Key="CatalogIconUrlVisibilityConverter"/>
+        <local:CatalogIconVisibilityConverter x:Key="CatalogIconVisibilityConverter"/>
+        <local:CatalogNoIconVisibilityConverter x:Key="CatalogNoIconVisibilityConverter"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -142,23 +145,19 @@
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
                             </Grid.ColumnDefinitions>
 
-                            <Image d:Source="Images/Twinpack.png" 
-                                   RenderOptions.BitmapScalingMode="HighQuality" 
-                                   x:Name="ImageIcon"
+                            <Image RenderOptions.BitmapScalingMode="HighQuality" 
                                    DataContext="{Binding Catalog}"
-                                   Visibility="{Binding IconUrl, Converter={StaticResource NullToVisibilityConverter}}"
+                                   Visibility="{Binding ., Converter={StaticResource CatalogIconUrlVisibilityConverter}}"
                                    Source="{Binding IconUrl, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
 
-                            <Image d:Source="Images/Twinpack.png" 
-                                   RenderOptions.BitmapScalingMode="HighQuality" 
+                            <Image RenderOptions.BitmapScalingMode="HighQuality" 
                                    DataContext="{Binding Catalog}"
-                                   Visibility="{Binding Icon, Converter={StaticResource NullToVisibilityConverter}}"
-                                   Source="{Binding Icon}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
-
-                            <Image d:Source="Images/Twinpack.png" 
-                                   RenderOptions.BitmapScalingMode="HighQuality" 
+                                   Visibility="{Binding ., Converter={StaticResource CatalogIconVisibilityConverter}}"
+                                   Source="{Binding Icon}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>                            
+                            
+                            <Image RenderOptions.BitmapScalingMode="HighQuality" 
                                    DataContext="{Binding Catalog}"
-                                   Visibility="{Binding Visibility, ElementName=ImageIcon, Converter={StaticResource VisibilityToInverseVisibilityConverter}}"
+                                   Visibility="{Binding ., Converter={StaticResource CatalogNoIconVisibilityConverter}}"
                                    Source="{Binding Name, Converter={StaticResource UrlToImageConverter}}" VerticalAlignment="Top" Grid.Column="0" Width="48" Height="48"/>
 
                             <Grid Grid.Column="1" DataContext="{Binding Catalog}">

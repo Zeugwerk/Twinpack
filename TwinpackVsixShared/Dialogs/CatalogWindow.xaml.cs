@@ -42,7 +42,6 @@ namespace Twinpack.Dialogs
         private const int _itemsPerPage = 10;
 
         private bool _isUpdateAvailable = false;
-        private bool _isLoadingConfig = false;
         private bool _isPackageVersionsAvailable = false;
 
         private string _searchTerm = "";
@@ -479,7 +478,6 @@ namespace Twinpack.Dialogs
         {
             if (plcName == null)
             {
-                _isLoadingConfig = false;
                 IsCreateConfigVisible = false;
                 IsMigrateConfigVisible = false;
                 IsConfigured = false;
@@ -488,7 +486,6 @@ namespace Twinpack.Dialogs
 
             try
             {
-                _isLoadingConfig = true;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
                 var config = ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
@@ -517,7 +514,6 @@ namespace Twinpack.Dialogs
             }
             finally
             {
-                _isLoadingConfig = false;
             }
 
             return null;

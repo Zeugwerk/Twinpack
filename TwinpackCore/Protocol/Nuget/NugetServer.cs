@@ -150,37 +150,50 @@ namespace Twinpack.Protocol
 #if !NETSTANDARD2_1_OR_GREATER
         protected virtual async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
         {
-            FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
-
-            using (MemoryStream packageStream = new MemoryStream())
+            try
             {
-                await resource.CopyNupkgToStreamAsync(
-                identity.Id,
-                identity.Version,
-                packageStream,
-                _cache,
-                NullLogger.Instance,
-                cancellationToken);
+                FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
 
-                using (PackageArchiveReader packageReader = new PackageArchiveReader(packageStream))
+                using (MemoryStream packageStream = new MemoryStream())
+                using (var memoryStream = new MemoryStream())
                 {
-                    var iconPath = packageReader.NuspecReader.GetIcon();
-                    if (iconPath != null)
+                    await resource.CopyNupkgToStreamAsync(
+                        identity.Id,
+                        identity.Version,
+                        packageStream,
+                        _cache,
+                        NullLogger.Instance,
+                        cancellationToken);
+
+                    using (PackageArchiveReader packageReader = new PackageArchiveReader(packageStream))
                     {
-                        var zipEntry = packageReader.GetEntry(iconPath);
-                        if (zipEntry != null)
+                        var iconPath = packageReader.NuspecReader.GetIcon();
+                        if (iconPath != null)
                         {
-                            var image = new System.Windows.Media.Imaging.BitmapImage();
-                            image.BeginInit();
-                            image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                            image.StreamSource = zipEntry.Open();
-                            image.EndInit();
-                            image.Freeze();
-                            return image;
+                            var zipEntry = packageReader.GetEntry(iconPath);
+
+                            await zipEntry.Open().CopyToAsync(memoryStream);
+                            memoryStream.Position = 0;
+
+                            if (zipEntry != null)
+                            {
+                                var image = new System.Windows.Media.Imaging.BitmapImage();
+                                image.BeginInit();
+                                image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                                image.StreamSource = memoryStream;
+                                image.EndInit();
+                                image.Freeze();
+                                return image;
+                            }
                         }
                     }
                 }
+            } catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error("Can't unpack package icon:" + ex);
             }
+
 
             return null;
         }

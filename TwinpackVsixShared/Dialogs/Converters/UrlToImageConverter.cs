@@ -8,7 +8,7 @@ namespace Twinpack.Dialogs
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return IconCache.Icon((string)value, parameter != null && (parameter as string).Contains("Beckhoff"));
+            return IconCache.Icon((string)value);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

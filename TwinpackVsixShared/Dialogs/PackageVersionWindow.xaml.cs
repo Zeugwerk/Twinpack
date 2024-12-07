@@ -233,7 +233,7 @@ namespace Twinpack.Dialogs
                 Version = _packageVersion?.Version ?? _plcConfig?.Version;
                 Authors = _packageVersion?.Authors ?? _plcConfig?.Authors;
                 License = _packageVersion?.License ?? _plcConfig?.License;
-                IconImage = IconCache.Icon(_package?.IconUrl ?? PackageName, isBeckhoffPackage: false);
+                IconImage = IconCache.Icon(_package?.IconUrl ?? PackageName);
                 Notes = _packageVersion?.Notes;
                 Version = _packageVersion?.Version;
                 LatestVersion = _packageVersionLatest?.Version;
@@ -750,7 +750,7 @@ namespace Twinpack.Dialogs
                 if (openFileDialog.ShowDialog() == true)
                 {
                     IconFile = openFileDialog.FileName;
-                    IconImage = IconCache.Icon(openFileDialog.FileName, isBeckhoffPackage: false);            
+                    IconImage = IconCache.Icon(openFileDialog.FileName);            
                 }
             }
             catch (Exception ex)
@@ -790,7 +790,7 @@ namespace Twinpack.Dialogs
                 ProjectUrl = packageResult.ProjectUrl;
                 Authors = packageResult.Authors;
                 License = packageResult.License;
-                IconImage = IconCache.Icon(packageResult?.IconUrl ?? PackageName, isBeckhoffPackage: false);
+                IconImage = IconCache.Icon(packageResult?.IconUrl ?? PackageName);
             }
             catch (Exceptions.ProtocolException ex)
             {
