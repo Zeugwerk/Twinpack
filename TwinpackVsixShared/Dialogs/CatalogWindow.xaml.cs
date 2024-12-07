@@ -808,6 +808,7 @@ namespace Twinpack.Dialogs
                     {
                         package.Available.Used = package.Installed.Used;
                         package.Available.Update = package.Installed.Update;
+                        package.Available.Config = package.Installed.Config;
                     }
                 }
 
