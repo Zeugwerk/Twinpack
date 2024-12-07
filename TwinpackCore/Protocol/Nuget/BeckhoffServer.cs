@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using System.Threading;
+using NuGet.Packaging.Core;
 
 namespace Twinpack.Protocol
 {
@@ -41,6 +42,14 @@ namespace Twinpack.Protocol
 
             return await base.ResolvePackageVersionAsync(library, preferredTarget, preferredConfiguration, preferredBranch, cancellationToken);
         }
+
+#if !NETSTANDARD2_1_OR_GREATER
+        protected override async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
+        {
+            // Beckhoff Packages come without Icons
+            return null;
+        }
+#endif
 
         protected override int EvaluateCompiled(string tags)
         {

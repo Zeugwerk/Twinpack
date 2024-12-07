@@ -134,7 +134,7 @@ namespace Twinpack.Protocol
                                 Created = x.Published?.ToString() ?? "Unknown",
                                 Modified = x.Published?.ToString() ?? "Unknown"
 #if !NETSTANDARD2_1_OR_GREATER
-//                                ,Icon = await GetPackageIconAsync(x.Identity, cancellationToken),
+                                ,Icon = await GetPackageIconAsync(x.Identity, cancellationToken),
 #endif
                             }));
 
@@ -148,7 +148,7 @@ namespace Twinpack.Protocol
         }
 
 #if !NETSTANDARD2_1_OR_GREATER
-        private async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
+        protected virtual async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
         {
             FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
 
