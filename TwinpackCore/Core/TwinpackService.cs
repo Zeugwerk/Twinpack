@@ -569,6 +569,7 @@ namespace Twinpack.Core
             {
                 if (package.Package == null || package.PackageVersion == null || package.PackageServer == null)
                 {
+                    package.Package = null;
                     package.PackageVersion = null;
                     package.PackageServer = null;
                     var resolvedPackage = await _packageServers.FetchPackageAsync(package.PackageServer, package.ProjectName, package.PlcName, package.Config, includeMetadata: true, _automationInterface, cancellationToken);

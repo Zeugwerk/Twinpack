@@ -1387,5 +1387,25 @@ namespace TwinpackTests
             Assert.AreEqual("ZPlatform", platformPackage.PackageVersion.Name);
             Assert.AreEqual("main", platformPackage.PackageVersion.Branch);
         }
+
+        [TestMethod]
+        public async Task AffectedPackages_IgnoreNotAvailableDependencies()
+        {
+            var twinpack = BuildMultiBranchDependencies();
+
+            var packages = await twinpack.AffectedPackagesAsync(
+                new List<PackageItem>()
+                {
+                    new PackageItem()
+                    { 
+                        Config = new ConfigPlcPackage { Name = "NotExisting", Version = "1.5.0.1", Branch = "main" },
+                        Package = new PackageGetResponse { Name = "NotExisting" },
+                        PackageVersion = new PackageVersionGetResponse { Name = "NotExisting", Version = "1.5.0.1", Branch = "main" },
+                        PackageServer = null
+                    },
+                });
+
+            Assert.AreEqual(0, packages.Count());
+        }
     }
 }
