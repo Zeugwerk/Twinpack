@@ -10,7 +10,6 @@ using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
 using Twinpack.Configuration;
 using System.Runtime.Caching;
-using System.IdentityModel.Tokens;
 
 namespace Twinpack.Core
 {
