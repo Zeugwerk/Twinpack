@@ -180,23 +180,25 @@ namespace Twinpack
                 var projects = Context.Solution.Projects;
 
                 if (projects.Count == 0)
+                {
+                    _logger.Debug("Twinpack initialization failed, no projects present");
                     return;
+                }
 
-                ITcSysManager sysManager = null;
+                ITcSysManager systemManager = null;
                 foreach (Project prj in projects)
                 {
                     try
                     {
-                        sysManager = (ITcSysManager)prj.Object;
+                        systemManager = (ITcSysManager)prj.Object;
                         break;
                     }
                     catch (Exception) { }
                 }
 
-                // TcSysManager konnte nicht initialisiert werden, da kein TwinCAT Projekt geladen ist
-                if (sysManager == null)
+                if (systemManager == null)
                 {
-                    _logger.Error("Twinpack initialization failed, this is not a TwinCAT project, no systemmanager detected");
+                    _logger.Debug("Twinpack initialization failed, no TwinCAT project detected");
                     return;
                 }
 
