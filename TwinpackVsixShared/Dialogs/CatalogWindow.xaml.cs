@@ -1074,6 +1074,7 @@ namespace Twinpack.Dialogs
             finally
             {
                 IsPackageLoading = false;
+                IsPackageVersionLoading = false;
             }
         }
 
