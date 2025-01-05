@@ -10,7 +10,6 @@ namespace Twinpack.Protocol
     public class CachedHttpClient : HttpClient
     {
         private readonly ObjectCache _cache;
-        private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         public CachedHttpClient() : base()
         {
@@ -21,8 +20,6 @@ namespace Twinpack.Protocol
         {
             try
             {
-                await _semaphore.WaitAsync();
-
                 if (!NetworkInterface.GetIsNetworkAvailable())
                     throw new HttpRequestException("No internet connection! Please check your connection.");
 
@@ -59,7 +56,6 @@ namespace Twinpack.Protocol
             }
             finally
             {
-                _semaphore.Release();
             }
         }
 
@@ -67,14 +63,11 @@ namespace Twinpack.Protocol
         {
             try
             {
-                _semaphore.Wait();
-
                 foreach (var item in _cache)
                     _cache.Remove(item.Key);
             }
             finally
             {
-                _semaphore.Release();
             }
         }
     }

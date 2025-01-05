@@ -395,14 +395,7 @@ namespace Twinpack.Dialogs
 
             InitializeComponent();
 
-            _catalogItem.PropertyChanged += (sender, e) =>
-            {
-                if (e.PropertyName == nameof(_catalogItem.Package))
-                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Package)));
-                else if (e.PropertyName == nameof(_catalogItem.PackageVersion))
-                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
-            };
-
+            _catalogItem.PropertyChanged += CatalogItemPackage_Changed;
             CatalogView.SelectionChanged += Catalog_SelectionChanged;
             BranchesView.SelectionChanged += PackageFilter_SelectionChanged;
             ConfigurationsView.SelectionChanged += PackageFilter_SelectionChanged;
@@ -1020,6 +1013,14 @@ namespace Twinpack.Dialogs
             finally
             {
             }
+        }
+
+        private void CatalogItemPackage_Changed(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(_catalogItem.Package))
+                PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Package)));
+            else if (e.PropertyName == nameof(_catalogItem.PackageVersion))
+                PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden

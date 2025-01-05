@@ -9,16 +9,28 @@ using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
 using Twinpack.Configuration;
+using System.Runtime.Caching;
+using System.IdentityModel.Tokens;
 
 namespace Twinpack.Core
 {
     public class PackageServerCollection : List<IPackageServer>
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private static MemoryCache _cache = MemoryCache.Default;
 
         public void InvalidateCache()
         {
             ForEach(x => x.InvalidateCache());
+
+            try
+            {
+                foreach (var item in _cache)
+                    _cache.Remove(item.Key);
+            }
+            finally
+            {
+            }
         }
 
         public async Task LoginAsync(string username, string password)
@@ -90,6 +102,10 @@ namespace Twinpack.Core
 
         public async Task<PackageItem> FetchPackageAsync(IPackageServer packageServer, string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken cancellationToken = default)
         {
+            var cacheKey = $"FetchPackageAsync-{projectName}-{plcName}-{item.DistributorName}-{item.Name}-{item.Version}-{item.Branch}-{item.Configuration}-{item.Target}";
+            if (_cache.Contains(cacheKey))
+                return _cache[cacheKey] as PackageItem;
+
             var catalogItem = new PackageItem(item)
             {
                 ProjectName = projectName,
@@ -180,13 +196,20 @@ namespace Twinpack.Core
                 catalogItem.Config = item;
 
                 if (packageVersionLatest.Name != null)
+                {
+                    if(includeMetadata)
+                        _cache[cacheKey] = catalogItem;
                     return catalogItem;
+                }
             }
 
             catalogItem.Config = item;
             catalogItem.ProjectName = projectName;
             catalogItem.PlcName = plcName;
             catalogItem.PackageServer = null;
+
+            if (includeMetadata)
+                _cache[cacheKey] = catalogItem;
             return catalogItem;
         }
 
