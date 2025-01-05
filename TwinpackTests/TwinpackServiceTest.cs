@@ -2,6 +2,7 @@
 using Moq;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Caching;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Twinpack.Configuration;
@@ -77,9 +78,17 @@ namespace TwinpackTests
                 _packageServerNotConnected,
                 _packageServer2,
             };
-
         }
 
+        [TestCleanup]
+        public void TestClean()
+        {
+            MemoryCache cache = MemoryCache.Default;
+            foreach(var item in cache)
+            {
+                cache.Remove(item.Key);
+            }
+        }
 
         [TestMethod]
         public async Task RetrieveAvailablePackagesAsync_AllPackages()

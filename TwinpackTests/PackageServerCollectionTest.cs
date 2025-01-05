@@ -7,6 +7,7 @@ using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
 using Twinpack.Configuration;
+using System.Runtime.Caching;
 
 namespace TwinpackTests
 {
@@ -78,6 +79,15 @@ namespace TwinpackTests
             };
         }
 
+        [TestCleanup]
+        public void TestClean()
+        {
+            MemoryCache cache = MemoryCache.Default;
+            foreach (var item in cache)
+            {
+                cache.Remove(item.Key);
+            }
+        }
 
         [TestMethod]
         public async Task SearchAllAsync_AllPackages()
