@@ -522,16 +522,25 @@ namespace Twinpack.Dialogs
             return null;
         }
 
-        public void EditServersButton_Click(object sender, RoutedEventArgs e)
+        public async void EditServersButton_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new PackagingServerDialog();
-            dialog.Owner = Application.Current.MainWindow;
-            dialog.ShowDialog();
-
-            if (dialog.DialogResult == true)
+            try
             {
-                ResetServerSelection();
-                Reload(sender, e);
+                var dialog = new PackagingServerDialog();
+                dialog.Owner = Application.Current.MainWindow;
+                dialog.ShowDialog();
+
+                if (dialog.DialogResult == true)
+                {
+                    ResetServerSelection();
+                    await InitializeInternalAsync();
+
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.Message);
+                _logger.Trace(ex);
             }
         }
 
