@@ -476,6 +476,9 @@ namespace Twinpack.Dialogs
 
         public async Task<Config> LoadConfigAsync(string plcName, CancellationToken cancellationToken)
         {
+            // make sure that the sln is up-to-date
+            _context.Dte.ExecuteCommand("File.SaveAll");
+
             if (plcName == null)
             {
                 IsCreateConfigVisible = false;
