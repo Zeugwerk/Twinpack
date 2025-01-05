@@ -1039,9 +1039,9 @@ namespace Twinpack.Dialogs
                     
                 Options = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _catalogItem.Catalog?.Name)?.Options ?? new AddPlcLibraryOptions();
 
-                BranchesView.Visibility = _catalogItem.Package?.Branches.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
-                TargetsView.Visibility = _catalogItem.Package?.Targets.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
-                ConfigurationsView.Visibility = _catalogItem.Package?.Configurations.Count() > 1 ? Visibility.Visible : Visibility.Collapsed;
+                BranchesView.Visibility = _catalogItem.Package?.Branches?.Any() == true ? Visibility.Visible : Visibility.Collapsed;
+                TargetsView.Visibility = _catalogItem.Package?.Targets?.Any() == true ? Visibility.Visible : Visibility.Collapsed;
+                ConfigurationsView.Visibility = _catalogItem.Package?.Configurations?.Any() == true ? Visibility.Visible : Visibility.Collapsed;
 
                 ConfigurationsView.SelectedIndex = -1;
                 BranchesView.SelectedIndex = string.IsNullOrEmpty(_catalogItem.Used?.Branch) ? 0 : _catalogItem.Package?.Branches?.FindIndex(x => x == _catalogItem.Used?.Branch) ?? -1;
