@@ -16,6 +16,7 @@ using EnvDTE80;
 using System.Security.Cryptography;
 using Microsoft.Win32;
 using System.Threading;
+using NuGet.Packaging.Licenses;
 
 namespace Twinpack
 {
@@ -24,19 +25,30 @@ namespace Twinpack
         private static readonly Guid _libraryManagerGuid = Guid.Parse("e1825adc-a79c-4e8e-8793-08d62d84be5b");
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
-        public static string TwincatPath
+        public static List<string> TwincatPaths
         {
             get
             {
                 try
                 {
+                    var paths = new List<string>();
                     using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))
                     {
                         var bootDir = key?.GetValue("BootDir") as string;
 
                         // need to do GetParent twice because of the trailing \
-                        return bootDir == null ? null : new DirectoryInfo(bootDir)?.Parent?.FullName;
+                        paths.Add(bootDir == null ? null : new DirectoryInfo(bootDir)?.Parent?.FullName);
                     }
+
+                    using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))
+                    {
+                        var bootDir = key?.GetValue("BootDir") as string;
+
+                        // need to do GetParent twice because of the trailing \
+                        paths.Add(bootDir == null ? null : new DirectoryInfo(bootDir)?.Parent?.FullName);
+                    }
+
+                    return paths;
                 }
                 catch
                 {
@@ -45,8 +57,8 @@ namespace Twinpack
             }
         }
 
-        public static string LicensesPath = TwincatPath + @"\CustomConfig\Licenses";
-        public static string BootFolderPath = TwincatPath + @"\Boot";
+        public static List<string> LicensesPaths = TwincatPaths?.Select(x => x + @"\CustomConfig\Licenses").ToList();
+        public static List<string> BootFolderPaths = TwincatPaths?.Select(x => x + @"\Boot").ToList();
 
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -496,15 +508,19 @@ namespace Twinpack
                         }
                         else
                         {
-                            _logger.Info($"Copying license tmc with licenseId={licenseId} to {LicensesPath}");
-
                             using (var md5 = MD5.Create())
                             {
-                                if (!Directory.Exists(LicensesPath))
-                                    Directory.CreateDirectory(LicensesPath);
+                                foreach (var licensePath in LicensesPaths)
+                                {
+                                    _logger.Info($"Copying license tmc with licenseId={licenseId} to {licensePath}");
 
-                                File.WriteAllText(Path.Combine(LicensesPath, BitConverter.ToString(md5.ComputeHash(Encoding.ASCII.GetBytes($"{packageVersion.DistributorName}{packageVersion.Name}"))).Replace("-", "") + ".tmc"),
-                                                  packageVersion.LicenseTmcText);
+                                    if (!Directory.Exists(licensePath))
+                                        Directory.CreateDirectory(licensePath);
+
+                                    File.WriteAllText(Path.Combine(licensePath, BitConverter.ToString(md5.ComputeHash(Encoding.ASCII.GetBytes($"{packageVersion.DistributorName}{packageVersion.Name}"))).Replace("-", "") + ".tmc"),
+                                                      packageVersion.LicenseTmcText);
+                                }
+
 
                             }
 
@@ -530,26 +546,28 @@ namespace Twinpack
         public static HashSet<string> KnownLicenseIds()
         {
             var result = new HashSet<string>();
-            if (!Directory.Exists(LicensesPath))
-                return result;
 
-            foreach (var fileName in Directory.GetFiles(LicensesPath, "*.tmc", SearchOption.AllDirectories))
+            foreach(var licensePath in LicensesPaths)
             {
-                try
+                if (!Directory.Exists(licensePath))
+                    return result;
+
+                foreach (var fileName in Directory.GetFiles(licensePath, "*.tmc", SearchOption.AllDirectories))
                 {
-                    var licenseId = ParseLicenseId(File.ReadAllText(fileName));
+                    try
+                    {
+                        var licenseId = ParseLicenseId(File.ReadAllText(fileName));
 
-                    if (licenseId == null)
-                        throw new InvalidDataException("The file {fileName} is not a valid license file!");
+                        if (licenseId == null)
+                            throw new InvalidDataException($"The file {fileName} is not a valid license file!");
 
-                    result.Add(licenseId);
+                        result.Add(licenseId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Trace(ex);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _logger.Trace(ex);
-                }
-
-
             }
 
             return result;
