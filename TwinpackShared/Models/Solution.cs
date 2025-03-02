@@ -43,7 +43,10 @@ namespace Twinpack.Models
             var projectMatches = Regex.Matches(content ?? "", $"Project\\(.*?\\)\\s*=\\s*\"(.*?)\"\\s*,\\s*\"(.*?ts[p]?proj)\"\\s*,.*");
 
             Name = Path.GetFileNameWithoutExtension(filepath);
-            Projects = projectMatches.Cast<Match>().Select(x => new Project(x.Groups[1].Value, directory + "\\" + x.Groups[2].Value)).ToList();
+            Projects = projectMatches.Cast<Match>()
+                .Where(x => File.Exists(directory + "\\" + x.Groups[2].Value))
+                .Select(x => new Project(x.Groups[1].Value, directory + "\\" + x.Groups[2].Value))
+                .ToList();
         }
 
         public string Name { get; private set; } = null;
