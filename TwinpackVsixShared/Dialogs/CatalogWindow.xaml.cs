@@ -27,7 +27,7 @@ namespace Twinpack.Dialogs
         private CancellationTokenSource _cancellationTokenSource;
 
         public event PropertyChangedEventHandler PropertyChanged;
-        SelectionChangedEventHandler _packageServerChange;
+        SelectionChangedEventHandler _packageServerSelectionChanged;
 
         private PackageContext _context;
 
@@ -384,7 +384,7 @@ namespace Twinpack.Dialogs
         {
             _context = context;
 
-            _packageServerChange = new SelectionChangedEventHandler(Reload);
+            _packageServerSelectionChanged = new SelectionChangedEventHandler(PackageServers_SelectionChanged);
 
             IsCatalogEnabled = true;
             ForcePackageVersionDownload = true;
@@ -401,6 +401,7 @@ namespace Twinpack.Dialogs
             ConfigurationsView.SelectionChanged += PackageFilter_SelectionChanged;
             TargetsView.SelectionChanged += PackageFilter_SelectionChanged;
             VersionsView.SelectionChanged += PackageVersions_SelectionChanged;
+            PackageServersComboBox.SelectionChanged += _packageServerSelectionChanged;
 
             Loaded += Dialog_Loaded;
         }
@@ -409,6 +410,7 @@ namespace Twinpack.Dialogs
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
+            ResetServerSelection();
             await InitializeInternalAsync();
             _isDialogLoaded = true;
         }
@@ -418,6 +420,7 @@ namespace Twinpack.Dialogs
             if (!_isDialogLoaded)
                 return;
 
+            ResetServerSelection();
             await InitializeInternalAsync();
         }
 
@@ -428,16 +431,16 @@ namespace Twinpack.Dialogs
             try
             {
                 IsInitializing = true;
-
+                var servers = PackageServersComboBox.SelectedIndex > 0 && PackagingServerRegistry.Servers.Count > 0
+                    ? new PackageServerCollection { PackagingServerRegistry.Servers[PackageServersComboBox.SelectedIndex - 1] }
+                    : PackagingServerRegistry.Servers;
                 var activePlc = _context.VisualStudio.ActivePlc();
 
                 Catalog = new List<PackageItem>();
                 _catalogItem.Invalidate();
-
-                var config = await LoadConfigAsync(activePlc?.Name, Token);
-                _twinpack = new TwinpackService(PackagingServerRegistry.Servers, _context.VisualStudio.AutomationInterface, config, plcName: activePlc?.Name);
-
-                ResetServerSelection();
+                servers.InvalidateCache();
+                var config = await LoadConfigAsync(activePlc?.Name, servers, Token);
+                _twinpack = new TwinpackService(servers, _context.VisualStudio.AutomationInterface, config, plcName: activePlc?.Name);
 
                 if (!IsConfigured)
                 {
@@ -467,7 +470,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async Task<Config> LoadConfigAsync(string plcName, CancellationToken cancellationToken)
+        public async Task<Config> LoadConfigAsync(string plcName, List<IPackageServer> packageServers, CancellationToken cancellationToken)
         {
             // make sure that the sln is up-to-date
             _context.Dte.ExecuteCommand("File.SaveAll");
@@ -487,7 +490,7 @@ namespace Twinpack.Dialogs
                 var config = ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
                 if(config == null)
                 {
-                    config = await ConfigFactory.CreateFromSolutionFileAsync(Path.GetDirectoryName(_context.Solution.FullName), continueWithoutSolution: false, packageServers: PackagingServerRegistry.Servers.Where(x => x.Connected), cancellationToken: cancellationToken);
+                    config = await ConfigFactory.CreateFromSolutionFileAsync(Path.GetDirectoryName(_context.Solution.FullName), continueWithoutSolution: false, packageServers: packageServers.Where(x => x.Connected), cancellationToken: cancellationToken);
                     _configFilePath = config.FilePath;
                     config.FilePath = null; // we don't want to save to a file
                 }
@@ -529,6 +532,19 @@ namespace Twinpack.Dialogs
                     await InitializeInternalAsync();
 
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.Message);
+                _logger.Trace(ex);
+            }
+        }
+
+        public async void PackageServers_SelectionChanged(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await InitializeInternalAsync();
             }
             catch (Exception ex)
             {
@@ -825,14 +841,18 @@ namespace Twinpack.Dialogs
                     Catalog = installedPackages.Where(x =>
                          x.Catalog?.DisplayName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
                          x.Catalog?.DistributorName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
+                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                        .Where(x => PackageServersComboBox.SelectedIndex <= 0 || x.PackageServer !=null) // if there is no explicit filter how all packages even if the can not be resolved
+                        .ToList();
                 }
                 else if (IsBrowsingUpdatablePackages)
                 {
                     Catalog = installedPackages.Where(x => x.IsUpdateable &&
                         (x.Catalog?.DisplayName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
                          x.Catalog?.DistributorName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)).ToList();
+                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0))
+                        .Where(x => PackageServersComboBox.SelectedIndex <= 0 || x.PackageServer != null) // if there is no explicit filter how all packages even if the can not be resolved
+                        .ToList();
                 }
 
                 IsUpdateAllVisible = IsBrowsingUpdatablePackages && Catalog.Any();
@@ -1172,16 +1192,16 @@ namespace Twinpack.Dialogs
 
         void ResetServerSelection()
         {
-            PackagingServersComboBox.SelectionChanged -= _packageServerChange;
+            PackageServersComboBox.SelectionChanged -= _packageServerSelectionChanged;
 
-            PackagingServersComboBox.Items.Clear();
-            PackagingServersComboBox.Items.Add("All repositories");
+            PackageServersComboBox.Items.Clear();
+            PackageServersComboBox.Items.Add("All repositories");
 
-            foreach(var packageServer in _twinpack.PackageServers)
-                PackagingServersComboBox.Items.Add(packageServer.Name);
+            foreach(var packageServer in PackagingServerRegistry.Servers)
+                PackageServersComboBox.Items.Add(packageServer.Name);
 
-            PackagingServersComboBox.SelectedIndex = 0;
-            PackagingServersComboBox.SelectionChanged += _packageServerChange;
+            PackageServersComboBox.SelectedIndex = 0;
+            PackageServersComboBox.SelectionChanged += _packageServerSelectionChanged;
         }
 
         public void ReloadButton_Click(object sender, RoutedEventArgs e)
