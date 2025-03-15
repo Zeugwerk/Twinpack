@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackTests", "TwinpackTe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twinpack.Net", "Twinpack.Net\Twinpack.Net.csproj", "{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwinpackCli.Net", "TwinpackCli.Net\TwinpackCli.Net.csproj", "{A9AF13EF-6D43-459A-B559-5C2856700025}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TwinpackCli.Net", "TwinpackCli.Net\TwinpackCli.Net.csproj", "{A9AF13EF-6D43-459A-B559-5C2856700025}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -115,7 +115,7 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		TwinpackVsixShared\TwinpackVsixShared.projitems*{0fdb9f73-33c4-4cc7-9813-8d9a4bebbc0e}*SharedItemsImports = 13
 		TwinpackVsixShared\TwinpackVsixShared.projitems*{1dc675d6-4139-4a77-b2f7-bee8e4911d65}*SharedItemsImports = 4
-		TwinpackCore\TwinpackCore.projitems*{3d96f91e-afe2-4b62-bbcb-b2546aaa932e}*SharedItemsImports = 5
+		TwinpackCore\TwinpackCore.projitems*{3d96f91e-afe2-4b62-bbcb-b2546aaa932e}*SharedItemsImports = 4
 		TwinpackVsixShared\TwinpackVsixShared.projitems*{710545a5-e083-4f4c-a7ac-c0f8b2e1f255}*SharedItemsImports = 4
 		TwinpackCore\TwinpackCore.projitems*{9607f8b7-e76a-452c-87f0-e804bae4e92f}*SharedItemsImports = 4
 		TwinpackCore\TwinpackCore.projitems*{963dd6a7-e9d8-4386-92e0-8b39cb7d8e9c}*SharedItemsImports = 13
