@@ -1197,7 +1197,7 @@ namespace Twinpack.Dialogs
             PackageServersComboBox.Items.Clear();
             PackageServersComboBox.Items.Add("All repositories");
 
-            foreach(var packageServer in PackagingServerRegistry.Servers)
+            foreach(var packageServer in PackagingServerRegistry.Servers.Where(x => x.Connected))
                 PackageServersComboBox.Items.Add(packageServer.Name);
 
             PackageServersComboBox.SelectedIndex = 0;
@@ -1257,10 +1257,10 @@ namespace Twinpack.Dialogs
             try
             {
                 await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
-                _logger.Info($"Creating package configuration at {_configFilePath}");
-
                 await _twinpack.SaveAsync(_configFilePath);
                 IsCreateConfigVisible = false;
+
+                _logger.Info($"Created package configuration in {_configFilePath}");
             }
             catch (Exception ex)
             {
