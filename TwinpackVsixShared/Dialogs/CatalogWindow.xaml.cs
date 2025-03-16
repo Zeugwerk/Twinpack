@@ -442,15 +442,18 @@ namespace Twinpack.Dialogs
                 var config = await LoadConfigAsync(activePlc?.Name, servers, Token);
                 _twinpack = new TwinpackService(servers, _context.VisualStudio.AutomationInterface, config, plcName: activePlc?.Name);
 
-                if (!IsConfigured)
+                if (IsBrowsingAvailablePackages == false && IsBrowsingInstalledPackages == false && _isBrowsingUpdatablePackages == false)
                 {
-                    IsBrowsingInstalledPackages = false;
-                    IsBrowsingAvailablePackages = true;
-                }
-                else
-                {
-                    IsBrowsingInstalledPackages = _plcConfig?.Packages?.Any() == true;
-                    IsBrowsingAvailablePackages = !IsBrowsingInstalledPackages;
+                    if (!IsConfigured)
+                    {
+                        IsBrowsingInstalledPackages = false;
+                        IsBrowsingAvailablePackages = true;
+                    }
+                    else
+                    {
+                        IsBrowsingInstalledPackages = _plcConfig?.Packages?.Any() == true;
+                        IsBrowsingAvailablePackages = !IsBrowsingInstalledPackages;
+                    }
                 }
 
                 await UpdateCatalogAsync(_searchTerm, maxNewPackages: 10);
