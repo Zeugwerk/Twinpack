@@ -38,21 +38,30 @@ namespace Twinpack.Protocol
                 return null;
             }
         }
-        public static async Task InitializeAsync(bool useDefaults=false, bool login=true)
+
+        private static async Task AddDefaultsAsync()
+        {
+            await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase, login: false);
+            await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable", login: false);
+            Save();
+        }
+
+        public static async Task InitializeAsync(bool useDefaults=false, bool login=true, bool fallbackToDefaults=false)
         {
             _factories = new List<IPackagingServerFactory>() { new NativePackagingServerFactory(), new NugetPackagingServerFactory(), new BeckhoffPackagingServerFactory() };
             _servers = new PackageServerCollection();
 
             if(useDefaults)
             {
-                await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase, login: false);
-                await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable", login: false);
-                Save();
+                await AddDefaultsAsync();
             }
             else
             {
                 try
                 {
+                    if (FilePath == null && fallbackToDefaults)
+                        await AddDefaultsAsync();
+
                     if (FilePath == null)
                         throw new FileNotFoundException($"No configuration file not found (searched in {string.Join(",", FilePaths)})");
 
