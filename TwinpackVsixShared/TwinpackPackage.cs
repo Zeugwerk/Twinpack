@@ -153,7 +153,7 @@ namespace Twinpack
             if (await GetServiceAsync(typeof(SVsSolution)) is IVsSolution vssolution_)
                 vssolution_.AdviseSolutionEvents(this, out _solutionEventsCookie);
 
-            await Protocol.PackagingServerRegistry.InitializeAsync();
+            await Protocol.PackagingServerRegistry.InitializeAsync(fallbackToDefaults: true);
 
             InitPackage();
         }
