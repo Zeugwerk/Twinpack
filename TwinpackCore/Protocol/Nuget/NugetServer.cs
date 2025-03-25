@@ -645,6 +645,11 @@ namespace Twinpack.Protocol
 
         private string EvaluateTitle(IPackageSearchMetadata x)
         {
+            if (!string.IsNullOrEmpty(x.Title))
+            {
+                return x.Title;
+            }
+
             // heuristics for the actual title of the package, needed for Beckhoff, because there is no metadata, which gives the real name of the library
             var title = x.Identity.Id;
             var tags = x.Tags.Split(' ');
