@@ -17,7 +17,6 @@ using NuGet.Versioning;
 using WixToolset.Dtf.WindowsInstaller;
 using WixToolset.Dtf.WindowsInstaller.Package;
 using NuGet.Packaging.Core;
-using System.Data;
 using Twinpack.Exceptions;
 
 namespace Twinpack.Protocol
@@ -643,21 +642,12 @@ namespace Twinpack.Protocol
             _cache = new SourceCacheContext();
         }
 
-        private string EvaluateTitle(IPackageSearchMetadata x)
+        protected virtual string EvaluateTitle(IPackageSearchMetadata x)
         {
             if (!string.IsNullOrEmpty(x.Title))
-            {
                 return x.Title;
-            }
 
-            // heuristics for the actual title of the package, needed for Beckhoff, because there is no metadata, which gives the real name of the library
-            var title = x.Identity.Id;
-            var tags = x.Tags.Split(' ');
-            var libraryIdx = tags.ToList().IndexOf("Library");
-            if (libraryIdx > 0 && tags.Length > libraryIdx + 1 && title.Contains(tags[libraryIdx + 1]))
-                title = tags[libraryIdx + 1];
-
-            return title;
+            return x.Identity.Id;
         }
 
         protected virtual int EvaluateCompiled(string tags)
