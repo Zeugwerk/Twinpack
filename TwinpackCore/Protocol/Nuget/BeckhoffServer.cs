@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using System.Threading;
+using System.Linq;
+using NuGet.Protocol.Core.Types;
 using NuGet.Packaging.Core;
 
 namespace Twinpack.Protocol
@@ -50,6 +52,17 @@ namespace Twinpack.Protocol
             return null;
         }
 #endif
+        protected override string EvaluateTitle(IPackageSearchMetadata x)
+        {
+            // heuristics for the actual title of the package, needed for Beckhoff, because there is no metadata, which gives the real name of the library
+            var title = x.Identity.Id;
+            var tags = x.Tags.Split(' ');
+            var libraryIdx = tags.ToList().IndexOf("Library");
+            if (libraryIdx > 0 && tags.Length > libraryIdx + 1 && title.Contains(tags[libraryIdx + 1]))
+                title = tags[libraryIdx + 1];
+
+            return title;
+        }
 
         protected override int EvaluateCompiled(string tags)
         {
