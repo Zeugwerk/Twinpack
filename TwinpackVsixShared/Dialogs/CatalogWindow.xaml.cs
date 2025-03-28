@@ -833,21 +833,21 @@ namespace Twinpack.Dialogs
                     }
                 }
 
-                Regex rx = new Regex(searchTerm.Replace(" ", "."), RegexOptions.Compiled);
+                Regex rx = searchTerm != null ? new Regex(searchTerm.Replace(" ", "."), RegexOptions.Compiled) : null;
                 if (IsBrowsingAvailablePackages)
                 {
                     Catalog = availablePackages.Where(x =>
-                            rx.Match(x.Catalog?.Name).Success ||
-                            rx.Match(x.Catalog?.DisplayName).Success ||
-                            rx.Match(x.Catalog?.DistributorName).Success
+                            rx?.Match(x.Catalog?.Name).Success ||
+                            rx?.Match(x.Catalog?.DisplayName).Success ||
+                            rx?.Match(x.Catalog?.DistributorName).Success
                          ).ToList();
                 }
                 else if (IsBrowsingInstalledPackages)
                 {
                     Catalog = installedPackages.Where(x =>
-                            rx.Match(x.Catalog?.Name).Success ||
-                            rx.Match(x.Catalog?.DisplayName).Success ||
-                            rx.Match(x.Catalog?.DistributorName).Success
+                            rx?.Match(x.Catalog?.Name).Success ||
+                            rx?.Match(x.Catalog?.DisplayName).Success ||
+                            rx?.Match(x.Catalog?.DistributorName).Success
                          )
                         .Where(x => PackageServersComboBox.SelectedIndex <= 0 || x.PackageServer != null) // if there is no explicit filter how all packages even if the can not be resolved
                         .ToList();
@@ -857,9 +857,9 @@ namespace Twinpack.Dialogs
                     Catalog = installedPackages
                         .Where(x => x.IsUpdateable)
                         .Where(x =>
-                            rx.Match(x.Catalog?.Name).Success ||
-                            rx.Match(x.Catalog?.DisplayName).Success ||
-                            rx.Match(x.Catalog?.DistributorName).Success
+                            rx?.Match(x.Catalog?.Name).Success ||
+                            rx?.Match(x.Catalog?.DisplayName).Success ||
+                            rx?.Match(x.Catalog?.DistributorName).Success
                          )
                         .Where(x => PackageServersComboBox.SelectedIndex <= 0 || x.PackageServer != null) // if there is no explicit filter how all packages even if the can not be resolved
                         .ToList();
