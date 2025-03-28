@@ -248,9 +248,9 @@ namespace Twinpack.Core
                 return _availablePackagesCache
                         .Where(x =>
                             searchTerm == null ||
-                            rx?.Match(x.Catalog?.Name).Success ||
-                            rx?.Match(x.Catalog?.DisplayName).Success ||
-                            rx?.Match(x.Catalog?.DistributorName).Success)
+                            rx?.Match(x.Catalog?.Name).Success == true ||
+                            rx?.Match(x.Catalog?.DisplayName).Success == true ||
+                            rx?.Match(x.Catalog?.DistributorName).Success == true)
                         ;
             }
             finally
