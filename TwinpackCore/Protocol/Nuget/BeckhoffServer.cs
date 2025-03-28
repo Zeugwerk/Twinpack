@@ -52,11 +52,13 @@ namespace Twinpack.Protocol
             return null;
         }
 #endif
-        protected override string EvaluateTitle(IPackageSearchMetadata x)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        protected override async Task<string> EvaluateTitleAsync(IPackageSearchMetadata package, CancellationToken cancellationToken)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             // heuristics for the actual title of the package, needed for Beckhoff, because there is no metadata, which gives the real name of the library
-            var title = x.Identity.Id;
-            var tags = x.Tags.Split(' ');
+            var title = package.Identity.Id;
+            var tags = package.Tags.Split(' ');
             var libraryIdx = tags.ToList().IndexOf("Library");
             if (libraryIdx > 0 && tags.Length > libraryIdx + 1 && title.Contains(tags[libraryIdx + 1]))
                 title = tags[libraryIdx + 1];

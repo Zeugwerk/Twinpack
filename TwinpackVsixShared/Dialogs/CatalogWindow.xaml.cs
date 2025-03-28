@@ -18,6 +18,7 @@ using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
 using Twinpack.Configuration;
 using WixToolset.Dtf.WindowsInstaller;
+using System.Text.RegularExpressions;
 
 namespace Twinpack.Dialogs
 {
@@ -431,8 +432,8 @@ namespace Twinpack.Dialogs
             try
             {
                 IsInitializing = true;
-                var servers = PackageServersComboBox.SelectedIndex > 0 && PackagingServerRegistry.Servers.Count > 0
-                    ? new PackageServerCollection { PackagingServerRegistry.Servers[PackageServersComboBox.SelectedIndex - 1] }
+                var servers = PackageServersComboBox.SelectedIndex > 0 && PackagingServerRegistry.Servers.Any()
+                    ? new PackageServerCollection { PackagingServerRegistry.Servers.Where(x => x.Connected).ToList()[PackageServersComboBox.SelectedIndex - 1] }
                     : PackagingServerRegistry.Servers;
                 var activePlc = _context.VisualStudio.ActivePlc();
 
@@ -832,28 +833,34 @@ namespace Twinpack.Dialogs
                     }
                 }
 
+                Regex rx = new Regex(searchTerm.Replace(" ", "."), RegexOptions.Compiled);
                 if (IsBrowsingAvailablePackages)
                 {
                     Catalog = availablePackages.Where(x =>
-                         x.Catalog?.DisplayName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.DistributorName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0).ToList();
+                            rx.Match(x.Catalog?.Name).Success ||
+                            rx.Match(x.Catalog?.DisplayName).Success ||
+                            rx.Match(x.Catalog?.DistributorName).Success
+                         ).ToList();
                 }
                 else if (IsBrowsingInstalledPackages)
                 {
                     Catalog = installedPackages.Where(x =>
-                         x.Catalog?.DisplayName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.DistributorName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                        .Where(x => PackageServersComboBox.SelectedIndex <= 0 || x.PackageServer !=null) // if there is no explicit filter how all packages even if the can not be resolved
+                            rx.Match(x.Catalog?.Name).Success ||
+                            rx.Match(x.Catalog?.DisplayName).Success ||
+                            rx.Match(x.Catalog?.DistributorName).Success
+                         )
+                        .Where(x => PackageServersComboBox.SelectedIndex <= 0 || x.PackageServer != null) // if there is no explicit filter how all packages even if the can not be resolved
                         .ToList();
                 }
                 else if (IsBrowsingUpdatablePackages)
                 {
-                    Catalog = installedPackages.Where(x => x.IsUpdateable &&
-                        (x.Catalog?.DisplayName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.DistributorName.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                         x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0))
+                    Catalog = installedPackages
+                        .Where(x => x.IsUpdateable)
+                        .Where(x =>
+                            rx.Match(x.Catalog?.Name).Success ||
+                            rx.Match(x.Catalog?.DisplayName).Success ||
+                            rx.Match(x.Catalog?.DistributorName).Success
+                         )
                         .Where(x => PackageServersComboBox.SelectedIndex <= 0 || x.PackageServer != null) // if there is no explicit filter how all packages even if the can not be resolved
                         .ToList();
                 }

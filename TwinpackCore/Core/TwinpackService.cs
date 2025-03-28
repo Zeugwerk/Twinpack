@@ -13,6 +13,7 @@ using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
 using Twinpack.Configuration;
+using System.Text.RegularExpressions;
 
 namespace Twinpack.Core
 {
@@ -180,6 +181,9 @@ namespace Twinpack.Core
 
         public static string ParseRuntimeLicenseIdFromTmc(string content)
         {
+            if (content == null)
+                return null;
+
             try
             {
                 var xdoc = XDocument.Parse(content);
@@ -240,13 +244,13 @@ namespace Twinpack.Core
                         _availablePackagesCache.Add(item);
                 }
 
-
+                Regex rx = new Regex(searchTerm.Replace(" ", "."), RegexOptions.Compiled);
                 return _availablePackagesCache
                         .Where(x =>
                             searchTerm == null ||
-                            x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                            x.Catalog?.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                            x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                            rx.Match(x.Catalog?.Name).Success ||
+                            rx.Match(x.Catalog?.DisplayName).Success ||
+                            rx.Match(x.Catalog?.DistributorName).Success)
                         ;
             }
             finally

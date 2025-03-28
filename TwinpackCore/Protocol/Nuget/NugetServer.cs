@@ -98,25 +98,28 @@ namespace Twinpack.Protocol
             throw new NotImplementedException();
         }
 
+        private async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string search, int skip, int take, CancellationToken cancellationToken)
+        {
+            ILogger logger = NullLogger.Instance;
+            PackageSearchResource resource = await _sourceRepository.GetResourceAsync<PackageSearchResource>(cancellationToken);
+
+            return await resource.SearchAsync(
+                SearchPrefix + search.Replace(" ", "_"),
+                new SearchFilter(includePrerelease: true),
+                skip: skip,
+                take: take,
+                logger,
+                cancellationToken);
+        }
+
         public virtual async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             if(_sourceRepository == null)
                 return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(new List<CatalogItemGetResponse>(), false);
 
-            ILogger logger = NullLogger.Instance;
-
             try
             {
-                PackageSearchResource resource = await _sourceRepository.GetResourceAsync<PackageSearchResource>(cancellationToken);
-
-                IEnumerable<IPackageSearchMetadata> results = await resource.SearchAsync(
-                    SearchPrefix + search,
-                    new SearchFilter(includePrerelease: true),
-                    skip: perPage * (page - 1),
-                    take: perPage,
-                    logger,
-                    cancellationToken);
-
+                var results = await SearchAsync(SearchPrefix + search, perPage * (page - 1), perPage, cancellationToken);
                 var packages = await Task.WhenAll(results
                         .Where(x => x.Tags.ToLower().Contains("library") || x.Tags.ToLower().Contains("plc-library"))
                         .Select(async x =>
@@ -127,7 +130,7 @@ namespace Twinpack.Protocol
                                 DistributorName = x.Authors,
                                 Description = x.Description,
                                 IconUrl = x.IconUrl?.ToString() ?? IconUrl,
-                                RuntimeLicense = 1,
+                                RuntimeLicense = 0,
                                 DisplayName = x.Identity.Id,
                                 Downloads = x.DownloadCount.HasValue && x.DownloadCount.Value > 0 ? ((int?)x.DownloadCount.Value) : null,
                                 Created = x.Published?.ToString() ?? "Unknown",
@@ -219,7 +222,6 @@ namespace Twinpack.Protocol
                     {
                         PackageId = null,
                         Name = x.Identity.Id,
-                        Title = EvaluateTitle(x),
                         DistributorName = x.Authors,
                         DisplayName = x.Identity.Id,
                         Description = x.Description,
@@ -242,12 +244,18 @@ namespace Twinpack.Protocol
                         //PackageType,
                         Binary = null,
                         BinaryDownloadUrl = null,
-                        BinarySha256 = null
+                        BinarySha256 = null,
                     }).ToList(), false);
         }
 
         public virtual async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
         {
+            if (library.Name.Contains(" "))
+            {
+                var package = await SearchAsync(library.Name, 0, 1, cancellationToken);
+                library.Name = package.FirstOrDefault()?.Identity.Id ?? library.Name;
+                
+            }
             return await GetPackageVersionAsync(library, preferredBranch, preferredConfiguration, preferredTarget, cancellationToken);
         }
 
@@ -392,7 +400,7 @@ namespace Twinpack.Protocol
                 return new PackageVersionGetResponse();
 
             if (!x.Tags?.ToLower().Contains("library") == true && !x.Tags?.ToLower().Contains("plc-library") == true)
-                throw new Exceptions.LibraryFileInvalidException($"Package {library.Name} {library.Version} (distributor: {library.DistributorName}) does not have a 'plc-library' or 'library' tag!");
+                throw new LibraryFileInvalidException($"Package {library.Name} {library.Version} (distributor: {library.DistributorName}) does not have a 'plc-library' or 'library' tag!");
 
             var dependencyPackages = x.DependencySets?.SelectMany(p => p.Packages).ToList() ?? new List<PackageDependency>();
             List<PackageVersionGetResponse> dependencies = new List<PackageVersionGetResponse>();
@@ -417,7 +425,7 @@ namespace Twinpack.Protocol
                         {
                             PackageId = null,
                             Name = dependency.Identity.Id,
-                            Title = EvaluateTitle(dependency),
+                            Title = await EvaluateTitleAsync(dependency, cancellationToken),
                             DistributorName = x.Authors,
                             DisplayName = dependency.Identity.Id,
                             Description = dependency.Description,
@@ -451,7 +459,7 @@ namespace Twinpack.Protocol
             {
                 PackageId = null,
                 Name = x.Identity.Id,
-                Title = EvaluateTitle(x),
+                Title = await EvaluateTitleAsync(x, cancellationToken),
                 DistributorName = x.Authors,
                 DisplayName = x.Identity.Id,
                 Description = x.Description,
@@ -503,7 +511,7 @@ namespace Twinpack.Protocol
             {
                 PackageId = null,
                 Name = x.Identity.Id,
-                Title = EvaluateTitle(x),
+                Title = await EvaluateTitleAsync(x, cancellationToken),
                 DistributorName = x.Authors,
                 DisplayName = x.Identity.Id,
                 Description = x.Description,
@@ -563,15 +571,7 @@ namespace Twinpack.Protocol
                 PackageSource packageSource = new PackageSource(Url) { Credentials = Username != null ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
 
                 _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
-                var resource = await _sourceRepository.GetResourceAsync<PackageSearchResource>();
-                IEnumerable<IPackageSearchMetadata> results = await resource.SearchAsync(
-                    "",
-                    new SearchFilter(includePrerelease: true),
-                    skip: 0,
-                    take: 1,
-                    NullLogger.Instance,
-                    cancellationToken);
-
+                var results = await SearchAsync("", 0, 1, cancellationToken);
                 UserInfo = new LoginPostResponse() { User = Username };
 
                 if (!string.IsNullOrEmpty(Password))
@@ -642,12 +642,42 @@ namespace Twinpack.Protocol
             _cache = new SourceCacheContext();
         }
 
-        protected virtual string EvaluateTitle(IPackageSearchMetadata x)
+        protected virtual async Task<string> EvaluateTitleAsync(IPackageSearchMetadata package, CancellationToken cancellationToken)
         {
-            if (!string.IsNullOrEmpty(x.Title))
-                return x.Title;
+            try
+            {
+                PackageIdentity identity = package.Identity;
+                FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
 
-            return x.Identity.Id;
+                using (MemoryStream packageStream = new MemoryStream())
+                using (var memoryStream = new MemoryStream())
+                {
+                    await resource.CopyNupkgToStreamAsync(
+                        identity.Id,
+                        identity.Version,
+                        packageStream,
+                        _cache,
+                        NullLogger.Instance,
+                        cancellationToken);
+
+                    using (PackageArchiveReader packageReader = new PackageArchiveReader(packageStream))
+                    {
+                        if(!string.IsNullOrEmpty(packageReader.NuspecReader.GetTitle()))
+                            return packageReader.NuspecReader.GetTitle();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error("Can't unpack package icon:" + ex);
+            }
+
+
+            if (!string.IsNullOrEmpty(package.Title))
+                return package.Title;
+
+            return package.Identity.Id;
         }
 
         protected virtual int EvaluateCompiled(string tags)
