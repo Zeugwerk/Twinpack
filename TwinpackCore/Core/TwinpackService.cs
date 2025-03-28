@@ -244,13 +244,13 @@ namespace Twinpack.Core
                         _availablePackagesCache.Add(item);
                 }
 
-                Regex rx = new Regex(searchTerm.Replace(" ", "."), RegexOptions.Compiled);
+                Regex rx = searchTerm != null ? new Regex(searchTerm.Replace(" ", "."), RegexOptions.Compiled) : null;
                 return _availablePackagesCache
                         .Where(x =>
                             searchTerm == null ||
-                            rx.Match(x.Catalog?.Name).Success ||
-                            rx.Match(x.Catalog?.DisplayName).Success ||
-                            rx.Match(x.Catalog?.DistributorName).Success)
+                            rx?.Match(x.Catalog?.Name).Success ||
+                            rx?.Match(x.Catalog?.DisplayName).Success ||
+                            rx?.Match(x.Catalog?.DistributorName).Success)
                         ;
             }
             finally
