@@ -98,13 +98,13 @@ namespace Twinpack.Protocol
             throw new NotImplementedException();
         }
 
-        private async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string search, int skip, int take, CancellationToken cancellationToken)
+        private async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchPrefix, string search, int skip, int take, CancellationToken cancellationToken)
         {
             ILogger logger = NullLogger.Instance;
             PackageSearchResource resource = await _sourceRepository.GetResourceAsync<PackageSearchResource>(cancellationToken);
 
             return await resource.SearchAsync(
-                SearchPrefix + search.Replace(" ", "_"),
+                searchPrefix + search.Replace(" ", "_"),
                 new SearchFilter(includePrerelease: true),
                 skip: skip,
                 take: take,
@@ -119,7 +119,7 @@ namespace Twinpack.Protocol
 
             try
             {
-                var results = await SearchAsync(SearchPrefix + search, perPage * (page - 1), perPage, cancellationToken);
+                var results = await SearchAsync(SearchPrefix, search, perPage * (page - 1), perPage, cancellationToken);
                 var packages = await Task.WhenAll(results
                         .Where(x => x.Tags.ToLower().Contains("library") || x.Tags.ToLower().Contains("plc-library"))
                         .Select(async x =>
@@ -252,7 +252,7 @@ namespace Twinpack.Protocol
         {
             if (library.Name.Contains(" "))
             {
-                var package = await SearchAsync(library.Name, 0, 1, cancellationToken);
+                var package = await SearchAsync("", library.Name, 0, 1, cancellationToken);
                 library.Name = package.FirstOrDefault()?.Identity.Id ?? library.Name;
                 
             }
@@ -571,7 +571,7 @@ namespace Twinpack.Protocol
                 PackageSource packageSource = new PackageSource(Url) { Credentials = Username != null ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
 
                 _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
-                var results = await SearchAsync("", 0, 1, cancellationToken);
+                var results = await SearchAsync("", "", 0, 1, cancellationToken);
                 UserInfo = new LoginPostResponse() { User = Username };
 
                 if (!string.IsNullOrEmpty(Password))
