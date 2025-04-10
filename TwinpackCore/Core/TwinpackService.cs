@@ -487,7 +487,7 @@ namespace Twinpack.Core
             // add affected packages as references
             foreach (var package in (options?.IncludeDependencies == true ? affectedPackages : packages).Where(x => x.PackageVersion?.Name != null))
             {
-                _logger.Info($"Adding {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName})");
+                _logger.Info($"Adding {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) to {package.ProjectName}/{package.PlcName}");
 
                 if (_automationInterface != null && (options?.UpdatePlc == null || options?.UpdatePlc == true))
                 {
