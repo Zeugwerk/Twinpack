@@ -584,7 +584,7 @@ namespace Twinpack.Core
 
                 if (package.PackageVersion?.Name == null)
                 {
-                    _logger.Warn($"Package {package.Config.Name} {package.Config.Version} could not be found!");
+                    _logger.Trace($"Package {package.Config.Name} {package.Config.Version ?? "*"} could not be found!");
                     continue;
                 }
 
