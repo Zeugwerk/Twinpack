@@ -639,7 +639,7 @@ namespace Twinpack.Protocol
 
         public void InvalidateCache()
         {
-            _cache = new SourceCacheContext();
+            _cache = new SourceCacheContext { NoCache = true, DirectDownload = true };
         }
 
         protected virtual async Task<string> EvaluateTitleAsync(IPackageSearchMetadata package, CancellationToken cancellationToken)
