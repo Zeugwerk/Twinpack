@@ -35,6 +35,7 @@ namespace Twinpack.Protocol
     {
         SourceRepository _sourceRepository;
         SourceCacheContext _cache;
+        SourceCacheContext _noCache;
 
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
@@ -154,43 +155,53 @@ namespace Twinpack.Protocol
         {
             try
             {
-                FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
-
-                using (MemoryStream packageStream = new MemoryStream())
-                using (var memoryStream = new MemoryStream())
+                foreach (var cache in new List<SourceCacheContext> { _cache, _noCache })
                 {
-                    await resource.CopyNupkgToStreamAsync(
-                        identity.Id,
-                        identity.Version,
-                        packageStream,
-                        _cache,
-                        NullLogger.Instance,
-                        cancellationToken);
-
-                    using (PackageArchiveReader packageReader = new PackageArchiveReader(packageStream))
+                    FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
+                    using (MemoryStream packageStream = new MemoryStream())
+                    using (var memoryStream = new MemoryStream())
                     {
-                        var iconPath = packageReader.NuspecReader.GetIcon();
-                        if (iconPath != null)
+                        await resource.CopyNupkgToStreamAsync(
+                            identity.Id,
+                            identity.Version,
+                            packageStream,
+                            _noCache,
+                            NullLogger.Instance,
+                            cancellationToken);
+
+                        using (PackageArchiveReader packageReader = new PackageArchiveReader(packageStream))
                         {
-                            var zipEntry = packageReader.GetEntry(iconPath);
-
-                            await zipEntry.Open().CopyToAsync(memoryStream);
-                            memoryStream.Position = 0;
-
-                            if (zipEntry != null)
+                            var iconPath = packageReader.NuspecReader.GetIcon();
+                            if (iconPath == null)
                             {
-                                var image = new System.Windows.Media.Imaging.BitmapImage();
-                                image.BeginInit();
-                                image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                                image.StreamSource = memoryStream;
-                                image.EndInit();
-                                image.Freeze();
-                                return image;
+                                return null;
                             }
+
+                            try
+                            {
+                                var zipEntry = packageReader.GetEntry(iconPath);
+                                await zipEntry.Open().CopyToAsync(memoryStream);
+                                memoryStream.Position = 0;
+
+                                if (zipEntry != null)
+                                {
+                                    var image = new System.Windows.Media.Imaging.BitmapImage();
+                                    image.BeginInit();
+                                    image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                                    image.StreamSource = memoryStream;
+                                    image.EndInit();
+                                    image.Freeze();
+                                    return image;
+                                }
+
+                                return null;
+                            }
+                            catch (Exception ex) { }
                         }
                     }
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.Trace(ex);
                 _logger.Error("Can't unpack package icon:" + ex);
@@ -286,7 +297,7 @@ namespace Twinpack.Protocol
                     packageVersion.Name,
                     version,
                     packageStream,
-                    _cache,
+                    _noCache,
                     NullLogger.Instance,
                     cancellationToken);
 
@@ -639,7 +650,8 @@ namespace Twinpack.Protocol
 
         public void InvalidateCache()
         {
-            _cache = new SourceCacheContext { NoCache = true, DirectDownload = true };
+            _cache = new SourceCacheContext { };
+            _noCache = new SourceCacheContext { NoCache = true, DirectDownload = true };
         }
 
         protected virtual async Task<string> EvaluateTitleAsync(IPackageSearchMetadata package, CancellationToken cancellationToken)
