@@ -8,16 +8,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Threading;
 using NLog;
-using TCatSysManagerLib;
 using Twinpack.Core;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using Twinpack.Protocol;
 using Twinpack.Configuration;
-using WixToolset.Dtf.WindowsInstaller;
 using System.Text.RegularExpressions;
 
 namespace Twinpack.Dialogs
@@ -77,16 +74,6 @@ namespace Twinpack.Dialogs
             get
             {
                 return _context?.Version;
-            }
-        }
-        private CancellationToken Token
-        {
-            get
-            {
-                if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
-                    _cancellationTokenSource = new CancellationTokenSource();
-
-                return _cancellationTokenSource.Token;
             }
         }
 
@@ -411,9 +398,26 @@ namespace Twinpack.Dialogs
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            ResetServerSelection();
-            await InitializeInternalAsync();
-            _isDialogLoaded = true;
+            try
+            {
+                ResetServerSelection();
+
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
+                await InitializeInternalAsync(_cancellationTokenSource.Token);
+                _isDialogLoaded = true;
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
         }
 
         public async Task InitializeAsync()
@@ -421,13 +425,31 @@ namespace Twinpack.Dialogs
             if (!_isDialogLoaded)
                 return;
 
-            ResetServerSelection();
-            await InitializeInternalAsync();
+            try
+            {
+                ResetServerSelection();
+
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
+                await InitializeInternalAsync(_cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
         }
 
-        protected async Task InitializeInternalAsync()
+        protected async Task InitializeInternalAsync(CancellationToken cancellationToken)
         {
-            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
+            cancellationToken.ThrowIfCancellationRequested();
+            await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             try
             {
@@ -437,10 +459,12 @@ namespace Twinpack.Dialogs
                     : PackagingServerRegistry.Servers;
                 var activePlc = _context.VisualStudio.ActivePlc();
 
+                CatalogView.SelectionChanged -= Catalog_SelectionChanged;
                 Catalog = new List<PackageItem>();
+
                 _catalogItem.Invalidate();
                 servers.InvalidateCache();
-                var config = await LoadConfigAsync(activePlc?.Name, servers, Token);
+                var config = await LoadConfigAsync(activePlc?.Name, servers, cancellationToken);
                 _twinpack = new TwinpackService(servers, _context.VisualStudio.AutomationInterface, config, plcName: activePlc?.Name);
 
                 if (IsBrowsingAvailablePackages == false && IsBrowsingInstalledPackages == false && _isBrowsingUpdatablePackages == false)
@@ -457,13 +481,16 @@ namespace Twinpack.Dialogs
                     }
                 }
 
-                await UpdateCatalogAsync(_searchTerm, maxNewPackages: 10);
+                CatalogView.SelectionChanged += Catalog_SelectionChanged;
+                await UpdateCatalogAsync(_searchTerm, maxNewPackages: 10, cancellationToken: cancellationToken);
+            }
+            catch (OperationCanceledException ex)
+            {
+                throw;
             }
             catch (Exception ex)
             {
                 IsBrowsingAvailablePackages = true;
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
             }
             finally
             {
@@ -489,6 +516,7 @@ namespace Twinpack.Dialogs
 
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
                 var config = ConfigFactory.Load(Path.GetDirectoryName(_context.Solution.FullName));
@@ -504,7 +532,16 @@ namespace Twinpack.Dialogs
                 IsMigrateConfigVisible = config != null && _plcConfig?.Packages?.Any() == false && _plcConfig?.Frameworks?.Zeugwerk?.References?.Any() == true;
                 IsConfigured = _plcConfig != null;
 
+                cancellationToken.ThrowIfCancellationRequested();
                 return config;
+            }
+            catch (OperationCanceledException ex)
+            {
+                IsCreateConfigVisible = true;
+                IsMigrateConfigVisible = false;
+                IsConfigured = false;
+                _plcConfig = null;
+                throw;
             }
             catch (Exception ex)
             {
@@ -526,6 +563,10 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 var dialog = new PackagingServerDialog();
                 dialog.Owner = Application.Current.MainWindow;
                 dialog.ShowDialog();
@@ -533,14 +574,18 @@ namespace Twinpack.Dialogs
                 if (dialog.DialogResult == true)
                 {
                     ResetServerSelection();
-                    await InitializeInternalAsync();
+                    await InitializeInternalAsync(_cancellationTokenSource.Token);
 
                 }
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+            }
             catch (Exception ex)
             {
-                _logger.Error(ex.Message);
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
 
@@ -548,12 +593,20 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                await InitializeInternalAsync();
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
+                await InitializeInternalAsync(_cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex.Message);
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
 
@@ -563,25 +616,33 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 _semaphoreAction.Wait();
                 IsPackageVersionPanelEnabled = false;
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
                 _logger.Info("Uninstalling package");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await _twinpack.RemovePackagesAsync(new List<PackageItem> { _catalogItem }, uninstall: UninstallDeletes);
+                await _twinpack.RemovePackagesAsync(new List<PackageItem> { _catalogItem }, uninstall: UninstallDeletes, cancellationToken: _cancellationTokenSource.Token);
 
                 IsNewReference = true;
                 InstalledPackageVersion = null;
 
                 // update config
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                await UpdateCatalogAsync();
+                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
 
                 _logger.Info($"Successfully removed {_catalogItem.PackageVersion?.Name}");
                 _logger.Info("Finished\n");
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
             }
             catch (Exception ex)
             {
@@ -601,10 +662,14 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 _semaphoreAction.Wait();
                 IsPackageVersionPanelEnabled = false;
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
                 _logger.Info("Adding package");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -612,9 +677,9 @@ namespace Twinpack.Dialogs
                 _catalogItem.Config.Options = Options;
 
                 // show licenses and wait for accept
-                var affectedPackages = await _twinpack.AffectedPackagesAsync(new List<PackageItem> { _catalogItem }, includeDependencies: true, Token);
+                var affectedPackages = await _twinpack.AffectedPackagesAsync(new List<PackageItem> { _catalogItem }, includeDependencies: true, cancellationToken: _cancellationTokenSource.Token);
                 if (ConfirmLicensesIfNeeded(affectedPackages, true))
-                    await _twinpack.AddPackagesAsync(affectedPackages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, Token);
+                    await _twinpack.AddPackagesAsync(affectedPackages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, _cancellationTokenSource.Token);
 
                 IsNewReference = false;
 
@@ -622,7 +687,7 @@ namespace Twinpack.Dialogs
                 _catalogItem.PackageVersion = _catalogItem.PackageVersion;
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                await UpdateCatalogAsync();
+                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
 
                 _logger.Info($"Successfully added {_catalogItem.PackageVersion?.Name}");
                 _logger.Info("Finished\n");
@@ -630,8 +695,6 @@ namespace Twinpack.Dialogs
             catch (OperationCanceledException ex)
             {
                 _logger.Trace(ex);
-                _logger.Error(ex.Message);
-                _catalogItem.Invalidate();
             }
             catch (Exception ex)
             {
@@ -656,18 +719,22 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 _semaphoreAction.Wait();
                 IsCatalogEnabled = false;
                 IsPackageVersionPanelEnabled = false;
 
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
                 _logger.Info("Restoring all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, Token);
-                await UpdateCatalogAsync();
+                await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, cancellationToken: _cancellationTokenSource.Token);
+                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully restored all references");
@@ -675,8 +742,6 @@ namespace Twinpack.Dialogs
             catch (OperationCanceledException ex)
             {
                 _logger.Trace(ex);
-                _logger.Error(ex.Message);
-                _catalogItem.Invalidate();
             }
             catch (Exception ex)
             {
@@ -697,12 +762,16 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 _semaphoreAction.Wait();
                 IsPackageVersionPanelEnabled = false;
                 IsCatalogEnabled = false;
 
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
                 _logger.Info("Updating all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -715,8 +784,8 @@ namespace Twinpack.Dialogs
                         IncludeDependencies = AddDependencies, 
                         IncludeProvidedPackages = true 
                     }, 
-                    Token);
-                await UpdateCatalogAsync();
+                    _cancellationTokenSource.Token);
+                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully updated references to their latest version");
@@ -724,8 +793,6 @@ namespace Twinpack.Dialogs
             catch (OperationCanceledException ex)
             {
                 _logger.Trace(ex);
-                _logger.Error(ex.Message);
-                _catalogItem.Invalidate();
             }
             catch (Exception ex)
             {
@@ -744,32 +811,47 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 IsBrowsingAvailablePackages = false;
                 IsBrowsingUpdatablePackages = true;
                 IsBrowsingInstalledPackages = false;
-                await UpdateCatalogAsync();
+                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
             }
-            catch(Exception ex)
+            catch (OperationCanceledException ex)
             {
-                _logger.Error(ex.Message);
                 _logger.Trace(ex);
             }
-
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
         }
 
         public async void ShowInstalledPackages_Click(object sender, RoutedEventArgs e)
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 IsBrowsingAvailablePackages = false;
                 IsBrowsingUpdatablePackages = false;
                 IsBrowsingInstalledPackages = true;
-                await UpdateCatalogAsync();
+                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex.Message);
                 _logger.Trace(ex);
+                _logger.Error(ex.Message);
             }
         }
 
@@ -783,15 +865,23 @@ namespace Twinpack.Dialogs
 
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 if (_searchTerm != SearchTextBox.Text)
                 {
-                    await UpdateCatalogAsync(SearchTextBox.Text);
+                    await UpdateCatalogAsync(SearchTextBox.Text, cancellationToken: _cancellationTokenSource.Token);
                     _searchTerm = SearchTextBox.Text;
                 }
                 else
                 {
-                    await UpdateCatalogAsync();
+                    await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
                 }
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
             }
             catch (Exception ex)
             {
@@ -800,17 +890,19 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async Task UpdateCatalogAsync(string searchTerm=null, int maxNewPackages = 0)
+        public async Task UpdateCatalogAsync(string searchTerm=null, int maxNewPackages = 0, CancellationToken cancellationToken = default)
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 IsCatalogLoading = true;
 
                 if (searchTerm == null)
                     searchTerm = _searchTerm;
 
-                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(searchTerm, token: Token);
-                var availablePackages = await _twinpack.RetrieveAvailablePackagesAsync(searchTerm, maxNewPackages, 5, Token);
+                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(searchTerm, token: cancellationToken);
+                var availablePackages = await _twinpack.RetrieveAvailablePackagesAsync(searchTerm, maxNewPackages, 5, cancellationToken);
 
                 // synchronize the list of installed packages with the list of available packages
                 var zipped =
@@ -883,6 +975,8 @@ namespace Twinpack.Dialogs
                         InstalledPackageVersion = _catalogItem.IsPlaceholder ? _catalogItem.InstalledVersion + "*" : _catalogItem.InstalledVersion;
                     }
                 }
+
+                cancellationToken.ThrowIfCancellationRequested();
             }
             finally
             {
@@ -952,6 +1046,8 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var branch = BranchesView.SelectedItem as string;
                 var configuration = ConfigurationsView.SelectedItem as string;
                 var target = TargetsView.SelectedItem as string;
@@ -998,12 +1094,16 @@ namespace Twinpack.Dialogs
                             VersionDisplayText = _catalogItem.Used.Version
                         });
                     }
-
-                    VersionsView.SelectedIndex = -1;
                 }
+
+                cancellationToken.ThrowIfCancellationRequested();
 
                 Versions = Versions.Concat(results.Item1.Select(x => new PlcVersion { Version = x.Version, VersionDisplayText = x.Version })).ToList();
                 _currentPackageVersionsPage++;
+            }
+            catch (OperationCanceledException ex)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -1021,7 +1121,23 @@ namespace Twinpack.Dialogs
         private async void ShowMoreAvailablePackagesButton_Click(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            await UpdateCatalogAsync(maxNewPackages: 10);
+            try
+            {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
+                await UpdateCatalogAsync(maxNewPackages: 10, cancellationToken: _cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
@@ -1033,15 +1149,20 @@ namespace Twinpack.Dialogs
 
             try
             {
-                await LoadNextPackageVersionsPageAsync(reset: false, cancellationToken: Token);
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
+                await LoadNextPackageVersionsPageAsync(reset: false, cancellationToken: _cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
             }
             catch (Exception ex)
             {
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
-            }
-            finally
-            {
             }
         }
 
@@ -1059,6 +1180,10 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 var packageItem = ((sender as ListView).SelectedItem as Models.PackageItem);
                 _catalogItem.Catalog = packageItem?.Catalog;
                 _catalogItem.ProjectName = packageItem?.ProjectName ?? _plcConfig?.ProjectName;
@@ -1078,7 +1203,7 @@ namespace Twinpack.Dialogs
                 IsPackageLoading = true;
                 IsPackageVersionLoading = true;
 
-                await _twinpack.FetchPackageAsync(_catalogItem, Token);
+                await _twinpack.FetchPackageAsync(_catalogItem, _cancellationTokenSource.Token);
                     
                 Options = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _catalogItem.Catalog?.Name)?.Options ?? new AddPlcLibraryOptions();
 
@@ -1094,8 +1219,6 @@ namespace Twinpack.Dialogs
             catch (OperationCanceledException ex)
             {
                 _logger.Trace(ex);
-                _logger.Error(ex.Message);
-                _catalogItem.Invalidate();
             }
             catch (Exception ex)
             {
@@ -1119,11 +1242,17 @@ namespace Twinpack.Dialogs
 
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 IsPackageVersionLoading = _catalogItem.Package?.Name == null || _catalogItem.Package?.Name != _catalogItem.PackageVersion?.Name;
 
-                await LoadFirstPackageVersionsPageAsync(Token);
+                VersionsView.SelectionChanged -= PackageVersions_SelectionChanged;
+                await LoadFirstPackageVersionsPageAsync(_cancellationTokenSource.Token);
+                VersionsView.SelectionChanged += PackageVersions_SelectionChanged;
 
-                if(Versions?.Any(x => x.Version != null) == true)
+                if (Versions?.Any(x => x.Version != null) == true)
                 {
                     var index = Versions?.FindIndex(x => x.Version == _catalogItem?.Used?.Version) ?? -1;
                     if (_catalogItem?.IsPlaceholder == true)
@@ -1144,9 +1273,7 @@ namespace Twinpack.Dialogs
             }
             catch (OperationCanceledException ex)
             {
-                _catalogItem.Invalidate();
                 _logger.Trace(ex);
-                _logger.Error(ex.Message);
             }
             catch (Exception ex)
             {
@@ -1164,6 +1291,10 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 var item = (sender as ComboBox).SelectedItem as PlcVersion;
 
                 IsPackageVersionLoading = _catalogItem.PackageVersion?.Name == null || _catalogItem.Package?.Name != _catalogItem.PackageVersion?.Name || item?.Version != _catalogItem.PackageVersion?.Version;
@@ -1174,7 +1305,7 @@ namespace Twinpack.Dialogs
                     _catalogItem.Config.Branch = BranchesView.SelectedItem as string;
                     _catalogItem.Config.Configuration = ConfigurationsView.SelectedItem as string;
                     _catalogItem.Config.Target = TargetsView.SelectedItem as string;
-                    await _twinpack.FetchPackageAsync(_catalogItem);
+                    await _twinpack.FetchPackageAsync(_catalogItem, cancellationToken: _cancellationTokenSource.Token);
                 }
 
                 if ((sender as ComboBox).SelectedIndex == 0 && _catalogItem.PackageVersion != null)
@@ -1186,8 +1317,6 @@ namespace Twinpack.Dialogs
             catch (OperationCanceledException ex)
             {
                 _logger.Trace(ex);
-                _logger.Error(ex.Message);
-                _catalogItem.Invalidate();
             }
             catch (Exception ex)
             {
@@ -1225,17 +1354,25 @@ namespace Twinpack.Dialogs
         {
             try
             {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
                 IsInitializing = true;
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
                 _logger.Info("Reloading catalog");
 
                 IsPackageLoading = false;
 
                 var packageCount = Math.Max(10, _twinpack.AvailablePackages.Count());
                 _catalogItem.Invalidate();
-                _twinpack.InvalidateCache();
-                await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: packageCount);
+                await _twinpack.InvalidateCacheAsync(_cancellationTokenSource.Token);
+                await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: packageCount, cancellationToken: _cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
             }
             catch (Exception ex)
             {
@@ -1253,6 +1390,8 @@ namespace Twinpack.Dialogs
         public void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             _cancellationTokenSource?.Cancel();
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = new CancellationTokenSource();
             IsCatalogLoading = false;
             IsInitializing = false;
             IsPackageLoading = false;
@@ -1266,11 +1405,19 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: Token);
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
                 await _twinpack.SaveAsync(_configFilePath);
                 IsCreateConfigVisible = false;
 
                 _logger.Info($"Created package configuration in {_configFilePath}");
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
             }
             catch (Exception ex)
             {
@@ -1296,18 +1443,17 @@ namespace Twinpack.Dialogs
         {
             try
             {
-                var text = ((TextBox)sender).Text;
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
 
-                _searchTerm = text;
-                await Task.Delay(250);
-
-                if (_searchTerm == text)
-                {
-                    _cancellationTokenSource?.Cancel();
-                    await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: 10);
-                }
+                _searchTerm = ((TextBox)sender).Text;
+                await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: 10, cancellationToken: _cancellationTokenSource.Token);
             }
-            catch (TaskCanceledException) { }
+            catch (OperationCanceledException ex)
+            {
+                _logger.Trace(ex);
+            }
             catch (Exception ex)
             {
                 _logger.Trace(ex);

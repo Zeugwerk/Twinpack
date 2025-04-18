@@ -197,10 +197,14 @@ namespace Twinpack.Core
             return null;
         }
 
-        public void InvalidateCache()
+        public async Task InvalidateCacheAsync(CancellationToken cancellationToken = default)
         {
             _availablePackagesCache.Clear();
             _usedPackagesCache.Clear();
+
+            if (_availablePackagesIt != null)
+                await _availablePackagesIt.DisposeAsync();
+
             _availablePackagesIt = null;
             _packageServers.InvalidateCache();
         }
@@ -228,15 +232,22 @@ namespace Twinpack.Core
         {
             try
             {
-                await _availablePackagesMutex.WaitAsync();
+                await _availablePackagesMutex.WaitAsync(token);
 
                 if (_availablePackagesIt == null || _searchTerm != searchTerm)
-                    _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize, token).GetAsyncEnumerator();
+                {
+                    if (_availablePackagesIt != null)
+                        await _availablePackagesIt.DisposeAsync();
 
-                _searchTerm = searchTerm;
+                    _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize).GetAsyncEnumerator();
+
+                    _searchTerm = searchTerm;
+                }
+
                 var maxPackages = _availablePackagesCache.Count + maxNewPackages;
                 while ((maxNewPackages == null || _availablePackagesCache.Count < maxPackages) && (HasMoreAvailablePackages = await _availablePackagesIt.MoveNextAsync()))
                 {
+                    token.ThrowIfCancellationRequested();
                     PackageItem item = _availablePackagesIt.Current;
 
                     // only add if we don't have this package cached already
@@ -252,6 +263,10 @@ namespace Twinpack.Core
                             rx?.Match(x.Catalog?.DisplayName).Success == true ||
                             rx?.Match(x.Catalog?.DistributorName).Success == true)
                         ;
+            }
+            catch (OperationCanceledException ex)
+            {
+                throw;
             }
             finally
             {
