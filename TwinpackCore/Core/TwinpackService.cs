@@ -246,13 +246,14 @@ namespace Twinpack.Core
 
                 var maxPackages = _availablePackagesCache.Count + maxNewPackages;
                 while ((maxNewPackages == null || _availablePackagesCache.Count < maxPackages) && (HasMoreAvailablePackages = await _availablePackagesIt.MoveNextAsync()))
-                {
-                    token.ThrowIfCancellationRequested();
+                {            
                     PackageItem item = _availablePackagesIt.Current;
 
                     // only add if we don't have this package cached already
                     if (!_availablePackagesCache.Any(x => item.Catalog?.Name == x.Catalog?.Name))
                         _availablePackagesCache.Add(item);
+
+                    token.ThrowIfCancellationRequested();
                 }
 
                 Regex rx = searchTerm != null ? new Regex(searchTerm.Replace(" ", "."), RegexOptions.Compiled) : null;
