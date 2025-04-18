@@ -210,7 +210,7 @@ namespace TwinpackTests
             var packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(4, packages.Count);
 
-            twinpack.InvalidateCache();
+            await twinpack.InvalidateCacheAsync();
 
             packages = (await twinpack.RetrieveAvailablePackagesAsync(searchTerm: null, maxNewPackages: 4)).ToList();
             Assert.AreEqual(4, packages.Count);
