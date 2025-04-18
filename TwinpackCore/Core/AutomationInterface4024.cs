@@ -339,7 +339,7 @@ namespace Twinpack.Core
             if (!IsPackageInstalled(package))
             {
                 distributorName = GuessDistributorName(libraryManager, libraryName, version);
-                _logger.Warn($"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) is not installed. Fallback to distributor: {distributorName ?? "Beckhoff Automation GmbH"}");
+                _logger.Warn($"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) is not installed. Fallback to guessing distributor!");
             }
 
             // make sure the package is not present before adding it, we have to
@@ -355,7 +355,7 @@ namespace Twinpack.Core
             }
             catch
             {
-                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {distributorName}) is not installed. Make sure that the version of the package matches the version of included library file!");
+                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} is not installed. Make sure that the version of the package matches the version of included library file!");
             }
 
 
