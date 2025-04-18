@@ -337,16 +337,27 @@ namespace Twinpack.Core
 
             // if we can't find the reference with the distributor name from the package, fallback to looking it up
             if (!IsPackageInstalled(package))
+            {
                 distributorName = GuessDistributorName(libraryManager, libraryName, version);
+                _logger.Warn($"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) is not installed. Fallback to distributor: {distributorName ?? "Beckhoff Automation GmbH"}");
+            }
 
             // make sure the package is not present before adding it, we have to
             // force, because the package might not even be installed
             await RemovePackageAsync(package, forceRemoval: true);
 
-            if (options?.LibraryReference == true)
-                libraryManager.AddLibrary(libraryName, version, distributorName);
-            else
-                libraryManager.AddPlaceholder(libraryName, libraryName, version, distributorName);
+            try
+            {
+                if (options?.LibraryReference == true)
+                    libraryManager.AddLibrary(libraryName, version, distributorName);
+                else
+                    libraryManager.AddPlaceholder(libraryName, libraryName, version, distributorName);
+            }
+            catch
+            {
+                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {distributorName}) is not installed. Make sure that the version of the package matches the version of included library file!");
+            }
+
 
             if (options?.QualifiedOnly == true ||
                 options?.HideWhenReferencedAsDependency == true ||
