@@ -4,10 +4,15 @@ using System.Threading.Tasks;
 
 public class CancelableTask
 {
-    private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+    private NLog.Logger _logger;
 
     private CancellationTokenSource _cts;
     private Task _task;
+
+    public CancelableTask(NLog.Logger logger)
+    {
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
 
     public void Cancel()
     {
