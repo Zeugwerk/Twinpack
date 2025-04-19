@@ -1228,12 +1228,17 @@ namespace Twinpack.Dialogs
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
 
         {
-            await _cancelableTask.RunAsync(async token =>
+            var text = ((TextBox)sender).Text;
+            _searchTerm = text;
+            await Task.Delay(250);
+
+            if (_searchTerm == text)
             {
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
-                _searchTerm = ((TextBox)sender).Text;
-                await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: 10, cancellationToken: token);
-            });
+                await _cancelableTask.RunAsync(async token =>
+                {
+                    await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: 10, cancellationToken: token);
+                });
+            }
         }
     }
 }

@@ -245,6 +245,7 @@ namespace Twinpack.Core
                 }
 
                 var maxPackages = _availablePackagesCache.Count + maxNewPackages;
+                token.ThrowIfCancellationRequested();
                 while ((maxNewPackages == null || _availablePackagesCache.Count < maxPackages) && (HasMoreAvailablePackages = await _availablePackagesIt.MoveNextAsync()))
                 {            
                     PackageItem item = _availablePackagesIt.Current;
