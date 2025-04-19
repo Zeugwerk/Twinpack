@@ -22,7 +22,7 @@ namespace Twinpack.Dialogs
     public partial class CatalogWindow : UserControl, INotifyPropertyChanged
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-        private CancellationTokenSource _cancellationTokenSource;
+        private CancelableTask _cancelableTask = new CancelableTask();
 
         public event PropertyChangedEventHandler PropertyChanged;
         SelectionChangedEventHandler _packageServerSelectionChanged;
@@ -398,26 +398,13 @@ namespace Twinpack.Dialogs
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
                 ResetServerSelection();
-
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-
-                await InitializeInternalAsync(_cancellationTokenSource.Token);
+                await InitializeInternalAsync(token);
                 _isDialogLoaded = true;
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+            });
         }
 
         public async Task InitializeAsync()
@@ -425,25 +412,12 @@ namespace Twinpack.Dialogs
             if (!_isDialogLoaded)
                 return;
 
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
                 ResetServerSelection();
-
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-
-                await InitializeInternalAsync(_cancellationTokenSource.Token);
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+                await InitializeInternalAsync(token);
+            });
         }
 
         protected async Task InitializeInternalAsync(CancellationToken cancellationToken)
@@ -561,11 +535,9 @@ namespace Twinpack.Dialogs
 
         public async void EditServersButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
                 var dialog = new PackagingServerDialog();
                 dialog.Owner = Application.Current.MainWindow;
@@ -574,102 +546,68 @@ namespace Twinpack.Dialogs
                 if (dialog.DialogResult == true)
                 {
                     ResetServerSelection();
-                    await InitializeInternalAsync(_cancellationTokenSource.Token);
+                    await InitializeInternalAsync(token);
 
                 }
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+            });
         }
 
         public async void PackageServers_SelectionChanged(object sender, RoutedEventArgs e)
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
-                await InitializeInternalAsync(_cancellationTokenSource.Token);
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+                await InitializeInternalAsync(token);
+            });
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void UninstallPackageButton_Click(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
-                _semaphoreAction.Wait();
+                IsCatalogEnabled = false;
                 IsPackageVersionPanelEnabled = false;
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: token);
                 _logger.Info("Uninstalling package");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await _twinpack.RemovePackagesAsync(new List<PackageItem> { _catalogItem }, uninstall: UninstallDeletes, cancellationToken: _cancellationTokenSource.Token);
+                await _twinpack.RemovePackagesAsync(new List<PackageItem> { _catalogItem }, uninstall: UninstallDeletes, cancellationToken: token);
 
                 IsNewReference = true;
                 InstalledPackageVersion = null;
 
                 // update config
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
+                await UpdateCatalogAsync(cancellationToken: token);
 
                 _logger.Info($"Successfully removed {_catalogItem.PackageVersion?.Name}");
                 _logger.Info("Finished\n");
-            }
-            catch (OperationCanceledException ex)
+            },
+            () =>
             {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
-            {
+                IsCatalogEnabled = true;
                 IsPackageVersionPanelEnabled = true;
-                _semaphoreAction.Release();
-            }
+            });
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void AddPackageButton_Click(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
-                _semaphoreAction.Wait();
+                IsCatalogEnabled = false;
                 IsPackageVersionPanelEnabled = false;
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: token);
                 _logger.Info("Adding package");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -677,9 +615,9 @@ namespace Twinpack.Dialogs
                 _catalogItem.Config.Options = Options;
 
                 // show licenses and wait for accept
-                var affectedPackages = await _twinpack.AffectedPackagesAsync(new List<PackageItem> { _catalogItem }, includeDependencies: true, cancellationToken: _cancellationTokenSource.Token);
+                var affectedPackages = await _twinpack.AffectedPackagesAsync(new List<PackageItem> { _catalogItem }, includeDependencies: true, cancellationToken: token);
                 if (ConfirmLicensesIfNeeded(affectedPackages, true))
-                    await _twinpack.AddPackagesAsync(affectedPackages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, _cancellationTokenSource.Token);
+                    await _twinpack.AddPackagesAsync(affectedPackages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, token);
 
                 IsNewReference = false;
 
@@ -687,25 +625,18 @@ namespace Twinpack.Dialogs
                 _catalogItem.PackageVersion = _catalogItem.PackageVersion;
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
+                await UpdateCatalogAsync(cancellationToken: token);
 
                 _logger.Info($"Successfully added {_catalogItem.PackageVersion?.Name}");
                 _logger.Info("Finished\n");
-            }
-            catch (OperationCanceledException ex)
+            },
+            () =>
             {
-                _logger.Trace(ex);
+                IsCatalogEnabled = true;
+                IsPackageVersionPanelEnabled = true; 
             }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
-            {
-                IsPackageVersionPanelEnabled = true;
-                _semaphoreAction.Release();
-            }
+            
+            );
         }
 
         public void UpdatePackageButton_Click(object sender, RoutedEventArgs e)
@@ -717,61 +648,45 @@ namespace Twinpack.Dialogs
         public async void RestoreAllPackageButton_Click(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
-                _semaphoreAction.Wait();
                 IsCatalogEnabled = false;
                 IsPackageVersionPanelEnabled = false;
 
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: token);
                 _logger.Info("Restoring all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, cancellationToken: _cancellationTokenSource.Token);
-                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
+                await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, cancellationToken: token);
+                await UpdateCatalogAsync(cancellationToken: token);
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully restored all references");
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
+            }, 
+            () => 
             {
                 IsCatalogEnabled = true;
                 IsPackageVersionPanelEnabled = true;
-                _semaphoreAction.Release();
-            }
+            });
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         public async void UpdateAllPackageButton_Click(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
-                _semaphoreAction.Wait();
-                IsPackageVersionPanelEnabled = false;
                 IsCatalogEnabled = false;
+                IsPackageVersionPanelEnabled = false;
 
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: token);
                 _logger.Info("Updating all packages");
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
@@ -779,80 +694,48 @@ namespace Twinpack.Dialogs
                 await _twinpack.UpdatePackagesAsync(
                     new TwinpackService.UpdatePackageFilters { },
                     new TwinpackService.UpdatePackageOptions
-                    { 
-                        ForceDownload = ForcePackageVersionDownload, 
-                        IncludeDependencies = AddDependencies, 
-                        IncludeProvidedPackages = true 
-                    }, 
-                    _cancellationTokenSource.Token);
-                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
+                    {
+                        ForceDownload = ForcePackageVersionDownload,
+                        IncludeDependencies = AddDependencies,
+                        IncludeProvidedPackages = true
+                    },
+                    token);
+                await UpdateCatalogAsync(cancellationToken: token);
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully updated references to their latest version");
-            }
-            catch (OperationCanceledException ex)
+            },
+            () =>
             {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
-            {
-                IsPackageVersionPanelEnabled = true;
                 IsCatalogEnabled = true;
-                _semaphoreAction.Release();
-            }
+                IsPackageVersionPanelEnabled = true;
+            });
         }
 
         public async void ShowUpdateablePackages_Click(object sender, RoutedEventArgs e)
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
                 IsBrowsingAvailablePackages = false;
                 IsBrowsingUpdatablePackages = true;
                 IsBrowsingInstalledPackages = false;
-                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+                await UpdateCatalogAsync(cancellationToken: token);
+            });
         }
 
         public async void ShowInstalledPackages_Click(object sender, RoutedEventArgs e)
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
                 IsBrowsingAvailablePackages = false;
                 IsBrowsingUpdatablePackages = false;
                 IsBrowsingInstalledPackages = true;
-                await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+                await UpdateCatalogAsync(cancellationToken: token);
+            });
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
@@ -863,31 +746,21 @@ namespace Twinpack.Dialogs
             IsBrowsingUpdatablePackages = false;
             IsBrowsingInstalledPackages = false;
 
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
+                var maxNewPackages = _twinpack.AvailablePackages.Any() ? 0 : 10;
                 if (_searchTerm != SearchTextBox.Text)
                 {
-                    await UpdateCatalogAsync(SearchTextBox.Text, cancellationToken: _cancellationTokenSource.Token);
+                    await UpdateCatalogAsync(SearchTextBox.Text, maxNewPackages: maxNewPackages, cancellationToken: token);
                     _searchTerm = SearchTextBox.Text;
                 }
                 else
                 {
-                    await UpdateCatalogAsync(cancellationToken: _cancellationTokenSource.Token);
+                    await UpdateCatalogAsync(maxNewPackages: maxNewPackages, cancellationToken: token);
                 }
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+            });
         }
 
         public async Task UpdateCatalogAsync(string searchTerm=null, int maxNewPackages = 0, CancellationToken cancellationToken = default)
@@ -1121,23 +994,10 @@ namespace Twinpack.Dialogs
         private async void ShowMoreAvailablePackagesButton_Click(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-
-                await UpdateCatalogAsync(maxNewPackages: 10, cancellationToken: _cancellationTokenSource.Token);
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+                await UpdateCatalogAsync(maxNewPackages: 10, cancellationToken: token);
+            });
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
@@ -1147,23 +1007,10 @@ namespace Twinpack.Dialogs
             if (_catalogItem.PackageVersion?.Name == null)
                 return;
 
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-
-                await LoadNextPackageVersionsPageAsync(reset: false, cancellationToken: _cancellationTokenSource.Token);
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+                await LoadNextPackageVersionsPageAsync(reset: false, cancellationToken: token);
+            });
         }
 
         private void CatalogItemPackage_Changed(object sender, PropertyChangedEventArgs e)
@@ -1178,11 +1025,9 @@ namespace Twinpack.Dialogs
         private async void Catalog_SelectionChanged(object sender, SelectionChangedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
                 var packageItem = ((sender as ListView).SelectedItem as Models.PackageItem);
                 _catalogItem.Catalog = packageItem?.Catalog;
@@ -1203,8 +1048,8 @@ namespace Twinpack.Dialogs
                 IsPackageLoading = true;
                 IsPackageVersionLoading = true;
 
-                await _twinpack.FetchPackageAsync(_catalogItem, _cancellationTokenSource.Token);
-                    
+                await _twinpack.FetchPackageAsync(_catalogItem, token);
+
                 Options = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _catalogItem.Catalog?.Name)?.Options ?? new AddPlcLibraryOptions();
 
                 BranchesView.Visibility = _catalogItem.Package?.Branches?.Any() == true ? Visibility.Visible : Visibility.Collapsed;
@@ -1215,21 +1060,13 @@ namespace Twinpack.Dialogs
                 BranchesView.SelectedIndex = string.IsNullOrEmpty(_catalogItem.Used?.Branch) ? 0 : _catalogItem.Package?.Branches?.FindIndex(x => x == _catalogItem.Used?.Branch) ?? -1;
                 TargetsView.SelectedIndex = string.IsNullOrEmpty(_catalogItem.Used?.Target) ? 0 : _catalogItem.Package?.Targets?.FindIndex(x => x == _catalogItem.Used?.Target) ?? -1;
                 ConfigurationsView.SelectedIndex = string.IsNullOrEmpty(_catalogItem.Used?.Configuration) ? 0 : _catalogItem.Package?.Configurations?.FindIndex(x => x == _catalogItem.Used?.Configuration) ?? -1;
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
+
+            },
+            () =>
             {
                 IsPackageLoading = false;
                 IsPackageVersionLoading = false;
-            }
+            });
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
@@ -1240,16 +1077,14 @@ namespace Twinpack.Dialogs
                 BranchesView.SelectedIndex < 0 || TargetsView.SelectedIndex < 0 || ConfigurationsView.SelectedIndex < 0)
                 return;
 
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
                 IsPackageVersionLoading = _catalogItem.Package?.Name == null || _catalogItem.Package?.Name != _catalogItem.PackageVersion?.Name;
 
                 VersionsView.SelectionChanged -= PackageVersions_SelectionChanged;
-                await LoadFirstPackageVersionsPageAsync(_cancellationTokenSource.Token);
+                await LoadFirstPackageVersionsPageAsync(token);
                 VersionsView.SelectionChanged += PackageVersions_SelectionChanged;
 
                 if (Versions?.Any(x => x.Version != null) == true)
@@ -1270,31 +1105,18 @@ namespace Twinpack.Dialogs
                     VersionsView.IsEnabled = false;
                     VersionsView.SelectedIndex = -1;
                 }
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
+            },
+            () =>
             {
                 IsPackageVersionLoading = false;
-            }
+            });
         }
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void PackageVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-
                 var item = (sender as ComboBox).SelectedItem as PlcVersion;
 
                 IsPackageVersionLoading = _catalogItem.PackageVersion?.Name == null || _catalogItem.Package?.Name != _catalogItem.PackageVersion?.Name || item?.Version != _catalogItem.PackageVersion?.Version;
@@ -1305,28 +1127,19 @@ namespace Twinpack.Dialogs
                     _catalogItem.Config.Branch = BranchesView.SelectedItem as string;
                     _catalogItem.Config.Configuration = ConfigurationsView.SelectedItem as string;
                     _catalogItem.Config.Target = TargetsView.SelectedItem as string;
-                    await _twinpack.FetchPackageAsync(_catalogItem, cancellationToken: _cancellationTokenSource.Token);
+                    await _twinpack.FetchPackageAsync(_catalogItem, cancellationToken: token);
                 }
 
                 if ((sender as ComboBox).SelectedIndex == 0 && _catalogItem.PackageVersion != null)
                     _catalogItem.PackageVersion.Version = null;
 
-                IsNewReference = _catalogItem.PackageVersion?.Name == null || 
+                IsNewReference = _catalogItem.PackageVersion?.Name == null ||
                     !_twinpack.UsedPackages.Any(x => x.Catalog?.Name == _catalogItem.Package.Name);
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
+            },
+            () =>
             {
                 IsPackageVersionLoading = false;
-            }
+            });
         }
 
         void ResetServerSelection()
@@ -1352,46 +1165,31 @@ namespace Twinpack.Dialogs
         public async void Reload(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-
                 IsInitializing = true;
-                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancellationTokenSource.Token);
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: token);
                 _logger.Info("Reloading catalog");
 
                 IsPackageLoading = false;
 
                 var packageCount = Math.Max(10, _twinpack.AvailablePackages.Count());
                 _catalogItem.Invalidate();
-                await _twinpack.InvalidateCacheAsync(_cancellationTokenSource.Token);
-                await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: packageCount, cancellationToken: _cancellationTokenSource.Token);
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
-            finally
+                await _twinpack.InvalidateCacheAsync(token);
+                await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: packageCount, cancellationToken: token);
+            },
+            () =>
             {
                 IsPackageVersionPanelEnabled = _plcConfig != null;
                 IsCatalogEnabled = true;
                 IsInitializing = false;
-            }
+            });
         }
 
         public void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            _cancellationTokenSource?.Cancel();
-            _cancellationTokenSource?.Dispose();
-            _cancellationTokenSource = new CancellationTokenSource();
+            _cancelableTask.Cancel();
             IsCatalogLoading = false;
             IsInitializing = false;
             IsPackageLoading = false;
@@ -1403,27 +1201,15 @@ namespace Twinpack.Dialogs
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
 
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-
-                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: _cancellationTokenSource.Token);
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+                await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: token);
                 await _twinpack.SaveAsync(_configFilePath);
                 IsCreateConfigVisible = false;
 
                 _logger.Info($"Created package configuration in {_configFilePath}");
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+            });
         }
 
         public void ShowProjectUrl_Click(object sender, RoutedEventArgs e)
@@ -1441,24 +1227,12 @@ namespace Twinpack.Dialogs
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
 
         {
-            try
+            await _cancelableTask.RunAsync(async token =>
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-
+                await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
                 _searchTerm = ((TextBox)sender).Text;
-                await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: 10, cancellationToken: _cancellationTokenSource.Token);
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.Trace(ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+                await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: 10, cancellationToken: token);
+            });
         }
     }
 }
