@@ -1027,25 +1027,25 @@ namespace Twinpack.Dialogs
         private async void Catalog_SelectionChanged(object sender, SelectionChangedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
+            var packageItem = ((sender as ListView).SelectedItem as Models.PackageItem);
+            _catalogItem.Catalog = packageItem?.Catalog;
+            _catalogItem.ProjectName = packageItem?.ProjectName ?? _plcConfig?.ProjectName;
+            _catalogItem.PlcName = packageItem?.PlcName ?? _plcConfig?.Name;
+            _catalogItem.PackageServer = packageItem?.PackageServer;
+            _catalogItem.Config = packageItem?.Config;
+            _catalogItem.Used = packageItem?.Used;
+            _catalogItem.Update = packageItem?.Update;
+            _catalogItem.Package = packageItem?.Package;
+            _catalogItem.PackageVersion = packageItem?.PackageVersion;
+
+            if (_catalogItem?.Catalog == null)
+                return;
+
+            InstalledPackageVersion = _catalogItem.IsPlaceholder ? _catalogItem.InstalledVersion + "*" : _catalogItem.InstalledVersion;
+
             await _cancelableTask.RunAsync(async token =>
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
-
-                var packageItem = ((sender as ListView).SelectedItem as Models.PackageItem);
-                _catalogItem.Catalog = packageItem?.Catalog;
-                _catalogItem.ProjectName = packageItem?.ProjectName ?? _plcConfig?.ProjectName;
-                _catalogItem.PlcName = packageItem?.PlcName ?? _plcConfig?.Name;
-                _catalogItem.PackageServer = packageItem?.PackageServer;
-                _catalogItem.Config = packageItem?.Config;
-                _catalogItem.Used = packageItem?.Used;
-                _catalogItem.Update = packageItem?.Update;
-                _catalogItem.Package = packageItem?.Package;
-                _catalogItem.PackageVersion = packageItem?.PackageVersion;
-
-                if (_catalogItem?.Catalog == null)
-                    return;
-
-                InstalledPackageVersion = _catalogItem.IsPlaceholder ? _catalogItem.InstalledVersion + "*" : _catalogItem.InstalledVersion;
 
                 IsPackageLoading = true;
                 IsPackageVersionLoading = true;
