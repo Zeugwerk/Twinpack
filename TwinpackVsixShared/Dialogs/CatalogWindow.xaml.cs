@@ -634,7 +634,7 @@ namespace Twinpack.Dialogs
             () =>
             {
                 _selectedItem.PropertyChanged += CatalogItemPackage_Changed;
-                _selectedItem.Package = _selectedItem.PackageVersion;
+                _selectedItem.Package = _selectedItem.Package;
                 _selectedItem.PackageVersion = _selectedItem.PackageVersion;
                 IsEnabled = true;
             }
