@@ -585,10 +585,10 @@ namespace Twinpack.Dialogs
 
                 // update config
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                await UpdateCatalogAsync(cancellationToken: token);
-
                 _logger.Info($"Successfully removed {_catalogItem.PackageVersion?.Name}");
                 _logger.Info("Finished\n");
+
+                await UpdateCatalogAsync(cancellationToken: token);
             },
             () =>
             {
@@ -625,10 +625,10 @@ namespace Twinpack.Dialogs
                 _catalogItem.PackageVersion = _catalogItem.PackageVersion;
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
-                await UpdateCatalogAsync(cancellationToken: token);
-
                 _logger.Info($"Successfully added {_catalogItem.PackageVersion?.Name}");
                 _logger.Info("Finished\n");
+
+                await UpdateCatalogAsync(cancellationToken: token);
             },
             () =>
             {
@@ -662,10 +662,11 @@ namespace Twinpack.Dialogs
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
                 await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, cancellationToken: token);
-                await UpdateCatalogAsync(cancellationToken: token);
-
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully restored all references");
+                _logger.Info("Finished\n");
+
+                await UpdateCatalogAsync(cancellationToken: token);
             }, 
             () => 
             {
@@ -700,10 +701,11 @@ namespace Twinpack.Dialogs
                         IncludeProvidedPackages = true
                     },
                     token);
-                await UpdateCatalogAsync(cancellationToken: token);
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully updated references to their latest version");
+
+                await UpdateCatalogAsync(cancellationToken: token);
             },
             () =>
             {
@@ -753,8 +755,8 @@ namespace Twinpack.Dialogs
                 var maxNewPackages = _twinpack.AvailablePackages.Any() ? 0 : 10;
                 if (_searchTerm != SearchTextBox.Text)
                 {
-                    await UpdateCatalogAsync(SearchTextBox.Text, maxNewPackages: maxNewPackages, cancellationToken: token);
                     _searchTerm = SearchTextBox.Text;
+                    await UpdateCatalogAsync(SearchTextBox.Text, maxNewPackages: maxNewPackages, cancellationToken: token);
                 }
                 else
                 {
