@@ -22,7 +22,7 @@ namespace Twinpack.Dialogs
     public partial class CatalogWindow : UserControl, INotifyPropertyChanged
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-        private CancelableTask _cancelableTask = new CancelableTask();
+        private CancelableTask _cancelableTask = new CancelableTask(_logger);
 
         public event PropertyChangedEventHandler PropertyChanged;
         SelectionChangedEventHandler _packageServerSelectionChanged;
