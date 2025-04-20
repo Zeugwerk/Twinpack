@@ -102,10 +102,12 @@
                                     <RowDefinition></RowDefinition>
                                 </Grid.RowDefinitions>
                                 <StackPanel>
-                                    <Button d:Visibility="Visible" Visibility="{Binding Path=LoggedIn, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"
+                                    <Button d:Visibility="Visible" Visibility="{Binding Path=LoggedOut, Converter={StaticResource BooleanToVisibilityConverter}}"
                                             Click="LoginButton_Click">Login</Button>
-                                    <Button d:Visibility="Hidden" Visibility="{Binding Path=LoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    <Button d:Visibility="Collapsed" Visibility="{Binding Path=LoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}"
                                             Click="LogoutButton_Click">Logout</Button>
+                                    <Button d:Visibility="Collapsed" Visibility="{Binding Path=Connecting, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                            Click="CancelLoginButton_Click">Cancel</Button>                                    
                                 </StackPanel>
                             </Grid>
 

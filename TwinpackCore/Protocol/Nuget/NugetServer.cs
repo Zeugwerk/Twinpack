@@ -583,6 +583,7 @@ namespace Twinpack.Protocol
 
                 _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
                 var results = await SearchAsync("", "", 0, 1, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
                 UserInfo = new LoginPostResponse() { User = Username };
 
                 if (!string.IsNullOrEmpty(Password))

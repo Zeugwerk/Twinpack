@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Twinpack.Core;
 using Twinpack.Exceptions;
@@ -68,7 +69,12 @@ namespace Twinpack.Protocol
                     var sourceRepositories = JsonSerializer.Deserialize<Models.SourceRepositories>(File.ReadAllText(FilePath),
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     foreach (var server in sourceRepositories.PackagingServers)
+                    {
+                        if (login)
+                            _logger.Info($"Connecting to {server.Url} ...");
+
                         await AddServerAsync(server.ServerType, server.Name, server.Url, login);
+                    }
                 }
                 catch(FileNotFoundException)
                 {
@@ -102,13 +108,13 @@ namespace Twinpack.Protocol
             return factory.Create(name, uri);
         }
 
-        public static async Task<IPackageServer> AddServerAsync(string type, string name, string uri, bool login=true)
+        public static async Task<IPackageServer> AddServerAsync(string type, string name, string uri, bool login=true, CancellationToken cancellationToken=default)
         {
             var server = CreateServer(type, name, uri);
-            if(login)
+            if (login)
             {
                 var auth = new Authentication(server);
-                await auth.LoginAsync(onlyTry: true);
+                await auth.LoginAsync(onlyTry: true, cancellationToken);
             }
 
             _servers.Add(server);

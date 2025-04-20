@@ -1,9 +1,6 @@
 ﻿using AdysTech.CredentialManager;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,6 +19,8 @@ namespace Twinpack.Protocol
 
         public async Task LoginAsync(bool onlyTry = false, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (_packageServer.LoggedIn)
                 return;
 
@@ -45,17 +44,23 @@ namespace Twinpack.Protocol
             if (onlyTry)
                 return;
 
+            cancellationToken.ThrowIfCancellationRequested();
+
 #if !NETSTANDARD2_1_OR_GREATER
             // then login with prompting if it didn't work
             while (!_packageServer.LoggedIn)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var message = "";
                 try
                 {
                     bool save=true;
                     var credentials = CredentialManager.PromptForCredentials(_packageServer.UrlBase, ref save,
-                        message: $"Login to Package Server {_packageServer.UrlBase}",
-                        caption: "Twinpack Server login");
+                        message: $"Login to Package Server {_packageServer.UrlBase}. Please login with your username and password. Leave username blank if the server uses an API Key",
+                        caption: "Package Server Login");
+
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (credentials != null)
                         await _packageServer.LoginAsync(credentials.UserName, credentials.Password, cancellationToken);
@@ -65,6 +70,8 @@ namespace Twinpack.Protocol
 
                     if (!save)
                         CredentialManager.RemoveCredentials(_packageServer.UrlBase);
+
+                    cancellationToken.ThrowIfCancellationRequested();
                 }
                 catch (Exceptions.LoginException ex)
                 {
@@ -74,7 +81,7 @@ namespace Twinpack.Protocol
                 }
                 catch (Exception ex)
                 {
-                    message = @$"Login to Twinpack Server failed, see '%LOCALAPPDATA%\Zeugwerk\logs\Twinpack' for details!";
+                    message = @$"Login failed, see '%LOCALAPPDATA%\Zeugwerk\logs\Twinpack' for details!";
                     _logger.Trace(ex);
                     _logger.Error(ex.Message);
                 }
