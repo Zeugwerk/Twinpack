@@ -11,11 +11,16 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using static System.Net.Mime.MediaTypeNames;
 using System.Threading.Tasks;
+using NLog;
+using NuGet.Protocol.Plugins;
 
 namespace Twinpack.Dialogs
 {
     public partial class PackagingServerDialog : Window, INotifyPropertyChanged
     {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private CancelableTask _cancelableTask = new CancelableTask(_logger);
+
         private const int GWL_STYLE = -16;
         private const int WS_SYSMENU = 0x80000;
         [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
@@ -24,7 +29,6 @@ namespace Twinpack.Dialogs
         private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
     
         public event PropertyChangedEventHandler PropertyChanged;
-        private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         string _urlMem;
 
         public PackagingServerDialog()
@@ -81,11 +85,19 @@ namespace Twinpack.Dialogs
             var s = item.DataContext as Models.PackagingServer;
             var server = Protocol.PackagingServerRegistry.CreateServer(comboBox.SelectedItem as string, s.Name, s.Url);
             var auth = new Protocol.Authentication(server);
-            await auth.LoginAsync(true);
-
             int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
-            PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
-            PackagingServers.ElementAt(index).Connected = server.Connected;
+
+            await _cancelableTask.RunAsync(async token =>
+            {
+                PackagingServers.ElementAt(index).Connecting = true;
+                await auth.LoginAsync(true, token);
+            },
+            () =>
+            {
+                PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
+                PackagingServers.ElementAt(index).Connected = server.Connected;
+                PackagingServers.ElementAt(index).Connecting = false;
+            });
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
@@ -96,13 +108,29 @@ namespace Twinpack.Dialogs
             var item = FindAncestor<ListViewItem>(button);
 
             var s = item.DataContext as Models.PackagingServer;
+            int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
+
             var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, s.Url);
             var auth = new Protocol.Authentication(server);
-            await auth.LoginAsync(false);
 
-            int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
-            PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
-            PackagingServers.ElementAt(index).Connected = server.Connected;
+            await _cancelableTask.RunAsync(async token =>
+            {
+                PackagingServers.ElementAt(index).Connecting = true;
+                await auth.LoginAsync(false, token);
+            },
+            () =>
+            {
+                PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
+                PackagingServers.ElementAt(index).Connected = server.Connected;
+                PackagingServers.ElementAt(index).Connecting = false;
+            });
+        }
+
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
+        private async void CancelLoginButton_Click(object sender, RoutedEventArgs e)
+#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
+        {
+            _cancelableTask.Cancel();
         }
 
         private async void LogoutButton_Click(object sender, RoutedEventArgs e)
@@ -115,8 +143,12 @@ namespace Twinpack.Dialogs
                 var s = item.DataContext as Models.PackagingServer;
                 var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, s.Url);
                 var auth = new Protocol.Authentication(server);
-                await auth.LogoutAsync();
-                await auth.LoginAsync(true); // check if connection is still possbile, so we know if connection is possible without credentials
+
+                await _cancelableTask.RunAsync(async token =>
+                {
+                    await auth.LogoutAsync();
+                    await auth.LoginAsync(true, token); // check if connection is still possbile, so we know if connection is possible without credentials
+                });
 
                 int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
                 PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
@@ -128,7 +160,6 @@ namespace Twinpack.Dialogs
                 _logger.Error(ex.Message);
             }
         }
-
 
         private async void Url_TextChanged(object sender, RoutedEventArgs e)
         {
@@ -145,11 +176,20 @@ namespace Twinpack.Dialogs
                     var s = item.DataContext as Models.PackagingServer;
                     var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, textBox.Text);
                     var auth = new Protocol.Authentication(server);
-                    await auth.LoginAsync(true);
-
                     int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
-                    PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
-                    PackagingServers.ElementAt(index).Connected = server.Connected;
+
+                    await _cancelableTask.RunAsync(async token =>
+                    {
+                        PackagingServers.ElementAt(index).Connecting = true;
+                        await auth.LoginAsync(true, token);
+                    },
+                    () =>
+                    {
+                        PackagingServers.ElementAt(index).Connecting = false;
+                        PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
+                        PackagingServers.ElementAt(index).Connected = server.Connected;
+                    });
+
                 }
             }
             catch (Exception ex)
@@ -182,11 +222,15 @@ namespace Twinpack.Dialogs
                     "established! Either the URL is incorrect or the server requires authentication, " +
                     "continue anyway?", "Connection error", MessageBoxButton.YesNo, MessageBoxImage.Question))
                 {
-                    Protocol.PackagingServerRegistry.Servers.Clear();
-                    foreach (var x in PackagingServers)
+
+                    await _cancelableTask.RunAsync(async token =>
                     {
-                        await Protocol.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url);
-                    }
+                        Protocol.PackagingServerRegistry.Servers.Clear();
+                        foreach (var x in PackagingServers)
+                        {
+                            await Protocol.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url, cancellationToken: token);
+                        }
+                    });
 
                     Protocol.PackagingServerRegistry.Save();
                     DialogResult = true;
@@ -206,6 +250,7 @@ namespace Twinpack.Dialogs
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
+            _cancelableTask.Cancel();
             DialogResult = false;
             Close();
         }
