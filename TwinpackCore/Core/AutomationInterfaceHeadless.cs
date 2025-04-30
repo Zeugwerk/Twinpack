@@ -341,5 +341,7 @@ namespace Twinpack.Core
 
             xdoc.Save(plc.FilePath);
         }
+
+        public override void SaveAsLibrary(ConfigPlcProject plc, string filePath) { }
     }
 }
