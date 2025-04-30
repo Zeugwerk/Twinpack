@@ -112,7 +112,6 @@ namespace Twinpack.Dialogs
                 await LoginAsync(Token);
 
                 IsGeneralDataReadOnly = false;
-
                 try
                 {
                     if (_plc != null)
@@ -126,10 +125,11 @@ namespace Twinpack.Dialogs
                         else
                         {
                             LoadingText = "Creating temporary package configuration ...";
+                            var packageServers = Protocol.PackagingServerRegistry.Servers.Where(x => x.Connected);
                             _plcConfig = await ConfigPlcProjectFactory.CreateAsync(
                                 _context.Solution, 
-                                _plc, 
-                                Protocol.PackagingServerRegistry.Servers.Any() ? Protocol.PackagingServerRegistry.Servers : new List<Protocol.IPackageServer> { _twinpackServer }, 
+                                _plc,
+                                packageServers.Any() ? packageServers : new List<Protocol.IPackageServer> { _twinpackServer }, 
                                 Token);
                         }
 
@@ -865,26 +865,18 @@ namespace Twinpack.Dialogs
                 var entitlement = (EntitlementView.SelectedItem as Protocol.Api.LoginPostResponse.Entitlement).Name;
                 var target = (TargetsView.SelectedItem as Protocol.Api.LoginPostResponse.Target).Name;
                 var compiled = FileTypeView.SelectedIndex != 0;
+                var suffix = compiled ? "compiled-library" : "library";
+                var cachePath = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\";
 
                 IsEnabled = false;
                 IsLoading = true;
 
-                LoadingText = "Checking all objects ...";
-                var path = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\{target}\{_plcConfig.Name}_{_plcConfig.Version}.library";
+                LoadingText = "Updating PLC Project ...";
+                await _context.VisualStudio.AutomationInterface.SetPackageVersionAsync(_plcConfig);
 
-                ITcPlcIECProject2 iec = SetPlcProjProperties();
-
-                _logger.Info($"Checking all objects of PLC {_plcConfig.Name}");
-                if (!iec.CheckAllObjects())
-                {
-                    if (_context.VisualStudio.BuildErrorCount() > 0)
-                        throw new Exceptions.CompileException($"{_plcConfig.Name} does not compile! Check all objects for your PLC failed. Please fix the errors in order to publish your library.");
-                }
-
-                _logger.Info($"Saving and installing library to {path}");
-                LoadingText = "Saving as library ...";
-                Directory.CreateDirectory(new FileInfo(path).Directory.FullName);
-                iec.SaveAsLibrary(path, false);
+                LoadingText = "Compiling library ...";
+                var path = $@"{cachePath}{target}\{_plcConfig.Name}_{_plcConfig.Version}.{suffix}";
+                _context.VisualStudio.AutomationInterface.SaveAsLibrary(_plcConfig, path);
 
                 try
                 {
@@ -892,8 +884,6 @@ namespace Twinpack.Dialogs
                     _logger.Info("Uploading to Twinpack ...");
                     LoadingText = "Uploading to Twinpack ...";
 
-                    var cachePath = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries";
-                    var suffix = compiled ? "compiled-library" : "library";
                     var packageVersion = new Protocol.Api.PackageVersionPostRequest()
                     {
                         Name = PackageName,
@@ -915,7 +905,7 @@ namespace Twinpack.Dialogs
                         LicenseTmcBinary = !string.IsNullOrEmpty(LicenseTmcFile) && File.Exists(LicenseTmcFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseTmcFile)) : _packageVersion?.LicenseTmcBinary,
                         IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
                         IconBinary = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Convert.ToBase64String(File.ReadAllBytes(IconFile)) : null,
-                        Binary = Convert.ToBase64String(File.ReadAllBytes($@"{cachePath}\{target}\{_plcConfig.Name}_{_plcConfig.Version}.{suffix}")),
+                        Binary = Convert.ToBase64String(File.ReadAllBytes(path)),
                         Dependencies = _plcConfig.Packages?.Select(x => new Protocol.Api.PackageVersionDependency
                         {
                             DistributorName = x.DistributorName,
@@ -971,30 +961,6 @@ namespace Twinpack.Dialogs
                 IsEnabled = true;
                 IsLoading = false;
             }
-        }
-
-        private ITcPlcIECProject2 SetPlcProjProperties()
-        {
-            var systemManager = (_plc.Object as dynamic).SystemManager as ITcSysManager2;
-            var iec = (_plc.Object as dynamic) as ITcPlcIECProject2;
-
-            StringWriter stringWriter = new StringWriter();
-            using (XmlWriter writer = XmlTextWriter.Create(stringWriter))
-            {
-                _logger.Info($"Updating plcproj, setting Version={_plcConfig.Version}, Company={_plcConfig.DistributorName}");
-                writer.WriteStartElement("TreeItem");
-                writer.WriteStartElement("IECProjectDef");
-                writer.WriteStartElement("ProjectInfo");
-                writer.WriteElementString("Title", _plcConfig.Title);
-                writer.WriteElementString("Version", (new Version(_plcConfig.Version)).ToString());
-                writer.WriteElementString("Company", _plcConfig.DistributorName);
-                writer.WriteEndElement();     // ProjectInfo
-                writer.WriteEndElement();     // IECProjectDef
-                writer.WriteEndElement();     // TreeItem 
-            }
-
-            (_plc as ITcSmTreeItem).ConsumeXml(stringWriter.ToString());
-            return iec;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)

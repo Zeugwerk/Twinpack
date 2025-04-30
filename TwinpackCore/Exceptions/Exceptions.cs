@@ -19,13 +19,10 @@ namespace Twinpack.Exceptions
         }
     }
 
-
     public class CompileException : ProjectException
     {
         public CompileException(string message) : base(message) { }
-        public CompileException(string projectName, string message, bool restartHint) : base(projectName, message, restartHint)
-        {
-        }
+        public CompileException(string projectName, string message) : base(projectName, (projectName ?? "Solution") + ": " + message, false) { }
     }
 
     public class AutomationInterfaceUnresponsiveException : ProjectException

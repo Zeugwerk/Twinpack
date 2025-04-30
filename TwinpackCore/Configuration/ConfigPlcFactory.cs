@@ -56,7 +56,7 @@ namespace Twinpack.Configuration
             {
                 string projectPath = XElement.Parse(xml).Element("PlcProjectDef").Element("ProjectPath").Value;
                 var plcConfig = await CreateAsync(projectPath, packageServers, cancellationToken);
-                plcConfig.ProjectName = prj.Name;
+                plcConfig.ProjectName = (systemManager as dynamic).ProjectName;
                 plcConfig.RootPath = System.IO.Path.GetDirectoryName(solution.FullName);
                 plcConfig.FilePath = ConfigPlcProjectFactory.GuessFilePath(plcConfig);                  
                 return plcConfig;

@@ -82,5 +82,6 @@ namespace Twinpack.Core
         public abstract Task SaveAllAsync();
         protected abstract Version MinVersion { get; }
         protected abstract Version MaxVersion { get; }
+        public abstract void SaveAsLibrary(ConfigPlcProject plc, string filePath);
     }
 }

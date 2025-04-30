@@ -28,5 +28,6 @@ namespace Twinpack.Core
         public Task<bool> UninstallPackageAsync(PackageItem package);
         public Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages);
         public Task SaveAllAsync();
+        public void SaveAsLibrary(ConfigPlcProject plc, string filePath);
     }
 }

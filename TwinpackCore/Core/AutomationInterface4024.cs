@@ -1,10 +1,7 @@
 #if !NETSTANDARD2_1_OR_GREATER
 using EnvDTE;
 using EnvDTE80;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.Win32;
 using NLog;
-using NuGet.Protocol;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Shapes;
 using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
@@ -45,7 +43,7 @@ namespace Twinpack.Core
         protected override Version MinVersion => new Version(3, 1, 4024, 0);
         protected override Version MaxVersion => null;
 
-        public override string SolutionPath { get => Path.GetFullPath(Path.GetDirectoryName(_visualStudio.Solution.FullName)); }
+        public override string SolutionPath { get => System.IO.Path.GetFullPath(System.IO.Path.GetDirectoryName(_visualStudio.Solution.FullName)); }
 
         public override async Task SaveAllAsync()
         {
@@ -486,7 +484,7 @@ namespace Twinpack.Core
             var packageVersion = package.PackageVersion;
 
             var suffix = package.PackageVersion.Compiled == 1 ? "compiled-library" : "library";
-            var path = Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}");
+            var path = System.IO.Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}");
 
             if (!File.Exists(path))
                 throw new FileNotFoundException(path);
@@ -586,6 +584,67 @@ namespace Twinpack.Core
             }
 
             iec.ConsumeXml(stringWriter.ToString());
+        }
+
+        protected void EnsureCompiled(string projectName = null, string plcName = null, ITcPlcIECProject2 plcProject = null)
+        {
+            int preExistingErrorCount = 0;
+            if (plcProject != null && plcProject.CheckAllObjects())
+                return;
+
+            if (preExistingErrorCount > 0)
+                _logger.Warn($"There are {preExistingErrorCount} errors before checking all objects!");
+
+            int errorCount = 0;
+            int warningCount = 0;
+            int ambiguousUseOfNameCount = 0;
+            var errors = _visualStudio.Dte.ToolWindows.ErrorList.ErrorItems;
+            for (int i = 1 + preExistingErrorCount; i <= errors.Count; i++)
+            {
+                var item = errors.Item(i);
+
+                switch (item.ErrorLevel)
+                {
+                    case vsBuildErrorLevel.vsBuildErrorLevelHigh:
+                        _logger.Error($"{item.ErrorLevel} in {item.FileName} (line {item.Line}, col {item.Column}): {item.Description}");
+                        errorCount++;
+
+                        if (item.Description.Contains("ambiguous use of name") || item.Description.Contains("Unknown type"))
+                            ambiguousUseOfNameCount++;
+
+                        break;
+                    case vsBuildErrorLevel.vsBuildErrorLevelMedium:
+                        if (!item.Description.Contains("Method 'FB_init' already called implicitly") &&
+                           !item.Description.Contains("The specified library will not be supported by TwinCAT XAE engineering environments older than version 3.1.4020.0"))
+                            _logger.Warn($"{item.ErrorLevel} in {item.FileName} (line {item.Line}, col {item.Column}): {item.Description}");
+
+                        warningCount++;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (ambiguousUseOfNameCount > 50 && projectName != null && plcName != null)
+                throw new CompileException(projectName, $"ambiguous use of names (potentially recoverable)!");
+
+            if (errorCount - preExistingErrorCount > 0)
+                throw new CompileException($"compiling failed (errors: {errorCount}, warnings: {warningCount})!");
+        }
+
+        public override void SaveAsLibrary(ConfigPlcProject plc, string filePath)
+        {
+            var systemManager = SystemManager(plc.ProjectName);
+            var projectRoot = systemManager.LookupTreeItem($"TIPC^{plc.Name}") as ITcProjectRoot;
+            var iec = projectRoot.NestedProject as ITcPlcIECProject2;
+            EnsureCompiled(plc.ProjectName, plc.Name, iec);
+
+            _logger.Info($"Saving library to {filePath}");
+
+            if (!Directory.Exists(new FileInfo(filePath).Directory.FullName))
+                Directory.CreateDirectory(new FileInfo(filePath).Directory.FullName);
+
+            iec.SaveAsLibrary(filePath, true);
         }
     }
 }
