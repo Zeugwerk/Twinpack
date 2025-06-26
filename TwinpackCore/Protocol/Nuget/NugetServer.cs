@@ -558,19 +558,22 @@ namespace Twinpack.Protocol
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
+            var storePassword = !string.IsNullOrEmpty(Password);
             InvalidateCache();
+            UserInfo = new LoginPostResponse();
+
             try
             {
                 var credentials = CredentialManager.GetCredentials(UrlBase);
-                Username = username ?? credentials?.UserName;
-                Password = password ?? credentials?.Password;
+                Username = username ?? credentials?.UserName ?? "";
+                Password = password ?? credentials?.Password ?? "";
             }
             catch (Exception ex)
             {
                 _logger.Warn("Failed to load credentials");
                 _logger.Trace(ex);
-                Username = username;
-                Password = password;
+                Username = username ?? "";
+                Password = password ?? "";
             }
 
             // reset token to get a new one
@@ -586,7 +589,7 @@ namespace Twinpack.Protocol
                 cancellationToken.ThrowIfCancellationRequested();
                 UserInfo = new LoginPostResponse() { User = Username };
 
-                if (!string.IsNullOrEmpty(Password))
+                if (storePassword)
                 {
                     try
                     {
