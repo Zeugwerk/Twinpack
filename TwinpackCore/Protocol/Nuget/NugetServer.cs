@@ -586,12 +586,11 @@ namespace Twinpack.Protocol
                 cancellationToken.ThrowIfCancellationRequested();
                 UserInfo = new LoginPostResponse() { User = Username };
 
-                if (!string.IsNullOrEmpty(Password))
+                if (Password != null)
                 {
                     try
                     {
                         CredentialManager.SaveCredentials(UrlBase, new System.Net.NetworkCredential(Username, Password));
-
                     }
                     catch (Exception ex)
                     {
