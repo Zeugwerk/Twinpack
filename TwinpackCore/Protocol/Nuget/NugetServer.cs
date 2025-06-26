@@ -558,7 +558,7 @@ namespace Twinpack.Protocol
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
-            var storePassword = !string.IsNullOrEmpty(Password);
+            var storePassword = !string.IsNullOrEmpty(password);
             InvalidateCache();
             UserInfo = new LoginPostResponse();
 
