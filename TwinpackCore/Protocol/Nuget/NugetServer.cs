@@ -55,7 +55,7 @@ namespace Twinpack.Protocol
         public string Username { get; set; }
         public string Password { get; set; }
         public LoginPostResponse UserInfo { get; set; }
-        public bool LoggedIn { get { return Connected; } }
+        public bool LoggedIn { get { return Connected && UserInfo?.Configurations?.FirstOrDefault()?.IsPrivate == true; } }
         public bool Connected { get { return UserInfo?.User != null; } }
         protected virtual string SearchPrefix { get => "";}
         protected virtual string IconUrl { get => null; }
@@ -558,19 +558,22 @@ namespace Twinpack.Protocol
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
+            var storePassword = !string.IsNullOrEmpty(password);
             InvalidateCache();
+            UserInfo = new LoginPostResponse();
+
             try
             {
                 var credentials = CredentialManager.GetCredentials(UrlBase);
-                Username = username ?? credentials?.UserName;
-                Password = password ?? credentials?.Password;
+                Username = username ?? credentials?.UserName ?? "";
+                Password = password ?? credentials?.Password ?? "";
             }
             catch (Exception ex)
             {
                 _logger.Warn("Failed to load credentials");
                 _logger.Trace(ex);
-                Username = username;
-                Password = password;
+                Username = username ?? "";
+                Password = password ?? "";
             }
 
             // reset token to get a new one
@@ -579,7 +582,7 @@ namespace Twinpack.Protocol
 
             try
             {
-                PackageSource packageSource = new PackageSource(Url) { Credentials = Username != null ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
+                PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
 
                 _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
                 var results = await SearchAsync("", "", 0, 1, cancellationToken);
@@ -587,11 +590,13 @@ namespace Twinpack.Protocol
                 UserInfo = new LoginPostResponse() { User = Username };
 
                 if (!string.IsNullOrEmpty(Password))
+                    UserInfo.Configurations = new List<LoginPostResponse.Configuration> { new LoginPostResponse.Configuration { Public = 0 } };
+
+                if (storePassword)
                 {
                     try
                     {
                         CredentialManager.SaveCredentials(UrlBase, new System.Net.NetworkCredential(Username, Password));
-
                     }
                     catch (Exception ex)
                     {
