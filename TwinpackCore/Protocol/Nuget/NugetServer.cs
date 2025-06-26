@@ -55,7 +55,7 @@ namespace Twinpack.Protocol
         public string Username { get; set; }
         public string Password { get; set; }
         public LoginPostResponse UserInfo { get; set; }
-        public bool LoggedIn { get { return Connected; } }
+        public bool LoggedIn { get { return Connected && UserInfo?.Configurations?.FirstOrDefault()?.IsPrivate == true; } }
         public bool Connected { get { return UserInfo?.User != null; } }
         protected virtual string SearchPrefix { get => "";}
         protected virtual string IconUrl { get => null; }
@@ -591,6 +591,8 @@ namespace Twinpack.Protocol
 
                 if (storePassword)
                 {
+                    UserInfo.Configurations = new List<LoginPostResponse.Configuration> { new LoginPostResponse.Configuration { Public = 0 } };
+
                     try
                     {
                         CredentialManager.SaveCredentials(UrlBase, new System.Net.NetworkCredential(Username, Password));
