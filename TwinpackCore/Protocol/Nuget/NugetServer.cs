@@ -579,14 +579,14 @@ namespace Twinpack.Protocol
 
             try
             {
-                PackageSource packageSource = new PackageSource(Url) { Credentials = Username != null ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
+                PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
 
                 _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
                 var results = await SearchAsync("", "", 0, 1, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 UserInfo = new LoginPostResponse() { User = Username };
 
-                if (Password != null)
+                if (!string.IsNullOrEmpty(Password))
                 {
                     try
                     {
