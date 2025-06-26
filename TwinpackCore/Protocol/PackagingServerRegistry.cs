@@ -125,7 +125,7 @@ namespace Twinpack.Protocol
         {
             var sourceRepositories = new Models.SourceRepositories();
             Servers.ForEach(x =>
-                sourceRepositories.PackagingServers.Add(new Models.PackagingServer() { Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase }));
+                sourceRepositories.PackagingServers.Add(new Models.PackagingServer() { Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase, Enabled = x.Enabled }));
 
             var filePath = FilePath;
             if(filePath == null)

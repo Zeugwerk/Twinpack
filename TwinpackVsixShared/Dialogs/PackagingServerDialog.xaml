@@ -102,12 +102,26 @@
                                     <RowDefinition></RowDefinition>
                                 </Grid.RowDefinitions>
                                 <StackPanel>
+                                    <ToggleButton d:Visibility="Visible" d:IsChecked="True" Visibility="{Binding Path=Enabled, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <ToggleButton.Style>
+                                            <Style TargetType="ToggleButton">
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter Property="Content" Value="Active"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsChecked" Value="False">
+                                                        <Setter Property="Content" Value="Inactive"/>
+                                                    </Trigger>                                                    
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ToggleButton.Style>
+                                    </ToggleButton>
                                     <Button d:Visibility="Visible" Visibility="{Binding Path=LoggedOut, Converter={StaticResource BooleanToVisibilityConverter}}"
                                             Click="LoginButton_Click">Login</Button>
                                     <Button d:Visibility="Collapsed" Visibility="{Binding Path=LoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}"
                                             Click="LogoutButton_Click">Logout</Button>
                                     <Button d:Visibility="Collapsed" Visibility="{Binding Path=Connecting, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                            Click="CancelLoginButton_Click">Cancel</Button>                                    
+                                            Click="CancelLoginButton_Click">Cancel</Button>
                                 </StackPanel>
                             </Grid>
 
