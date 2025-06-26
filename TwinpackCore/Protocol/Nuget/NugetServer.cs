@@ -589,7 +589,7 @@ namespace Twinpack.Protocol
                 cancellationToken.ThrowIfCancellationRequested();
                 UserInfo = new LoginPostResponse() { User = Username };
 
-                if (!string.IsNullOrEmpty(password))
+                if (!string.IsNullOrEmpty(Password))
                     UserInfo.Configurations = new List<LoginPostResponse.Configuration> { new LoginPostResponse.Configuration { Public = 0 } };
 
                 if (storePassword)
