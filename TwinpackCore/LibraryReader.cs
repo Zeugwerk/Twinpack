@@ -54,7 +54,7 @@ namespace Twinpack
             return length;
         }
 
-        public static List<string> ReadStringTable(ZipArchive archive, string dumpFilenamePrefix = null)
+        public static List<string> ReadStringTable(ZipArchive archive, bool includeHeaderByte, string dumpFilenamePrefix = null)
         {
             _logger.Trace("Reading string table");
 
@@ -67,6 +67,9 @@ namespace Twinpack
             {
                 using (var reader = new BinaryReader(stream))
                 {
+                    if (includeHeaderByte)
+                        reader.ReadByte();
+
                     objects = ReadLength(reader);
                     _logger.Trace($"String table contains {objects} strings");
                     index = reader.ReadByte();
@@ -295,7 +298,10 @@ namespace Twinpack
             using (var memoryStream = new MemoryStream(libraryBinary))
             using (var zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
             {
-                var stringTable = ReadStringTable(zipArchive, dumpFilenamePrefix);
+                var stringTable = 
+                    ReadStringTable(zipArchive, false, dumpFilenamePrefix).Concat(ReadStringTable(zipArchive, true, dumpFilenamePrefix)).ToList()
+                    ;
+
                 var libraryInfo = ReadProjectInformationXml(zipArchive, stringTable, dumpFilenamePrefix) ??
                                   ReadProjectInformationBin(zipArchive, stringTable, dumpFilenamePrefix);
 
@@ -305,6 +311,8 @@ namespace Twinpack
                 libraryInfo.Dependencies = stringTable.Select(x => Regex.Match(x, @"^([A-Za-z].*?),\s*(.*?)\s*\(([A-Za-z].*)\)$"))
                                         .Where(x => x.Success)
                                         .Select(x => new PlcLibrary() { Name = x.Groups[1].Value, Version = x.Groups[2].Value, DistributorName = x.Groups[3].Value })
+                                        .GroupBy(x => x.Name)
+                                        .Select(x => x.OrderByDescending(y => y.Version == "*").First())
                                         .ToList();
 
                 return libraryInfo;

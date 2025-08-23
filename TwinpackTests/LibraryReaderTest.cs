@@ -59,7 +59,7 @@ namespace TwinpackTests
             using (var memoryStream = new MemoryStream(library))
             using (var archive = new ZipArchive(memoryStream))
             {
-                var stringTable = Twinpack.LibraryReader.ReadStringTable(archive, file);
+                var stringTable = Twinpack.LibraryReader.ReadStringTable(archive, false, file);
                 var libraryInfo = Twinpack.LibraryReader.ReadProjectInformationBin(archive, stringTable, file);
 
                 Assert.IsNotNull(library);
@@ -83,7 +83,7 @@ namespace TwinpackTests
             using (var memoryStream = new MemoryStream(library))
             using (var archive = new ZipArchive(memoryStream))
             {
-                var stringTable = Twinpack.LibraryReader.ReadStringTable(archive, file);
+                var stringTable = Twinpack.LibraryReader.ReadStringTable(archive, false, file);
                 var libraryInfo = Twinpack.LibraryReader.ReadProjectInformationXml(archive, stringTable, file);
 
                 Assert.IsNotNull(library);
