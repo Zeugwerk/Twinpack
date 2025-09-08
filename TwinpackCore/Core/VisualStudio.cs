@@ -342,8 +342,15 @@ namespace Twinpack.Core
                 }
             }
 
-            if (prj != null)
-                _solution.Remove(prj);
+            try
+            {
+                if (prj != null)
+                    _solution.Remove(prj);
+            }
+            catch (Exception ex)
+            {
+                throw Exception($"Project {projectName} could not be removed from solution!", ex);
+            }
         }
 
         // check the DTE2 for potential build errors
