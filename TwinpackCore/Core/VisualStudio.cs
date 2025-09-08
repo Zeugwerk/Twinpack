@@ -349,7 +349,7 @@ namespace Twinpack.Core
             }
             catch (Exception ex)
             {
-                throw Exception($"Project {projectName} could not be removed from solution!", ex);
+                throw new Exception($"Project {projectName} could not be removed from solution!", ex);
             }
         }
 
