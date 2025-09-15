@@ -11,8 +11,6 @@ using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using Twinpack.Core;
 
-
-
 #if !NETSTANDARD2_1_OR_GREATER
 using EnvDTE;
 using TCatSysManagerLib;
@@ -118,16 +116,18 @@ namespace Twinpack.Configuration
 
             // collect references
             var references = new List<PlcLibrary>();
+            var placeholderResolutions = new List<PlcLibrary>();
+            var placeholerReferences = new List<PlcLibrary>();
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
 
-            /*
+            
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderResolution").Elements(TcNs + "Resolution"))
             {
                 var match = re.Match(g.Value);
                 if (match.Success)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    references.Add(new PlcLibrary {
+                    placeholderResolutions.Add(new PlcLibrary {
                         Name = match.Groups[1].Value.Trim(), 
                         Version = version == "*" ? null : version, 
                         DistributorName = match.Groups[3].Value.Trim(),
@@ -135,7 +135,6 @@ namespace Twinpack.Configuration
                     });
                 }
             }
-            */
 
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderReference").Elements(TcNs + "DefaultResolution"))
             {
@@ -143,16 +142,27 @@ namespace Twinpack.Configuration
                 if (match.Success && references.Any(x => x.Name == match.Groups[1].Value.Trim()) == false)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    references.Add(new PlcLibrary
+                    var name = match.Groups[1].Value.Trim();
+
+                    placeholerReferences.Add(new PlcLibrary
                     {
-                        Name = match.Groups[1].Value.Trim(),
+                        Name = name,
                         Version = version == "*" ? null : version,
                         DistributorName = match.Groups[3].Value.Trim(),
                         Options = ParseOptions(g.Parent, false)
                     });
                 }
-
             }
+
+            // merge resolution and default resolution
+            references = placeholderResolutions.Join(placeholerReferences, r1 => new { r1.Name, r1.DistributorName } , r2 => new { r2.Name, r2.DistributorName },
+                (r1, r2) => new PlcLibrary
+            {
+                Name = r1.Name ?? r2.Name,
+                Version = r1.Version ?? r2.Version,
+                DistributorName = r1.DistributorName ?? r2.DistributorName,
+                Options = r1.Options ?? r2.Options,
+            }).ToList();
 
             re = new Regex(@"(.*?),(.*?),(.*?)");
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "LibraryReference"))

@@ -287,8 +287,8 @@ namespace TwinpackTests
 
             plcprojPlcDoc.Elements(ConfigPlcProjectFactory.TcNs + "Project")
                 .Elements(ConfigPlcProjectFactory.TcNs + "ItemGroup")
-                .Elements(ConfigPlcProjectFactory.TcNs + "PlaceholderReference")
-                .Elements(ConfigPlcProjectFactory.TcNs + "DefaultResolution")
+                .Elements(ConfigPlcProjectFactory.TcNs + "PlaceholderResolution")
+                .Elements(ConfigPlcProjectFactory.TcNs + "Resolution")
                 .FirstOrDefault(x => x.Value.Contains("PlcLibrary1"))
                 .Value = "PlcLibrary1, 6.6.6.6 (My Company)";
 
