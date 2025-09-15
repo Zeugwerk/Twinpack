@@ -117,7 +117,7 @@ namespace Twinpack.Configuration
             // collect references
             var references = new List<PlcLibrary>();
             var placeholderResolutions = new List<PlcLibrary>();
-            var placeholerReferences = new List<PlcLibrary>();
+            var placeholderReferences = new List<PlcLibrary>();
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
 
             
@@ -144,7 +144,7 @@ namespace Twinpack.Configuration
                     var version = match.Groups[2].Value.Trim();
                     var name = match.Groups[1].Value.Trim();
 
-                    placeholerReferences.Add(new PlcLibrary
+                    placeholderReferences.Add(new PlcLibrary
                     {
                         Name = name,
                         Version = version == "*" ? null : version,
@@ -155,14 +155,23 @@ namespace Twinpack.Configuration
             }
 
             // merge resolution and default resolution
-            references = placeholderResolutions.Join(placeholerReferences, r1 => new { r1.Name, r1.DistributorName } , r2 => new { r2.Name, r2.DistributorName },
-                (r1, r2) => new PlcLibrary
-            {
-                Name = r1.Name ?? r2.Name,
-                Version = r1.Version ?? r2.Version,
-                DistributorName = r1.DistributorName ?? r2.DistributorName,
-                Options = r1.Options ?? r2.Options,
-            }).ToList();
+            references = placeholderReferences.GroupJoin(placeholderResolutions,
+                r1 => new { r1.Name, r1.DistributorName },
+                r2 => new { r2.Name, r2.DistributorName },
+                (l1, matches) => new
+                {
+                    Left = l1,
+                    Right = matches.FirstOrDefault()
+                })
+                .Select(
+                x => new PlcLibrary
+                {
+                    Name = x.Right?.Name ?? x.Left.Name,
+                    DistributorName = x.Right?.DistributorName ?? x.Left.DistributorName,
+                    Version = x.Right?.Version ?? x.Left.Version,
+                    Options = x.Right?.Options ?? x.Left.Options,
+                })
+                .ToList();
 
             re = new Regex(@"(.*?),(.*?),(.*?)");
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "LibraryReference"))
