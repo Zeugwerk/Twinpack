@@ -69,7 +69,7 @@ namespace Twinpack.Commands
             if (!plcs.Any())
             {
                 throw new Exception("Could not locate any artifacts to push. " 
-                    + (settings.WithoutConfig ? $"No .library files in '{settings.LibraryPath)'" : ""));
+                    + (settings.WithoutConfig ? $"No .library files in '{settings.LibraryPath}'" : ""));
             }
 
             foreach (var twinpackServer in PackagingServerRegistry.Servers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
