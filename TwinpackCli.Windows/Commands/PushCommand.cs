@@ -62,12 +62,20 @@ namespace Twinpack.Commands
 
             _twinpack.LoginAsync(settings.Username, settings.Password).GetAwaiter().GetResult();
 
-            foreach (var twinpackServer in PackagingServerRegistry.Servers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
-            {
-                twinpackServer.PushAsync(
-                    settings.WithoutConfig ?
+            var plcs = settings.WithoutConfig ?
                         ConfigPlcProjectFactory.PlcProjectsFromPath(settings.LibraryPath, PackagingServerRegistry.Servers) :
-                        ConfigPlcProjectFactory.PlcProjectsFromConfig(settings.Compiled, settings.Target),
+                        ConfigPlcProjectFactory.PlcProjectsFromConfig(settings.Compiled, settings.Target);
+
+            if (!plcs.Any())
+            {
+                throw new Exception("Could not locate any artifacts to push. " 
+                    + (settings.WithoutConfig ? $"No .library files in '{settings.LibraryPath)' : ""));
+            }
+
+            foreach (var twinpackServer in PackagingServerRegistry.Servers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
+            {          
+                twinpackServer.PushAsync(
+                    plcs,
                     settings.Configuration,
                     settings.Branch,
                     settings.Target,
