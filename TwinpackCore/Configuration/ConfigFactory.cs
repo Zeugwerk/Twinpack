@@ -23,7 +23,7 @@ namespace Twinpack.Configuration
         public const string DefaultRepository = "https://framework.zeugwerk.dev/Distribution";
         
         public static readonly string ZeugwerkVendorName = "Zeugwerk GmbH";
-        public static readonly List<string> DefaultLocations = new List<String> { $@"", $@".Zeugwerk\" };
+        public static readonly List<string> DefaultLocations = new List<String> { $@".Zeugwerk\", $@"" };
         public static readonly XNamespace TsProjectNs = "http://www.w3.org/2001/XMLSchema-instance";
 
         public static Config Load(string path = ".", bool validate=false)
