@@ -48,7 +48,7 @@ namespace Twinpack.Configuration
                     catch(Exception ex)
                     {
                         _logger.Trace(ex);
-                        _logger.Warn($"Failed to parse '{path}\{p}config.json'");
+                        _logger.Warn($@"Failed to parse '{path}\{p}config.json'");
                         continue;
                     }
                     
