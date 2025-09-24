@@ -40,7 +40,18 @@ namespace Twinpack.Configuration
 
                     usedPrefix = p;
                     config = new Config();
-                    config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                    try
+                    {
+                        config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    }
+                    catch(Exception ex)
+                    {
+                        _logger.Trace(ex);
+                        _logger.Warn($"Failed to parse '{path}\{p}config.json'");
+                        continue;
+                    }
+                    
                     config.WorkingDirectory = Path.GetDirectoryName($@"{path}\.Zeugwerk");
                     config.FilePath = $@"{path}\{p}config.json";
 
