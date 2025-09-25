@@ -16,12 +16,6 @@ namespace Twinpack.Configuration
             Projects = new List<ConfigProject>();
         }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public String WorkingDirectory { get; set; }
-
-        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public string FilePath { get; set; }
-
         [JsonPropertyName("fileversion")]
         public int Fileversion { get; set; }
 
@@ -31,8 +25,26 @@ namespace Twinpack.Configuration
         [JsonPropertyName("projects")]
         public List<ConfigProject> Projects { get; set; }
 
-        [JsonPropertyName("directories")]
-        public List<string> Directories { get; set; }
+        [JsonPropertyName("modules")]
+        public List<string> Modules { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public String WorkingDirectory { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public string FilePath { get; set; }
+
+        [JsonIgnore]
+        public bool IsComposite => Modules?.Count > 0;
+
+        [JsonIgnore]
+        public bool IsLeaf => !IsComposite;
+
+        public void Validate()
+        {
+            if (IsComposite && (!string.IsNullOrEmpty(Solution) || (Projects?.Count ?? 0) > 0))
+                throw new InvalidOperationException("Composite configs cannot define solution or projects.");
+        }
     }
 
     public class ConfigProject
