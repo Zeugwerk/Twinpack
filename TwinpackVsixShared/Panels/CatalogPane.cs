@@ -31,11 +31,11 @@ namespace Twinpack.Dialogs
             Content = _catalogWindow;
         }
 
-        public async System.Threading.Tasks.Task InitializeAsync(bool resetCache)
+        public async System.Threading.Tasks.Task InitializeAsync(bool reloadCatalog)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            if (resetCache)
+            if (reloadCatalog)
                 await _catalogWindow.InitializeAsync();
 
             var plc = _context.VisualStudio.ActivePlc();
