@@ -8,6 +8,7 @@ using System.ComponentModel.Design;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
 using Task = System.Threading.Tasks.Task;
 
@@ -85,7 +86,9 @@ namespace Twinpack.Commands
                     throw new NotSupportedException("Cannot create tool window");
                 }
 
-                await (window as Dialogs.CatalogPane).InitializeAsync();
+                var resetCache = ((window as Dialogs.CatalogPane).Content as FrameworkElement)?.IsLoaded == true;
+                await (window as Dialogs.CatalogPane).InitializeAsync(resetCache);
+
                 IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
                 if(windowFrame != null)
                 {

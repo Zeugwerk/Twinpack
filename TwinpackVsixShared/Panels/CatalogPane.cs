@@ -31,13 +31,14 @@ namespace Twinpack.Dialogs
             Content = _catalogWindow;
         }
 
-        public async System.Threading.Tasks.Task InitializeAsync()
+        public async System.Threading.Tasks.Task InitializeAsync(bool resetCache)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var plc = _context.VisualStudio.ActivePlc();
-            await _catalogWindow.InitializeAsync();
+            if (resetCache)
+                await _catalogWindow.InitializeAsync();
 
+            var plc = _context.VisualStudio.ActivePlc();
             Caption = $"Twinpack: {plc?.Name ?? "No Context"}";
         }
     }
