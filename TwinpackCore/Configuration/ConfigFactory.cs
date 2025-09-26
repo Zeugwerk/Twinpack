@@ -38,12 +38,16 @@ namespace Twinpack.Configuration
                     if (usedPrefix.Length != 0)
                         throw new Exception("found multiple configuration files");
 
-                    usedPrefix = p;
                     config = new Config();
 
                     try
                     {
                         config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (string.IsNullOrEmpty(config.Solution))
+                        {
+                            _logger.Warn($@"Failed to parse '{path}\{p}config.json'");
+                            continue;
+                        }
                     }
                     catch(Exception ex)
                     {
@@ -51,7 +55,8 @@ namespace Twinpack.Configuration
                         _logger.Warn($@"Failed to parse '{path}\{p}config.json'");
                         continue;
                     }
-                    
+
+                    usedPrefix = p;
                     config.WorkingDirectory = Path.GetDirectoryName($@"{path}\.Zeugwerk");
                     config.FilePath = $@"{path}\{p}config.json";
 
