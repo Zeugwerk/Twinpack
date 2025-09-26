@@ -401,7 +401,7 @@ namespace Twinpack.Dialogs
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
                 ResetServerSelection();
-                await InitializeInternalAsync(token);
+                await InitializeInternalAsync(resetCache: false, cancellationToken: token);
                 _isDialogLoaded = true;
             });
         }
@@ -415,11 +415,11 @@ namespace Twinpack.Dialogs
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
                 ResetServerSelection();
-                await InitializeInternalAsync(token);
+                await InitializeInternalAsync(resetCache: false, cancellationToken: token);
             });
         }
 
-        protected async Task InitializeInternalAsync(CancellationToken cancellationToken)
+        protected async Task InitializeInternalAsync(bool resetCache, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
@@ -545,7 +545,7 @@ namespace Twinpack.Dialogs
                 if (dialog.DialogResult == true)
                 {
                     ResetServerSelection();
-                    await InitializeInternalAsync(token);
+                    await InitializeInternalAsync(resetCache: true, cancellationToken: token);
 
                 }
             });
@@ -557,7 +557,7 @@ namespace Twinpack.Dialogs
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
-                await InitializeInternalAsync(token);
+                await InitializeInternalAsync(resetCache: true, cancellationToken: token);
             });
         }
 

@@ -86,8 +86,8 @@ namespace Twinpack.Commands
                     throw new NotSupportedException("Cannot create tool window");
                 }
 
-                var resetCache = ((window as Dialogs.CatalogPane).Content as FrameworkElement)?.IsLoaded == true;
-                await (window as Dialogs.CatalogPane).InitializeAsync(resetCache);
+                var reloadCatalog = ((window as Dialogs.CatalogPane).Content as FrameworkElement)?.IsLoaded == true;
+                await (window as Dialogs.CatalogPane).InitializeAsync(reloadCatalog);
 
                 IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
                 if(windowFrame != null)
