@@ -458,7 +458,7 @@ namespace Twinpack.Dialogs
                 }
 
                 CatalogView.SelectionChanged += Catalog_SelectionChanged;
-                await UpdateCatalogAsync(_searchTerm, maxNewPackages: 10, cancellationToken: cancellationToken);
+                await UpdateCatalogAsync(_searchTerm, maxNewPackages: resetCache ? 10 : 0, cancellationToken: cancellationToken);
             }
             catch (OperationCanceledException ex)
             {
