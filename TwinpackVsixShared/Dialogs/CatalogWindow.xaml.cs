@@ -436,7 +436,10 @@ namespace Twinpack.Dialogs
                 Catalog = new List<PackageItem>();
 
                 _selectedItem.Invalidate();
-                servers.InvalidateCache();
+
+                if (resetCache)
+                    servers.InvalidateCache();
+
                 var config = await LoadConfigAsync(activePlc?.Name, servers, cancellationToken);
                 _twinpack = new TwinpackService(servers, _context.VisualStudio.AutomationInterface, config, plcName: activePlc?.Name);
 
