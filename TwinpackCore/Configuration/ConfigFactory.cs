@@ -43,7 +43,7 @@ namespace Twinpack.Configuration
                     try
                     {
                         config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        if (string.IsNullOrEmpty(config.Solution))
+                        if (string.IsNullOrEmpty(config.Solution) && config.Modules?.Count == null)
                         {
                             _logger.Warn($@"Failed to parse '{path}\{p}config.json'");
                             continue;
@@ -57,8 +57,8 @@ namespace Twinpack.Configuration
                     }
 
                     usedPrefix = p;
-                    config.WorkingDirectory = Path.GetDirectoryName($@"{path}\.Zeugwerk");
-                    config.FilePath = $@"{path}\{p}config.json";
+                    config.WorkingDirectory = Path.GetFullPath(Path.GetDirectoryName($@"{path}\.Zeugwerk"));
+                    config.FilePath = Path.GetFullPath($@"{path}\{p}config.json");
 
                     var solution = new Models.Solution();
                     try
