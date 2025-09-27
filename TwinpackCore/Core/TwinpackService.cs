@@ -875,47 +875,47 @@ namespace Twinpack.Core
                     .Where(x => x.PackageVersion?.Framework != null && artifacts.Any(y => y.ArtifactName == x.PackageVersion?.Name))
                     .Select(x => x.PackageVersion?.Framework).Distinct().ToList();
 
-                var frameworkPackages = affectedPackages.Where(x => frameworks.Contains(x.PackageVersion?.Framework)).ToList();
+                // now that we have all involved packages and know if they belong to a framework, seperate them by framework vs. non-framework packages
+                var allFrameworkPackages = affectedPackages.Where(x => frameworks.Contains(x.PackageVersion?.Framework)).ToList();
+                var allNonFrameworkPackages = affectedPackages.Where(x => !frameworks.Contains(x.PackageVersion?.Framework)).ToList();
 
-                if (frameworkPackages.Any())
+                if (allFrameworkPackages.Any())
                     _logger.Info("Synchronizing framework packages");
-
-                var nonFrameworkPackages = affectedPackages.Where(x => !frameworks.Contains(x.PackageVersion?.Framework)).ToList();
-                var configuredPackages = options?.PurgePackages == true
-                    ? artifacts.SelectMany(x => x.Packages)
-                    .Where(x => frameworkPackages.Any(y => x.Config.Name == y.Config.Name) == false)
-                    .Select(
-                        x => new PackageItem(x)
-                        {
-                            Package = new PackageGetResponse(nonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.Package),
-                            PackageVersion = new PackageVersionGetResponse(nonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.PackageVersion)
-                            { 
-                                Title = x.PackageVersion?.Title ?? x.Config.Name,
-                                Name = x.Config.Name,
-                                DistributorName = x.Config.DistributorName,
-                                Version = x.Config.Version,
-                                Branch = x.Config.Branch,
-                                Target = x.Config.Target,
-                                Configuration = x.Config.Configuration,
-                            }
-                        }
-                    )
-                    .ToList()
-                  : new List<PackageItem>();
 
                 foreach (var artifact in artifacts)
                 {
-                    var frameworkPackagesToAdd = new List<PackageItem>();
+                    var packagesToAdd = options?.PurgePackages == true
+                        ? artifact.Packages
+                        .Where(x => allFrameworkPackages.Any(y => x.Config.Name == y.Config.Name) == false)
+                        .Select(
+                            x => new PackageItem(x)
+                            {
+                                Package = new PackageGetResponse(allNonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.Package),
+                                PackageVersion = new PackageVersionGetResponse(allNonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.PackageVersion)
+                                {
+                                    Title = x.PackageVersion?.Title ?? x.Config.Name,
+                                    Name = x.Config.Name,
+                                    DistributorName = x.Config.DistributorName,
+                                    Version = x.Config.Version,
+                                    Branch = x.Config.Branch,
+                                    Target = x.Config.Target,
+                                    Configuration = x.Config.Configuration,
+                                }
+                            }
+                        )
+                        .ToList()
+                      : new List<PackageItem>();
 
-                    var plcPackages = artifact.Packages.Where(x => frameworkPackages.Any(y => y.PackageVersion.Name == x.Config.Name)).ToList();
+                    var packagesWithFrameworkToAdd = new List<PackageItem>();
+                    var packagesWithFramework = artifact.Packages.Where(x => allFrameworkPackages.Any(y => y.PackageVersion.Name == x.Config.Name)).ToList();
 
-                    foreach (var plcPackage in plcPackages)
+                    foreach (var package in packagesWithFramework)
                     {
-                        var affectedPackage = frameworkPackages.First(y => y.PackageVersion.Name == plcPackage.Config.Name);
+                        var affectedPackage = allFrameworkPackages.First(y => y.PackageVersion.Name == package.Config.Name);
 
                         // check if the requested version is actually on a package server already
                         var requestedPackage =await _packageServers.ResolvePackageAsync(
-                            plcPackage.Config.Name,
+                            package.Config.Name,
                             new ResolvePackageOptions
                             {
                                 PreferredVersion = version,
@@ -926,36 +926,36 @@ namespace Twinpack.Core
 
                         if (requestedPackage?.Version == version)
                         {
-                            plcPackage.Config.Version = version;
-                            plcPackage.Config.Branch = requestedPackage?.Branch;
-                            plcPackage.Config.Target = requestedPackage?.Target;
-                            plcPackage.Config.Configuration = requestedPackage?.Configuration;
+                            package.Config.Version = version;
+                            package.Config.Branch = requestedPackage?.Branch;
+                            package.Config.Target = requestedPackage?.Target;
+                            package.Config.Configuration = requestedPackage?.Configuration;
 
                             // since the package actually exists, we can add it to the plcproj file
-                            configuredPackages.Add(new PackageItem(affectedPackage) { ProjectName = artifact.Plc.ProjectName, PlcName = artifact.Plc.Name, Package = null, PackageVersion = null, Config = plcPackage.Config });
+                            packagesToAdd.Add(new PackageItem(affectedPackage) { ProjectName = artifact.Plc.ProjectName, PlcName = artifact.Plc.Name, Package = null, PackageVersion = null, Config = package.Config });
                         }
                         else
                         {
-                            plcPackage.Config.Version = version;
-                            plcPackage.Config.Branch = options?.PreferredFrameworkBranch;
-                            plcPackage.Config.Target = options?.PreferredFrameworkTarget;
-                            plcPackage.Config.Configuration = options?.PreferredFrameworkConfiguration;
+                            package.Config.Version = version;
+                            package.Config.Branch = options?.PreferredFrameworkBranch;
+                            package.Config.Target = options?.PreferredFrameworkTarget;
+                            package.Config.Configuration = options?.PreferredFrameworkConfiguration;
 
                             // only a headless interface allows to add not existing packages
                             if (_automationInterface is AutomationInterfaceHeadless)
                             {
-                                frameworkPackagesToAdd.Add(new PackageItem(affectedPackage)
+                                packagesWithFrameworkToAdd.Add(new PackageItem(affectedPackage)
                                 {
                                     ProjectName = artifact.Plc.ProjectName,
                                     PlcName = artifact.Plc.Name,
                                     PackageVersion = new PackageVersionGetResponse(affectedPackage.PackageVersion)
                                     {
                                         Version = version,
-                                        Branch = plcPackage.Config.Branch,
-                                        Configuration = plcPackage.Config.Configuration,
-                                        Target = plcPackage.Config.Target
+                                        Branch = package.Config.Branch,
+                                        Configuration = package.Config.Configuration,
+                                        Target = package.Config.Target
                                     },
-                                    Config = plcPackage.Config
+                                    Config = package.Config
                                 });
                             }
                         }
@@ -963,8 +963,8 @@ namespace Twinpack.Core
 
                     var automationInterface = artifact.Config == _config ? _automationInterface : new AutomationInterfaceHeadless(artifact.Config);
                     var cache = new List<PackageItem>();
-                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, configuredPackages);
-                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, frameworkPackagesToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
+                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesToAdd);
+                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
                     await automationInterface.SaveAllAsync();
                     ConfigFactory.Save(artifact.Config);
                 }
