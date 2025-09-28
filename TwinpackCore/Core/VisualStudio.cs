@@ -168,8 +168,6 @@ namespace Twinpack.Core
                 }
             }
 
-            _logger.Info($"Setting up RemoteManager");
-
             // remote.Version is only set AFTER opening a _solution - weird but true
             UsedTcVersion = CurrentTcVersion();
 

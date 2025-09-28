@@ -1,4 +1,5 @@
 ﻿using Spectre.Console.Cli;
+using System;
 using System.ComponentModel;
 using static Twinpack.Core.TwinpackService;
 
@@ -56,18 +57,27 @@ namespace Twinpack.Commands
             SetUpLogger(settings);
             Initialize(settings.Headed);
 
-            _twinpack.SetPackageVersionAsync(settings.Version, 
-                new SetPackageVersionOptions
-                {
-                    PurgePackages = settings.PurgePackages,
-                    ProjectName = settings.ProjectName,
-                    PlcName = settings.PlcName,
-                    SyncFrameworkPackages = settings.SyncFrameworkPackages,
-                    PreferredFrameworkBranch = settings.PreferredFrameworkBranch,
-                    PreferredFrameworkTarget = settings.PreferredFrameworkTarget,
-                    PreferredFrameworkConfiguration = settings.PreferredFrameworkConfiguration,
-                } 
-            ).GetAwaiter().GetResult();
+            try
+            {
+                _twinpack.SetPackageVersionAsync(settings.Version,
+                    new SetPackageVersionOptions
+                    {
+                        PurgePackages = settings.PurgePackages,
+                        ProjectName = settings.ProjectName,
+                        PlcName = settings.PlcName,
+                        SyncFrameworkPackages = settings.SyncFrameworkPackages,
+                        PreferredFrameworkBranch = settings.PreferredFrameworkBranch,
+                        PreferredFrameworkTarget = settings.PreferredFrameworkTarget,
+                        PreferredFrameworkConfiguration = settings.PreferredFrameworkConfiguration,
+                    }
+                ).GetAwaiter().GetResult();
+            }
+            catch(Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
+
 
             return 0;
         }

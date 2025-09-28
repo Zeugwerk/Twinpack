@@ -360,7 +360,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, CancellationToken token = default)
+        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, List<string> excludedPackages = null, CancellationToken token = default)
         {
             if (_config.Modules?.Any() == true)
                 throw new NotSupportedException("Modules are not supported");
@@ -373,7 +373,9 @@ namespace Twinpack.Core
                 {
                     foreach (var plc in project.Plcs.Where(x => x.Name == _plcName || _plcName == null))
                     {
-                        foreach (var package in plc.Packages.Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
+                        foreach (var package in plc.Packages
+                            .Where(x => excludedPackages == null || !excludedPackages.Contains(x.Name))
+                            .Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
                         {
                             PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, token);
 
@@ -463,15 +465,14 @@ namespace Twinpack.Core
             if (_config.Modules?.Any() == true)
                 throw new NotSupportedException("Modules are not supported");
 
-            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
-            var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Used }).ToList();
-
             // download and add all packages, which are not self references to the provided packages
             var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
 
             if (options?.ExcludedPackages != null)
                 providedPackageNames = providedPackageNames.Concat(options?.ExcludedPackages).ToList();
 
+            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken, excludedPackages: providedPackageNames);
+            var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Used }).ToList();
             var providedPackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == true).ToList(), new AddPackageOptions(options) { SkipDownload = !options.IncludeProvidedPackages }, cancellationToken: cancellationToken);
 
             var installablePackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList(), options, cancellationToken: cancellationToken);
