@@ -465,7 +465,7 @@ namespace Twinpack.Core
             if (_config.Modules?.Any() == true)
                 throw new NotSupportedException("Modules are not supported");
 
-            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
+            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken, options?.ExcludedPackages);
 
             // download and add all packages, which are not self references to the provided packages
             var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
