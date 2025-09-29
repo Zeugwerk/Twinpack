@@ -9,6 +9,35 @@ namespace Twinpack.Configuration
 {
     public class ConfigUtils
     {
+        public static void ProcessModules<T>(Config config, Func<Config> action)
+        {            
+            if (config.Modules == null || config.Modules.Count == 0)
+                return;
+
+            var paths = new Stack<string>();
+            paths.Push(Environment.CurrentDirectory);
+
+            foreach (var module in config.Modules)
+            {
+                paths.Push(Path.Combine(Environment.CurrentDirectory, module));
+                Environment.CurrentDirectory = paths.Peek();
+
+                try
+                {
+                    var moduleConfig = ConfigFactory.Load();
+
+                    if (moduleConfig != null)
+                    {
+                        action(moduleConfig);
+                    }
+                }
+                finally
+                {
+                    paths.Pop();
+                    Environment.CurrentDirectory = paths.Peek();
+                }
+            }
+        }        
 
         public static List<T> ProcessModules<T>(Config config, Func<Config, T> action)
         {
