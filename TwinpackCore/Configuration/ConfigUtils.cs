@@ -9,7 +9,7 @@ namespace Twinpack.Configuration
 {
     public class ConfigUtils
     {
-        public static void ProcessModules<T>(Config config, Func<Config> action)
+        public static void ProcessModules(Config config, Func<Config> action)
         {            
             if (config.Modules == null || config.Modules.Count == 0)
                 return;
