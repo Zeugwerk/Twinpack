@@ -206,7 +206,7 @@ begin
   end
     else
   begin
-    if Pos('HTTP/1.1 200', Trim(WinHttpReq.ResponseText)) > 0 then
+    if Pos('HTTP/1.1 200', Trim(VarToStr(WinHttpReq.ResponseText))) > 0 then
     begin
       WizardForm.NextButton.OnClick(nil);
     end
