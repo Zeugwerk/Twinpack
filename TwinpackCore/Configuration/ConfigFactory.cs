@@ -43,7 +43,7 @@ namespace Twinpack.Configuration
                     try
                     {
                         config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        if (string.IsNullOrEmpty(config.Solution) && config.Modules?.Any() == false)
+                        if (string.IsNullOrEmpty(config.Solution) && !(config.Modules?.Any() ?? false))
                         {
                             _logger.Warn($@"Failed to parse '{path}\{p}config.json'");
                             continue;
