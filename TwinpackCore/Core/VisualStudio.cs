@@ -108,7 +108,7 @@ namespace Twinpack.Core
                     }
                     catch
                     {
-                        _logger.Warn($"TcAutomationSettings not found in {shell}");
+                        throw new Exception("TcAutomationSettings not found in {shell}. Since everything else seems fine, it could be the the active user, doesn't have access to the COM Interface. Make sure the executing user has user privileges, e.g. when using Jenkins, make sure the service 'Jenkins Slave Agent' runs as a user!");
                     }
                     
                     _dte = dte;
