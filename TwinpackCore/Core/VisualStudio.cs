@@ -93,21 +93,24 @@ namespace Twinpack.Core
 
             foreach(var shell in shells)
             {
-                Type t = Type.GetTypeFromProgID(shell);
-                if (t != null)
+                try
                 {
-                    _logger.Info($"Loading {shell}");
-                    DTE2 dte = Activator.CreateInstance(t) as DTE2;
-                    dte.SuppressUI = hidden;
-                    dte.MainWindow.Visible = !hidden;
-                    dynamic settings = dte.GetObject("TcAutomationSettings");
-                    settings.SilentMode = hidden;
-
-                    _dte = dte;
-                    _solution = _dte.Solution;
-
-                    return true;
-                }
+                    Type t = Type.GetTypeFromProgID(shell);
+                    if (t != null)
+                    {
+                        _logger.Info($"Loading {shell}");
+                        DTE2 dte = Activator.CreateInstance(t) as DTE2;
+                        dte.SuppressUI = hidden;
+                        dte.MainWindow.Visible = !hidden;
+                        dynamic settings = dte.GetObject("TcAutomationSettings");
+                        settings.SilentMode = hidden;
+    
+                        _dte = dte;
+                        _solution = _dte.Solution;
+    
+                        return true;
+                    }
+                } catch {}
             }
 
             throw new NotSupportedException($"No supported Visual Studio ({string.Join(", ", shells)}) detected!");
