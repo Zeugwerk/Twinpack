@@ -802,10 +802,11 @@ namespace Twinpack.Dialogs
                     }
                 }
 
-                Regex rx = searchTerm != null ? new Regex(searchTerm.Replace(" ", "."), RegexOptions.Compiled) : null;
+                Regex rx = searchTerm != null ? new Regex(".*?" + searchTerm.Replace(" ", ".") + ".*?", RegexOptions.Compiled | RegexOptions.IgnoreCase) : null;
                 if (IsBrowsingAvailablePackages)
                 {
                     Catalog = availablePackages.Where(x =>
+                            rx == null ||
                             rx?.Match(x.Catalog?.Name).Success == true ||
                             rx?.Match(x.Catalog?.DisplayName).Success == true ||
                             rx?.Match(x.Catalog?.DistributorName).Success == true
@@ -814,6 +815,7 @@ namespace Twinpack.Dialogs
                 else if (IsBrowsingInstalledPackages)
                 {
                     Catalog = installedPackages.Where(x =>
+                            rx == null ||
                             rx?.Match(x.Catalog?.Name).Success == true ||
                             rx?.Match(x.Catalog?.DisplayName).Success == true ||
                             rx?.Match(x.Catalog?.DistributorName).Success == true
@@ -826,6 +828,7 @@ namespace Twinpack.Dialogs
                     Catalog = installedPackages
                         .Where(x => x.IsUpdateable)
                         .Where(x =>
+                            rx == null ||
                             rx?.Match(x.Catalog?.Name).Success == true ||
                             rx?.Match(x.Catalog?.DisplayName).Success == true ||
                             rx?.Match(x.Catalog?.DistributorName).Success == true
