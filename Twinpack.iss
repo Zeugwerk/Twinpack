@@ -196,6 +196,7 @@ end;
 procedure Register(Sender: TObject);
 var
   WinHttpReq: Variant;
+  Response: String;
 begin
   WinHttpReq := CreateOleObject('WinHttp.WinHttpRequest.5.1');
   WinHttpReq.Open('GET', 'https://operations.zeugwerk.dev/api.php?method=zkregister&usermail='+UrlEncode(UserPage.Edits[0].Text), False);
@@ -206,7 +207,8 @@ begin
   end
     else
   begin
-    if Pos('HTTP/1.1 200', Trim(WinHttpReq.ResponseText)) > 0 then
+    Response := WinHttpReq.ResponseText;
+    if Pos('HTTP/1.1 200', Trim(Response)) > 0 then
     begin
       WizardForm.NextButton.OnClick(nil);
     end
