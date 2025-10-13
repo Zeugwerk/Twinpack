@@ -257,10 +257,10 @@ namespace Twinpack.Core
                     token.ThrowIfCancellationRequested();
                 }
 
-                Regex rx = searchTerm != null ? new Regex(searchTerm.Replace(" ", "."), RegexOptions.Compiled) : null;
+                Regex rx = searchTerm != null ? new Regex(".*?" + searchTerm.Replace(" ", ".") + ".*?", RegexOptions.Compiled | RegexOptions.IgnoreCase) : null;
                 return _availablePackagesCache
                         .Where(x =>
-                            searchTerm == null ||
+                            rx == null ||
                             rx?.Match(x.Catalog?.Name).Success == true ||
                             rx?.Match(x.Catalog?.DisplayName).Success == true ||
                             rx?.Match(x.Catalog?.DistributorName).Success == true)
