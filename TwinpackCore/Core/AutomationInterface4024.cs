@@ -644,6 +644,9 @@ namespace Twinpack.Core
             if (!Directory.Exists(new FileInfo(filePath).Directory.FullName))
                 Directory.CreateDirectory(new FileInfo(filePath).Directory.FullName);
 
+            if (File.Exists(filePath))
+                File.Delete(filePath);            
+
             iec.SaveAsLibrary(filePath, true);
         }
     }
