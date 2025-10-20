@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 jobs:
   Pull:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - run: |
           curl.exe -s -o twinpack-registry-latest.tar.gz https://zeugwerk.dev/Tools/twinpack-registry-latest.tar.gz
