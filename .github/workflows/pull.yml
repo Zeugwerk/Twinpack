@@ -1,18 +1,20 @@
 name: Pull
 on:
   schedule:
-    - cron: "0 13 * * *"
+    - cron: "5 13 * * *"
   workflow_dispatch:
 jobs:
   Pull:
     runs-on: windows-latest
-    env:
-      ACTIONS_ZGWK_USERNAME: ${{ secrets.ACTIONS_ZGWK_USERNAME }}
-      ACTIONS_ZGWK_PASSWORD: ${{ secrets.ACTIONS_ZGWK_PASSWORD }}
-      ACTIONS_BECKHOFF_USERNAME: ${{ secrets.ACTIONS_BECKHOFF_USERNAME }}
-      ACTIONS_BECKHOFF_PASSWORD: ${{ secrets.ACTIONS_BECKHOFF_PASSWORD }}
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      run: |
+    steps:
+      - name: Pull Twinpack Registry
+        env:
+          ACTIONS_ZGWK_USERNAME: ${{ secrets.ACTIONS_ZGWK_USERNAME }}
+          ACTIONS_ZGWK_PASSWORD: ${{ secrets.ACTIONS_ZGWK_PASSWORD }}
+          ACTIONS_BECKHOFF_USERNAME: ${{ secrets.ACTIONS_BECKHOFF_USERNAME }}
+          ACTIONS_BECKHOFF_PASSWORD: ${{ secrets.ACTIONS_BECKHOFF_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
           curl.exe -s -o twinpack-registry-latest.tar.gz https://zeugwerk.dev/Tools/twinpack-registry-latest.tar.gz
           tar -xf twinpack-registry-latest.tar.gz
           ./twinpack-registry.exe pull \
@@ -21,4 +23,4 @@ jobs:
             --beckhoff-username "$ACTIONS_BECKHOFF_USERNAME" \
             --beckhoff-password "$ACTIONS_BECKHOFF_PASSWORD" \
             --token "$GH_TOKEN"
-      shell: bash
+        shell: bash
