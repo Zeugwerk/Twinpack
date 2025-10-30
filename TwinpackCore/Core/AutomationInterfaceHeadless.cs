@@ -310,13 +310,19 @@ namespace Twinpack.Core
 
                     _logger.Info($"Updated company to '{plc.DistributorName}'");
                 }
-                else if((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.DistributorName))
+                else if((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.Library) && string.IsNullOrEmpty(plc.DistributorName))
                 {
                     throw new ArgumentException("Distributor name is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Distributor name '{plc.DistributorName}' contains invalid characters - skipping PLC company update, the package might be broken!");
+                    var fallbackCompany = "Unknown Company";
+                    if (company != null)
+                        company.Value = fallbackCompany;
+                    else
+                        propertyGroup.Add(new XElement(TcNs + "Company", fallbackCompany));
+
+                    _logger.Info($"Updated company to '{plc.DistributorName}'");
                 }
 
                 var versionStr = NormalizedVersion(plc.Version);
