@@ -276,7 +276,7 @@ namespace Twinpack.Core
                 }
                 else
                 {
-                    _logger.Warn($"Name '{plc.Name}' contains invalid characters - skipping PLC Name update, the package might be broken!");
+                    _logger.Warn($"Name '{plc.Name}' contains invalid characters - skipping PLC Name update!");
 
                 }
 
@@ -291,13 +291,13 @@ namespace Twinpack.Core
 
                     _logger.Info($"Updated title to '{titleStr}'");
                 }
-                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
                 {
                     throw new ArgumentException("Title is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update, the package might be broken!");
+                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update!");
 
                 }
 
@@ -310,7 +310,7 @@ namespace Twinpack.Core
 
                     _logger.Info($"Updated company to '{plc.DistributorName}'");
                 }
-                else if((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.Library) && string.IsNullOrEmpty(plc.DistributorName))
+                else if((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.Library) && string.IsNullOrEmpty(plc.DistributorName))
                 {
                     throw new ArgumentException("Distributor name is empty, but it is mandatory for libraries!");
                 }
@@ -335,13 +335,13 @@ namespace Twinpack.Core
 
                     _logger.Info($"Updated version to '{versionStr}'");
                 }
-                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))
                 {
                     throw new ArgumentException("Version is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Version '{versionStr}' is empty - skipping PLC company update, the package might be broken!");
+                    _logger.Warn($"Version '{versionStr}' is empty - skipping PLC company update!");
                 }
             }
 
