@@ -336,8 +336,13 @@ namespace Twinpack.Core
             // if we can't find the reference with the distributor name from the package, fallback to looking it up
             if (!IsPackageInstalled(package))
             {
-                distributorName = GuessDistributorName(libraryManager, libraryName, version);
-                _logger.Warn($"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) is not installed. Fallback to guessing distributor!");
+                var guessedDistributorName = GuessDistributorName(libraryManager, libraryName, version);
+
+                if (guessedDistributorName != null)
+                {
+                    distributorName = guessedDistributorName;
+                    _logger.Trace($"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) is not installed. Fallback to distributor => {distributorName})!");
+                }
             }
 
             // make sure the package is not present before adding it, we have to
@@ -353,7 +358,7 @@ namespace Twinpack.Core
             }
             catch
             {
-                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} is not installed. Make sure that the version of the package matches the version of included library file!");
+                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {distributorName}) is not installed. Make sure that the version of the package matches the version of included library file!");
             }
 
 
