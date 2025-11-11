@@ -65,18 +65,18 @@ namespace Twinpack.Commands
             var sources = settings.Sources ?? new string[0];
             for (int i = 0; i < sources.Count(); i++)
             {
-                var type = settings.Types.ElementAtOrDefault(i) ?? null;
+                var type = settings.Types?.ElementAtOrDefault(i) ?? null;
    
                 var uri = sources.ElementAt(i);
                 _logger.Info($"Adding package server {uri}");
                 var packageServer = PackagingServerRegistry.AddServerAsync(
                     type,
-                    settings.Names.ElementAtOrDefault(i) ?? uri,
+                    settings.Names?.ElementAtOrDefault(i) ?? uri,
                     uri,
                     login: false).GetAwaiter().GetResult();
 
-                packageServer.Username = settings.Usernames.ElementAtOrDefault(i);
-                packageServer.Password = settings.Passwords.ElementAtOrDefault(i);
+                packageServer.Username = settings.Usernames?.ElementAtOrDefault(i);
+                packageServer.Password = settings.Passwords?.ElementAtOrDefault(i);
             }
 
             // try to login
