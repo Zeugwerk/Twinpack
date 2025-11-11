@@ -70,9 +70,6 @@ namespace Twinpack.Protocol
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     foreach (var server in sourceRepositories.PackagingServers)
                     {
-                        if (login)
-                            _logger.Info($"Connecting to {server.Url} ...");
-
                         await AddServerAsync(server.ServerType, server.Name, server.Url, login);
                     }
                 }
