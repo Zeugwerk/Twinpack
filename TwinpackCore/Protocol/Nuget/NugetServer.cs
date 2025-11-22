@@ -18,6 +18,8 @@ using WixToolset.Dtf.WindowsInstaller;
 using WixToolset.Dtf.WindowsInstaller.Package;
 using NuGet.Packaging.Core;
 using Twinpack.Exceptions;
+using System.Net.Http;
+using System.Text;
 
 namespace Twinpack.Protocol
 {
@@ -583,10 +585,22 @@ namespace Twinpack.Protocol
             try
             {
                 PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
-
                 _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
-                var results = await SearchAsync("", "", 0, 1, cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
+
+                using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
+                {
+                    if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                    {
+                        var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Username}:{Password}"));
+                        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
+                    }
+
+                    var response = await httpClient.GetAsync(Url, cancellationToken);
+
+                    if (!response.IsSuccessStatusCode)
+                        throw new LoginException($"Login failed, status code: {response.StatusCode}");
+                };
+
                 UserInfo = new LoginPostResponse() { User = Username };
 
                 if (!string.IsNullOrEmpty(Password))
@@ -607,11 +621,21 @@ namespace Twinpack.Protocol
 
                 _logger.Info($"Log in to '{UrlBase}' successful");
             }
-            catch(FatalProtocolException ex)
+            catch (TimeoutException)
             {
-                _logger.Trace(ex);
-                DeleteCredential();
-                throw new LoginException(ex.Message);
+                throw;
+            }
+            catch (LoginException)
+            {
+                throw;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new LoginException(ex.InnerException?.Message ?? ex.Message);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch
             {

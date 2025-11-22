@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Twinpack.Core;
 using Twinpack.Exceptions;
 
@@ -68,9 +69,20 @@ namespace Twinpack.Protocol
 
                     var sourceRepositories = JsonSerializer.Deserialize<Models.SourceRepositories>(File.ReadAllText(FilePath),
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    foreach (var server in sourceRepositories.PackagingServers)
+                    foreach (var serverModel in sourceRepositories.PackagingServers)
                     {
-                        await AddServerAsync(server.ServerType, server.Name, server.Url, login);
+                        try
+                        {
+                            var server = CreateServer(serverModel.ServerType, serverModel.Name, serverModel.Url);
+                            _servers.Add(server);
+                            if (login)
+                            {
+                                var auth = new Authentication(server);
+                                var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                                await auth.LoginAsync(onlyTry: true, cancellationTokenSource.Token);
+                            }
+                        }
+                        catch { }
                     }
                 }
                 catch(FileNotFoundException)
@@ -105,16 +117,21 @@ namespace Twinpack.Protocol
             return factory.Create(name, uri);
         }
 
-        public static async Task<IPackageServer> AddServerAsync(string type, string name, string uri, bool login=true, CancellationToken cancellationToken=default)
+        public static async Task<IPackageServer> AddServerAsync(string type, string name, string uri, bool login = true, bool ignoreLoginException = false, CancellationToken cancellationToken=default)
         {
             var server = CreateServer(type, name, uri);
+            if(ignoreLoginException)
+                _servers.Add(server);
+
             if (login)
             {
                 var auth = new Authentication(server);
                 await auth.LoginAsync(onlyTry: true, cancellationToken);
             }
 
-            _servers.Add(server);
+            if(!ignoreLoginException)
+                _servers.Add(server);
+
             return server;
         }
 
