@@ -46,7 +46,7 @@ namespace Twinpack.Protocol
                 _cache.Set(url, response, cacheItemPolicy);
                 return response;
             }
-            catch (TaskCanceledException ex)
+            catch (TaskCanceledException)
             {
                 if (cancellationToken.IsCancellationRequested)
                     throw;
