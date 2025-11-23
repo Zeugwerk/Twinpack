@@ -18,6 +18,8 @@ using WixToolset.Dtf.WindowsInstaller;
 using WixToolset.Dtf.WindowsInstaller.Package;
 using NuGet.Packaging.Core;
 using Twinpack.Exceptions;
+using System.Net.Http;
+using System.Text;
 
 namespace Twinpack.Protocol
 {
@@ -55,7 +57,7 @@ namespace Twinpack.Protocol
         public string Username { get; set; }
         public string Password { get; set; }
         public LoginPostResponse UserInfo { get; set; }
-        public bool LoggedIn { get { return Connected; } }
+        public bool LoggedIn { get { return Connected && UserInfo?.Configurations?.FirstOrDefault()?.IsPrivate == true; } }
         public bool Connected { get { return UserInfo?.User != null; } }
         protected virtual string SearchPrefix { get => "";}
         protected virtual string IconUrl { get => null; }
@@ -562,18 +564,20 @@ namespace Twinpack.Protocol
                 return null;
 
             InvalidateCache();
+            UserInfo = new LoginPostResponse();
+
             try
             {
                 var credentials = CredentialManager.GetCredentials(UrlBase);
-                Username = username ?? credentials?.UserName;
-                Password = password ?? credentials?.Password;
+                Username = username ?? credentials?.UserName ?? "";
+                Password = password ?? credentials?.Password ?? "";
             }
             catch (Exception ex)
             {
                 _logger.Warn("Failed to load credentials");
                 _logger.Trace(ex);
-                Username = username;
-                Password = password;
+                Username = username ?? "";
+                Password = password ?? "";
             }
 
             // reset token to get a new one
@@ -582,14 +586,29 @@ namespace Twinpack.Protocol
 
             try
             {
-                PackageSource packageSource = new PackageSource(Url) { Credentials = Username != null ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
-
+                PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
                 _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
-                var results = await SearchAsync("", "", 0, 1, cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
+
+                using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
+                {
+                    if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                    {
+                        var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Username}:{Password}"));
+                        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
+                    }
+
+                    var response = await httpClient.GetAsync(Url, cancellationToken);
+
+                    if (!response.IsSuccessStatusCode)
+                        throw new LoginException($"Login failed, status code: {response.StatusCode}");
+                };
+
                 UserInfo = new LoginPostResponse() { User = Username };
 
-                if (Password != null)
+                if (!string.IsNullOrEmpty(Password))
+                    UserInfo.Configurations = new List<LoginPostResponse.Configuration> { new LoginPostResponse.Configuration { Public = 0 } };
+
+                if (storePassword)
                 {
                     try
                     {
@@ -604,11 +623,21 @@ namespace Twinpack.Protocol
 
                 _logger.Info($"Log in to '{UrlBase}' successful");
             }
-            catch(FatalProtocolException ex)
+            catch (TimeoutException)
             {
-                _logger.Trace(ex);
-                DeleteCredential();
-                throw new LoginException(ex.Message);
+                throw;
+            }
+            catch (LoginException)
+            {
+                throw;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new LoginException(ex.InnerException?.Message ?? ex.Message);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch
             {

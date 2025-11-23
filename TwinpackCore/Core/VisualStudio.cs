@@ -100,12 +100,20 @@ namespace Twinpack.Core
                     DTE2 dte = Activator.CreateInstance(t) as DTE2;
                     dte.SuppressUI = hidden;
                     dte.MainWindow.Visible = !hidden;
-                    dynamic settings = dte.GetObject("TcAutomationSettings");
-                    settings.SilentMode = hidden;
 
+                    try
+                    {
+                        dynamic settings = dte.GetObject("TcAutomationSettings");
+                        settings.SilentMode = hidden;
+                    }
+                    catch
+                    {
+                        throw new Exception("TcAutomationSettings not found in {shell}. Since everything else seems fine, it could be the the active user, doesn't have access to the COM Interface. Make sure the executing user has user privileges, e.g. when using Jenkins, make sure the service 'Jenkins Slave Agent' runs as a user!");
+                    }
+                    
                     _dte = dte;
                     _solution = _dte.Solution;
-
+    
                     return true;
                 }
             }
@@ -167,8 +175,6 @@ namespace Twinpack.Core
                     }
                 }
             }
-
-            _logger.Info($"Setting up RemoteManager");
 
             // remote.Version is only set AFTER opening a _solution - weird but true
             UsedTcVersion = CurrentTcVersion();
@@ -342,8 +348,15 @@ namespace Twinpack.Core
                 }
             }
 
-            if (prj != null)
-                _solution.Remove(prj);
+            try
+            {
+                if (prj != null)
+                    _solution.Remove(prj);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Project {projectName} could not be removed from solution!", ex);
+            }
         }
 
         // check the DTE2 for potential build errors

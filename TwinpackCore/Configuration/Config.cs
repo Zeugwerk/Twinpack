@@ -9,30 +9,37 @@ namespace Twinpack.Configuration
 {
     // This class is used for deserializing a json config file
     public class Config
-    {
+    {        
         public Config()
         {
-            Fileversion = 1;
+            Fileversion = LatestVersion;
             Projects = new List<ConfigProject>();
+            Modules = new List<string>();
         }
 
+        [JsonPropertyName("fileversion")]
+        public int Fileversion { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("solution")]
+        public String Solution { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("projects")]
+        public List<ConfigProject> Projects { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("modules")]
+        public List<string> Modules { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public const int LatestVersion = 2;
+        
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public String WorkingDirectory { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public string FilePath { get; set; }
-
-        [JsonPropertyName("fileversion")]
-        public int Fileversion { get; set; }
-
-        [JsonPropertyName("solution")]
-        public String Solution { get; set; }
-
-        [JsonPropertyName("projects")]
-        public List<ConfigProject> Projects { get; set; }
-
-        [JsonPropertyName("directories")]
-        public List<string> Directories { get; set; }
     }
 
     public class ConfigProject
@@ -42,9 +49,11 @@ namespace Twinpack.Configuration
             Plcs = new List<ConfigPlcProject>();
         }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("name")]
         public string Name { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("plcs")]
         public List<ConfigPlcProject> Plcs { get; set; }
     }
@@ -104,9 +113,12 @@ namespace Twinpack.Configuration
             Parameters = null;
             Options = null;
         }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("version")]
         public string Version { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("name")]
         public string Name { get; set; }
 
@@ -210,13 +222,16 @@ namespace Twinpack.Configuration
                 return PlcProjectType.FrameworkLibrary;
             }
         }
-        
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("version")]
         public string Version { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("distributor-name")]
         public string DistributorName { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("name")]
         public string Name { get; set; }
         
@@ -225,24 +240,31 @@ namespace Twinpack.Configuration
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Title { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("type")]
         public string Type { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("frameworks")]
         public ConfigFrameworks Frameworks { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("packages")]
         public List<ConfigPlcPackage> Packages { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("references")]
         public Dictionary<String, List<String>> References { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("repositories")]
         public List<String> Repositories { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("bindings")]
         public Dictionary<String, List<String>> Bindings { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("patches")]
         public ConfigPatches Patches { get; set; }
 

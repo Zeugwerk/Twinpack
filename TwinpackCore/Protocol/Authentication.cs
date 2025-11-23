@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Twinpack.Exceptions;
 
 namespace Twinpack.Protocol
 {
@@ -32,11 +33,17 @@ namespace Twinpack.Protocol
             }
             catch (TimeoutException ex)
             {
+                _logger.Warn($"Log in to '{_packageServer.Url}' timed-out");
                 throw ex;
             }
             catch (OperationCanceledException)
             {
+                _logger.Warn($"Log in to '{_packageServer.Url}' cancelled");
                 throw;
+            }
+            catch (LoginException)
+            {
+                _logger.Warn($"Log in to '{_packageServer.Url}' failed");
             }
             catch (Exception)
             { }
@@ -73,7 +80,7 @@ namespace Twinpack.Protocol
 
                     cancellationToken.ThrowIfCancellationRequested();
                 }
-                catch (Exceptions.LoginException ex)
+                catch (LoginException ex)
                 {
                     message = ex.Message;
                     _logger.Trace(ex);

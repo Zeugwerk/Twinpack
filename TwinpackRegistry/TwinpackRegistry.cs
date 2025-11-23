@@ -256,7 +256,7 @@ namespace Twinpack
                                         {
                                             Name = resolvedDependency.Name,
                                             DistributorName = resolvedDependency.DistributorName,
-                                            Version = resolvedDependency.Version,
+                                            Version = dependency.Version == null ? null : resolvedDependency.Version,
                                             Configuration = resolvedDependency.Configuration,
                                             Branch = resolvedDependency.Branch,
                                             Target = resolvedDependency.Target
@@ -266,7 +266,7 @@ namespace Twinpack
 
                             if(resolvedDependency == null)
                             {
-                                _logger.Warn($"Unknown dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version})");
+                                _logger.Info($"Dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version})");
                                 plc.Packages = plc.Packages.Append(
                                     new ConfigPlcPackage()
                                     {

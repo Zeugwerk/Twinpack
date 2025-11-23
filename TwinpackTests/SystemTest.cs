@@ -11,6 +11,7 @@ namespace TwinpackTests
 {
     using Microsoft.VisualStudio.PlatformUI;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -287,8 +288,8 @@ namespace TwinpackTests
 
             plcprojPlcDoc.Elements(ConfigPlcProjectFactory.TcNs + "Project")
                 .Elements(ConfigPlcProjectFactory.TcNs + "ItemGroup")
-                .Elements(ConfigPlcProjectFactory.TcNs + "PlaceholderReference")
-                .Elements(ConfigPlcProjectFactory.TcNs + "DefaultResolution")
+                .Elements(ConfigPlcProjectFactory.TcNs + "PlaceholderResolution")
+                .Elements(ConfigPlcProjectFactory.TcNs + "Resolution")
                 .FirstOrDefault(x => x.Value.Contains("PlcLibrary1"))
                 .Value = "PlcLibrary1, 6.6.6.6 (My Company)";
 
@@ -563,11 +564,30 @@ namespace TwinpackTests
             Assert.AreEqual(null, plcprojPackages.FirstOrDefault(x => x.Name == "Tc3_Module")?.Version);
         }
 
+        [DataTestMethod]
+        [DataRow(null, null, null, null, null, null)]
+        [DataRow("New-Title", "New-Company", null, null, "New-Company", null)]
+        public async Task SetPackageVersion_WithAutomationInterface_Throws_Async(string newTitle, string newCompany, string newVersion,
+            string expectedTitle, string expectedCompany, string expectedVersion)
+        {
+            _config = ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution").GetAwaiter().GetResult();
+            var packageServers = new PackageServerCollection { _packageServer };
+
+            // act - add package, including dependencies
+            var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            plc.Title = newTitle;
+            plc.DistributorName = newCompany;
+            plc.Version = newVersion;
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
+            {
+                await _automationInterface.SetPackageVersionAsync(plc);
+            });
+        }
+
 
         [DataTestMethod]
         [DataRow("NewTitle", "NewCompany", "6.6.6.6", "NewTitle", "NewCompany", "6.6.6.6")]
-        [DataRow(null, null, null, null, null, null)]
-        [DataRow("New-Title", "New-Company", null, null, "New-Company", null)]
         [DataRow("PlcLibrary1", "My Company", "1.2.3.4", "PlcLibrary1", "My Company", "1.2.3.4")]
         public async Task SetPackageVersion_WithAutomationInterface_TitleCompanyVersionAreUpdated_Async(string newTitle, string newCompany, string newVersion,
             string expectedTitle, string expectedCompany, string expectedVersion)
@@ -592,9 +612,60 @@ namespace TwinpackTests
         }
 
         [DataTestMethod]
-        [DataRow("NewTitle", "NewCompany", "6.6.6.6", "NewTitle", "NewCompany", "6.6.6.6")]
         [DataRow(null, null, null, null, null, null)]
         [DataRow("New-Title", "New-Company", null, null, "New-Company", null)]
+        public async Task SetPackageVersion_WithTwinpack_Throws_Async(string newTitle, string newCompany, string newVersion,
+            string expectedTitle, string expectedCompany, string expectedVersion)
+        {
+            _config = ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution").GetAwaiter().GetResult();
+            var packageServers = new PackageServerCollection { _packageServer };
+            var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
+
+            // cleanup
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+
+            // act - add package, including dependencies
+            var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            plc.Title = newTitle;
+            plc.DistributorName = newCompany;
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(async () => await twinpack.SetPackageVersionAsync(newVersion));
+        }
+
+        [DataTestMethod]
+        [DataRow("MyTitle", null, "1.0.0.0", "MyTitle", "Unknown Company", "1.0.0.0")]
+        public async Task SetPackageVersion_WithTwinpack_DoesntThrowForApp_Async(string newTitle, string newCompany, string newVersion,
+            string expectedTitle, string expectedCompany, string expectedVersion)
+        {
+            _config = ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution").GetAwaiter().GetResult();
+            var packageServers = new PackageServerCollection { _packageServer };
+            var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
+
+            // cleanup
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+
+            // act - add package, including dependencies
+            var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            plc.Title = newTitle;
+            plc.Type = "application";
+            plc.DistributorName = newCompany;
+
+            await twinpack.SetPackageVersionAsync(newVersion);
+
+            Assert.AreEqual(expectedVersion ?? plc.Version, plc?.Version);
+
+            // check if plcproj was updated as well
+            var plcproj = await ConfigFactory.CreateFromSolutionFileAsync(_config.WorkingDirectory, continueWithoutSolution: false, packageServers: packageServers);
+            var plcprojPlc = plcproj.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
+            Assert.AreEqual(expectedTitle ?? plcprojPlc.Title, plcprojPlc?.Title);
+            Assert.AreEqual(expectedCompany ?? plcprojPlc.DistributorName, plcprojPlc?.DistributorName);
+            Assert.AreEqual(expectedVersion ?? plcprojPlc.Version, plcprojPlc?.Version);
+        }
+
+        [DataTestMethod]
+        [DataRow("NewTitle", "NewCompany", "6.6.6.6", "NewTitle", "NewCompany", "6.6.6.6")]
         [DataRow("PlcLibrary1", "My Company", "  v1.2.3-4", "PlcLibrary1", "My Company", "1.2.3.4")]
         [DataRow("PlcLibrary1", "My Company", "1.2.3.4", "PlcLibrary1", "My Company", "1.2.3.4")]
         public async Task SetPackageVersion_WithTwinpack_TitleCompanyVersionAreUpdated_Async(string newTitle, string newCompany, string newVersion,

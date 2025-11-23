@@ -228,7 +228,11 @@ namespace Twinpack.Dialogs
                         Protocol.PackagingServerRegistry.Servers.Clear();
                         foreach (var x in PackagingServers)
                         {
-                            await Protocol.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url, cancellationToken: token);
+                            try
+                            {
+                                await Protocol.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url, ignoreLoginException: true, cancellationToken: token);
+                            }
+                            catch (Exception) { }
                         }
                     });
 

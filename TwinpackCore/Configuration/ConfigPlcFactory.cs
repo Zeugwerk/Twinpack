@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using NLog;
 using Twinpack.Models;
+using Twinpack.Protocol.Api;
+using Twinpack.Core;
 
 #if !NETSTANDARD2_1_OR_GREATER
 using EnvDTE;
@@ -114,16 +116,18 @@ namespace Twinpack.Configuration
 
             // collect references
             var references = new List<PlcLibrary>();
+            var placeholderResolutions = new List<PlcLibrary>();
+            var placeholderReferences = new List<PlcLibrary>();
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
 
-            /*
+            
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderResolution").Elements(TcNs + "Resolution"))
             {
                 var match = re.Match(g.Value);
                 if (match.Success)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    references.Add(new PlcLibrary {
+                    placeholderResolutions.Add(new PlcLibrary {
                         Name = match.Groups[1].Value.Trim(), 
                         Version = version == "*" ? null : version, 
                         DistributorName = match.Groups[3].Value.Trim(),
@@ -131,7 +135,6 @@ namespace Twinpack.Configuration
                     });
                 }
             }
-            */
 
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderReference").Elements(TcNs + "DefaultResolution"))
             {
@@ -139,16 +142,36 @@ namespace Twinpack.Configuration
                 if (match.Success && references.Any(x => x.Name == match.Groups[1].Value.Trim()) == false)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    references.Add(new PlcLibrary
+                    var name = match.Groups[1].Value.Trim();
+
+                    placeholderReferences.Add(new PlcLibrary
                     {
-                        Name = match.Groups[1].Value.Trim(),
+                        Name = name,
                         Version = version == "*" ? null : version,
                         DistributorName = match.Groups[3].Value.Trim(),
                         Options = ParseOptions(g.Parent, false)
                     });
                 }
-
             }
+
+            // merge resolution and default resolution
+            references = placeholderReferences.GroupJoin(placeholderResolutions,
+                r1 => new { r1.Name, r1.DistributorName },
+                r2 => new { r2.Name, r2.DistributorName },
+                (l1, matches) => new
+                {
+                    Left = l1,
+                    Right = matches.FirstOrDefault()
+                })
+                .Select(
+                x => new PlcLibrary
+                {
+                    Name = x.Right?.Name ?? x.Left.Name,
+                    DistributorName = x.Right?.DistributorName ?? x.Left.DistributorName,
+                    Version = x.Right?.Version ?? x.Left.Version,
+                    Options = x.Right?.Options ?? x.Left.Options,
+                })
+                .ToList();
 
             re = new Regex(@"(.*?),(.*?),(.*?)");
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "LibraryReference"))
@@ -365,7 +388,7 @@ namespace Twinpack.Configuration
             }
         }
 
-        public static IEnumerable<ConfigPlcProject> PlcProjectsFromPath(string rootPath = ".")
+        public static IEnumerable<ConfigPlcProject> PlcProjectsFromPath(string rootPath, PackageServerCollection packageServers)
         {
             foreach (var libraryFile in Directory.GetFiles(rootPath, "*.library"))
             {
@@ -378,8 +401,47 @@ namespace Twinpack.Configuration
                     Authors = libraryInfo.Author,
                     DistributorName = libraryInfo.Company,
                     Version = libraryInfo.Version,
-                    FilePath = libraryFile
+                    FilePath = libraryFile,
                 };
+
+                foreach (var dependency in libraryInfo.Dependencies.Where(x => x.Version == "*" || Version.TryParse(x.Version, out _) == true))
+                {
+                    dependency.Version = dependency.Version == "*" ? null : dependency.Version;
+                    PackageVersionGetResponse resolvedDependency = null;
+                    foreach (var depPackageServer in packageServers.Where(x => x.Connected))
+                    {
+                        if (resolvedDependency != null)
+                            break;
+
+                        resolvedDependency = depPackageServer.ResolvePackageVersionAsync(new PlcLibrary { DistributorName = dependency.DistributorName, Name = dependency.Name, Version = dependency.Version }, null, null, null).GetAwaiter().GetResult();
+                        if (resolvedDependency.Name != null && (resolvedDependency.Version == dependency.Version || dependency.Version == null))
+                        {
+                            _logger.Info($"Dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version}) located on {depPackageServer.UrlBase}");
+                            plc.Packages = plc.Packages.Append(
+                                new ConfigPlcPackage()
+                                {
+                                    Name = resolvedDependency.Name,
+                                    DistributorName = resolvedDependency.DistributorName,
+                                    Version = resolvedDependency.Version,
+                                    Configuration = resolvedDependency.Configuration,
+                                    Branch = resolvedDependency.Branch,
+                                    Target = resolvedDependency.Target
+                                }).ToList();
+                        }
+                    }
+
+                    if (resolvedDependency == null)
+                    {
+                        _logger.Info($"Dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version})");
+                        plc.Packages = plc.Packages.Append(
+                            new ConfigPlcPackage()
+                            {
+                                Name = dependency.Name,
+                                DistributorName = dependency.DistributorName,
+                                Version = dependency.Version
+                            }).ToList();
+                    }
+                }
 
                 yield return plc;
             }

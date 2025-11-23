@@ -336,8 +336,13 @@ namespace Twinpack.Core
             // if we can't find the reference with the distributor name from the package, fallback to looking it up
             if (!IsPackageInstalled(package))
             {
-                distributorName = GuessDistributorName(libraryManager, libraryName, version);
-                _logger.Warn($"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) is not installed. Fallback to guessing distributor!");
+                var guessedDistributorName = GuessDistributorName(libraryManager, libraryName, version);
+
+                if (guessedDistributorName != null)
+                {
+                    distributorName = guessedDistributorName;
+                    _logger.Trace($"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) is not installed. Fallback to distributor => {distributorName})!");
+                }
             }
 
             // make sure the package is not present before adding it, we have to
@@ -353,7 +358,7 @@ namespace Twinpack.Core
             }
             catch
             {
-                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} is not installed. Make sure that the version of the package matches the version of included library file!");
+                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {distributorName}) is not installed. Make sure that the version of the package matches the version of included library file!");
             }
 
 
@@ -533,7 +538,7 @@ namespace Twinpack.Core
                 }
                 else
                 {
-                    _logger.Warn($"Title '{plc.Name}' contains invalid characters - skipping PLC title update, the package might be broken!");
+                    _logger.Warn($"Title '{plc.Name}' contains invalid characters - skipping PLC title update!");
                 }
 
                 if (!string.IsNullOrEmpty(titleStr) && allowedPlcNameRegex.IsMatch(titleStr))
@@ -541,13 +546,13 @@ namespace Twinpack.Core
                     writer.WriteElementString("Title", titleStr);
                     _logger.Info($"Updated title to '{titleStr}'");
                 }
-                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
                 {
                     throw new ArgumentException("Title is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update, the package might be broken!");
+                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update!");
                 }
 
                 var versionStr = NormalizedVersion(plc.Version);
@@ -556,13 +561,13 @@ namespace Twinpack.Core
                     writer.WriteElementString("Version", new Version(versionStr).ToString());
                     _logger.Info($"Updated version to '{versionStr}'");
                 }
-                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))
                 {
                     throw new ArgumentException("Version is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Version '{versionStr}' is empty - skipping PLC company update, the package might be broken!");
+                    _logger.Warn($"Version '{versionStr}' is empty - skipping PLC company update!");
                 }
 
                 if (!string.IsNullOrEmpty(plc.DistributorName) && allowedCompanyRegex.IsMatch(plc.DistributorName))
@@ -570,14 +575,16 @@ namespace Twinpack.Core
                     writer.WriteElementString("Company", plc.DistributorName);
                     _logger.Info($"Updated company to '{plc.DistributorName}'");
                 }
-                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.DistributorName))
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.DistributorName))
                 {
                     throw new ArgumentException("Distributor name is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Distributor name '{plc.DistributorName}' contains invalid characters - skipping PLC company update, the package might be broken!");
+                    writer.WriteElementString("Company", "Unknown Company");
+                    _logger.Info($"Updated company to 'Unknown Company'");
                 }
+
                 writer.WriteEndElement();     // ProjectInfo
                 writer.WriteEndElement();     // IECProjectDef
                 writer.WriteEndElement();     // TreeItem 
@@ -643,6 +650,9 @@ namespace Twinpack.Core
 
             if (!Directory.Exists(new FileInfo(filePath).Directory.FullName))
                 Directory.CreateDirectory(new FileInfo(filePath).Directory.FullName);
+
+            if (File.Exists(filePath))
+                File.Delete(filePath);            
 
             iec.SaveAsLibrary(filePath, true);
         }

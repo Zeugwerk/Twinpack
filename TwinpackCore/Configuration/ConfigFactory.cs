@@ -23,7 +23,7 @@ namespace Twinpack.Configuration
         public const string DefaultRepository = "https://framework.zeugwerk.dev/Distribution";
         
         public static readonly string ZeugwerkVendorName = "Zeugwerk GmbH";
-        public static readonly List<string> DefaultLocations = new List<String> { $@"", $@".Zeugwerk\" };
+        public static readonly List<string> DefaultLocations = new List<String> { $@".Zeugwerk\", $@"" };
         public static readonly XNamespace TsProjectNs = "http://www.w3.org/2001/XMLSchema-instance";
 
         public static Config Load(string path = ".", bool validate=false)
@@ -38,11 +38,31 @@ namespace Twinpack.Configuration
                     if (usedPrefix.Length != 0)
                         throw new Exception("found multiple configuration files");
 
-                    usedPrefix = p;
                     config = new Config();
-                    config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    config.WorkingDirectory = Path.GetDirectoryName($@"{path}\.Zeugwerk");
-                    config.FilePath = $@"{path}\{p}config.json";
+
+                    try
+                    {
+                        config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                        // The config is essentially empty
+                        if ((string.IsNullOrEmpty(config.Solution) && config.Projects == null && config.Projects.Count == 0) &&
+                            (config.Modules == null && config.Modules.Count == 0))
+                        {
+                            _logger.Warn($@"Failed to parse '{path}\{p}config.json'");
+                            continue;
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        config = null;
+                        _logger.Trace(ex);
+                        _logger.Warn($@"Failed to parse '{path}\{p}config.json'");
+                        continue;
+                    }
+
+                    usedPrefix = p;
+                    config.WorkingDirectory = Path.GetFullPath(Path.GetDirectoryName($@"{path}\.Zeugwerk"));
+                    config.FilePath = Path.GetFullPath($@"{path}\{p}config.json");
 
                     var solution = new Models.Solution();
                     try

@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigPlcFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterfaceHeadless.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface4024.cs" />

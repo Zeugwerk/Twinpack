@@ -150,9 +150,9 @@ namespace Twinpack.Core
 
         public override async System.Threading.Tasks.Task RemovePackageAsync(PackageItem package, bool uninstall = false, bool forceRemoval = false)
         {
-            var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault(x => x.Name == package.PlcName);
+            var plcConfig = _config?.Projects?.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
             if (plcConfig == null)
-                throw new InvalidOperationException($"Project '{package.ProjectName}' (Plc {package.PlcName}) is not configured in {_config.FilePath}");
+                throw new InvalidOperationException($"Project '{package.ProjectName}' (Plc {package.PlcName}) is not configured in {_config?.FilePath}");
 
             if (plcConfig.FilePath == null || !File.Exists(plcConfig.FilePath))
                 throw new FileNotFoundException($"Plc '{plcConfig.Name}' can not be found {(plcConfig.FilePath == null ? "" : "in " + plcConfig.FilePath)}");
@@ -276,7 +276,7 @@ namespace Twinpack.Core
                 }
                 else
                 {
-                    _logger.Warn($"Name '{plc.Name}' contains invalid characters - skipping PLC Name update, the package might be broken!");
+                    _logger.Warn($"Name '{plc.Name}' contains invalid characters - skipping PLC Name update!");
 
                 }
 
@@ -291,13 +291,13 @@ namespace Twinpack.Core
 
                     _logger.Info($"Updated title to '{titleStr}'");
                 }
-                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
                 {
                     throw new ArgumentException("Title is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update, the package might be broken!");
+                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update!");
 
                 }
 
@@ -310,13 +310,19 @@ namespace Twinpack.Core
 
                     _logger.Info($"Updated company to '{plc.DistributorName}'");
                 }
-                else if((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.DistributorName))
+                else if((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.Library) && string.IsNullOrEmpty(plc.DistributorName))
                 {
                     throw new ArgumentException("Distributor name is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Distributor name '{plc.DistributorName}' contains invalid characters - skipping PLC company update, the package might be broken!");
+                    var fallbackCompany = "Unknown Company";
+                    if (company != null)
+                        company.Value = fallbackCompany;
+                    else
+                        propertyGroup.Add(new XElement(TcNs + "Company", fallbackCompany));
+
+                    _logger.Info($"Updated company to '{plc.DistributorName}'");
                 }
 
                 var versionStr = NormalizedVersion(plc.Version);
@@ -329,13 +335,13 @@ namespace Twinpack.Core
 
                     _logger.Info($"Updated version to '{versionStr}'");
                 }
-                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))
+                else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))
                 {
                     throw new ArgumentException("Version is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
-                    _logger.Warn($"Version '{versionStr}' is empty - skipping PLC company update, the package might be broken!");
+                    _logger.Warn($"Version '{versionStr}' is empty - skipping PLC company update!");
                 }
             }
 
