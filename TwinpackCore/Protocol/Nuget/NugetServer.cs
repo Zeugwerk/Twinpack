@@ -41,9 +41,9 @@ namespace Twinpack.Protocol
 
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
-        public bool Enabled { get; set; } = true;
         public string ServerType { get; } = "NuGet Repository";
         public string Name { get; set; }
+        public bool Enabled { get; set; } = true;
         public string UrlBase { get; set; }
         public string Url
         {
@@ -560,11 +560,13 @@ namespace Twinpack.Protocol
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
-            if (!Enabled)
-                return null;
-
+            var storePassword = !string.IsNullOrEmpty(password);
             InvalidateCache();
             UserInfo = new LoginPostResponse();
+            if (!Enabled)
+            {
+                return UserInfo;
+            }
 
             try
             {

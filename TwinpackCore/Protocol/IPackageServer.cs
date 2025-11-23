@@ -16,9 +16,9 @@ namespace Twinpack.Protocol
 
     public interface IPackageServer
     {
-        bool Enabled { get; set; }
         string ServerType { get; }
         string Name { get; set; }
+        bool Enabled { get; set; }
         string UrlBase { get; set; }
         string Url { get; }
         string UrlRegister { get; }

@@ -73,9 +73,9 @@ namespace Twinpack.Protocol
                     {
                         try
                         {
-                            var server = CreateServer(serverModel.ServerType, serverModel.Name, serverModel.Url);
+                            var server = CreateServer(serverModel.ServerType, serverModel.Name, serverModel.Url, enabled: serverModel.Enabled);
                             _servers.Add(server);
-                            if (login)
+                            if (login && serverModel.Enabled)
                             {
                                 var auth = new Authentication(server);
                                 var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(3));
@@ -105,7 +105,7 @@ namespace Twinpack.Protocol
         }
         public static IEnumerable<string> ServerTypes { get { return _factories.Select(x => x.ServerType); } }
         public static PackageServerCollection Servers { get => _servers; }
-        public static IPackageServer CreateServer(string type, string name, string uri)
+        public static IPackageServer CreateServer(string type, string name, string uri, bool enabled = true)
         {
             if (string.IsNullOrEmpty(name))
                 throw new PackageServerTypeException("Invalid package server type!");
@@ -114,12 +114,14 @@ namespace Twinpack.Protocol
             if (factory == null)
                 throw new PackageServerTypeException($"Factory for package server with type '{type}' not found (use one of {string.Join(",", ServerTypes.Select(x => "'" + x + "'"))})");
 
-            return factory.Create(name, uri);
+            var server = factory.Create(name, uri);
+            server.Enabled = enabled;
+            return server;
         }
 
-        public static async Task<IPackageServer> AddServerAsync(string type, string name, string uri, bool login = true, bool ignoreLoginException = false, CancellationToken cancellationToken=default)
+        public static async Task<IPackageServer> AddServerAsync(string type, string name, string uri, bool enabled = true, bool login = true, bool ignoreLoginException = false, CancellationToken cancellationToken=default)
         {
-            var server = CreateServer(type, name, uri);
+            var server = CreateServer(type, name, uri, enabled);
             if(ignoreLoginException)
                 _servers.Add(server);
 
@@ -163,7 +165,6 @@ namespace Twinpack.Protocol
                 Servers.Clear();
                 File.Delete(FilePath);
             }
-
         }
     }
 }

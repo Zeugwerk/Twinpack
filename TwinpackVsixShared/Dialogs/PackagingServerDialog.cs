@@ -36,7 +36,7 @@ namespace Twinpack.Dialogs
             DataContext = this;
 
             Protocol.PackagingServerRegistry.Servers.ForEach(x =>
-                PackagingServers.Add(new Models.PackagingServer() { Connected = x.Connected, LoggedIn = x.LoggedIn, Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase }));
+                PackagingServers.Add(new Models.PackagingServer() { Connected = x.Connected, LoggedIn = x.LoggedIn, Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase, Enabled = x.Enabled }));
 
             InitializeComponent();
 
@@ -216,7 +216,7 @@ namespace Twinpack.Dialogs
             {
                 IsEnabled = false;
 
-                var allConnected = PackagingServers.Any(x => !x.Connected) == false;
+                var allConnected = PackagingServers.Any(x => !x.Connected && x.Enabled) == false;
 
                 if(allConnected || MessageBoxResult.Yes == MessageBox.Show("The connection to one ore more packaging servers could not be " +
                     "established! Either the URL is incorrect or the server requires authentication, " +
@@ -230,7 +230,7 @@ namespace Twinpack.Dialogs
                         {
                             try
                             {
-                                await Protocol.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url, ignoreLoginException: true, cancellationToken: token);
+                                await Protocol.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url, ignoreLoginException: true, enabled: x.Enabled, login: x.Enabled, cancellationToken: token);
                             }
                             catch (Exception) { }
                         }

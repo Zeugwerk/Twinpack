@@ -39,9 +39,9 @@ namespace Twinpack.Protocol
         private CachedHttpClient _client = new CachedHttpClient();
         private bool _clientUpdateInformed;
 
-        public bool Enabled { get; set; } = true;
         public string ServerType { get; } = "Twinpack Repository";
         public string Name { get; set; }
+        public bool Enabled { get; set; } = true;
         public string UrlBase { get; set; }
         public string Url
         {
@@ -529,10 +529,13 @@ namespace Twinpack.Protocol
 
         public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
-            if (!Enabled)
-                return null;
-
             _client.Invalidate(); // clear the cache
+
+            if (!Enabled)
+            {
+                UserInfo = new LoginPostResponse();
+                return UserInfo;
+            }
 
             try
             {
