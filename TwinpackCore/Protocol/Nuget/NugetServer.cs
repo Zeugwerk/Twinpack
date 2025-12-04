@@ -667,11 +667,6 @@ namespace Twinpack.Protocol
             catch { }
         }
 
-        protected virtual string EvaluateVersion(NuGetVersion version)
-        {
-            return version.OriginalVersion.ToString();
-        }
-
 #pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         public async Task LogoutAsync()
 #pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
@@ -734,6 +729,11 @@ namespace Twinpack.Protocol
                 return package.Title;
 
             return package.Identity.Id;
+        }
+
+        protected virtual string EvaluateVersion(NuGetVersion version)
+        {
+            return version?.OriginalVersion?.ToString();
         }
 
         protected virtual int EvaluateCompiled(string tags)
