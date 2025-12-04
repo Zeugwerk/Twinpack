@@ -588,11 +588,12 @@ namespace Twinpack.Protocol
 
             try
             {
-                if(!Path.IsPathRooted(Url))
-                {
-                    PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
-                    _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
+                PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
+                _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
 
+                // No need to check if we can login to local repositories
+                if (!Path.IsPathRooted(Url))
+                {
                     using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
                     {
                         if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
