@@ -248,7 +248,7 @@ namespace Twinpack.Protocol
                         Branches = new List<string>() { "main" },
                         Targets = new List<string>() { "TC3.1" },
                         Configurations = new List<string>() { "Release" },
-                        Version = x.Identity.Version.OriginalVersion.ToString(),
+                        Version = EvaluateVersion(x.Identity.Version),
                         Branch = "main",
                         Target = "TC3.1",
                         Configuration = "Release",
@@ -407,7 +407,7 @@ namespace Twinpack.Protocol
                 NullLogger.Instance,
                 cancellationToken);
 
-            IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => p.Identity.Version.OriginalVersion.ToString() == library.Version);
+            IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => EvaluateVersion(p.Identity.Version) == library.Version);
 
             if (x == null)
                 return new PackageVersionGetResponse();
@@ -421,7 +421,7 @@ namespace Twinpack.Protocol
             foreach(var d in dependencyPackages)
             {
                 var minVersion = d.VersionRange?.MinVersion?.Version;
-                var minOriginalVersion = d.VersionRange?.MinVersion?.OriginalVersion;
+                var minOriginalVersion = EvaluateVersion(d.VersionRange?.MinVersion);
                 var version = (minVersion.Major == 0 && minVersion.Minor == 0 && minVersion.Revision == 0 && minVersion.Build == 0) ? null : minOriginalVersion;
 
                 var dependency = (await resource.GetMetadataAsync(
@@ -430,7 +430,7 @@ namespace Twinpack.Protocol
                     includeUnlisted: false,
                     _cache,
                     NullLogger.Instance,
-                    cancellationToken)).FirstOrDefault(p => version == null || version.ToString() == p.Identity.Version.OriginalVersion.ToString());
+                    cancellationToken)).FirstOrDefault(p => version == null || version.ToString() == EvaluateVersion(p.Identity.Version));
 
                 if(dependency?.Tags?.ToLower().Contains("library") == true || dependency?.Tags?.ToLower().Contains("plc-library") == true)
                 {
@@ -487,7 +487,7 @@ namespace Twinpack.Protocol
                 Branches = new List<string>() { "main" },
                 Targets = new List<string>() { "TC3.1" },
                 Configurations = new List<string>() { "Release" },
-                Version = x.Identity.Version.OriginalVersion.ToString(),
+                Version = EvaluateVersion(x.Identity.Version),
                 Branch = "main",
                 Target = "TC3.1",
                 Configuration = "Release",
@@ -665,6 +665,11 @@ namespace Twinpack.Protocol
                 CredentialManager.RemoveCredentials(UrlBase);
             }
             catch { }
+        }
+
+        protected virtual string EvaluateVersion(NuGetVersion version)
+        {
+            return version.OriginalVersion.ToString();
         }
 
 #pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
