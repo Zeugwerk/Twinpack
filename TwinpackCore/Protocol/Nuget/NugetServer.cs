@@ -585,22 +585,25 @@ namespace Twinpack.Protocol
 
             try
             {
-                PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
-                _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
-
-                using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
+                if(!Path.IsPathRooted(Url))
                 {
-                    if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                    PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
+                    _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
+
+                    using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
                     {
-                        var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Username}:{Password}"));
-                        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
-                    }
+                        if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                        {
+                            var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Username}:{Password}"));
+                            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
+                        }
 
-                    var response = await httpClient.GetAsync(Url, cancellationToken);
+                        var response = await httpClient.GetAsync(Url, cancellationToken);
 
-                    if (!response.IsSuccessStatusCode)
-                        throw new LoginException($"Login failed, status code: {response.StatusCode}");
-                };
+                        if (!response.IsSuccessStatusCode)
+                            throw new LoginException($"Login failed, status code: {response.StatusCode}");
+                    };
+                }
 
                 UserInfo = new LoginPostResponse() { User = Username };
 
