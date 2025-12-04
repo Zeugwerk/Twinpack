@@ -248,7 +248,7 @@ namespace Twinpack.Protocol
                         Branches = new List<string>() { "main" },
                         Targets = new List<string>() { "TC3.1" },
                         Configurations = new List<string>() { "Release" },
-                        Version = x.Identity.Version.Version.ToString(),
+                        Version = x.Identity.Version.OriginalVersion.ToString(),
                         Branch = "main",
                         Target = "TC3.1",
                         Configuration = "Release",
@@ -407,7 +407,7 @@ namespace Twinpack.Protocol
                 NullLogger.Instance,
                 cancellationToken);
 
-            IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => p.Identity.Version.Version.ToString() == library.Version);
+            IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => p.Identity.Version.OriginalVersion.ToString() == library.Version);
 
             if (x == null)
                 return new PackageVersionGetResponse();
@@ -420,8 +420,9 @@ namespace Twinpack.Protocol
 
             foreach(var d in dependencyPackages)
             {
-                var version = d.VersionRange?.MinVersion?.Version;
-                version = (version.Major == 0 && version.Minor == 0 && version.Revision == 0 && version.Build == 0) ? null : version;
+                var minVersion = d.VersionRange?.MinVersion?.Version;
+                var minOriginalVersion = d.VersionRange?.MinVersion?.OriginalVersion;
+                var version = (minVersion.Major == 0 && minVersion.Minor == 0 && minVersion.Revision == 0 && minVersion.Build == 0) ? null : minOriginalVersion;
 
                 var dependency = (await resource.GetMetadataAsync(
                     d.Id,
@@ -429,7 +430,7 @@ namespace Twinpack.Protocol
                     includeUnlisted: false,
                     _cache,
                     NullLogger.Instance,
-                    cancellationToken)).FirstOrDefault(p => version == null || version.ToString() == p.Identity.Version.ToString());
+                    cancellationToken)).FirstOrDefault(p => version == null || version.ToString() == p.Identity.Version.OriginalVersion.ToString());
 
                 if(dependency?.Tags?.ToLower().Contains("library") == true || dependency?.Tags?.ToLower().Contains("plc-library") == true)
                 {
@@ -486,7 +487,7 @@ namespace Twinpack.Protocol
                 Branches = new List<string>() { "main" },
                 Targets = new List<string>() { "TC3.1" },
                 Configurations = new List<string>() { "Release" },
-                Version = x.Identity.Version.Version.ToString(),
+                Version = x.Identity.Version.OriginalVersion.ToString(),
                 Branch = "main",
                 Target = "TC3.1",
                 Configuration = "Release",
