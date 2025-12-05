@@ -41,9 +41,9 @@ namespace Twinpack.Protocol
 
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
-
         public string ServerType { get; } = "NuGet Repository";
         public string Name { get; set; }
+        public bool Enabled { get; set; } = true;
         public string UrlBase { get; set; }
         public string Url
         {
@@ -248,7 +248,7 @@ namespace Twinpack.Protocol
                         Branches = new List<string>() { "main" },
                         Targets = new List<string>() { "TC3.1" },
                         Configurations = new List<string>() { "Release" },
-                        Version = x.Identity.Version.OriginalVersion.ToString(),
+                        Version = EvaluateVersion(x.Identity.Version),
                         Branch = "main",
                         Target = "TC3.1",
                         Configuration = "Release",
@@ -407,7 +407,7 @@ namespace Twinpack.Protocol
                 NullLogger.Instance,
                 cancellationToken);
 
-            IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => p.Identity.Version.OriginalVersion.ToString() == library.Version);
+            IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => EvaluateVersion(p.Identity.Version) == library.Version);
 
             if (x == null)
                 return new PackageVersionGetResponse();
@@ -421,7 +421,7 @@ namespace Twinpack.Protocol
             foreach(var d in dependencyPackages)
             {
                 var minVersion = d.VersionRange?.MinVersion?.Version;
-                var minOriginalVersion = d.VersionRange?.MinVersion?.OriginalVersion;
+                var minOriginalVersion = EvaluateVersion(d.VersionRange?.MinVersion);
                 var version = (minVersion.Major == 0 && minVersion.Minor == 0 && minVersion.Revision == 0 && minVersion.Build == 0) ? null : minOriginalVersion;
 
                 var dependency = (await resource.GetMetadataAsync(
@@ -430,7 +430,7 @@ namespace Twinpack.Protocol
                     includeUnlisted: false,
                     _cache,
                     NullLogger.Instance,
-                    cancellationToken)).FirstOrDefault(p => version == null || version.ToString() == p.Identity.Version.OriginalVersion.ToString());
+                    cancellationToken)).FirstOrDefault(p => version == null || version.ToString() == EvaluateVersion(p.Identity.Version));
 
                 if(dependency?.Tags?.ToLower().Contains("library") == true || dependency?.Tags?.ToLower().Contains("plc-library") == true)
                 {
@@ -487,7 +487,7 @@ namespace Twinpack.Protocol
                 Branches = new List<string>() { "main" },
                 Targets = new List<string>() { "TC3.1" },
                 Configurations = new List<string>() { "Release" },
-                Version = x.Identity.Version.OriginalVersion.ToString(),
+                Version = EvaluateVersion(x.Identity.Version),
                 Branch = "main",
                 Target = "TC3.1",
                 Configuration = "Release",
@@ -564,6 +564,10 @@ namespace Twinpack.Protocol
             var storePassword = !string.IsNullOrEmpty(password);
             InvalidateCache();
             UserInfo = new LoginPostResponse();
+            if (!Enabled)
+            {
+                return UserInfo;
+            }
 
             try
             {
@@ -588,19 +592,23 @@ namespace Twinpack.Protocol
                 PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
                 _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
 
-                using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
+                // No need to check if we can login to local repositories
+                if (!Path.IsPathRooted(Url))
                 {
-                    if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                    using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
                     {
-                        var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Username}:{Password}"));
-                        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
-                    }
+                        if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                        {
+                            var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Username}:{Password}"));
+                            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
+                        }
 
-                    var response = await httpClient.GetAsync(Url, cancellationToken);
+                        var response = await httpClient.GetAsync(Url, cancellationToken);
 
-                    if (!response.IsSuccessStatusCode)
-                        throw new LoginException($"Login failed, status code: {response.StatusCode}");
-                };
+                        if (!response.IsSuccessStatusCode)
+                            throw new LoginException($"Login failed, status code: {response.StatusCode}");
+                    };
+                }
 
                 UserInfo = new LoginPostResponse() { User = Username };
 
@@ -721,6 +729,11 @@ namespace Twinpack.Protocol
                 return package.Title;
 
             return package.Identity.Id;
+        }
+
+        protected virtual string EvaluateVersion(NuGetVersion version)
+        {
+            return version?.OriginalVersion?.ToString();
         }
 
         protected virtual int EvaluateCompiled(string tags)

@@ -36,7 +36,7 @@ namespace Twinpack.Dialogs
             DataContext = this;
 
             Protocol.PackagingServerRegistry.Servers.ForEach(x =>
-                PackagingServers.Add(new Models.PackagingServer() { Connected = x.Connected, LoggedIn = x.LoggedIn, Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase }));
+                PackagingServers.Add(new Models.PackagingServer() { Connected = x.Connected, LoggedIn = x.LoggedIn, Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase, Enabled = x.Enabled }));
 
             InitializeComponent();
 
@@ -198,7 +198,49 @@ namespace Twinpack.Dialogs
                 _logger.Error(ex.Message);
             }
         }
-        
+
+        private async void Enabled_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var checkBox = sender as CheckBox;
+                var item = FindAncestor<ListViewItem>(checkBox);
+
+  
+                var s = item.DataContext as Models.PackagingServer;
+                var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, s.Url);
+                var auth = new Protocol.Authentication(server);
+                int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
+
+                await _cancelableTask.RunAsync(async token =>
+                {
+                    PackagingServers.ElementAt(index).Connecting = true;
+
+                    if (checkBox.IsChecked == true)
+                    {
+                        await auth.LoginAsync(true, token);
+                    }
+                    else
+                    {
+                        PackagingServers.ElementAt(index).Connecting = false;
+                        PackagingServers.ElementAt(index).LoggedIn = false;
+                        PackagingServers.ElementAt(index).Connected = false;
+                    }
+                },
+                () =>
+                {
+                    PackagingServers.ElementAt(index).Connecting = false;
+                    PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
+                    PackagingServers.ElementAt(index).Connected = server.Connected;
+                });
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
+        }
 
         private T FindAncestor<T>(DependencyObject current) where T : DependencyObject
         {
@@ -216,7 +258,7 @@ namespace Twinpack.Dialogs
             {
                 IsEnabled = false;
 
-                var allConnected = PackagingServers.Any(x => !x.Connected) == false;
+                var allConnected = PackagingServers.Any(x => !x.Connected && x.Enabled) == false;
 
                 if(allConnected || MessageBoxResult.Yes == MessageBox.Show("The connection to one ore more packaging servers could not be " +
                     "established! Either the URL is incorrect or the server requires authentication, " +
@@ -230,7 +272,7 @@ namespace Twinpack.Dialogs
                         {
                             try
                             {
-                                await Protocol.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url, ignoreLoginException: true, cancellationToken: token);
+                                await Protocol.PackagingServerRegistry.AddServerAsync(x.ServerType, x.Name, x.Url, ignoreLoginException: true, enabled: x.Enabled, login: x.Enabled, cancellationToken: token);
                             }
                             catch (Exception) { }
                         }
