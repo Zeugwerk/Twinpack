@@ -198,7 +198,49 @@ namespace Twinpack.Dialogs
                 _logger.Error(ex.Message);
             }
         }
-        
+
+        private async void Enabled_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var checkBox = sender as CheckBox;
+                var item = FindAncestor<ListViewItem>(checkBox);
+
+  
+                var s = item.DataContext as Models.PackagingServer;
+                var server = Protocol.PackagingServerRegistry.CreateServer(s.ServerType, s.Name, s.Url);
+                var auth = new Protocol.Authentication(server);
+                int index = PackagingServersView.ItemContainerGenerator.IndexFromContainer(item);
+
+                await _cancelableTask.RunAsync(async token =>
+                {
+                    PackagingServers.ElementAt(index).Connecting = true;
+
+                    if (checkBox.IsChecked == true)
+                    {
+                        await auth.LoginAsync(true, token);
+                    }
+                    else
+                    {
+                        PackagingServers.ElementAt(index).Connecting = false;
+                        PackagingServers.ElementAt(index).LoggedIn = false;
+                        PackagingServers.ElementAt(index).Connected = false;
+                    }
+                },
+                () =>
+                {
+                    PackagingServers.ElementAt(index).Connecting = false;
+                    PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
+                    PackagingServers.ElementAt(index).Connected = server.Connected;
+                });
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                _logger.Error(ex.Message);
+            }
+        }
 
         private T FindAncestor<T>(DependencyObject current) where T : DependencyObject
         {
