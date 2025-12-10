@@ -61,8 +61,11 @@
                                 <ColumnDefinition Width="auto"></ColumnDefinition>
                             </Grid.ColumnDefinitions>
 
-                            <fa:ImageAwesome Icon="Link" Width="24" d:Visibility="Visible" Visibility="{Binding Path=Connected, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
-                            <fa:ImageAwesome Icon="Unlink" Width="24" d:Visibility="Hidden" Visibility="{Binding Path=Connected, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"></fa:ImageAwesome>
+                            <StackPanel>
+                                <CheckBox Margin="0 0 0 10" Checked="Enabled_CheckChanged" Unchecked="Enabled_CheckChanged" IsChecked="{Binding Path=Enabled}"/>
+                                <fa:ImageAwesome Icon="Link" Width="24" d:Visibility="Visible" Visibility="{Binding Path=Connected, Converter={StaticResource BooleanToVisibilityConverter}}"></fa:ImageAwesome>
+                                <fa:ImageAwesome Icon="Unlink" Width="24" d:Visibility="Hidden" Visibility="{Binding Path=Connected, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"></fa:ImageAwesome>
+                            </StackPanel>
 
                             <Grid Grid.Column="1">
                                 <Grid.RowDefinitions>
@@ -107,7 +110,7 @@
                                     <Button d:Visibility="Collapsed" Visibility="{Binding Path=LoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}"
                                             Click="LogoutButton_Click">Logout</Button>
                                     <Button d:Visibility="Collapsed" Visibility="{Binding Path=Connecting, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                            Click="CancelLoginButton_Click">Cancel</Button>                                    
+                                            Click="CancelLoginButton_Click">Cancel</Button>
                                 </StackPanel>
                             </Grid>
 

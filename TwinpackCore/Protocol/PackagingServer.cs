@@ -11,6 +11,22 @@ namespace Twinpack.Models
         public string Url { get; set; }
         public string ServerType { get; set; }
 
+        bool _enabled = true;
+        public bool Enabled
+        {
+            get
+            {
+                return _enabled;
+            }
+            set
+            {
+                _enabled = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Connected)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LoggedIn)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LoggedOut)));
+            }
+        }
+
         bool _loggedIn;
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool LoggedIn

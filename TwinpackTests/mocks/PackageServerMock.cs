@@ -28,6 +28,7 @@ namespace TwinpackTests
         public LoginPostResponse UserInfo => throw new NotImplementedException();
         public bool LoggedIn => throw new NotImplementedException();
         public bool Connected { get; set; }
+        public bool Enabled { get; set; } = true;
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)

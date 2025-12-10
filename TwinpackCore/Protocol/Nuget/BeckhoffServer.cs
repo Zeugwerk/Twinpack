@@ -6,6 +6,7 @@ using System.Threading;
 using System.Linq;
 using NuGet.Protocol.Core.Types;
 using NuGet.Packaging.Core;
+using NuGet.Versioning;
 
 namespace Twinpack.Protocol
 {
@@ -64,6 +65,11 @@ namespace Twinpack.Protocol
                 title = tags[libraryIdx + 1];
 
             return title;
+        }
+
+        protected override string EvaluateVersion(NuGetVersion version)
+        {
+            return version?.Version?.ToString();
         }
 
         protected override int EvaluateCompiled(string tags)
