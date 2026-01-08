@@ -20,7 +20,7 @@ namespace Twinpack.Core
         protected EnvDTE.Solution _solution;
         protected IAutomationInterface _automationInterface;
         protected System.Timers.Timer _timeout;
-        MessageFilter _filter;
+        protected MessageFilter _filter;
         protected SynchronizationContext _synchronizationContext;
         protected System.Threading.Thread _thread;
 
