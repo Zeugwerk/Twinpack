@@ -74,7 +74,7 @@ namespace Twinpack.Core
             _solution?.Close(save);
         }
 
-        protected bool Initialize(bool hidden = true)
+        protected virtual bool Initialize(bool hidden = true)
         {
             ThrowIfNotMainThread();
 
