@@ -443,8 +443,10 @@ namespace Twinpack.Core
             return null;
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
+            _logger.Info($"Disposing VisualStudio");
+        
             _filter?.Dispose();
             _dte?.Quit();
         }
