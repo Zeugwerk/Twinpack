@@ -601,7 +601,7 @@ namespace Twinpack.Protocol
 
                         var response = await httpClient.GetAsync(Url, cancellationToken);
 
-                        if (!response.IsSuccessStatusCode)
+                        if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.BadRequest)
                             throw new LoginException($"Login failed, status code: {response.StatusCode}");
                     };
                 }
