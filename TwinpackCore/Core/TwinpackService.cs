@@ -746,7 +746,7 @@ namespace Twinpack.Core
                 }
             }
 
-            foreach (var package in packages)
+            foreach (var package in packages.Where(x => x.PackageVersion?.Name != null))
             {
                 if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
                 {
