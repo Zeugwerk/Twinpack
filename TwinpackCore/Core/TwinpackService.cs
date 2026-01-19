@@ -749,6 +749,7 @@ namespace Twinpack.Core
             foreach (var package in packages)
             {
                 if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
+                {
                     cache.Add(package);
                 }
             }
