@@ -600,9 +600,9 @@ namespace Twinpack.Protocol
                             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
                         }
 
-                        var response = await httpClient.GetAsync(Url, cancellationToken);
+                        var response = await httpClient.GetAsync(Url.EndsWith("/") ? Url : Url + "/", cancellationToken);
 
-                        if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.BadRequest)
+                        if (!response.IsSuccessStatusCode)
                             throw new LoginException($"Login failed, status code: {response.StatusCode}");
                     };
                 }
