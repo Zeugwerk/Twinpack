@@ -628,12 +628,10 @@
                             </Expander>
                         </StackPanel>
 
-                        <Grid Grid.Row="1" Grid.RowSpan="3" d:Visibility="Visible" Visibility="{Binding IsPackageVersionLoading, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="412*"/>
-                                <ColumnDefinition Width="59*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="208,0,0,0">
+                        <Grid Grid.Row="1" d:Visibility="Visible" 
+                              Visibility="{Binding IsPackageVersionLoading, Converter={StaticResource BooleanToVisibilityConverter}}"
+                              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <fa:ImageAwesome Margin="2 0 0 0" Icon="Spinner" Spin="True" Height="12"/>
                                 <TextBlock Text="Loading ..." HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
                             </StackPanel>
