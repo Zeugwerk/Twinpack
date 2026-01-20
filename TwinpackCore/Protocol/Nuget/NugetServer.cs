@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Linq;
 using System.Threading.Tasks;
 using Twinpack.Models;
@@ -599,7 +600,7 @@ namespace Twinpack.Protocol
                             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
                         }
 
-                        var response = await httpClient.GetAsync(Url, cancellationToken);
+                        var response = await httpClient.GetAsync(Url.EndsWith("/") ? Url : Url + "/", cancellationToken);
 
                         if (!response.IsSuccessStatusCode)
                             throw new LoginException($"Login failed, status code: {response.StatusCode}");
