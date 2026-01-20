@@ -845,7 +845,7 @@ namespace Twinpack.Dialogs
                 if (_selectedItem != null)
                 {
                     _selectedItem.Catalog = Catalog.FirstOrDefault(x => x.Catalog?.Name == _selectedItem.Catalog?.Name)?.Catalog;
-                    if (_selectedItem?.Catalog?.Name == null || (_selectedItem.Catalog?.Name != _selectedItem.Package.Name || _selectedItem.Catalog?.Name != _selectedItem.PackageVersion?.Name))
+                    if (_selectedItem?.Catalog?.Name == null || (_selectedItem.Catalog?.Name != _selectedItem.Package?.Name || _selectedItem.Catalog?.Name != _selectedItem.PackageVersion?.Name))
                     {
                         InstalledPackageVersion = null;
                         _selectedItem.Invalidate();

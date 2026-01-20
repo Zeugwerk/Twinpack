@@ -126,8 +126,8 @@ namespace Twinpack.Models
         }
         public void Invalidate()
         {
-            _package = new PackageGetResponse();
-            _packageVersion = new PackageVersionGetResponse();
+            Package = null;
+            PackageVersion = null;
         }
 
         public bool IsUpdateable
