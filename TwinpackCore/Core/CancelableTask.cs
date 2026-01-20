@@ -1,17 +1,39 @@
 using System.Threading;
 using System;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
-public class CancelableTask
+public class CancelableTask : INotifyPropertyChanged
 {
     private NLog.Logger _logger;
 
     private CancellationTokenSource _cts;
     private Task _task;
+    public event PropertyChangedEventHandler PropertyChanged;
 
     public CancelableTask(NLog.Logger logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+    protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private bool _isBusy;
+    public bool Busy
+    {
+        get => _isBusy;
+        set
+        {
+            if (_isBusy != value)
+            {
+                _isBusy = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     public void Cancel()
@@ -21,7 +43,7 @@ public class CancelableTask
         _cts = null;
     }
 
-    public async Task RunAsync(Func<CancellationToken, Task> action, Action onFinally = null)
+    public async Task RunAsync(Func<CancellationToken, Task> action, Func<Task> onFinally = null)
     {
         _cts?.Cancel();
 
@@ -37,6 +59,8 @@ public class CancelableTask
         var wasCanceled = false;
         try
         {
+            Busy = true;
+
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
             _task = action(_cts.Token);
@@ -59,7 +83,10 @@ public class CancelableTask
         }
         finally
         {
-            onFinally?.Invoke();
+            if (onFinally != null)
+                await onFinally();
+
+            Busy = false;
         }
     }
 }

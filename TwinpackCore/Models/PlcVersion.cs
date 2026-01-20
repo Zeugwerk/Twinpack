@@ -10,6 +10,7 @@ namespace Twinpack.Models
     {
         public string Version { get; set; }
         public string VersionDisplayText { get; set; }
+        public bool IsWildcard { get; set; }
 
         public static bool operator ==(PlcVersion lhs, PlcVersion rhs)
         {

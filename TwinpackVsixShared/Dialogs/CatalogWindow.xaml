@@ -91,6 +91,7 @@
             </StackPanel>
             <StackPanel Grid.Column="5" HorizontalAlignment="Right" Orientation="Horizontal">
                 <Button Click="UpdateAvailableButton_Click" BorderThickness="0" 
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}"
                     Margin="0, 0, 10, 0"
                     FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Top"
                     d:Visibility="Visible" Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -207,6 +208,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Button Click="ShowMoreAvailablePackagesButton_Click" Margin="0" BorderThickness="0" FontWeight="SemiBold"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}"
                     Visibility="{Binding IsBrowsingAvailablePackages, Converter={StaticResource BooleanToVisibilityConverter}}"
                     HorizontalAlignment="Center" VerticalAlignment="Top">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
@@ -225,7 +227,9 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Margin="5" TextWrapping="Wrap">
                     Restore all packages.</TextBlock>
-                <Button Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="RestoreAllPackageButton_Click" VerticalAlignment="Center">
+                <Button Margin="5"  Grid.Column="1" HorizontalAlignment="Right" 
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}"
+                        Click="RestoreAllPackageButton_Click" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Undo" Height="12"/>
                         <TextBlock Margin="5 0 2 0">Restore All</TextBlock>
@@ -242,7 +246,9 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Margin="5" TextWrapping="Wrap">
                     Update all packages to their latest version.</TextBlock>
-                <Button Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="UpdateAllPackageButton_Click" VerticalAlignment="Center">
+                <Button Margin="5"  Grid.Column="1" HorizontalAlignment="Right" 
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}"
+                        Click="UpdateAllPackageButton_Click" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Bolt" Height="12"/>
                         <fa:ImageAwesome Margin="0 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Bolt" Height="12"/>
@@ -261,7 +267,9 @@
                 <TextBlock Margin="5" TextWrapping="Wrap">
                     Create a package configuration for your solution to improve the startup behavior of Twinpack. Click the "Create" button to 
                     generate an initial configuration and then adapt it manually for your needs.</TextBlock>
-                <Button  Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="CreateConfig_Click" VerticalAlignment="Center">
+                <Button  Margin="5"  Grid.Column="1" HorizontalAlignment="Right" 
+                         IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}"
+                         Click="CreateConfig_Click" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="File" Height="12"/>
                         <TextBlock Margin="5 0 2 0">Create</TextBlock>
@@ -280,7 +288,9 @@
                    You already have a package configuration file, but it is not migrated to Twinpack. Click the "Migrate" button to recreate
                     the configuration for Twinpack.
                 </TextBlock>
-                <Button  Margin="5"  Grid.Column="1" HorizontalAlignment="Right" Click="CreateConfig_Click" VerticalAlignment="Center">
+                <Button  Margin="5"  Grid.Column="1" HorizontalAlignment="Right" 
+                         IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}"
+                         Click="CreateConfig_Click" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="File" Height="12"/>
                         <TextBlock Margin="5 0 2 0">Migrate</TextBlock>
@@ -410,6 +420,7 @@
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
                                 <Button Click="ShowMoreAvailableVersionsButton_Click" Margin="0" BorderThickness="0" 
+                                        IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}"
                                         FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Top"
                                         Visibility="{Binding IsPackageVersionsAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
@@ -419,6 +430,7 @@
                             </StackPanel>
 
                             <Button Click="UninstallPackageButton_Click"
+                                    IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}"
                                     Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}" Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" Margin="0,0,5,5">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Remove" Height="12"/>
@@ -427,7 +439,7 @@
                             </Button>
                             <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="AddPackageButton_Click" 
                                     Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,5,5" 
-                                    IsEnabled="{Binding ElementName=VersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
+                                    IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Plus" Height="12"/>
                                     <TextBlock Margin="5 0 0 0">Add</TextBlock>
@@ -435,7 +447,7 @@
                             </Button>
                             <Button Grid.Column="2" Grid.Row="4" VerticalAlignment="Top" Click="UpdatePackageButton_Click" 
                                     Visibility="{Binding IsNewReference, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter='inverse'}"  Margin="0,0,5,5" 
-                                    IsEnabled="{Binding ElementName=VersionsView, Path=IsEnabled, UpdateSourceTrigger=PropertyChanged}">
+                                    IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInverseBooleanConverter}}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:ImageAwesome Margin="2 0 0 0" Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}" Icon="Bolt" Height="12"/>
                                     <TextBlock Margin="5 0 2 0">Update</TextBlock>
