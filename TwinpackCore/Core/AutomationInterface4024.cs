@@ -356,9 +356,9 @@ namespace Twinpack.Core
                 else
                     libraryManager.AddPlaceholder(libraryName, libraryName, version, distributorName);
             }
-            catch
+            catch (Exception ex)
             {
-                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {distributorName}) is not installed. Make sure that the version of the package matches the version of included library file!");
+                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {distributorName}) is not installed. Make sure that the version of the package matches the version of included library file: " + ex.Message);
             }
 
 
