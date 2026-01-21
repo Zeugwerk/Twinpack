@@ -32,12 +32,12 @@ namespace Twinpack.Core
             public AddPackageOptions() { }
             public AddPackageOptions(AddPackageOptions rhs)
             {
-                SkipDownload = rhs.SkipDownload;
-                SkipInstall = rhs.SkipInstall;
-                ForceDownload = rhs.ForceDownload;
-                UpdatePlc = rhs.UpdatePlc;
-                IncludeDependencies = rhs.IncludeDependencies;
-                DownloadPath = rhs.DownloadPath;
+                SkipDownload = rhs?.SkipDownload ?? false;
+                SkipInstall = rhs?.SkipInstall ?? false;
+                ForceDownload = rhs?.ForceDownload ??false;
+                UpdatePlc = rhs?.UpdatePlc ?? true;
+                IncludeDependencies = rhs?.IncludeDependencies ?? true;
+                DownloadPath = rhs?.DownloadPath;
             }
 
             public bool SkipDownload = false;
@@ -489,7 +489,7 @@ namespace Twinpack.Core
         {
             var usedPackages = await RetrieveUsedPackagesAsync();
             List<PackageItem> packages;
-            if (filters.Packages != null || filters.Frameworks != null)
+            if (filters?.Packages != null || filters?.Frameworks != null)
             {
                 packages = usedPackages.Where(
                 x => (filters.ProjectName == null || filters.ProjectName == x.ProjectName) &&

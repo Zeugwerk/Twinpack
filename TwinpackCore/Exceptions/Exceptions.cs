@@ -40,6 +40,11 @@ namespace Twinpack.Exceptions
             Reference = reference;
             Version = version;
         }
+        public LibraryNotFoundException(string reference, string version, string message, Exception innerException) : base(message, innerException)
+        {
+            Reference = reference;
+            Version = version;
+        }
     }
 
     public class ProtocolException : Exception

@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Shapes;
 using System.Xml;
 using System.Xml.Linq;
 using TCatSysManagerLib;
@@ -351,14 +350,19 @@ namespace Twinpack.Core
 
             try
             {
-                if (options?.LibraryReference == true)
-                    libraryManager.AddLibrary(libraryName, version, distributorName);
-                else
-                    libraryManager.AddPlaceholder(libraryName, libraryName, version, distributorName);
+                Utils.Retry(() =>
+                {
+                    if (options?.LibraryReference == true)
+                        libraryManager.AddLibrary(libraryName, version, distributorName);
+                    else
+                        libraryManager.AddPlaceholder(libraryName, libraryName, version, distributorName);
+                },
+                maxRetries: 3,
+                baseDelayMs: 500);
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
-                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {distributorName}) is not installed. Make sure that the version of the package matches the version of included library file: " + ex.Message);
+                throw new LibraryNotFoundException(libraryName, version, $"Package {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {distributorName}) is not installed. Make sure that the version of the package matches the version of included library file!", ex);
             }
 
 
@@ -485,7 +489,6 @@ namespace Twinpack.Core
         {
             await _synchronizationContext;
 
-            var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
             var packageVersion = package.PackageVersion;
 
             var suffix = package.PackageVersion.Compiled == 1 ? "compiled-library" : "library";
@@ -494,7 +497,12 @@ namespace Twinpack.Core
             if (!File.Exists(path))
                 throw new FileNotFoundException(path);
 
-            libraryManager.InstallLibrary("System", path, bOverwrite: true);
+
+            Utils.Retry(() =>
+            {
+                var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
+                libraryManager.InstallLibrary("System", path, bOverwrite: true);
+            }, maxRetries: 3, baseDelayMs: 500);
         }
 
         public override async Task<bool> UninstallPackageAsync(PackageItem package)
@@ -503,12 +511,16 @@ namespace Twinpack.Core
 
             if (IsPackageInstalled(package))
             {
-                _referenceCache.RemoveAll(x => x.Name == package.PackageVersion.Title && x.DistributorName == package.PackageVersion.DistributorName
-                                          && x.Version == package.PackageVersion.Version);
+                _referenceCache.RemoveAll(x => x.Name == package.PackageVersion.Title && x.DistributorName == package.PackageVersion.DistributorName);
 
-                var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
-                libraryManager.UninstallLibrary("System", package.PackageVersion.Title, package.PackageVersion.Version, package.PackageVersion.DistributorName);
+                Utils.Retry(() =>
+                {
+                    var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
+                    libraryManager.UninstallLibrary("System", package.PackageVersion.Title, package.PackageVersion.Version, package.PackageVersion.DistributorName);
+                }, maxRetries: 3, baseDelayMs: 500);
+
                 return true;
+
             }
 
             return false;
