@@ -224,6 +224,9 @@ namespace Twinpack.Protocol.Api
         [JsonPropertyName("type")]
         public string PackageType { get; set; }
 
+        [JsonPropertyName("latest")]
+        public PackageVersionGetResponse Latest { get; set; }
+
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasDependencies { get { return Dependencies?.Any() == true; } }
 
