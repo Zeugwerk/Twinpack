@@ -395,9 +395,19 @@ namespace Twinpack.Dialogs
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
                 ResetServerSelection();
-                await InitializeInternalAsync(resetCache: false, cancellationToken: token);
-                _isDialogLoaded = true;
+
+                await EnsureInitializedAsync(cancellationToken: token);
             });
+        }
+
+        private async Task EnsureInitializedAsync(CancellationToken cancellationToken)
+        {
+            // Ensure that we are initialized
+            if (!_isDialogLoaded)
+            {
+                await InitializeInternalAsync(resetCache: false, cancellationToken: cancellationToken);
+                _isDialogLoaded = true;
+            }
         }
 
         public async Task InitializeAsync()
@@ -461,6 +471,7 @@ namespace Twinpack.Dialogs
             catch (Exception ex)
             {
                 IsBrowsingAvailablePackages = true;
+                throw;
             }
             finally
             {
@@ -534,6 +545,7 @@ namespace Twinpack.Dialogs
             await _cancelableTask.RunAsync(async token =>
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+                await EnsureInitializedAsync(cancellationToken: token);
 
                 var dialog = new PackagingServerDialog();
                 dialog.Owner = Application.Current.MainWindow;
@@ -543,7 +555,6 @@ namespace Twinpack.Dialogs
                 {
                     ResetServerSelection();
                     await InitializeInternalAsync(resetCache: true, cancellationToken: token);
-
                 }
             });
         }
@@ -554,6 +565,7 @@ namespace Twinpack.Dialogs
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
 
+                await EnsureInitializedAsync(cancellationToken: token);
                 await InitializeInternalAsync(resetCache: true, cancellationToken: token);
             });
         }
@@ -725,6 +737,7 @@ namespace Twinpack.Dialogs
             await _cancelableTask.RunAsync(async token =>
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+                await EnsureInitializedAsync(cancellationToken: token);
 
                 IsBrowsingAvailablePackages = false;
                 IsBrowsingUpdatablePackages = true;
@@ -738,6 +751,7 @@ namespace Twinpack.Dialogs
             await _cancelableTask.RunAsync(async token =>
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+                await EnsureInitializedAsync(cancellationToken: token);
 
                 IsBrowsingAvailablePackages = false;
                 IsBrowsingUpdatablePackages = false;
@@ -757,6 +771,7 @@ namespace Twinpack.Dialogs
             await _cancelableTask.RunAsync(async token =>
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+                await EnsureInitializedAsync(cancellationToken: token);
 
                 var maxNewPackages = _twinpack.AvailablePackages.Any() ? 0 : 10;
                 if (_searchTerm != SearchTextBox.Text)
@@ -1008,6 +1023,7 @@ namespace Twinpack.Dialogs
         {
             await _cancelableTask.RunAsync(async token =>
             {
+                await EnsureInitializedAsync(cancellationToken: token);
                 await UpdateCatalogAsync(maxNewPackages: 10, cancellationToken: token);
             });
         }
@@ -1186,15 +1202,15 @@ namespace Twinpack.Dialogs
 
         public void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
-            Reload(sender, e); 
+            _ = ReloadAsync(sender, e); 
         }
 
-#pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
-        public async void Reload(object sender, RoutedEventArgs e)
-#pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
+        public async Task ReloadAsync(object sender, RoutedEventArgs e)
         {
             await _cancelableTask.RunAsync(async token =>
             {
+                await EnsureInitializedAsync(cancellationToken: token);
+
                 IsInitializing = true;
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
                 await _context?.Logger?.ActivateAsync(clear: true, cancellationToken: token);
@@ -1266,6 +1282,7 @@ namespace Twinpack.Dialogs
             {
                 await _cancelableTask.RunAsync(async token =>
                 {
+                    await EnsureInitializedAsync(cancellationToken: token);
                     await UpdateCatalogAsync(searchTerm: _searchTerm, maxNewPackages: 10, cancellationToken: token);
                 });
             }
