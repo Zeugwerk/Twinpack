@@ -75,28 +75,8 @@ namespace Twinpack.Configuration
             return CreateAsync(plcProjFilepath, new List<Protocol.IPackageServer> { packageServer }, cancellationToken);
         }
 
-        public static async Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, IEnumerable<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        public static List<PlcLibrary> CollectReferencesFromPlcProj(string plcProjFilepath)
         {
-            var plc = new ConfigPlcProject();
-            plc.FilePath = plcProjFilepath;
-            XDocument xdoc = XDocument.Load(GuessFilePath(plc));
-
-            plc.Name = System.IO.Path.GetFileNameWithoutExtension(plcProjFilepath);
-            plc.Title = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Title")?.FirstOrDefault()?.Value ?? plc.Name;
-            plc.Packages = new List<ConfigPlcPackage>();
-            //plc.Name = xdoc.Elements(Config.TcNs + "Project").Elements(Config.TcNs + "PropertyGroup").Elements(Config.TcNs + "Name")?.FirstOrDefault()?.Value;
-            plc.Version = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Version")?.FirstOrDefault()?.Value;
-            plc.Authors = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Author")?.FirstOrDefault()?.Value;
-            plc.Description = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Description")?.FirstOrDefault()?.Value;
-            plc.DistributorName = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Company")?.FirstOrDefault()?.Value;
-            plc.IconFile = "";
-            plc.DisplayName = plc.Title;
-            plc.ProjectUrl = "";
-
-            // Fallback
-            plc.Version = plc.Version ?? xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "ProjectVersion").FirstOrDefault()?.Value;
-            plc.Version = plc.Version ?? "1.0.0.0";
-
             AddPlcLibraryOptions ParseOptions(XElement element, bool isLibraryReference)
             {
                 var ret = new AddPlcLibraryOptions
@@ -114,22 +94,22 @@ namespace Twinpack.Configuration
                 return ret;
             }
 
-            // collect references
+            var xdoc = XDocument.Load(plcProjFilepath);
             var references = new List<PlcLibrary>();
             var placeholderResolutions = new List<PlcLibrary>();
             var placeholderReferences = new List<PlcLibrary>();
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
 
-            
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderResolution").Elements(TcNs + "Resolution"))
             {
                 var match = re.Match(g.Value);
                 if (match.Success)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    placeholderResolutions.Add(new PlcLibrary {
-                        Name = match.Groups[1].Value.Trim(), 
-                        Version = version == "*" ? null : version, 
+                    placeholderResolutions.Add(new PlcLibrary
+                    {
+                        Name = match.Groups[1].Value.Trim(),
+                        Version = version == "*" ? null : version,
                         DistributorName = match.Groups[3].Value.Trim(),
                         Options = ParseOptions(g.Parent, false)
                     });
@@ -194,6 +174,34 @@ namespace Twinpack.Configuration
                 }
             }
 
+            return references;
+        }
+
+        public static async Task<ConfigPlcProject> CreateAsync(string plcProjFilepath, IEnumerable<Protocol.IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        {
+            var plc = new ConfigPlcProject();
+            plc.FilePath = plcProjFilepath;
+            XDocument xdoc = XDocument.Load(GuessFilePath(plc));
+
+            plc.Name = System.IO.Path.GetFileNameWithoutExtension(plcProjFilepath);
+            plc.Title = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Title")?.FirstOrDefault()?.Value ?? plc.Name;
+            plc.Packages = new List<ConfigPlcPackage>();
+            //plc.Name = xdoc.Elements(Config.TcNs + "Project").Elements(Config.TcNs + "PropertyGroup").Elements(Config.TcNs + "Name")?.FirstOrDefault()?.Value;
+            plc.Version = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Version")?.FirstOrDefault()?.Value;
+            plc.Authors = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Author")?.FirstOrDefault()?.Value;
+            plc.Description = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Description")?.FirstOrDefault()?.Value;
+            plc.DistributorName = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Company")?.FirstOrDefault()?.Value;
+            plc.IconFile = "";
+            plc.DisplayName = plc.Title;
+            plc.ProjectUrl = "";
+
+            // Fallback
+            plc.Version = plc.Version ?? xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "ProjectVersion").FirstOrDefault()?.Value;
+            plc.Version = plc.Version ?? "1.0.0.0";
+
+            // collect references
+            var references = CollectReferencesFromPlcProj(GuessFilePath(plc));
+
             var systemReferences = new List<PlcLibrary>();
             var packages = new List<ConfigPlcPackage>();
 
@@ -202,6 +210,7 @@ namespace Twinpack.Configuration
             plc.Frameworks.Zeugwerk.References = new List<string>();
             plc.Frameworks.Zeugwerk.Hide = false;
 
+            // distingiush between system references (not available on a package server) and packages (references available on package server)
             foreach (var r in references)
             {
                 // check if we find this on Twinpack
@@ -264,8 +273,6 @@ namespace Twinpack.Configuration
             {
                 plc.References["*"].Add($"{r.Name}={r.Version ?? "*"}");
             }
-
-         
 
             plc.Type = GuessPlcType(plc).ToString();return plc;
         }
