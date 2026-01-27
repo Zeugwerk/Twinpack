@@ -65,14 +65,14 @@ public class CancelableTask : INotifyPropertyChanged
             _cts = new CancellationTokenSource();
             _task = action(_cts.Token);
 
-            _cts.Token.ThrowIfCancellationRequested();
+            _cts?.Token.ThrowIfCancellationRequested();
 
             if (_task != null)
             {
                 await _task;
             }
             
-            _cts.Token.ThrowIfCancellationRequested();
+            _cts?.Token.ThrowIfCancellationRequested();
             _task = null;
         }
         catch (OperationCanceledException ex)

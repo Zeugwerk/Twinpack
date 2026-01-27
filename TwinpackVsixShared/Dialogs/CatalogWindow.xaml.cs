@@ -1140,10 +1140,11 @@ namespace Twinpack.Dialogs
             },
             async () =>
             {
-                await PackageVersionSelectAsync(Versions.ElementAt(index));
+                var plcVersion = Versions.Count > index && index >= 0 ? Versions.ElementAt(index) : null;
+                await PackageVersionSelectAsync(plcVersion);
 
-                VersionsView.IsEnabled = index >= 0;
-                VersionsView.SelectedIndex = index;
+                VersionsView.IsEnabled = plcVersion != null && index >= 0;
+                VersionsView.SelectedIndex = plcVersion != null ? index : -1;
 
                 VersionsView.SelectionChanged += PackageVersions_SelectionChanged;
                 IsPackageVersionLoading = false;
