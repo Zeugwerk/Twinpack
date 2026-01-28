@@ -18,6 +18,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\IAutomationInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\MessageFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SynchronizationContextAwaiter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\Utils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\VisualStudio.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)models\PlcVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\SourceRepositories.cs" />

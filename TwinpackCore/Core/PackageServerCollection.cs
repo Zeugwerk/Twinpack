@@ -136,18 +136,36 @@ namespace Twinpack.Core
                     continue;
 
                 // try to get the installed package, if we can't find it at least try to resolve it
-                var packageVersion = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },
-                                                                                  item.Branch, item.Configuration, item.Target,
-                                                                                  cancellationToken: cancellationToken);
+                PackageVersionGetResponse packageVersion = resolvedPackageVersion;
+                
+                if (packageVersion?.Branch != item.Branch 
+                    || packageVersion?.Configuration != item.Configuration
+                    || packageVersion?.Target != item.Target
+                    || packageVersion?.Version != (item.Version ?? resolvedPackageVersion.Latest?.Version))
+                {
+                    packageVersion = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = item.Version },
+                                                              item.Branch, item.Configuration, item.Target,
+                                                              cancellationToken: cancellationToken);
+                }
+
 
                 if (packageVersion?.Name != null && item.Version == null && projectName != null && plcName != null)
                 {
                     if (automationInterface != null)
                     {
                         var effectiveVersion = await automationInterface.ResolveEffectiveVersionAsync(projectName, plcName, packageVersion.Title);
-                        var effectivePackageVersion = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
+                        var effectivePackageVersion = packageVersion;
+
+                        if (effectivePackageVersion?.Branch != item.Branch
+                            || effectivePackageVersion?.Configuration != item.Configuration
+                            || effectivePackageVersion?.Target != item.Target
+                            || effectivePackageVersion?.Version != (item.Version ?? resolvedPackageVersion.Latest?.Version))
+                        {
+
+                            effectivePackageVersion = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name, Version = effectiveVersion },
                                                                                           item.Branch, item.Configuration, item.Target,
                                                                                           cancellationToken: cancellationToken);
+                        }
 
                         if (effectivePackageVersion?.Name != null)
                             packageVersion = effectivePackageVersion;
@@ -160,9 +178,13 @@ namespace Twinpack.Core
                     }
                 }
 
-                var packageVersionLatest = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name },
+                var packageVersionLatest = resolvedPackageVersion.Latest;
+                if (packageVersionLatest == null)
+                {
+                    packageVersionLatest = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name },
                                                                                   item.Branch, item.Configuration, item.Target,
                                                                                   cancellationToken: cancellationToken);
+                }
 
                 // force the packageVersion references version even if the version was not found
                 if (packageVersion?.Name != null)

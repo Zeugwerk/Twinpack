@@ -97,6 +97,8 @@ namespace Twinpack.Dialogs
                 PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
                 PackagingServers.ElementAt(index).Connected = server.Connected;
                 PackagingServers.ElementAt(index).Connecting = false;
+
+                return Task.CompletedTask;
             });
         }
 
@@ -123,6 +125,8 @@ namespace Twinpack.Dialogs
                 PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
                 PackagingServers.ElementAt(index).Connected = server.Connected;
                 PackagingServers.ElementAt(index).Connecting = false;
+
+                return Task.CompletedTask;
             });
         }
 
@@ -188,6 +192,8 @@ namespace Twinpack.Dialogs
                         PackagingServers.ElementAt(index).Connecting = false;
                         PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
                         PackagingServers.ElementAt(index).Connected = server.Connected;
+
+                        return Task.CompletedTask;
                     });
 
                 }
@@ -232,6 +238,8 @@ namespace Twinpack.Dialogs
                     PackagingServers.ElementAt(index).Connecting = false;
                     PackagingServers.ElementAt(index).LoggedIn = server.LoggedIn;
                     PackagingServers.ElementAt(index).Connected = server.Connected;
+
+                    return Task.CompletedTask;
                 });
 
             }

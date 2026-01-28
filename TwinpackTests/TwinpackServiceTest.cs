@@ -1326,8 +1326,8 @@ namespace TwinpackTests
 
             var auxCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZCore");
             Assert.AreEqual("ZCore", auxCorePackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.3", auxCorePackage.Config.Version);
-            Assert.AreEqual("1.5.0.3", auxCorePackage.PackageVersion.Version);
+            Assert.AreEqual("1.5.0.2", auxCorePackage.Config.Version);
+            Assert.AreEqual("1.5.0.2", auxCorePackage.PackageVersion.Version);
 
             var auxPlatformPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZPlatform");
             Assert.AreEqual("ZPlatform", auxPlatformPackage.PackageVersion.Name);
@@ -1390,7 +1390,7 @@ namespace TwinpackTests
 
             var corePackage = packages.FirstOrDefault(x => x.PackageVersion.Name == "ZCore");
             Assert.AreEqual("ZCore", corePackage.PackageVersion.Name);
-            Assert.AreEqual("fix/some-fix", corePackage.PackageVersion.Branch);
+            Assert.AreEqual("main", corePackage.PackageVersion.Branch);
 
             var platformPackage = packages.FirstOrDefault(x => x.PackageVersion.Name == "ZPlatform");
             Assert.AreEqual("ZPlatform", platformPackage.PackageVersion.Name);

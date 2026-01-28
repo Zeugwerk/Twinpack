@@ -32,12 +32,12 @@ namespace Twinpack.Core
             public AddPackageOptions() { }
             public AddPackageOptions(AddPackageOptions rhs)
             {
-                SkipDownload = rhs.SkipDownload;
-                SkipInstall = rhs.SkipInstall;
-                ForceDownload = rhs.ForceDownload;
-                UpdatePlc = rhs.UpdatePlc;
-                IncludeDependencies = rhs.IncludeDependencies;
-                DownloadPath = rhs.DownloadPath;
+                SkipDownload = rhs?.SkipDownload ?? false;
+                SkipInstall = rhs?.SkipInstall ?? false;
+                ForceDownload = rhs?.ForceDownload ??false;
+                UpdatePlc = rhs?.UpdatePlc ?? true;
+                IncludeDependencies = rhs?.IncludeDependencies ?? true;
+                DownloadPath = rhs?.DownloadPath;
             }
 
             public bool SkipDownload = false;
@@ -489,7 +489,7 @@ namespace Twinpack.Core
         {
             var usedPackages = await RetrieveUsedPackagesAsync();
             List<PackageItem> packages;
-            if (filters.Packages != null || filters.Frameworks != null)
+            if (filters?.Packages != null || filters?.Frameworks != null)
             {
                 packages = usedPackages.Where(
                 x => (filters.ProjectName == null || filters.ProjectName == x.ProjectName) &&
@@ -721,9 +721,6 @@ namespace Twinpack.Core
                     _logger.Trace($"Package {package.Config.Name} {package.Config.Version ?? "*"} could not be found!");
                     continue;
                 }
-
-                if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
-                    cache.Add(package);
             }
 
             if (includeDependencies)
@@ -746,6 +743,14 @@ namespace Twinpack.Core
                                     cache,
                                     includeDependencies: true,
                                     cancellationToken: cancellationToken);
+                }
+            }
+
+            foreach (var package in packages.Where(x => x.PackageVersion?.Name != null))
+            {
+                if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
+                {
+                    cache.Add(package);
                 }
             }
 
