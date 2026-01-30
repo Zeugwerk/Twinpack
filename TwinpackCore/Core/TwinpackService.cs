@@ -721,6 +721,10 @@ namespace Twinpack.Core
                     _logger.Trace($"Package {package.Config.Name} {package.Config.Version ?? "*"} could not be found!");
                     continue;
                 }
+
+                // todo: remove
+                if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
+                    cache.Add(package);
             }
 
             if (includeDependencies)
