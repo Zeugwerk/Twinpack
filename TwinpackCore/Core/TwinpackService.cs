@@ -722,7 +722,7 @@ namespace Twinpack.Core
                     continue;
                 }
 
-                // todo: remove
+                // Cache here to prefer the references packages instead of their dependencies
                 if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
                     cache.Add(package);
             }
@@ -747,14 +747,6 @@ namespace Twinpack.Core
                                     cache,
                                     includeDependencies: true,
                                     cancellationToken: cancellationToken);
-                }
-            }
-
-            foreach (var package in packages.Where(x => x.PackageVersion?.Name != null))
-            {
-                if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
-                {
-                    cache.Add(package);
                 }
             }
 
