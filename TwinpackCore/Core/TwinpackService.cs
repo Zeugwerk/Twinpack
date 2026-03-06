@@ -721,6 +721,10 @@ namespace Twinpack.Core
                     _logger.Trace($"Package {package.Config.Name} {package.Config.Version ?? "*"} could not be found!");
                     continue;
                 }
+
+                // Cache here to prefer the references packages instead of their dependencies
+                if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
+                    cache.Add(package);
             }
 
             if (includeDependencies)
@@ -743,14 +747,6 @@ namespace Twinpack.Core
                                     cache,
                                     includeDependencies: true,
                                     cancellationToken: cancellationToken);
-                }
-            }
-
-            foreach (var package in packages.Where(x => x.PackageVersion?.Name != null))
-            {
-                if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
-                {
-                    cache.Add(package);
                 }
             }
 
