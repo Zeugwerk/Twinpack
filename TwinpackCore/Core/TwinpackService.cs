@@ -839,7 +839,9 @@ namespace Twinpack.Core
                 artifacts.Add(new Artifact(config, plc));
             }
 
-            await automationInterface.SaveAllAsync();
+            if (_automationInterface != null)
+                await automationInterface.SaveAllAsync();
+
             ConfigFactory.Save(config);
 
             return artifacts;
