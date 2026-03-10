@@ -161,6 +161,10 @@ namespace Twinpack
             {
                 try
                 {
+                    if (string.IsNullOrWhiteSpace(repoUrl))
+                        continue;
+    
+                    var (owner, repo) = ParseGitHubRepoUrl(repoUrl);                    
                     var releases = await client.Repository.Release.GetAll(owner, repo);
                     _logger.Info($"Found {releases.Where(x => !x.Prerelease).Count()} official releases and {releases.Where(x => x.Prerelease).Count()} pre-releases");
             
