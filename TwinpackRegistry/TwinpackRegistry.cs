@@ -159,27 +159,32 @@ namespace Twinpack
 
             foreach(var repoUrl in repositories.Split('\n'))
             {
-                if (string.IsNullOrWhiteSpace(repoUrl))
-                    continue;
-
-                var (owner, repo) = ParseGitHubRepoUrl(repoUrl);
-                _logger.Info(new string('-', 3) + $" {owner}:{repo}");
-
-                var releases = await client.Repository.Release.GetAll(owner, repo);
-
-                _logger.Info($"Found {releases.Where(x => !x.Prerelease).Count()} offical releases and {releases.Where(x => x.Prerelease).Count()} pre-releases");
-
-                var latestRelease = releases.Where(x => !x.Prerelease)
-                                            .OrderByDescending(x => x.PublishedAt)
-                                            .FirstOrDefault();
-
-                if(latestRelease != null)
+                try
                 {
-                    await DownloadReleaseAsync(config, client, repoUrl, latestRelease, owner, repo);
+                    var releases = await client.Repository.Release.GetAll(owner, repo);
+                    _logger.Info($"Found {releases.Where(x => !x.Prerelease).Count()} official releases and {releases.Where(x => x.Prerelease).Count()} pre-releases");
+            
+                    var latestRelease = releases
+                        .Where(x => !x.Prerelease)
+                        .OrderByDescending(x => x.PublishedAt)
+                        .FirstOrDefault();
+            
+                    if (latestRelease != null)
+                    {
+                        await DownloadReleaseAsync(config, client, repoUrl, latestRelease, owner, repo);
+                    }
+                    else
+                    {
+                        _logger.Warn($"Skipping '{repoUrl}', it has no official release");
+                    }
                 }
-                else
+                catch (Octokit.ApiException ex)
                 {
-                    _logger.Warn($"Skipping '{repoUrl}', it has no offical release");
+                    _logger.Error($"GitHub API error for '{repoUrl}': {ex.StatusCode} - {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Unexpected error processing '{repoUrl}': {ex.Message}");
                 }
             }
 
