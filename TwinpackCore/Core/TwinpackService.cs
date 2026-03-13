@@ -626,7 +626,7 @@ namespace Twinpack.Core
                 // update configuration
                 var plcConfig = config?.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
-                var newPackageConfig = new ConfigPlcPackage(package.PackageVersion) { Options = package.Config.Options };
+                var newPackageConfig = new ConfigPlcPackage(package.PackageVersion) { Options = package.Config.Options, Version = package.Config.Version == null ? null : package.PackageVersion.Version };
 
                 package.Config = newPackageConfig;
                 addedPackages.Add(package);
