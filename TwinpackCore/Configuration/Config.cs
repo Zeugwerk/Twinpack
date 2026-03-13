@@ -70,7 +70,6 @@ namespace Twinpack.Configuration
             Target = pv.PackageVersion?.Target;
             Configuration = pv.PackageVersion?.Configuration;
 
-            Namespace = pv.Config?.Namespace;
             Parameters = pv.Config?.Parameters;
             Options = pv.Config?.Options;
         }
@@ -83,7 +82,6 @@ namespace Twinpack.Configuration
             Target = pv.Target;
             Configuration = pv.Configuration;
             DistributorName = pv.DistributorName;
-            Namespace = pv.Name;
             Parameters = null;
             Options = null;
         }
@@ -96,7 +94,6 @@ namespace Twinpack.Configuration
             Target = pv.Target;
             Configuration = pv.Configuration;
             DistributorName = pv.DistributorName;
-            Namespace = pv.Name;
             Parameters = pv.Parameters;
             Options = pv.Options;
         }
@@ -109,7 +106,6 @@ namespace Twinpack.Configuration
             Configuration = "Release";
             Version = null;
             DistributorName = null;
-            Namespace = null;
             Parameters = null;
             Options = null;
         }
@@ -141,11 +137,6 @@ namespace Twinpack.Configuration
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]        
         [JsonPropertyName("distributor-name")]
         public string DistributorName { get; set; }
-        
-        [DefaultValue(null)]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]        
-        [JsonPropertyName("namespace")]
-        public string Namespace { get; set; }
 
         [DefaultValue(null)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
