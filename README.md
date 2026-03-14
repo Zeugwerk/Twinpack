@@ -2,6 +2,9 @@
 
 The Twinpack Package Manager is a powerful and user-friendly package management tool for TwinCAT libraries. It is designed to empower the TwinCAT community by enabling sharing and distribution of libraries. It acts as a versatile platform similarly to NuGet (but with a PLC touch), allowing users to efficiently manage and deploy their custom-built modules.
 
+Twinpack is developed by [Zeugwerk](https://zeugwerk.at) and is the standard way to install and update [Zeugwerk Framework](https://github.com/Zeugwerk/Zeugwerk-Framework) libraries.
+
+
 <div style="display: flex; justify-content: space-between;">
 <img src="/images/twinpack_catalog.png"/>
 </div>
@@ -22,6 +25,10 @@ Visit the link to get detailed instructions on setting up and using the project.
 - [Registration](https://zeugwerk.dev/wp-login.php?action=register), only needed to "push" package, i.e. if you want to publish packages manually or with CI
 - [Contact us](mailto:info@zeugwerk.at)
 
+## Zeugwerk Ecosystem
+
+- [Zeugwerk Framework](https://github.com/Zeugwerk/Zeugwerk-Framework): OOP framework for TwinCAT (install via Twinpack).
+- [Development Kit](https://github.com/Zeugwerk/Zeugwerk-Development-Kit/releases/latest): Trial to get started.
 
 ## Further information
 
