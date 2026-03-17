@@ -94,7 +94,7 @@ namespace Twinpack.Configuration
                 return ret;
             }
 
-            var xdoc = XDocument.Load(plcProjFilepath);
+            var xdoc = XDocument.Load(plcProjFilepath);e
             var references = new List<PlcLibrary>();
             var placeholderResolutions = new List<PlcLibrary>();
             var placeholderReferences = new List<PlcLibrary>();
@@ -109,7 +109,7 @@ namespace Twinpack.Configuration
                     placeholderResolutions.Add(new PlcLibrary
                     {
                         Name = match.Groups[1].Value.Trim(),
-                        Version = version == "*" ? null : version,
+                        Version = version,
                         DistributorName = match.Groups[3].Value.Trim(),
                         Options = ParseOptions(g.Parent, false)
                     });
@@ -127,7 +127,7 @@ namespace Twinpack.Configuration
                     placeholderReferences.Add(new PlcLibrary
                     {
                         Name = name,
-                        Version = (ignoreDefaultResolution || version == "*") ? null : version,
+                        Version = version,
                         DistributorName = match.Groups[3].Value.Trim(),
                         Options = ParseOptions(g.Parent, false)
                     });
@@ -148,7 +148,7 @@ namespace Twinpack.Configuration
                 {
                     Name = x.Right?.Name ?? x.Left.Name,
                     DistributorName = x.Right?.DistributorName ?? x.Left.DistributorName,
-                    Version = x.Right?.Version ?? x.Left.Version,
+                    Version = (x.Right?.Version ?? x.Left.Version) == "*" ? null : (x.Right?.Version ?? x.Left.Version),
                     Options = x.Right?.Options ?? x.Left.Options,
                 })
                 .ToList();
