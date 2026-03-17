@@ -94,7 +94,7 @@ namespace Twinpack.Configuration
                 return ret;
             }
 
-            var xdoc = XDocument.Load(plcProjFilepath);e
+            var xdoc = XDocument.Load(plcProjFilepath);
             var references = new List<PlcLibrary>();
             var placeholderResolutions = new List<PlcLibrary>();
             var placeholderReferences = new List<PlcLibrary>();
