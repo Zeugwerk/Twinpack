@@ -75,7 +75,7 @@ namespace Twinpack.Configuration
             return CreateAsync(plcProjFilepath, new List<Protocol.IPackageServer> { packageServer }, cancellationToken);
         }
 
-        public static List<PlcLibrary> CollectReferencesFromPlcProj(string plcProjFilepath, bool ignoreDefaultResolution = false)
+        public static List<PlcLibrary> CollectReferencesFromPlcProj(string plcProjFilepath)
         {
             AddPlcLibraryOptions ParseOptions(XElement element, bool isLibraryReference)
             {
