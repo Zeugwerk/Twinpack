@@ -2,7 +2,7 @@
 
 The Twinpack Package Manager is a powerful and user-friendly package management tool for TwinCAT libraries. It is designed to empower the TwinCAT community by enabling sharing and distribution of libraries. It acts as a versatile platform similarly to NuGet (but with a PLC touch), allowing users to efficiently manage and deploy their custom-built modules.
 
-Twinpack is developed by [Zeugwerk](https://zeugwerk.at) and is the standard way to install and update [Zeugwerk Framework](https://github.com/Zeugwerk/Zeugwerk-Framework) libraries.
+Twinpack is free. It is developed by [Zeugwerk](https://zeugwerk.at) and is the standard way to install and update [Zeugwerk Framework](https://github.com/Zeugwerk/Zeugwerk-Framework) - but it works for any TwinCAT library from any publisher.
 
 
 <div style="display: flex; justify-content: space-between;">
@@ -15,7 +15,7 @@ Twinpack currently supports the following package sources
 1. [Nuget Server](https://zeugwerk.dev/Zeugwerk_Framework/Documentation/snapshot/userguide/twinpack/twinpack_nuget_package.html): Everyone can host his own NuGet server and create packages to consume them from the on premises server.
 1. [Beckhoff Library Repository](https://zeugwerk.dev/Zeugwerk_Framework/Documentation/snapshot/userguide/twinpack/twinpack_beckhoffrepository.html): Since TwinCAT 4026, Beckhoff provides a public repository for their libraries. Twinpack can connect this repositories and integrate them seamlessly into the IDE.
 
-The full project documentation, including a quickstart guide for **Twinpack**, is available at the following at [Project Documentation](https://zeugwerk.dev/Zeugwerk_Framework/Documentation/snapshot/userguide/twinpack/twinpack_quickstart.html)
+The full project documentation, including a quickstart guide for **Twinpack**, is available at the following at [Project Documentation](https://zeugwerk.dev/Zeugwerk_Framework/Documentation/release/1.6/twinpack/twinpack_quickstart.html)
 
 Visit the link to get detailed instructions on setting up and using the project.
 
