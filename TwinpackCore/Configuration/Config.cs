@@ -42,16 +42,29 @@ namespace Twinpack.Configuration
         public string FilePath { get; set; }
     }
 
+    public enum ProjectFileType
+    {
+        Plc, // tsproj / tspproj
+        Hmi  // hmiproj
+    }
+
     public class ConfigProject
     {
         public ConfigProject()
         {
             Plcs = new List<ConfigPlcProject>();
+            Type = ProjectFileType.Plc;
         }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("name")]
         public string Name { get; set; }
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [DefaultValue(ProjectFileType.Plc)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("type")]
+        public ProjectFileType Type { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("plcs")]
