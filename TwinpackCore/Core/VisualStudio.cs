@@ -83,7 +83,7 @@ namespace Twinpack.Core
 
             // on some occasions, DTE2 gives up on us and blocks forever. For this case
             // we add a timeout 
-            _timeout = new System.Timers.Timer(1000 * 60 * 30);
+            _timeout = new System.Timers.Timer(1000 * 60 * 60);
             _timeout.Elapsed += KillProcess;
             _timeout.AutoReset = false; // One-shot-timer
             _timeout.Start();
