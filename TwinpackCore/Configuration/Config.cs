@@ -45,7 +45,8 @@ namespace Twinpack.Configuration
     public enum ProjectFileType
     {
         Plc, // tsproj / tspproj
-        Hmi  // hmiproj
+        Hmi,  // hmiproj
+        Database // tcconnprj
     }
 
     public class ConfigProject
