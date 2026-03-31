@@ -141,7 +141,8 @@ namespace Twinpack.Core
             if (_heartbeatTimer == null)
                 return;
 
-            _logger.Info($"Timeout occured ... killing processes");
+            _logger.Error($"No heartbeat received from TwinCAT XAEShell / Visual Studio for {TimeSpan.FromMilliseconds(_heartbeatTimer.Interval)}. " 
+                + "Application appears unresponsive — initiating kill process.");
             Environment.Exit(-1);
 
             Dispose();
