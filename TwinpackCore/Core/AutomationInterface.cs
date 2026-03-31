@@ -15,13 +15,6 @@ namespace Twinpack.Core
 {
     public abstract class AutomationInterface : IAutomationInterface
     {
-        public event EventHandler<EventArgs> ProgressedEvent = delegate { };
-
-        protected virtual void OnProgressedEvent()
-        {
-            ProgressedEvent?.Invoke(this, new EventArgs());
-        }
-
         public string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
 
         public string? TwincatPath

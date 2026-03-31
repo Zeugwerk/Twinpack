@@ -15,6 +15,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterfaceHeadless.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface4024.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)core\CancelableTask.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\HeartbeatService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\IAutomationInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\MessageFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SynchronizationContextAwaiter.cs" />

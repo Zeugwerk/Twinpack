@@ -74,28 +74,6 @@ namespace Twinpack.Core
             _solution?.Close(save);
         }
 
-        public void EnableHeartbeat(bool enable, TimeSpan timespan)
-        {
-            if (enable)
-            {
-                // on some occasions, DTE2 gives up on us and blocks forever. For this case
-                // we add a timeout 
-                _heartbeatTimer = new System.Timers.Timer(timespan.TotalMilliseconds);
-                _heartbeatTimer.Elapsed += KillProcess;
-                _heartbeatTimer.AutoReset = false; // One-shot-timer
-                _heartbeatTimer.Start();
-
-                _logger.Info($"Enabled Heartbeat ({timespan.ToString()})");
-            }
-            else
-            {
-                _heartbeatTimer?.Dispose();
-                _heartbeatTimer = null;
-
-                _logger.Info($"Disabled Heartbeat");
-            }
-        }
-
         protected virtual bool Initialize(bool hidden = true)
         {
             ThrowIfNotMainThread();
@@ -134,25 +112,6 @@ namespace Twinpack.Core
             }
 
             throw new NotSupportedException($"No supported Visual Studio ({string.Join(", ", shells)}) detected!");
-        }
-
-        protected void KillProcess(Object source, System.Timers.ElapsedEventArgs e)
-        {
-            if (_heartbeatTimer == null)
-                return;
-
-            _logger.Error($"No heartbeat received from TwinCAT XAEShell / Visual Studio for {TimeSpan.FromMilliseconds(_heartbeatTimer.Interval)}. " 
-                + "Application appears unresponsive — initiating kill process.");
-            Environment.Exit(-1);
-
-            Dispose();
-
-            string processName = AppDomain.CurrentDomain.FriendlyName;
-            System.Diagnostics.Process[] processes = System.Diagnostics.Process.GetProcessesByName(processName);
-            foreach (System.Diagnostics.Process p in processes)
-            {
-                p.Kill();
-            }
         }
 
         public IAutomationInterface Open(Config config, string tcversion="TC3.1")
@@ -217,12 +176,6 @@ namespace Twinpack.Core
                 {
                     _logger.Info("Using " + automationInterface.GetType().FullName);
                     _automationInterface = automationInterface;
-
-                    _automationInterface.ProgressedEvent += new EventHandler<EventArgs>((s, e) => {
-                        _heartbeatTimer.Stop();
-                        _heartbeatTimer.Start();
-                    });
-
                     return _automationInterface;
                 }
             }
