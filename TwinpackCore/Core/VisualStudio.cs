@@ -19,7 +19,7 @@ namespace Twinpack.Core
         protected DTE2 _dte;
         protected EnvDTE.Solution _solution;
         protected IAutomationInterface _automationInterface;
-        protected System.Timers.Timer _timeout;
+        protected System.Timers.Timer _heartbeatTimer;
         protected MessageFilter _filter;
         protected SynchronizationContext _synchronizationContext;
         protected System.Threading.Thread _thread;
@@ -74,19 +74,34 @@ namespace Twinpack.Core
             _solution?.Close(save);
         }
 
+        public void EnableHeartbeat(bool enable, TimeSpan timespan)
+        {
+            if (enable)
+            {
+                // on some occasions, DTE2 gives up on us and blocks forever. For this case
+                // we add a timeout 
+                _heartbeatTimer = new System.Timers.Timer(timespan.TotalMilliseconds);
+                _heartbeatTimer.Elapsed += KillProcess;
+                _heartbeatTimer.AutoReset = false; // One-shot-timer
+                _heartbeatTimer.Start();
+
+                _logger.Info($"Enabled Heartbeat ({timespan.ToString()})");
+            }
+            else
+            {
+                _heartbeatTimer?.Dispose();
+                _heartbeatTimer = null;
+
+                _logger.Info($"Disabled Heartbeat");
+            }
+        }
+
         protected virtual bool Initialize(bool hidden = true)
         {
             ThrowIfNotMainThread();
 
             if (_dte != null)
                 return true;
-
-            // on some occasions, DTE2 gives up on us and blocks forever. For this case
-            // we add a timeout 
-            _timeout = new System.Timers.Timer(1000 * 60 * 30);
-            _timeout.Elapsed += KillProcess;
-            _timeout.AutoReset = false; // One-shot-timer
-            _timeout.Start();
 
             _filter = new MessageFilter();
             List<string> shells = new List<string> { "TcXaeShell.DTE.15.0", "TcXaeShell.DTE.17.0" };
@@ -123,6 +138,9 @@ namespace Twinpack.Core
 
         protected void KillProcess(Object source, System.Timers.ElapsedEventArgs e)
         {
+            if (_heartbeatTimer == null)
+                return;
+
             _logger.Info($"Timeout occured ... killing processes");
             Environment.Exit(-1);
 
@@ -200,8 +218,8 @@ namespace Twinpack.Core
                     _automationInterface = automationInterface;
 
                     _automationInterface.ProgressedEvent += new EventHandler<EventArgs>((s, e) => {
-                        _timeout.Stop();
-                        _timeout.Start();
+                        _heartbeatTimer.Stop();
+                        _heartbeatTimer.Start();
                     });
 
                     return _automationInterface;
