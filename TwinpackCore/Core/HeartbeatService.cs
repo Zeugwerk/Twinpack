@@ -7,6 +7,7 @@ public static class HeartbeatService
     private static System.Threading.Timer? _timer;
     private static DateTime _lastHeartbeat;
     private static bool _started;
+    private static bool _initialized;    
 
     private static TimeSpan _timeout;
     private static Action? _onTimeout;
@@ -19,6 +20,7 @@ public static class HeartbeatService
             _timeout = timeout;
             _onTimeout = onTimeout;
             _started = false;
+            _initialized = true;
         }
     }
 
@@ -28,18 +30,21 @@ public static class HeartbeatService
     /// </summary>
     public static void Beat()
     {
+        if (!_initialized)
+            return;
+        
         lock (_lock)
         {
             _lastHeartbeat = DateTime.Now;
 
             if (!_started)
             {
+                _timer = new System.Threading.Timer(OnTimeout, null, _timeout, System.Threading.Timeout.InfiniteTimeSpan);
+                _started = true;
+                
                 _logger?.Info(
                     "HeartbeatService: First heartbeat received — starting timeout watchdog ({Timeout} min).",
                     _timeout.TotalMinutes);
-
-                _timer = new System.Threading.Timer(OnTimeout, null, _timeout, System.Threading.Timeout.InfiniteTimeSpan);
-                _started = true;
             }
             else
             {
@@ -49,7 +54,7 @@ public static class HeartbeatService
     }
 
     private static void OnTimeout(object? state)
-    {
+    {        
         _logger?.Warn(
             "HeartbeatService: No heartbeat received for {Timeout} minutes. " +
             "Last heartbeat was at {LastHeartbeat} ({Elapsed:mm\\:ss} ago). " +
@@ -76,6 +81,9 @@ public static class HeartbeatService
 
     public static void Stop()
     {
+        if (!_initialized)
+            return;
+
         lock (_lock)
         {
             _timer?.Dispose();
