@@ -70,6 +70,14 @@ namespace Twinpack.Models
     }
     public class PlcLibrary
     {
+        public PlcLibrary() { }
+        public PlcLibrary(PlcLibrary plcLibrary)
+        {
+            Name = plcLibrary?.Name;
+            Version = plcLibrary?.Version;
+            DistributorName = plcLibrary?.DistributorName;
+            Options = plcLibrary?.Options;
+        }
         public string Name { get; set; }
         public string Version { get; set; }
         public string DistributorName { get; set; }
