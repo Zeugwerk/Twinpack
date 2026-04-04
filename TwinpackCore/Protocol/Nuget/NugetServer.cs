@@ -231,7 +231,9 @@ namespace Twinpack.Protocol
 
             return
                 new Tuple<IEnumerable<PackageVersionGetResponse>, bool>(
-                    results.Select(x => new PackageVersionGetResponse()
+                    results
+                    .OrderByDescending(x => x.Identity.Version)
+                    .Select(x => new PackageVersionGetResponse()
                     {
                         PackageId = null,
                         Name = x.Identity.Id,
