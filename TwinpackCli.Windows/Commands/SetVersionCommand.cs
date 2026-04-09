@@ -57,29 +57,31 @@ namespace Twinpack.Commands
             SetUpLogger(settings);
             Initialize(settings.Headed);
 
-            try
+            return RunWithAutomationTeardown(() =>
             {
-                _twinpack.SetPackageVersionAsync(settings.Version,
-                    new SetPackageVersionOptions
-                    {
-                        PurgePackages = settings.PurgePackages,
-                        ProjectName = settings.ProjectName,
-                        PlcName = settings.PlcName,
-                        SyncFrameworkPackages = settings.SyncFrameworkPackages,
-                        PreferredFrameworkBranch = settings.PreferredFrameworkBranch,
-                        PreferredFrameworkTarget = settings.PreferredFrameworkTarget,
-                        PreferredFrameworkConfiguration = settings.PreferredFrameworkConfiguration,
-                    }
-                ).GetAwaiter().GetResult();
-            }
-            catch(Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error(ex.Message);
-            }
+                try
+                {
+                    _twinpack.SetPackageVersionAsync(settings.Version,
+                        new SetPackageVersionOptions
+                        {
+                            PurgePackages = settings.PurgePackages,
+                            ProjectName = settings.ProjectName,
+                            PlcName = settings.PlcName,
+                            SyncFrameworkPackages = settings.SyncFrameworkPackages,
+                            PreferredFrameworkBranch = settings.PreferredFrameworkBranch,
+                            PreferredFrameworkTarget = settings.PreferredFrameworkTarget,
+                            PreferredFrameworkConfiguration = settings.PreferredFrameworkConfiguration,
+                        }
+                    ).GetAwaiter().GetResult();
+                }
+                catch(Exception ex)
+                {
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
+                }
 
-
-            return 0;
+                return 0;
+            });
         }
 
 

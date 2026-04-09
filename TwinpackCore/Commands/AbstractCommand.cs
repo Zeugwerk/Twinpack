@@ -35,6 +35,9 @@ namespace Twinpack.Commands
         protected Config _config;
         protected static Logger _logger;
 
+        /// <summary>CLI-spawned XAE automation host; disposed after each command when <c>--headed</c>.</summary>
+        protected VisualStudio _ownedVisualStudio;
+
         public void SetUpLogger(AbstractSettings settings)
         {
             var loggingConfiguration = LogManager.Configuration ?? new NLog.Config.LoggingConfiguration();
@@ -87,12 +90,58 @@ namespace Twinpack.Commands
             if (_config == null && requiresConfig)
                 throw new FileNotFoundException($@"Configuration file (.\Zeugwerk\config.json) and/or .sln file not found");
 
-            _twinpack = new TwinpackService(
-                PackagingServerRegistry.Servers,
-                headed
-                    ? new VisualStudio(hidden: true).Open(_config) 
-                    : new AutomationInterfaceHeadless(_config),
-                _config);
+            _ownedVisualStudio = null;
+            if (headed)
+            {
+                _ownedVisualStudio = new VisualStudio(hidden: true);
+                try
+                {
+                    var automation = _ownedVisualStudio.Open(_config);
+                    _twinpack = new TwinpackService(PackagingServerRegistry.Servers, automation, _config);
+                }
+                catch
+                {
+                    DisposeOwnedVisualStudio();
+                    throw;
+                }
+            }
+            else
+            {
+                _twinpack = new TwinpackService(
+                    PackagingServerRegistry.Servers,
+                    new AutomationInterfaceHeadless(_config),
+                    _config);
+            }
+        }
+
+        protected void DisposeOwnedVisualStudio()
+        {
+            if (_ownedVisualStudio == null)
+                return;
+            try
+            {
+                _ownedVisualStudio.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to shut down TwinCAT XAE automation host");
+            }
+            finally
+            {
+                _ownedVisualStudio = null;
+            }
+        }
+
+        protected int RunWithAutomationTeardown(Func<int> action)
+        {
+            try
+            {
+                return action();
+            }
+            finally
+            {
+                DisposeOwnedVisualStudio();
+            }
         }
 
         protected List<PackageItem> CreatePackageItems(string[] packages, string projectName = null, string plcName = null)

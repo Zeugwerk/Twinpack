@@ -55,9 +55,12 @@ namespace Twinpack.Commands
             SetUpLogger(settings);
             Initialize(settings.Headed);
 
-            var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations, settings.ProjectName, settings.PlcName);
-            _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload=settings.ForceDownload, IncludeDependencies= settings.AddDependencies }).GetAwaiter().GetResult();
-            return 0;
+            return RunWithAutomationTeardown(() =>
+            {
+                var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations, settings.ProjectName, settings.PlcName);
+                _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload=settings.ForceDownload, IncludeDependencies= settings.AddDependencies }).GetAwaiter().GetResult();
+                return 0;
+            });
         }
     }
 }
