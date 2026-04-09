@@ -32,11 +32,14 @@ namespace Twinpack.Commands
 
             Initialize(settings.Headed);
 
-            var packages = CreatePackageItems(settings.Packages, settings.ProjectName, settings.PlcName);
+            return RunWithAutomationTeardown(() =>
+            {
+                var packages = CreatePackageItems(settings.Packages, settings.ProjectName, settings.PlcName);
 
-            _twinpack.RemovePackagesAsync(packages, uninstall: false).GetAwaiter().GetResult();
+                _twinpack.RemovePackagesAsync(packages, uninstall: false).GetAwaiter().GetResult();
 
-            return 0;
+                return 0;
+            });
         }
     }
 }

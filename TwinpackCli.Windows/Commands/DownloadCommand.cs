@@ -46,21 +46,23 @@ namespace Twinpack.Commands
 
             Initialize(settings.Headed);
 
-            var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations);
+            return RunWithAutomationTeardown(() =>
+            {
+                var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations);
 
-            if (settings.Packages == null)
-                packages = _twinpack.RetrieveUsedPackagesAsync().GetAwaiter().GetResult().ToList();
+                if (settings.Packages == null)
+                    packages = _twinpack.RetrieveUsedPackagesAsync().GetAwaiter().GetResult().ToList();
 
-            // download packages
-            var downloadedPackageVersions = _twinpack.DownloadPackagesAsync(packages,
-                new TwinpackService.DownloadPackageOptions
-                {
-                    IncludeProvidedPackages = settings.IncludeProvidedPackages, 
-                    IncludeDependencies = true, 
-                    ForceDownload = settings.ForceDownload,
-                }).GetAwaiter().GetResult();
+                _twinpack.DownloadPackagesAsync(packages,
+                    new TwinpackService.DownloadPackageOptions
+                    {
+                        IncludeProvidedPackages = settings.IncludeProvidedPackages, 
+                        IncludeDependencies = true, 
+                        ForceDownload = settings.ForceDownload,
+                    }).GetAwaiter().GetResult();
 
-            return 0;
+                return 0;
+            });
         }
     }
 }
