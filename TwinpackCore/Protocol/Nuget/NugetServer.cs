@@ -40,7 +40,7 @@ namespace Twinpack.Protocol
         SourceCacheContext _noCache;
 
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
-        public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
+        public static string DefaultLibraryCachePath { get { return Path.Combine(Directory.GetCurrentDirectory(), ".Zeugwerk", "libraries"); } }
         public string ServerType { get; } = "NuGet Repository";
         public string Name { get; set; }
         public bool Enabled { get; set; } = true;
@@ -324,8 +324,8 @@ namespace Twinpack.Protocol
                             try
                             {
                                 var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                                var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
-                                var fileName = $@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}";
+                                var filePath = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target);
+                                var fileName = Path.Combine(filePath, $"{packageVersion.Name}_{packageVersion.Version}.{extension}");
                                 Directory.CreateDirectory(filePath);
 
                                 using (var file = File.OpenWrite(fileName))
@@ -371,8 +371,8 @@ namespace Twinpack.Protocol
                                 foreach (var f in files)
                                 {
                                     var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                                    var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
-                                    var fileName = $@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}";
+                                    var filePath = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target);
+                                    var fileName = Path.Combine(filePath, $"{packageVersion.Name}_{packageVersion.Version}.{extension}");
                                     Directory.CreateDirectory(filePath);
                                     File.Copy(f, fileName, true);
                                 }

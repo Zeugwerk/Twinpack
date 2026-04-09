@@ -384,7 +384,7 @@ namespace Twinpack.Configuration
             // check if all requested files are present
             foreach (var plc in plcs)
             {
-                plc.FilePath = $@"{cachePath ?? Protocol.TwinpackServer.DefaultLibraryCachePath}\{target}\{plc.Name}_{plc.Version}.{suffix}";
+                plc.FilePath = System.IO.Path.Combine(cachePath ?? Protocol.TwinpackServer.DefaultLibraryCachePath, target, $"{plc.Name}_{plc.Version}.{suffix}");
                 if (!File.Exists(plc.FilePath))
                     throw new Exceptions.LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{plc.FilePath}'");
 

@@ -15,7 +15,7 @@ namespace Twinpack.Core
 {
     public abstract class AutomationInterface : IAutomationInterface
     {
-        public string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
+        public string DefaultLibraryCachePath { get { return Path.Combine(Directory.GetCurrentDirectory(), ".Zeugwerk", "libraries"); } }
 
         public string? TwincatPath
         {

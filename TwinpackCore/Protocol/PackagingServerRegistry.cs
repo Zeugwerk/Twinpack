@@ -16,15 +16,17 @@ namespace Twinpack.Protocol
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        private static readonly List<string> _filePaths = new List<string> {
-            @".\sourceRepositories.json",
-            @"%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json"
-        };
-
         static List<IPackagingServerFactory> _factories = new List<IPackagingServerFactory>();
         static PackageServerCollection _servers = new PackageServerCollection();
 
-        private static IEnumerable<string> FilePaths { get => _filePaths.Select(x => Environment.ExpandEnvironmentVariables(x)); }
+        private static IEnumerable<string> FilePaths
+        {
+            get
+            {
+                yield return Path.Combine(Environment.CurrentDirectory, "sourceRepositories.json");
+                yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Zeugwerk", "Twinpack", "sourceRepositories.json");
+            }
+        }
 
         private static string FilePath
         { 
