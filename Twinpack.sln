@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twinpack.Net", "Twinpack.Ne
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TwinpackCli.Net", "TwinpackCli.Net\TwinpackCli.Net.csproj", "{A9AF13EF-6D43-459A-B559-5C2856700025}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "TwinpackCli", "TwinpackCli\TwinpackCli.shproj", "{E7B2C9D1-4F8A-4E3B-9D2C-1A0B5E6F7A8B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -121,5 +123,8 @@ Global
 		TwinpackCore\TwinpackCore.projitems*{963dd6a7-e9d8-4386-92e0-8b39cb7d8e9c}*SharedItemsImports = 13
 		TwinpackCore\TwinpackCore.projitems*{c9f03787-eacd-4120-83e4-414ab7a8c695}*SharedItemsImports = 4
 		TwinpackCore\TwinpackCore.projitems*{fded33d8-3f68-4ac3-aa86-d61e20801c2f}*SharedItemsImports = 5
+		TwinpackCli\TwinpackCli.Commands.projitems*{0accaf6b-a62c-4051-ae4f-47461eaa4a2f}*SharedItemsImports = 4
+		TwinpackCli\TwinpackCli.Commands.projitems*{a9af13ef-6d43-459a-b559-5c2856700025}*SharedItemsImports = 5
+		TwinpackCli\TwinpackCli.Commands.projitems*{e7b2c9d1-4f8a-4e3b-9d2c-1a0b5e6f7a8b}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

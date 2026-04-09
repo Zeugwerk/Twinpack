@@ -1,16 +1,14 @@
-﻿using NLog;
+using NLog;
 using Spectre.Console.Cli;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.Remoting.Contexts;
 using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Models;
 using Twinpack.Protocol;
-
 
 namespace Twinpack.Commands
 {
@@ -35,8 +33,10 @@ namespace Twinpack.Commands
         protected Config _config;
         protected static Logger _logger;
 
+#if TWINPACK_CLI_FRAMEWORK
         /// <summary>CLI-spawned XAE automation host; disposed after each command when <c>--headed</c>.</summary>
         protected VisualStudio _ownedVisualStudio;
+#endif
 
         public void SetUpLogger(AbstractSettings settings)
         {
@@ -82,7 +82,6 @@ namespace Twinpack.Commands
                     packageServers: PackagingServerRegistry.Servers.Where(x => x.Connected),
                     plcTypeFilter: null).GetAwaiter().GetResult();
 
-                // set filepath is null, because we don't want to save this config
                 if(_config != null)
                     _config.FilePath = null;
             }
@@ -90,6 +89,7 @@ namespace Twinpack.Commands
             if (_config == null && requiresConfig)
                 throw new FileNotFoundException($@"Configuration file (.\Zeugwerk\config.json) and/or .sln file not found");
 
+#if TWINPACK_CLI_FRAMEWORK
             _ownedVisualStudio = null;
             if (headed)
             {
@@ -112,8 +112,15 @@ namespace Twinpack.Commands
                     new AutomationInterfaceHeadless(_config),
                     _config);
             }
+#else
+            _twinpack = new TwinpackService(
+                PackagingServerRegistry.Servers,
+                new AutomationInterfaceHeadless(_config),
+                _config);
+#endif
         }
 
+#if TWINPACK_CLI_FRAMEWORK
         protected void DisposeOwnedVisualStudio()
         {
             if (_ownedVisualStudio == null)
@@ -131,9 +138,11 @@ namespace Twinpack.Commands
                 _ownedVisualStudio = null;
             }
         }
+#endif
 
         protected int RunWithAutomationTeardown(Func<int> action)
         {
+#if TWINPACK_CLI_FRAMEWORK
             try
             {
                 return action();
@@ -142,6 +151,9 @@ namespace Twinpack.Commands
             {
                 DisposeOwnedVisualStudio();
             }
+#else
+            return action();
+#endif
         }
 
         protected List<PackageItem> CreatePackageItems(string[] packages, string projectName = null, string plcName = null)
@@ -150,7 +162,6 @@ namespace Twinpack.Commands
         }
         protected List<PackageItem> CreatePackageItems(string[] packages, string[] versions, string[] branches, string[] targets, string[] configurations, string projectName=null, string plcName=null)
         {
-            // create temporary configuration, which holds the packages, which should be downloaded
             List<PackageItem> packageItems = new List<PackageItem>();
             for (int i = 0; i < (packages?.Count() ?? 0); i++)
             {

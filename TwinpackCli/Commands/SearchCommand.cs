@@ -1,11 +1,10 @@
-﻿using NLog.Fluent;
+#nullable enable
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Twinpack.Core;
 using Twinpack.Models;
 using Twinpack.Protocol;
