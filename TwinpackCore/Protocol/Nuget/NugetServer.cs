@@ -294,7 +294,7 @@ namespace Twinpack.Protocol
                         _cache,
                         NullLogger.Instance,
                         cancellationToken);
-                    version = metaData.FirstOrDefault()?.Identity.Version;
+                    version = metaData.OrderByDescending(p => p.Identity.Version).FirstOrDefault()?.Identity.Version;
                 }
 
                 await resource.CopyNupkgToStreamAsync(
@@ -409,7 +409,10 @@ namespace Twinpack.Protocol
                 NullLogger.Instance,
                 cancellationToken);
 
-            IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => EvaluateVersion(p.Identity.Version) == library.Version);
+            var ordered = packages.OrderByDescending(p => p.Identity.Version);
+            IPackageSearchMetadata x = library.Version == null
+                ? ordered.FirstOrDefault()
+                : packages.FirstOrDefault(p => EvaluateVersion(p.Identity.Version) == library.Version);
 
             if (x == null)
                 return new PackageVersionGetResponse();
@@ -426,13 +429,16 @@ namespace Twinpack.Protocol
                 var minOriginalVersion = EvaluateVersion(d.VersionRange?.MinVersion);
                 var version = (minVersion.Major == 0 && minVersion.Minor == 0 && minVersion.Revision == 0 && minVersion.Build == 0) ? null : minOriginalVersion;
 
-                var dependency = (await resource.GetMetadataAsync(
+                var dependencyMetadata = await resource.GetMetadataAsync(
                     d.Id,
                     includePrerelease: true,
                     includeUnlisted: false,
                     _cache,
                     NullLogger.Instance,
-                    cancellationToken)).FirstOrDefault(p => version == null || version.ToString() == EvaluateVersion(p.Identity.Version));
+                    cancellationToken);
+                var dependency = dependencyMetadata
+                    .OrderByDescending(p => p.Identity.Version)
+                    .FirstOrDefault(p => version == null || version.ToString() == EvaluateVersion(p.Identity.Version));
 
                 if(dependency?.Tags?.ToLower().Contains("library") == true || dependency?.Tags?.ToLower().Contains("plc-library") == true)
                 {
@@ -518,7 +524,7 @@ namespace Twinpack.Protocol
                 NullLogger.Instance,
                 cancellationToken);
 
-            IPackageSearchMetadata x = packages.FirstOrDefault();
+            IPackageSearchMetadata x = packages.OrderByDescending(p => p.Identity.Version).FirstOrDefault();
 
             if (x == null)
                 throw new Exceptions.LibraryNotFoundException(packageName, null, $"Package {packageName} (distributor: {distributorName}) not found");
