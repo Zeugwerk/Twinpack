@@ -427,7 +427,9 @@ namespace Twinpack.Protocol
             {
                 var minVersion = d.VersionRange?.MinVersion?.Version;
                 var minOriginalVersion = EvaluateVersion(d.VersionRange?.MinVersion);
-                var version = (minVersion.Major == 0 && minVersion.Minor == 0 && minVersion.Revision == 0 && minVersion.Build == 0) ? null : minOriginalVersion;
+                string version = null;
+                if (minVersion != null)
+                    version = (minVersion.Major == 0 && minVersion.Minor == 0 && minVersion.Revision == 0 && minVersion.Build == 0) ? null : minOriginalVersion;
 
                 var dependencyMetadata = await resource.GetMetadataAsync(
                     d.Id,
