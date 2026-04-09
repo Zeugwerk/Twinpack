@@ -577,7 +577,7 @@ namespace Twinpack.Core
                 throw new Exception("Invalid package(s) should be added or updated!");
 
             var affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, packages, includeDependencies: true, cache: new List<PackageItem>(), cancellationToken: cancellationToken);
-            var downloadPath = options?.DownloadPath ?? $@"{automationInterface?.SolutionPath ?? "."}\.Zeugwerk\libraries";
+            var downloadPath = options?.DownloadPath ?? Path.Combine(automationInterface?.SolutionPath ?? ".", ".Zeugwerk", "libraries");
 
             // copy runtime licenses
             CopyRuntimeLicenseIfNeeded(automationInterface, affectedPackages);

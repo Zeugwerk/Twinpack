@@ -492,7 +492,7 @@ namespace Twinpack.Core
             var packageVersion = package.PackageVersion;
 
             var suffix = package.PackageVersion.Compiled == 1 ? "compiled-library" : "library";
-            var path = System.IO.Path.GetFullPath($@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}\{packageVersion.Name}_{packageVersion.Version}.{suffix}");
+            var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target, $"{packageVersion.Name}_{packageVersion.Version}.{suffix}"));
 
             if (!File.Exists(path))
                 throw new FileNotFoundException(path);
