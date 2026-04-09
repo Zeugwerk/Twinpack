@@ -24,11 +24,11 @@ namespace Twinpack.Models
             Name = name;
             Plcs = content?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")
                 .Where(x => x.Attribute("Name")?.Value != null && x.Attribute("PrjFilePath")?.Value != null)
-                .Select(x => new Plc(x.Attribute("Name")?.Value, $@"{directory}\{x.Attribute("PrjFilePath")?.Value}")).ToList();
+                .Select(x => new Plc(x.Attribute("Name")?.Value, Path.Combine(directory, x.Attribute("PrjFilePath")?.Value))).ToList();
 
             var xtis = content?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")
                 .Where(x => x.Attribute("File")?.Value != null)
-                .Select(x => $"{directory}\\_Config\\PLC\\" + x.Attribute("File")?.Value).ToList();
+                .Select(x => Path.Combine(directory, "_Config", "PLC", x.Attribute("File")?.Value)).ToList();
 
             foreach(var xti in xtis)
             {
@@ -40,7 +40,7 @@ namespace Twinpack.Models
 
                 Plcs = Plcs.Concat(content?.Root?.Elements("Project")?
                 .Where(x => x.Attribute("Name")?.Value != null && x.Attribute("PrjFilePath")?.Value != null)
-                .Select(x => new Plc(x.Attribute("Name")?.Value, $@"{directory}\{x.Attribute("PrjFilePath")?.Value}"))).ToList();
+                .Select(x => new Plc(x.Attribute("Name")?.Value, Path.Combine(directory, x.Attribute("PrjFilePath")?.Value)))).ToList();
             }
         }
 

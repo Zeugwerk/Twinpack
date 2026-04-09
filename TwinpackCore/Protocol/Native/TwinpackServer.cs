@@ -33,7 +33,7 @@ namespace Twinpack.Protocol
     public class TwinpackServer : IPackageServer
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-        public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
+        public static string DefaultLibraryCachePath { get { return Path.Combine(Directory.GetCurrentDirectory(), ".Zeugwerk", "libraries"); } }
         public const string DefaultUrlBase = "https://twinpack.dev";
 
         private CachedHttpClient _client = new CachedHttpClient();
@@ -301,8 +301,8 @@ namespace Twinpack.Protocol
         public async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
         {
             var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-            var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
-            var fileName = $@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}";
+            var filePath = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target);
+            var fileName = Path.Combine(filePath, $"{packageVersion.Name}_{packageVersion.Version}.{extension}");
             Directory.CreateDirectory(filePath);
 
             // first try to download from a url

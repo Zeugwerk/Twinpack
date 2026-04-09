@@ -23,17 +23,34 @@ namespace Twinpack.Configuration
         public const string DefaultRepository = "https://framework.zeugwerk.dev/Distribution";
         
         public static readonly string ZeugwerkVendorName = "Zeugwerk GmbH";
-        public static readonly List<string> DefaultLocations = new List<String> { $@".Zeugwerk\", $@"" };
+
+        /// <summary>Relative subfolders (under the search root) to look for config.json, in order. Empty = root.</summary>
+        public static readonly List<string> DefaultLocations = new List<string> { ".Zeugwerk", "" };
+
         public static readonly XNamespace TsProjectNs = "http://www.w3.org/2001/XMLSchema-instance";
+
+        private static string GetConfigJsonPath(string basePath, string locationPrefix)
+        {
+            if (string.IsNullOrEmpty(locationPrefix))
+                return Path.Combine(basePath, "config.json");
+            return Path.Combine(basePath, locationPrefix, "config.json");
+        }
+
+        private static string GetWorkingDirectoryForConfig(string basePath)
+        {
+            return Path.GetFullPath(Path.GetDirectoryName(Path.Combine(basePath, ".Zeugwerk")) ?? basePath);
+        }
 
         public static Config Load(string path = ".", bool validate=false)
         {
             Config config = null;
             var usedPrefix = "";
-            path = Path.IsPathRooted(path) ? path : $@".\{path}";
+            path = Path.GetFullPath(Path.IsPathRooted(path) ? path : Path.Combine(Directory.GetCurrentDirectory(), path));
+
             foreach (var p in DefaultLocations)
             {
-                if (File.Exists($@"{path}\{p}config.json"))
+                var configPath = GetConfigJsonPath(path, p);
+                if (File.Exists(configPath))
                 {
                     if (usedPrefix.Length != 0)
                         throw new Exception("found multiple configuration files");
@@ -42,13 +59,12 @@ namespace Twinpack.Configuration
 
                     try
                     {
-                        config = JsonSerializer.Deserialize<Config>(File.ReadAllText($@"{path}\{p}config.json"), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        config = JsonSerializer.Deserialize<Config>(File.ReadAllText(configPath), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                        // The config is essentially empty
                         if ((string.IsNullOrEmpty(config.Solution) && config.Projects == null && config.Projects.Count == 0) &&
                             (config.Modules == null && config.Modules.Count == 0))
                         {
-                            _logger.Warn($@"Failed to parse '{path}\{p}config.json'");
+                            _logger.Warn($"Failed to parse '{configPath}'");
                             continue;
                         }
                     }
@@ -56,18 +72,18 @@ namespace Twinpack.Configuration
                     {
                         config = null;
                         _logger.Trace(ex);
-                        _logger.Warn($@"Failed to parse '{path}\{p}config.json'");
+                        _logger.Warn($"Failed to parse '{configPath}'");
                         continue;
                     }
 
                     usedPrefix = p;
-                    config.WorkingDirectory = Path.GetFullPath(Path.GetDirectoryName($@"{path}\.Zeugwerk"));
-                    config.FilePath = Path.GetFullPath($@"{path}\{p}config.json");
+                    config.WorkingDirectory = GetWorkingDirectoryForConfig(path);
+                    config.FilePath = Path.GetFullPath(configPath);
 
                     var solution = new Models.Solution();
                     try
                     {
-                        solution.Load($@"{path}\" + config.Solution);
+                        solution.Load(Path.Combine(path, config.Solution ?? ""));
                     }
                     catch(FileNotFoundException)
                     {
@@ -100,8 +116,16 @@ namespace Twinpack.Configuration
 
             config.Solution = solutionName;
             config.Fileversion = 1;
-            config.FilePath = filepath ?? $@"{Environment.CurrentDirectory}\.Zeugwerk\config.json";
-            config.WorkingDirectory = filepath == null ? Environment.CurrentDirectory : Path.GetDirectoryName(filepath.Replace(@".Zeugwerk\config.json", ""));
+            config.FilePath = filepath ?? Path.Combine(Environment.CurrentDirectory, ".Zeugwerk", "config.json");
+            if (filepath == null)
+                config.WorkingDirectory = Environment.CurrentDirectory;
+            else
+            {
+                var configDir = Path.GetDirectoryName(filepath);
+                config.WorkingDirectory = Path.GetFileName(configDir) == ".Zeugwerk"
+                    ? Path.GetDirectoryName(configDir)
+                    : configDir;
+            }
             config.Projects = projects ?? new List<ConfigProject>();
 
             return config;
@@ -120,7 +144,7 @@ namespace Twinpack.Configuration
 
             config.Fileversion = 1;
             config.Solution = Path.GetFileName(solution.FileName);
-            config.FilePath = Path.GetDirectoryName(solution.FullName) + @"\.Zeugwerk\config.json";
+            config.FilePath = Path.Combine(Path.GetDirectoryName(solution.FullName), ".Zeugwerk", "config.json");
             config.WorkingDirectory = Path.GetDirectoryName(solution.FullName);
             config.Projects = new List<ConfigProject>();
 
@@ -178,13 +202,13 @@ namespace Twinpack.Configuration
             if (solutions.Any())
             {
                 config.Solution = Path.GetFileName(solutions.First());
-                config.FilePath = Path.GetDirectoryName(solutions.First()) + @"\.Zeugwerk\config.json";
+                config.FilePath = Path.Combine(Path.GetDirectoryName(solutions.First()), ".Zeugwerk", "config.json");
 
                 solution = Models.Solution.LoadFromFile(solutions.First());
             }
             else if(continueWithoutSolution)
             {
-                config.FilePath = $@"{Environment.CurrentDirectory}\.Zeugwerk\config.json";
+                config.FilePath = Path.Combine(Environment.CurrentDirectory, ".Zeugwerk", "config.json");
 
                 var tsprojs = Directory.GetFiles(path, "*.tsproj", SearchOption.AllDirectories);
                 if (tsprojs.Any())
