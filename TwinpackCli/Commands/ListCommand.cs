@@ -1,4 +1,5 @@
-﻿using System;
+#nullable enable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ComponentModel;
@@ -37,7 +38,6 @@ namespace Twinpack.Commands
 
             return RunWithAutomationTeardown(() =>
             {
-                // remove projects accordingly to the filter
                 foreach (var project in _config.Projects)
                     project.Plcs = project.Plcs.Where(x => settings.PlcFilter == null || !settings.PlcFilter.Any() || settings.PlcFilter.Contains(x.Name)).ToList();
 

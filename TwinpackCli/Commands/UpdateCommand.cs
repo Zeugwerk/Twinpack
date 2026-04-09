@@ -1,4 +1,4 @@
-﻿using Twinpack.Core;
+using Twinpack.Core;
 using System.ComponentModel;
 using Spectre.Console.Cli;
 
@@ -63,27 +63,29 @@ namespace Twinpack.Commands
 
             Initialize(settings.Headed);
 
-            // update all packages
-            _twinpack.UpdatePackagesAsync(
-                new TwinpackService.UpdatePackageFilters
-                {
-                    ProjectName = settings.ProjectName,
-                    PlcName = settings.PlcName,
-                    Packages = settings.Packages,
-                    Frameworks = settings.Frameworks,
-                    Versions = settings.Versions,
-                    Branches = settings.Branches,
-                    Configurations = settings.Configurations,
-                    Targets = settings.Targets,
-                },
-                new TwinpackService.UpdatePackageOptions
-                {
-                    IncludeProvidedPackages = settings.IncludeProvidedPackages,
-                    ForceDownload = settings.ForceDownload,
-                    SkipDownload = settings.SkipDownload,
-                    IncludeDependencies = true
-                }).GetAwaiter().GetResult();
-            return 0;
+            return RunWithAutomationTeardown(() =>
+            {
+                _twinpack.UpdatePackagesAsync(
+                    new TwinpackService.UpdatePackageFilters
+                    {
+                        ProjectName = settings.ProjectName,
+                        PlcName = settings.PlcName,
+                        Packages = settings.Packages,
+                        Frameworks = settings.Frameworks,
+                        Versions = settings.Versions,
+                        Branches = settings.Branches,
+                        Configurations = settings.Configurations,
+                        Targets = settings.Targets,
+                    },
+                    new TwinpackService.UpdatePackageOptions
+                    {
+                        IncludeProvidedPackages = settings.IncludeProvidedPackages,
+                        ForceDownload = settings.ForceDownload,
+                        SkipDownload = settings.SkipDownload,
+                        IncludeDependencies = true
+                    }).GetAwaiter().GetResult();
+                return 0;
+            });
         }
 
 

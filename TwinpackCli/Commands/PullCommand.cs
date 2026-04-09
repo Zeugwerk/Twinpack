@@ -1,4 +1,4 @@
-﻿using Spectre.Console.Cli;
+using Spectre.Console.Cli;
 using System.ComponentModel;
 using Twinpack.Configuration;
 using Twinpack.Core;
