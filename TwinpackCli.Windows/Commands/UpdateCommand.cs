@@ -69,7 +69,7 @@ namespace Twinpack.Commands
                     new TwinpackService.UpdatePackageFilters
                     {
                         ProjectName = settings.ProjectName,
-                        PlcName = settings.ProjectName,
+                        PlcName = settings.PlcName,
                         Packages = settings.Packages,
                         Frameworks = settings.Frameworks,
                         Versions = settings.Versions,
