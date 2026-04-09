@@ -1,14 +1,15 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using Twinpack.Protocol;
 using Twinpack.Exceptions;
 using System.ComponentModel;
 using Spectre.Console.Cli;
+using System.Text.Json;
 
 namespace Twinpack.Commands
 {
-    [Description(@"Configure or modify package source repositories by updating the settings defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    [Description(@"Configure or modify package source repositories by updating the settings defined in '.\sourceRepositories.json' or '%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json'.")]
     public class ConfigCommand : AbstractCommand<ConfigCommand.Settings>
     {
         public class Settings : AbstractSettings
@@ -40,52 +41,48 @@ namespace Twinpack.Commands
         {
             SetUpLogger(settings);
 
-            // load existing configuration
             try
             {
                 PackagingServerRegistry.InitializeAsync(useDefaults: false, login: false).GetAwaiter().GetResult();
             }
             catch (FileNotFoundException) { }
 
-            // purge if needed
             if (settings.Purge)
             {
                 _logger.Info("Purging existing configuration");
                 PackagingServerRegistry.PurgeAsync().GetAwaiter().GetResult();
             }
 
-            // reset if needed
             try
             {
                 PackagingServerRegistry.InitializeAsync(useDefaults: settings.Reset, login: false).GetAwaiter().GetResult();
             }
             catch (FileNotFoundException) { }
 
-            // add new sources
-            for (int i = 0; i < settings.Sources.Count(); i++)
+            var sources = settings.Sources ?? new string[0];
+            for (int i = 0; i < sources.Count(); i++)
             {
-                var type = settings.Types.ElementAtOrDefault(i) ?? null;
+                var type = settings.Types?.ElementAtOrDefault(i) ?? null;
    
-                var uri = settings.Sources.ElementAt(i);
+                var uri = sources.ElementAt(i);
                 _logger.Info($"Adding package server {uri}");
                 var packageServer = PackagingServerRegistry.AddServerAsync(
                     type,
-                    settings.Names.ElementAtOrDefault(i) ?? uri,
+                    settings.Names?.ElementAtOrDefault(i) ?? uri,
                     uri,
                     login: false).GetAwaiter().GetResult();
 
-                packageServer.Username = settings.Usernames.ElementAtOrDefault(i);
-                packageServer.Password = settings.Passwords.ElementAtOrDefault(i);
+                packageServer.Username = settings.Usernames?.ElementAtOrDefault(i);
+                packageServer.Password = settings.Passwords?.ElementAtOrDefault(i);
             }
 
-            // try to login
             foreach (var packageServer in PackagingServerRegistry.Servers)
             {
                 try
                 {
                     packageServer.LoginAsync(packageServer.Username, packageServer.Password).GetAwaiter().GetResult();
                 }
-                catch (LoginException ex)
+                catch (LoginException)
                 {
                     _logger.Warn($"Log in to '{packageServer.UrlBase}' failed");
                 }
@@ -97,6 +94,11 @@ namespace Twinpack.Commands
             }
 
             PackagingServerRegistry.Save();
+
+            if (settings.JsonOutput == true)
+            {
+                Console.Write(JsonSerializer.Serialize(PackagingServerRegistry.Servers));
+            }
 
             return 0;
         }

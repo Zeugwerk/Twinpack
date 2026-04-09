@@ -14,14 +14,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterfaceHeadless.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface4024.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)core\CancelableTask.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)core\HeartbeatService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\CancelableTask.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\HeartbeatService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\IAutomationInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\MessageFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SynchronizationContextAwaiter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)core\Utils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\Utils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\VisualStudio.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)models\PlcVersion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\PlcVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\SourceRepositories.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Authentication.cs" />
@@ -39,7 +39,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\PlcLibrary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Plc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Project.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)models\Solution.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\Solution.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\IPackageServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\TwinpackServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\PackageServerCollection.cs" />

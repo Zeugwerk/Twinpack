@@ -1,4 +1,4 @@
-﻿using Spectre.Console.Cli;
+using Spectre.Console.Cli;
 using System.Collections.Generic;
 using System.ComponentModel;
 
