@@ -31,27 +31,29 @@ namespace Twinpack.Commands
             SetUpLogger(settings);
             Initialize(headed: false, requiresConfig: false);
 
-            var packages = _twinpack.RetrieveAvailablePackagesAsync(settings.SearchTerm, settings.Take).GetAwaiter().GetResult()
-                .Where(x => x.Catalog != null)
-                .Select(x => x.Catalog);
-
-            if (settings.JsonOutput == true)
+            return RunWithAutomationTeardown(() =>
             {
-                Console.Write(JsonSerializer.Serialize(packages));
-            }
-            else
-            {
-                var table = new Table();
-                table.AddColumns(new[] { "Package", "Distributor" });
+                var packages = _twinpack.RetrieveAvailablePackagesAsync(settings.SearchTerm, settings.Take).GetAwaiter().GetResult()
+                    .Where(x => x.Catalog != null)
+                    .Select(x => x.Catalog);
 
-                foreach (var package in packages)
-                    table.AddRow(new[] { package.Name, package.DistributorName });
+                if (settings.JsonOutput == true)
+                {
+                    Console.Write(JsonSerializer.Serialize(packages));
+                }
+                else
+                {
+                    var table = new Table();
+                    table.AddColumns(new[] { "Package", "Distributor" });
 
-                AnsiConsole.Write(table);
-            }
+                    foreach (var package in packages)
+                        table.AddRow(new[] { package.Name, package.DistributorName });
 
+                    AnsiConsole.Write(table);
+                }
 
-            return 0;
+                return 0;
+            });
         }
     }
 }

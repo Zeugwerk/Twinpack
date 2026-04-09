@@ -34,8 +34,15 @@ namespace Twinpack.Core
         protected List<IAutomationInterface> _automationInterfaces;
         public IAutomationInterface AutomationInterface { get { return _automationInterface ?? EnsureAutomationInterface(); } }
 
+        /// <summary>
+        /// When false, <see cref="Dispose"/> does not call <c>DTE.Quit</c> (host-owned DTE, e.g. VSIX).
+        /// COM-spawned shells from <see cref="VisualStudio(bool)"/> quit on dispose.
+        /// </summary>
+        private readonly bool _quitOnDispose;
+
         public VisualStudio(bool hidden = true)
         {
+            _quitOnDispose = true;
             _synchronizationContext = SynchronizationContext.Current;
             _thread = System.Threading.Thread.CurrentThread;
             _automationInterfaces = new List<IAutomationInterface>
@@ -48,6 +55,7 @@ namespace Twinpack.Core
 
         public VisualStudio(DTE2 dte, EnvDTE.Solution solution)
         {
+            _quitOnDispose = false;
             _synchronizationContext = SynchronizationContext.Current;
             _thread = System.Threading.Thread.CurrentThread;
 
@@ -420,7 +428,8 @@ namespace Twinpack.Core
             _logger.Info($"Disposing VisualStudio");
         
             _filter?.Dispose();
-            _dte?.Quit();
+            if (_quitOnDispose)
+                _dte?.Quit();
         }
     }
 }

@@ -35,37 +35,39 @@ namespace Twinpack.Commands
             SetUpLogger(settings);
             Initialize(headed: false);
 
-            // remove projects accordingly to the filter
-            foreach (var project in _config.Projects)
-                project.Plcs = project.Plcs.Where(x => settings.PlcFilter == null || !settings.PlcFilter.Any() || settings.PlcFilter.Contains(x.Name)).ToList();
-
-            var packages = _twinpack.RetrieveUsedPackagesAsync(settings.SearchTerm).GetAwaiter().GetResult()
-                .Where(x => !settings.Outdated || x.IsUpdateable);
-
-            if(settings.JsonOutput == true)
+            return RunWithAutomationTeardown(() =>
             {
-                Console.Write(JsonSerializer.Serialize(
-                    packages.Select(x => new { 
-                        Catalog = x.Catalog, 
-                        Package = x.Package,
-                        PackageVersion = x.PackageVersion, 
-                        Used = x.Used, 
-                        Config = x.Config } 
-                    )));
-            }
-            else
-            {
-                var table = new Table();
-                table.AddColumns(new[] { "Project", "Plc", "Package", "Installed Version", "Latest Version", "Updatable" });
+                // remove projects accordingly to the filter
+                foreach (var project in _config.Projects)
+                    project.Plcs = project.Plcs.Where(x => settings.PlcFilter == null || !settings.PlcFilter.Any() || settings.PlcFilter.Contains(x.Name)).ToList();
 
-                foreach (var package in packages)
-                    table.AddRow(new[] { package.ProjectName ?? "n/a", package.PlcName ?? "n/a", package.Catalog?.Name ?? "n/a", package.InstalledVersion ?? "n/a", package.UpdateVersion ?? "n/a", package.IsUpdateable.ToString() ?? "n/a" });
+                var packages = _twinpack.RetrieveUsedPackagesAsync(settings.SearchTerm).GetAwaiter().GetResult()
+                    .Where(x => !settings.Outdated || x.IsUpdateable);
 
-                AnsiConsole.Write(table);
-            }
+                if(settings.JsonOutput == true)
+                {
+                    Console.Write(JsonSerializer.Serialize(
+                        packages.Select(x => new { 
+                            Catalog = x.Catalog, 
+                            Package = x.Package,
+                            PackageVersion = x.PackageVersion, 
+                            Used = x.Used, 
+                            Config = x.Config } 
+                        )));
+                }
+                else
+                {
+                    var table = new Table();
+                    table.AddColumns(new[] { "Project", "Plc", "Package", "Installed Version", "Latest Version", "Updatable" });
 
+                    foreach (var package in packages)
+                        table.AddRow(new[] { package.ProjectName ?? "n/a", package.PlcName ?? "n/a", package.Catalog?.Name ?? "n/a", package.InstalledVersion ?? "n/a", package.UpdateVersion ?? "n/a", package.IsUpdateable.ToString() ?? "n/a" });
 
-            return 0;
+                    AnsiConsole.Write(table);
+                }
+
+                return 0;
+            });
         }
     }
 }
