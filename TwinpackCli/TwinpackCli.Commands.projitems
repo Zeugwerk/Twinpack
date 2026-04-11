@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>{E7B2C9D1-4F8A-4E3B-9D2C-1A0B5E6F7A8B}</SharedGUID>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\AbstractCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\AddCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\ConfigCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\DownloadCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\ListCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\PullCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\PushCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\RemoveCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\RestoreCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\SearchCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\SetVersionCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\UpdateCommand.cs" />
+  </ItemGroup>
+</Project>

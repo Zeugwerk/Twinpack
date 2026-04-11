@@ -34,8 +34,15 @@ namespace Twinpack.Core
         protected List<IAutomationInterface> _automationInterfaces;
         public IAutomationInterface AutomationInterface { get { return _automationInterface ?? EnsureAutomationInterface(); } }
 
+        /// <summary>
+        /// When false, <see cref="Dispose"/> does not call <c>DTE.Quit</c> (host-owned DTE, e.g. VSIX).
+        /// COM-spawned shells from <see cref="VisualStudio(bool)"/> quit on dispose.
+        /// </summary>
+        private readonly bool _quitOnDispose;
+
         public VisualStudio(bool hidden = true)
         {
+            _quitOnDispose = true;
             _synchronizationContext = SynchronizationContext.Current;
             _thread = System.Threading.Thread.CurrentThread;
             _automationInterfaces = new List<IAutomationInterface>
@@ -48,6 +55,7 @@ namespace Twinpack.Core
 
         public VisualStudio(DTE2 dte, EnvDTE.Solution solution)
         {
+            _quitOnDispose = false;
             _synchronizationContext = SynchronizationContext.Current;
             _thread = System.Threading.Thread.CurrentThread;
 
@@ -101,7 +109,7 @@ namespace Twinpack.Core
                     }
                     catch
                     {
-                        throw new Exception("TcAutomationSettings not found in {shell}. Since everything else seems fine, it could be the the active user, doesn't have access to the COM Interface. Make sure the executing user has user privileges, e.g. when using Jenkins, make sure the service 'Jenkins Slave Agent' runs as a user!");
+                        throw new Exception($"TcAutomationSettings not found in {shell}. Since everything else seems fine, it could be the the active user, doesn't have access to the COM Interface. Make sure the executing user has user privileges, e.g. when using Jenkins, make sure the service 'Jenkins Slave Agent' runs as a user!");
                     }
                     
                     _dte = dte;
@@ -122,7 +130,7 @@ namespace Twinpack.Core
 
             OutputTcVersion = tcversion;
             var remoteManagerTcVersion = FindTargetSystem(tcversion);
-            var filepath = Path.GetFullPath($"{config.WorkingDirectory}\\{config.Solution.Replace("/", "\\")}");
+            var filepath = Path.GetFullPath(Path.Combine(config.WorkingDirectory, config.Solution));
             if (!File.Exists(filepath))
                 throw new FileNotFoundException("Solution could not be found in " + filepath);
 
@@ -420,7 +428,8 @@ namespace Twinpack.Core
             _logger.Info($"Disposing VisualStudio");
         
             _filter?.Dispose();
-            _dte?.Quit();
+            if (_quitOnDispose)
+                _dte?.Quit();
         }
     }
 }

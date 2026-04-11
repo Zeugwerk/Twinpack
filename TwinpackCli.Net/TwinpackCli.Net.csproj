@@ -9,11 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NLog" Version="5.3.4" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Twinpack.Net\Twinpack.Net.csproj" />
   </ItemGroup>
+
+  <Import Project="..\TwinpackCli\TwinpackCli.Commands.projitems" Label="Shared" />
 
 </Project>

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Twinpack.Core;
 using System.ComponentModel;
 using Spectre.Console.Cli;
@@ -37,16 +37,19 @@ namespace Twinpack.Commands
 
             Initialize(settings.Headed);
 
-            _twinpack.RestorePackagesAsync(
-                new TwinpackService.RestorePackageOptions
-                {
-                    SkipDownload = settings.SkipDownload,
-                    IncludeProvidedPackages = settings.IncludeProvidedPackages,
-                    ForceDownload = settings.ForceDownload,
-                    IncludeDependencies = true
-                }).GetAwaiter().GetResult();
+            return RunWithAutomationTeardown(() =>
+            {
+                _twinpack.RestorePackagesAsync(
+                    new TwinpackService.RestorePackageOptions
+                    {
+                        SkipDownload = settings.SkipDownload,
+                        IncludeProvidedPackages = settings.IncludeProvidedPackages,
+                        ForceDownload = settings.ForceDownload,
+                        IncludeDependencies = true
+                    }).GetAwaiter().GetResult();
 
-            return 0;
+                return 0;
+            });
         }
 
 

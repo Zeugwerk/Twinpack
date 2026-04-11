@@ -1,10 +1,10 @@
-﻿using Spectre.Console.Cli;
+using Spectre.Console.Cli;
 using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace Twinpack.Commands
 {
-    [Description(@"Removes package(s) from the specified project and PLC using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    [Description(@"Removes package(s) from the specified project and PLC using the sources defined in '.\sourceRepositories.json' or '%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json'.")]
     public class RemoveCommand : AbstractCommand<RemoveCommand.Settings>
     {
         public class Settings : AbstractSettings
@@ -32,11 +32,14 @@ namespace Twinpack.Commands
 
             Initialize(settings.Headed);
 
-            var packages = CreatePackageItems(settings.Packages, settings.ProjectName, settings.PlcName);
+            return RunWithAutomationTeardown(() =>
+            {
+                var packages = CreatePackageItems(settings.Packages, settings.ProjectName, settings.PlcName);
 
-            _twinpack.RemovePackagesAsync(packages, uninstall: false).GetAwaiter().GetResult();
+                _twinpack.RemovePackagesAsync(packages, uninstall: false).GetAwaiter().GetResult();
 
-            return 0;
+                return 0;
+            });
         }
     }
 }

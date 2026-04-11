@@ -40,7 +40,7 @@ namespace Twinpack.Protocol
         SourceCacheContext _noCache;
 
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
-        public static string DefaultLibraryCachePath { get { return $@"{Directory.GetCurrentDirectory()}\.Zeugwerk\libraries"; } }
+        public static string DefaultLibraryCachePath { get { return Path.Combine(Directory.GetCurrentDirectory(), ".Zeugwerk", "libraries"); } }
         public string ServerType { get; } = "NuGet Repository";
         public string Name { get; set; }
         public bool Enabled { get; set; } = true;
@@ -294,7 +294,7 @@ namespace Twinpack.Protocol
                         _cache,
                         NullLogger.Instance,
                         cancellationToken);
-                    version = metaData.FirstOrDefault()?.Identity.Version;
+                    version = metaData.OrderByDescending(p => p.Identity.Version).FirstOrDefault()?.Identity.Version;
                 }
 
                 await resource.CopyNupkgToStreamAsync(
@@ -324,8 +324,8 @@ namespace Twinpack.Protocol
                             try
                             {
                                 var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                                var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
-                                var fileName = $@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}";
+                                var filePath = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target);
+                                var fileName = Path.Combine(filePath, $"{packageVersion.Name}_{packageVersion.Version}.{extension}");
                                 Directory.CreateDirectory(filePath);
 
                                 using (var file = File.OpenWrite(fileName))
@@ -371,8 +371,8 @@ namespace Twinpack.Protocol
                                 foreach (var f in files)
                                 {
                                     var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                                    var filePath = $@"{cachePath ?? DefaultLibraryCachePath}\{packageVersion.Target}";
-                                    var fileName = $@"{filePath}\{packageVersion.Name}_{packageVersion.Version}.{extension}";
+                                    var filePath = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target);
+                                    var fileName = Path.Combine(filePath, $"{packageVersion.Name}_{packageVersion.Version}.{extension}");
                                     Directory.CreateDirectory(filePath);
                                     File.Copy(f, fileName, true);
                                 }
@@ -409,7 +409,10 @@ namespace Twinpack.Protocol
                 NullLogger.Instance,
                 cancellationToken);
 
-            IPackageSearchMetadata x = library.Version == null ? packages.FirstOrDefault() : packages.FirstOrDefault(p => EvaluateVersion(p.Identity.Version) == library.Version);
+            var ordered = packages.OrderByDescending(p => p.Identity.Version);
+            IPackageSearchMetadata x = library.Version == null
+                ? ordered.FirstOrDefault()
+                : packages.FirstOrDefault(p => EvaluateVersion(p.Identity.Version) == library.Version);
 
             if (x == null)
                 return new PackageVersionGetResponse();
@@ -424,15 +427,20 @@ namespace Twinpack.Protocol
             {
                 var minVersion = d.VersionRange?.MinVersion?.Version;
                 var minOriginalVersion = EvaluateVersion(d.VersionRange?.MinVersion);
-                var version = (minVersion.Major == 0 && minVersion.Minor == 0 && minVersion.Revision == 0 && minVersion.Build == 0) ? null : minOriginalVersion;
+                string version = null;
+                if (minVersion != null)
+                    version = (minVersion.Major == 0 && minVersion.Minor == 0 && minVersion.Revision == 0 && minVersion.Build == 0) ? null : minOriginalVersion;
 
-                var dependency = (await resource.GetMetadataAsync(
+                var dependencyMetadata = await resource.GetMetadataAsync(
                     d.Id,
                     includePrerelease: true,
                     includeUnlisted: false,
                     _cache,
                     NullLogger.Instance,
-                    cancellationToken)).FirstOrDefault(p => version == null || version.ToString() == EvaluateVersion(p.Identity.Version));
+                    cancellationToken);
+                var dependency = dependencyMetadata
+                    .OrderByDescending(p => p.Identity.Version)
+                    .FirstOrDefault(p => version == null || version.ToString() == EvaluateVersion(p.Identity.Version));
 
                 if(dependency?.Tags?.ToLower().Contains("library") == true || dependency?.Tags?.ToLower().Contains("plc-library") == true)
                 {
@@ -518,7 +526,7 @@ namespace Twinpack.Protocol
                 NullLogger.Instance,
                 cancellationToken);
 
-            IPackageSearchMetadata x = packages.FirstOrDefault();
+            IPackageSearchMetadata x = packages.OrderByDescending(p => p.Identity.Version).FirstOrDefault();
 
             if (x == null)
                 throw new Exceptions.LibraryNotFoundException(packageName, null, $"Package {packageName} (distributor: {distributorName}) not found");

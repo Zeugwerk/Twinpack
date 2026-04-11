@@ -1,10 +1,12 @@
-﻿using Spectre.Console.Cli;
+#nullable enable
+using Spectre.Console.Cli;
+using System;
 using System.ComponentModel;
 using static Twinpack.Core.TwinpackService;
 
 namespace Twinpack.Commands
 {
-    [Description(@"Downloads package(s) using the sources defined in %APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json.")]
+    [Description(@"Downloads package(s) using the sources defined in '.\sourceRepositories.json' or '%APPDATA%\Zeugwerk\Twinpack\sourceRepositories.json'.")]
     public class SetVersionCommand : AbstractCommand<SetVersionCommand.Settings>
     {
         public class Settings : AbstractSettings
@@ -56,20 +58,31 @@ namespace Twinpack.Commands
             SetUpLogger(settings);
             Initialize(settings.Headed);
 
-            _twinpack.SetPackageVersionAsync(settings.Version, 
-                new SetPackageVersionOptions
+            return RunWithAutomationTeardown(() =>
+            {
+                try
                 {
-                    PurgePackages = settings.PurgePackages,
-                    ProjectName = settings.ProjectName,
-                    PlcName = settings.PlcName,
-                    SyncFrameworkPackages = settings.SyncFrameworkPackages,
-                    PreferredFrameworkBranch = settings.PreferredFrameworkBranch,
-                    PreferredFrameworkTarget = settings.PreferredFrameworkTarget,
-                    PreferredFrameworkConfiguration = settings.PreferredFrameworkConfiguration,
-                } 
-            ).GetAwaiter().GetResult();
+                    _twinpack.SetPackageVersionAsync(settings.Version,
+                        new SetPackageVersionOptions
+                        {
+                            PurgePackages = settings.PurgePackages,
+                            ProjectName = settings.ProjectName,
+                            PlcName = settings.PlcName,
+                            SyncFrameworkPackages = settings.SyncFrameworkPackages,
+                            PreferredFrameworkBranch = settings.PreferredFrameworkBranch,
+                            PreferredFrameworkTarget = settings.PreferredFrameworkTarget,
+                            PreferredFrameworkConfiguration = settings.PreferredFrameworkConfiguration,
+                        }
+                    ).GetAwaiter().GetResult();
+                }
+                catch(Exception ex)
+                {
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
+                }
 
-            return 0;
+                return 0;
+            });
         }
 
 
