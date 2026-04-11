@@ -48,7 +48,6 @@ Source: "vswhere.exe"; DestDir: "{commonpf}\{#MyAppPublisher}\Utils"; Flags: ign
 [Dirs]
 Name: "{commonpf}\Beckhoff\TcXaeShell\Common7\IDE\Extensions\Zeugwerk\Twinpack"
 Name: "C:\Program Files\Beckhoff\TcXaeShell\Common7\IDE\Extensions\Zeugwerk\Twinpack"
-Name: "{commonpf}\{#MyAppPublisher}\Twinpack"
 Name: "{commonpf}\{#MyAppPublisher}\Utils"
 
 [InstallDelete]
