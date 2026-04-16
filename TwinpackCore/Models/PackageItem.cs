@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using Twinpack.Configuration;
 using Twinpack.Protocol.Api;
@@ -8,6 +8,8 @@ namespace Twinpack.Models
     /// <summary>
     /// Mutable row combining PLC placement (<see cref="ProjectName"/>, <see cref="PlcName"/>),
     /// persisted <see cref="PlcPackageReference"/>, catalog/package/version payloads from servers, and optional UI binding.
+    /// Use <see cref="GetConfiguredPackageRef"/>, <see cref="GetResolvedPackageRef"/>, and <see cref="GetInstalledPackageRef"/> for explicit
+    /// <see cref="ConfiguredPackageRef"/> / <see cref="ResolvedPackageRef"/> / <see cref="InstalledPackageRef"/> views.
     /// </summary>
     public partial class PackageItem : INotifyPropertyChanged
     {
@@ -57,10 +59,59 @@ namespace Twinpack.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
             }
         }
+        /// <summary>Configured intent: solution placement + persisted <see cref="PlcPackageReference"/>.</summary>
+        public ConfiguredPackageRef? GetConfiguredPackageRef()
+        {
+            if (PlcPackageReference == null && string.IsNullOrEmpty(ProjectName) && string.IsNullOrEmpty(PlcName))
+                return null;
+            return new ConfiguredPackageRef(ProjectName, PlcName, PlcPackageReference);
+        }
+
+        public void Apply(ConfiguredPackageRef configured)
+        {
+            if (configured == null)
+                return;
+            ProjectName = configured.ProjectName;
+            PlcName = configured.PlcName;
+            PlcPackageReference = configured.Reference;
+        }
+
+        /// <summary>Server resolution used for download/install in this flow (<see cref="PackageVersion"/> / <see cref="Package"/>).</summary>
+        public ResolvedPackageRef? GetResolvedPackageRef()
+        {
+            if (PackageVersion == null)
+                return null;
+            return new ResolvedPackageRef(PackageVersion, Package);
+        }
+
+        public void Apply(ResolvedPackageRef? resolved)
+        {
+            if (resolved == null)
+            {
+                Package = null;
+                PackageVersion = null;
+                return;
+            }
+            Package = resolved.Package;
+            PackageVersion = resolved.Version;
+        }
+
+        /// <summary>Automation view of what is installed / effective for placeholders (<see cref="Used"/>).</summary>
+        public InstalledPackageRef? GetInstalledPackageRef()
+        {
+            if (Used == null)
+                return null;
+            return new InstalledPackageRef(Used);
+        }
+
+        public void Apply(InstalledPackageRef? installed)
+        {
+            Used = installed?.Version;
+        }
+
         public void Invalidate()
         {
-            Package = null;
-            PackageVersion = null;
+            Apply((ResolvedPackageRef?)null);
         }
 
         public bool IsUpdateable

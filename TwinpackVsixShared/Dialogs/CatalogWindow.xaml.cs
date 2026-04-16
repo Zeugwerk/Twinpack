@@ -816,9 +816,9 @@ namespace Twinpack.Dialogs
                 {
                     if (package.Installed != null && package.Available != null)
                     {
-                        package.Available.Used = package.Installed.Used;
+                        package.Available.Apply(new ConfiguredPackageRef(package.Available.ProjectName, package.Available.PlcName, package.Installed.PlcPackageReference));
+                        package.Available.Apply(package.Installed.GetInstalledPackageRef());
                         package.Available.Update = package.Installed.Update;
-                        package.Available.PlcPackageReference = package.Installed.PlcPackageReference;
                     }
                 }
 
@@ -1066,14 +1066,14 @@ namespace Twinpack.Dialogs
                 return;
 
             _selectedItem.Catalog = packageItem?.Catalog;
-            _selectedItem.ProjectName = packageItem?.ProjectName ?? _plcConfig?.ProjectName;
-            _selectedItem.PlcName = packageItem?.PlcName ?? _plcConfig?.Name;
             _selectedItem.PackageServer = packageItem?.PackageServer;
-            _selectedItem.PlcPackageReference = packageItem?.PlcPackageReference;
-            _selectedItem.Used = packageItem?.Used;
             _selectedItem.Update = packageItem?.Update;
-            _selectedItem.Package = packageItem?.Package;
-            _selectedItem.PackageVersion = packageItem?.PackageVersion;
+            _selectedItem.Apply(new ConfiguredPackageRef(
+                packageItem?.ProjectName ?? _plcConfig?.ProjectName,
+                packageItem?.PlcName ?? _plcConfig?.Name,
+                packageItem?.PlcPackageReference));
+            _selectedItem.Apply(packageItem?.GetInstalledPackageRef());
+            _selectedItem.Apply(packageItem?.GetResolvedPackageRef());
             InstalledPackageVersion = _selectedItem.IsPlaceholder ? _selectedItem.InstalledVersion + "*" : _selectedItem.InstalledVersion;
 
             await _cancelableTask.RunAsync(async token =>

@@ -101,8 +101,7 @@ namespace Twinpack.Application
             if (package.Package != null && package.PackageVersion != null && package.PackageServer != null)
                 return;
 
-            package.Package = null;
-            package.PackageVersion = null;
+            package.Apply((ResolvedPackageRef?)null);
             package.PackageServer = null;
 
             var resolvedPackage = await packageServers.FetchPackageAsync(
@@ -128,16 +127,14 @@ namespace Twinpack.Application
                     .FirstOrDefault(y => (y.PlcPackageReference?.Name ?? y.PackageVersion?.Name) == dependency.Name)
                     ?.PackageServer;
 
-                list.Add(new PackageItem
+                var depItem = new PackageItem
                 {
                     PackageServer = hintServer,
-                    ProjectName = parent.ProjectName,
-                    PlcName = parent.PlcName,
                     Catalog = new CatalogPackageSummary { Name = dependency.Name },
-                    Package = dependency,
-                    PackageVersion = dependency,
-                    PlcPackageReference = new PlcPackageReference(dependency) { Options = parent.PlcPackageReference?.Options?.CopyForDependency() }
-                });
+                };
+                depItem.Apply(new ConfiguredPackageRef(parent.ProjectName, parent.PlcName, new PlcPackageReference(dependency) { Options = parent.PlcPackageReference?.Options?.CopyForDependency() }));
+                depItem.Apply(new ResolvedPackageRef(dependency, dependency));
+                list.Add(depItem);
             }
 
             return list;

@@ -320,7 +320,13 @@ namespace Twinpack.Application
             if (options?.ExcludedPackages != null)
                 providedPackageNames = providedPackageNames.Concat(options?.ExcludedPackages).ToList();
 
-            var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Used }).ToList();
+            var packages = usedPackages.Select(x =>
+            {
+                var p = new PackageItem(x);
+                if (x.Used != null)
+                    p.Apply(new ResolvedPackageRef(x.Used, x.Used));
+                return p;
+            }).ToList();
             var providedPackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.PlcPackageReference.Name) == true).ToList(), new AddPackageOptions(options) { SkipDownload = !options.IncludeProvidedPackages }, cancellationToken: cancellationToken);
 
             var installablePackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.PlcPackageReference.Name) == false).ToList(), options, cancellationToken: cancellationToken);
@@ -343,7 +349,13 @@ namespace Twinpack.Application
                 (filters.ProjectName == null || filters.ProjectName == x.ProjectName) &&
                 (filters.Packages == null || filters.Packages.Any(y => y == x.Update?.Name)) &&
                 (filters.Frameworks == null || filters.Frameworks.Any(y => y == x.Update?.Framework)))
-                    .Select(x => new PackageItem(x) { Package = new Protocol.Api.PublishedPackage(x.Update), PackageVersion = x.Update }).ToList();
+                    .Select(x =>
+                    {
+                        var p = new PackageItem(x);
+                        if (x.Update != null)
+                            p.Apply(new ResolvedPackageRef(x.Update, new Protocol.Api.PublishedPackage(x.Update)));
+                        return p;
+                    }).ToList();
 
                 foreach (var package in packages)
                 {
@@ -368,14 +380,17 @@ namespace Twinpack.Application
 
                 // force new retrievable of metadata
                 foreach (var package in packages)
-                {
-                    package.Package = null;
-                    package.PackageVersion = null;
-                }
+                    package.Apply((ResolvedPackageRef?)null);
             }
             else
             {
-                packages = usedPackages.Select(x => new PackageItem(x) { Package = new Protocol.Api.PublishedPackage(x.Update), PackageVersion = x.Update }).ToList();
+                packages = usedPackages.Select(x =>
+                {
+                    var p = new PackageItem(x);
+                    if (x.Update != null)
+                        p.Apply(new ResolvedPackageRef(x.Update, new Protocol.Api.PublishedPackage(x.Update)));
+                    return p;
+                }).ToList();
             }
 
             return await UpdatePackagesAsync(packages, options, cancellationToken);
@@ -476,7 +491,7 @@ namespace Twinpack.Application
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
                 var newPackageConfig = PlcPackageReference.PersistAfterResolve(package);
 
-                package.PlcPackageReference = newPackageConfig;
+                package.Apply(new ConfiguredPackageRef(package.ProjectName, package.PlcName, newPackageConfig));
                 addedPackages.Add(package);
 
                 if (packageIndex.HasValue && packageIndex.Value >= 0)
@@ -534,9 +549,9 @@ namespace Twinpack.Application
         {
             var resolvedPackage = await _packageServers.FetchPackageAsync(packageItem.PackageServer, packageItem.ProjectName, packageItem.PlcName, packageItem.PlcPackageReference ?? new PlcPackageReference(packageItem), includeMetadata: true, automationInterface: _automationInterface, cancellationToken: cancellationToken);
             packageItem.PlcPackageReference ??= resolvedPackage.PlcPackageReference;
-            packageItem.Package = resolvedPackage.Package;
-            packageItem.PackageVersion = resolvedPackage.PackageVersion;
-            packageItem.PackageServer = resolvedPackage.PackageServer;
+            if (resolvedPackage.GetResolvedPackageRef() is { } resolvedRef)
+                packageItem.Apply(resolvedRef);
+            packageItem.PackageServer ??= resolvedPackage.PackageServer;
         }
 
         public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, bool includeDependencies = true, CancellationToken cancellationToken = default)
@@ -744,7 +759,10 @@ namespace Twinpack.Application
                             package.PlcPackageReference.Configuration = requestedPackage?.Configuration;
 
                             // since the package actually exists, we can add it to the plcproj file
-                            packagesToAdd.Add(new PackageItem(affectedPackage) { ProjectName = scope.Plc.ProjectName, PlcName = scope.Plc.Name, Package = null, PackageVersion = null, PlcPackageReference = package.PlcPackageReference });
+                            var headlessAdd = new PackageItem(affectedPackage);
+                            headlessAdd.Apply(new ConfiguredPackageRef(scope.Plc.ProjectName, scope.Plc.Name, package.PlcPackageReference));
+                            headlessAdd.Apply((ResolvedPackageRef?)null);
+                            packagesToAdd.Add(headlessAdd);
                         }
                         else
                         {
@@ -756,19 +774,18 @@ namespace Twinpack.Application
                             // only a headless interface allows to add not existing packages
                             if (_automationInterface is AutomationInterfaceHeadless)
                             {
-                                packagesWithFrameworkToAdd.Add(new PackageItem(affectedPackage)
-                                {
-                                    ProjectName = scope.Plc.ProjectName,
-                                    PlcName = scope.Plc.Name,
-                                    PackageVersion = new PublishedPackageVersion(affectedPackage.PackageVersion)
+                                var frameworkAdd = new PackageItem(affectedPackage);
+                                frameworkAdd.Apply(new ConfiguredPackageRef(scope.Plc.ProjectName, scope.Plc.Name, package.PlcPackageReference));
+                                frameworkAdd.Apply(new ResolvedPackageRef(
+                                    new PublishedPackageVersion(affectedPackage.PackageVersion)
                                     {
                                         Version = version,
                                         Branch = package.PlcPackageReference.Branch,
                                         Configuration = package.PlcPackageReference.Configuration,
                                         Target = package.PlcPackageReference.Target
                                     },
-                                    PlcPackageReference = package.PlcPackageReference
-                                });
+                                    null));
+                                packagesWithFrameworkToAdd.Add(frameworkAdd);
                             }
                         }
                     }

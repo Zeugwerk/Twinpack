@@ -1,4 +1,4 @@
-using NLog;
+﻿using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -191,14 +191,12 @@ namespace Twinpack.Application
                 if (packageVersion?.Name != null)
                 {
                     catalogItem = new PackageItem(ps, packageVersion);
-                    catalogItem.Used = packageVersion;
-                    catalogItem.PlcPackageReference = item;
-                    catalogItem.ProjectName = projectName;
-                    catalogItem.PlcName = plcName;
+                    catalogItem.Apply(new ConfiguredPackageRef(projectName, plcName, item));
+                    catalogItem.Apply(new InstalledPackageRef(packageVersion));
 
                     if (includeMetadata)
                     {
-                        catalogItem.PackageVersion = packageVersion;
+                        catalogItem.Apply(new ResolvedPackageRef(packageVersion, null));
                         catalogItem.PackageVersion.Dependencies = (await ResolvePackageDependenciesAsync(catalogItem, automationInterface, cancellationToken)).Select(x => x.PackageVersion).ToList();
                     }
                 }
@@ -208,14 +206,15 @@ namespace Twinpack.Application
                 {
                     if (includeMetadata)
                     {
-                        catalogItem.Package = await ps.GetPackageAsync(packageVersionLatest.DistributorName, packageVersionLatest.Name, cancellationToken: cancellationToken);
+                        var resolvedPackage = await ps.GetPackageAsync(packageVersionLatest.DistributorName, packageVersionLatest.Name, cancellationToken: cancellationToken);
+                        catalogItem.Apply(new ResolvedPackageRef(packageVersion, resolvedPackage));
                     }
 
                     catalogItem.Update = packageVersionLatest;
                     catalogItem.PackageServer = ps;
                 }
 
-                catalogItem.PlcPackageReference = item;
+                catalogItem.Apply(new ConfiguredPackageRef(projectName, plcName, item));
 
                 if (packageVersionLatest.Name != null)
                 {
@@ -225,9 +224,7 @@ namespace Twinpack.Application
                 }
             }
 
-            catalogItem.PlcPackageReference = item;
-            catalogItem.ProjectName = projectName;
-            catalogItem.PlcName = plcName;
+            catalogItem.Apply(new ConfiguredPackageRef(projectName, plcName, item));
             catalogItem.PackageServer = null;
 
             if (includeMetadata)
@@ -335,7 +332,9 @@ namespace Twinpack.Application
 
                         if (resolvedDependency?.PackageVersion?.Name != null)
                         {
-                            resolvedDependencies.Add(new PackageItem() { PackageServer = packageServer, PackageVersion = resolvedDependency.PackageVersion });
+                            var depItem = new PackageItem { PackageServer = packageServer };
+                            depItem.Apply(new ResolvedPackageRef(resolvedDependency.PackageVersion, null));
+                            resolvedDependencies.Add(depItem);
                             break;
                         }
                     }
