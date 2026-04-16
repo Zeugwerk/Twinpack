@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Twinpack.Configuration;
 using Twinpack.Models;
+using Twinpack.Protocol.Api;
 
 namespace Twinpack.Core
 {
@@ -63,46 +64,27 @@ namespace Twinpack.Core
             }
         }
 
+        private XElement? FindMatch(PackageVersionGetResponse pv, bool requireDistributor)
+        {
+            return LocalRepository.FirstOrDefault(lib =>
+            {
+                var title = (string)lib.Attribute("Title");
+                var company = (string)lib.Attribute("Company");
+                var version = (string)lib.Attribute("Version");
+
+                return string.Equals(title, pv.Title, StringComparison.InvariantCultureIgnoreCase)
+                    && (!requireDistributor || string.Equals(company, pv.DistributorName, StringComparison.InvariantCultureIgnoreCase))
+                    && (pv.Version == null || string.Equals(version, pv.Version, StringComparison.InvariantCultureIgnoreCase));
+            });
+        }
+
         public override bool IsPackageInstalled(PackageItem package)
         {
             LocalRepository ??= LoadLibraryElements().ToList();
 
-            // prefer full match
-            foreach (var lib in LocalRepository)
-            {
-                var title = (string)lib.Attribute("Title");
-                var company = (string)lib.Attribute("Company");
-                var version = (string)lib.Attribute("Version");
-
-                if (string.Equals(title, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
-                    string.Equals(company, package.PackageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
-                    (package.PackageVersion.Version == null || string.Equals(version, package.PackageVersion.Version, StringComparison.InvariantCultureIgnoreCase)))
-                {
-                    return true;
-                }
-            }
-
-            // but fallback to 'guess distributor'
-            foreach (var lib in LocalRepository)
-            {
-                var title = (string)lib.Attribute("Title");
-                var company = (string)lib.Attribute("Company");
-                var version = (string)lib.Attribute("Version");
-
-                if (string.Equals(title, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
-                    (package.PackageVersion.Version == null || string.Equals(version, package.PackageVersion.Version, StringComparison.InvariantCultureIgnoreCase)))
-                {
-                    // todo: there is a better place for this for sure
-                    package.Config.DistributorName = company;
-                    package.PackageVersion.DistributorName = company;
-                    package.Package.DistributorName = company;
-                    package.Catalog.DistributorName = company;
-
-                    return true;
-                }
-            }
-
-            return false;
+            // Prefer full match (title + distributor + version), fall back to title + version only
+            return FindMatch(package.PackageVersion, requireDistributor: true) != null
+                || FindMatch(package.PackageVersion, requireDistributor: false) != null;
         }
 
         public override async Task<bool> IsPackageInstalledAsync(PackageItem package)
@@ -137,6 +119,17 @@ namespace Twinpack.Core
                     root.Add(new XElement(TcNs + "QualifiedOnly", options.QualifiedOnly.ToString().ToLower()));
             }
 
+            var distributorName = package.PackageVersion.DistributorName;
+            if (await IsPackageInstalledAsync(package))
+            {
+                if (FindMatch(package.PackageVersion, requireDistributor: true) == null)
+                {
+                    // Distributor mismatch — grab the actual distributor from the installed entry
+                    distributorName = (string?)FindMatch(package.PackageVersion, requireDistributor: false)
+                                          ?.Attribute("Company");
+                }
+            }
+
             // make sure the package is not present before adding it, we have to
             // force, because the package might not even be installed
             await RemovePackageAsync(package, forceRemoval: true);
@@ -164,7 +157,7 @@ namespace Twinpack.Core
                 }
 
                 var library = new XElement(TcNs + "LibraryReference",
-                        new XAttribute("Include", $"{package.PackageVersion.Title},{(package.PackageVersion.Version ?? "*")},{package.PackageVersion.DistributorName}"),
+                        new XAttribute("Include", $"{package.PackageVersion.Title},{(package.PackageVersion.Version ?? "*")},{distributorName}"),
                         new List<XElement> {
                             new XElement(TcNs + "Namespace", ns),
                         });
@@ -189,7 +182,7 @@ namespace Twinpack.Core
                 var reference = new XElement(TcNs + "PlaceholderReference",
                         new XAttribute("Include", package.PackageVersion.Title),
                         new List<XElement> {
-                            new XElement(TcNs + "DefaultResolution", $"{package.PackageVersion.Title}, {(package.PackageVersion.Version ?? "*")} ({package.PackageVersion.DistributorName})"),
+                            new XElement(TcNs + "DefaultResolution", $"{package.PackageVersion.Title}, {(package.PackageVersion.Version ?? "*")} ({distributorName})"),
                             new XElement(TcNs + "Namespace", ns),
                         }
                     );
@@ -200,7 +193,7 @@ namespace Twinpack.Core
                 resolutionsGroup.Add(
                     new XElement(TcNs + "PlaceholderResolution",
                         new XAttribute("Include", package.PackageVersion.Title),
-                        new XElement(TcNs + "Resolution", $"{package.PackageVersion.Title}, {(package.PackageVersion.Version ?? "*")} ({package.PackageVersion.DistributorName})")
+                        new XElement(TcNs + "Resolution", $"{package.PackageVersion.Title}, {(package.PackageVersion.Version ?? "*")} ({distributorName})")
                      )
                 );
             }
