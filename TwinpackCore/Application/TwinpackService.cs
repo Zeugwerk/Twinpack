@@ -214,19 +214,60 @@ namespace Twinpack.Application
 
             try
             {
-                await _usedPackagesMutex.WaitAsync();
+                await _usedPackagesMutex.WaitAsync(token);
 
+                var workItems = new List<(string ProjectName, string PlcName, PlcPackageReference Package)>();
+                var workItemKeys = new HashSet<(string ProjectName, string PlcName, PlcPackageReference Package)>();
                 foreach (var project in _config.Projects.Where(x => x.Name == _projectName || _projectName == null))
                 {
                     foreach (var plc in project.Plcs.Where(x => x.Name == _plcName || _plcName == null))
                     {
                         foreach (var package in plc.Packages
                             .Where(x => excludedPackages == null || !excludedPackages.Contains(x.Name))
-                            .Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
+                            .Where(x => !_usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name)))
                         {
-                            PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, token);
+                            var key = (project.Name, plc.Name, package);
+                            if (!workItemKeys.Add(key))
+                                continue;
 
-                            _usedPackagesCache.RemoveAll(x => x.ProjectName == project.Name && x.PlcName == plc.Name && !string.IsNullOrEmpty(x.Catalog?.Name) && x.Catalog?.Name == catalogItem.Catalog?.Name);
+                            workItems.Add(key);
+                        }
+                    }
+                }
+
+                if (workItems.Count > 0)
+                {
+                    const int maxConcurrent = 8;
+                    using (var throttle = new SemaphoreSlim(maxConcurrent, maxConcurrent))
+                    {
+                        var fetchTasks = new Task<(int index, string projectName, string plcName, PlcPackageReference package, PackageItem catalogItem)>[workItems.Count];
+                        for (var i = 0; i < workItems.Count; i++)
+                        {
+                            var index = i;
+                            var item = workItems[i];
+                            fetchTasks[i] = Task.Run(async () =>
+                            {
+                                await throttle.WaitAsync(token).ConfigureAwait(false);
+                                try
+                                {
+                                    token.ThrowIfCancellationRequested();
+                                    var catalogItem = await _packageServers.FetchPackageAsync(item.ProjectName, item.PlcName, item.Package, includeMetadata, _automationInterface, token).ConfigureAwait(false);
+                                    return (index, item.ProjectName, item.PlcName, item.Package, catalogItem);
+                                }
+                                finally
+                                {
+                                    throttle.Release();
+                                }
+                            }, token);
+                        }
+
+                        var fetched = await Task.WhenAll(fetchTasks).ConfigureAwait(false);
+                        foreach (var row in fetched.OrderBy(x => x.index))
+                        {
+                            var catalogItem = row.catalogItem;
+                            var package = row.package;
+
+                            _usedPackagesCache.RemoveAll(x => x.ProjectName == row.projectName && x.PlcName == row.plcName && !string.IsNullOrEmpty(x.Catalog?.Name) && x.Catalog?.Name == catalogItem.Catalog?.Name);
                             _usedPackagesCache.Add(catalogItem);
 
                             if (catalogItem.PackageServer == null)

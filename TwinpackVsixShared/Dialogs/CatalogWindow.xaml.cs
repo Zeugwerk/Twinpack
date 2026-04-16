@@ -798,8 +798,11 @@ namespace Twinpack.Dialogs
                 if (searchTerm == null)
                     searchTerm = _searchTerm;
 
-                var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(searchTerm, token: cancellationToken);
-                var availablePackages = await _twinpack.RetrieveAvailablePackagesAsync(searchTerm, maxNewPackages, 5, cancellationToken);
+                var usedTask = _twinpack.RetrieveUsedPackagesAsync(searchTerm, token: cancellationToken);
+                var availableTask = _twinpack.RetrieveAvailablePackagesAsync(searchTerm, maxNewPackages, 5, cancellationToken);
+                await Task.WhenAll(usedTask, availableTask);
+                var installedPackages = await usedTask;
+                var availablePackages = await availableTask;
 
                 // synchronize the list of installed packages with the list of available packages
                 var zipped =
