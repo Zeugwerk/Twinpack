@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
@@ -9,7 +9,8 @@
     <Import_RootNamespace>TwinpackShared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigPlcFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigPlcProjectFactory.Dte.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigPlcProjectFactory.PathsAndDiscovery.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterfaceHeadless.cs" />
@@ -28,23 +29,38 @@
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\BeckhoffServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerFactory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\CachedHttpClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DirectoryExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\Exceptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LibraryReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PackageItem.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\PackageItem.Constructors.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\PackageItemReference.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api\ApiCatalog.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api\ApiLogin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api\ApiNotifications.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api\ApiPackageDocument.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api\ApiPackageVersion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api\ApiPackageWrites.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api\ApiResponseBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configuration\Config.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigFactory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\PlcLibrary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\PackageReferenceKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Plc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Project.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Solution.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\PaginatedBatch.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\IPackageServer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\TwinpackServer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\PackageServerCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetCatalogItemMapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\ResolvePackageOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\TwinpackHttp\CachedHttpClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\TwinpackHttp\TwinpackServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Application\IPackageServerCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Application\PackageServerCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Application\AffectedPackagesClosureBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Application\PackageOperationContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Application\TwinpackService.Options.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Application\TwinpackService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerRegistry.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\TwinpackService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)app.config" />

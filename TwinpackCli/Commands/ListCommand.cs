@@ -52,7 +52,7 @@ namespace Twinpack.Commands
                             Package = x.Package,
                             PackageVersion = x.PackageVersion, 
                             Used = x.Used, 
-                            Config = x.Config } 
+                            PlcPackageReference = x.PlcPackageReference } 
                         )));
                 }
                 else

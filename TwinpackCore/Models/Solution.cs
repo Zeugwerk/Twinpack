@@ -38,12 +38,24 @@ namespace Twinpack.Models
 
             Name = Path.GetFileNameWithoutExtension(filepath);
             Projects = projectMatches.Cast<Match>()
-                .Where(x => File.Exists(directory + "\\" + x.Groups[2].Value))
-                .Select(x => new Project(x.Groups[1].Value, directory + "\\" + x.Groups[2].Value))
+                .Select(m => (match: m, projectPath: PathFromSolutionDir(directory, m.Groups[2].Value)))
+                .Where(x => File.Exists(x.projectPath))
+                .Select(x => new Project(x.match.Groups[1].Value, x.projectPath))
                 .ToList();
         }
 
         public string Name { get; private set; } = null;
         public IEnumerable<Project> Projects { get; private set; } = new List<Project>();
+
+        /// <summary>Combine solution directory with a path as stored in the .sln (may use Windows separators).</summary>
+        private static string PathFromSolutionDir(string solutionDirectory, string relativeProjectPath)
+        {
+            if (string.IsNullOrEmpty(relativeProjectPath))
+                return Path.GetFullPath(solutionDirectory);
+
+            var rel = relativeProjectPath.Replace('\\', Path.DirectorySeparatorChar)
+                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            return Path.GetFullPath(Path.Combine(solutionDirectory, rel));
+        }
     }
 }

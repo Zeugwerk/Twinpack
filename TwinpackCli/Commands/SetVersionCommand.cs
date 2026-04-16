@@ -2,7 +2,7 @@
 using Spectre.Console.Cli;
 using System;
 using System.ComponentModel;
-using static Twinpack.Core.TwinpackService;
+using static Twinpack.Application.TwinpackService;
 
 namespace Twinpack.Commands
 {

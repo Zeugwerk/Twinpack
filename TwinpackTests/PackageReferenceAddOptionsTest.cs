@@ -1,22 +1,15 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Threading.Tasks;
-using Twinpack.Models;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Twinpack.Protocol;
 
 namespace TwinpackTests
 {
     [TestClass]
-    public class AddPlcLibraryOptionsTest
+    public class PackageReferenceAddOptionsTest
     {
         [TestMethod]
-        public async Task CopyOptionForDependency()
+        public void CopyOptionForDependency()
         {
-            var options = new AddPlcLibraryOptions
+            var options = new PackageReferenceAddOptions
             {
                 LibraryReference = true,
                 Optional = true,
@@ -24,7 +17,7 @@ namespace TwinpackTests
                 PublishSymbolsInContainer = true,
                 QualifiedOnly = true,
             };
-            
+
             var dependencyOption = options.CopyForDependency();
 
             Assert.AreEqual(false, dependencyOption.LibraryReference);

@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32602.215
@@ -24,6 +24,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twinpack.Net", "Twinpack.Net\Twinpack.Net.csproj", "{FDED33D8-3F68-4AC3-AA86-D61E20801C2F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TwinpackCli.Net", "TwinpackCli.Net\TwinpackCli.Net.csproj", "{A9AF13EF-6D43-459A-B559-5C2856700025}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twinpack.ArchitectureTests", "Twinpack.ArchitectureTests\Twinpack.ArchitectureTests.csproj", "{E1A2B3C4-D5E6-4789-A01B-2C3D4E5F6A7B}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "TwinpackCli", "TwinpackCli\TwinpackCli.shproj", "{E7B2C9D1-4F8A-4E3B-9D2C-1A0B5E6F7A8B}"
 EndProject
@@ -107,6 +109,14 @@ Global
 		{A9AF13EF-6D43-459A-B559-5C2856700025}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A9AF13EF-6D43-459A-B559-5C2856700025}.Release|x86.ActiveCfg = Release|Any CPU
 		{A9AF13EF-6D43-459A-B559-5C2856700025}.Release|x86.Build.0 = Release|Any CPU
+		{E1A2B3C4-D5E6-4789-A01B-2C3D4E5F6A7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1A2B3C4-D5E6-4789-A01B-2C3D4E5F6A7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1A2B3C4-D5E6-4789-A01B-2C3D4E5F6A7B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E1A2B3C4-D5E6-4789-A01B-2C3D4E5F6A7B}.Debug|x86.Build.0 = Debug|Any CPU
+		{E1A2B3C4-D5E6-4789-A01B-2C3D4E5F6A7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1A2B3C4-D5E6-4789-A01B-2C3D4E5F6A7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1A2B3C4-D5E6-4789-A01B-2C3D4E5F6A7B}.Release|x86.ActiveCfg = Release|Any CPU
+		{E1A2B3C4-D5E6-4789-A01B-2C3D4E5F6A7B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

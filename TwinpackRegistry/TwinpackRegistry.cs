@@ -110,14 +110,14 @@ namespace Twinpack
                             // only upload if the package is not published on Twinpack yet
                             foreach(var packageServer in _packageServers.Where(x => x.Connected))
                             {
-                                var packageVersion = await packageServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = libraryInfo.Company, Name = libraryInfo.Title, Version = libraryInfo.Version }, null, null, null);
+                                var packageVersion = await packageServer.GetPackageVersionAsync(new PackageReferenceKey { DistributorName = libraryInfo.Company, Name = libraryInfo.Title, Version = libraryInfo.Version }, null, null, null);
                                 if (packageVersion?.Name != null)
                                 {
                                     _logger.Info($"Updating counter of '{libraryInfo.Title}' (distributor: {libraryInfo.Company}, version: {libraryInfo.Version})' to {downloads}");
 
                                     if (!dryRun)
                                         await (packageServer as TwinpackServer)?.PutPackageVersionDownloadsAsync(
-                                            new PackageVersionDownloadsPutRequest { PackageVersionId = packageVersion.PackageVersionId, Downloads = downloads });
+                                            new PublishedPackageVersionDownloadsUpdate { PackageVersionId = packageVersion.PackageVersionId, Downloads = downloads });
 
                                     break;
                                 }
@@ -242,7 +242,7 @@ namespace Twinpack
 
                     // only upload if the package is not published on Twinpack yet
                     var twinpackServer = _packageServers.Where(x => x is TwinpackServer).First();
-                    var packageVersion = await twinpackServer.GetPackageVersionAsync(new PlcLibrary { DistributorName = plc.DistributorName, Name = plc.Name, Version = plc.Version }, null, null, null);
+                    var packageVersion = await twinpackServer.GetPackageVersionAsync(new PackageReferenceKey { DistributorName = plc.DistributorName, Name = plc.Name, Version = plc.Version }, null, null, null);
                     if (packageVersion?.Name == null)
                     {
                         _logger.Info($"This release '{release.Name} ({release.TagName})' is not yet published to Twinpack");
@@ -250,18 +250,18 @@ namespace Twinpack
                         foreach (var dependency in libraryInfo.Dependencies.Where(x => x.Version == "*" || Version.TryParse(x.Version, out _) == true))
                         {
                             dependency.Version = dependency.Version == "*" ? null : dependency.Version;
-                            PackageVersionGetResponse resolvedDependency = null;
+                            PublishedPackageVersion resolvedDependency = null;
                             foreach (var depPackageServer in _packageServers.Where(x => x.Connected))
                             {
                                 if (resolvedDependency != null)
                                     break;
 
-                                resolvedDependency = await depPackageServer.ResolvePackageVersionAsync(new PlcLibrary { DistributorName = dependency.DistributorName, Name = dependency.Name, Version = dependency.Version }, null, null, null);
+                                resolvedDependency = await depPackageServer.ResolvePackageVersionAsync(new PackageReferenceKey { DistributorName = dependency.DistributorName, Name = dependency.Name, Version = dependency.Version }, null, null, null);
                                 if (resolvedDependency.Name != null && (resolvedDependency.Version == dependency.Version || dependency.Version == null))
                                 {
                                     _logger.Info($"Dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version}) located on {depPackageServer.UrlBase}");
                                     plc.Packages = plc.Packages.Append(
-                                        new ConfigPlcPackage()
+                                        new PlcPackageReference()
                                         {
                                             Name = resolvedDependency.Name,
                                             DistributorName = resolvedDependency.DistributorName,
@@ -277,7 +277,7 @@ namespace Twinpack
                             {
                                 _logger.Info($"Dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version})");
                                 plc.Packages = plc.Packages.Append(
-                                    new ConfigPlcPackage()
+                                    new PlcPackageReference()
                                     {
                                         Name = dependency.Name,
                                         DistributorName = dependency.DistributorName,

@@ -1,10 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Caching;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Twinpack.Application;
 using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Models;
@@ -25,49 +26,49 @@ namespace TwinpackTests
         {
             _packageServer1 = new PackageServerMock
             {
-                CatalogItems = new List<CatalogItemGetResponse>
+                CatalogItems = new List<CatalogPackageSummary>
                 {
-                    new CatalogItemGetResponse() { Name = "Package 1" },
-                    new CatalogItemGetResponse() { Name = "Package 2" },
-                    new CatalogItemGetResponse() { Name = "Package 3" },
-                    new CatalogItemGetResponse() { Name = "Package 4" },
-                    new CatalogItemGetResponse() { Name = "Package 5" },
+                    new CatalogPackageSummary() { Name = "Package 1" },
+                    new CatalogPackageSummary() { Name = "Package 2" },
+                    new CatalogPackageSummary() { Name = "Package 3" },
+                    new CatalogPackageSummary() { Name = "Package 4" },
+                    new CatalogPackageSummary() { Name = "Package 5" },
                 },
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", DistributorName = "My Distributor 4", DisplayName="My Displayname", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
                 },
                 Connected = true
             };
 
             _packageServer2 = new PackageServerMock
             {
-                CatalogItems = new List<CatalogItemGetResponse>
+                CatalogItems = new List<CatalogPackageSummary>
                 {
-                    new CatalogItemGetResponse() { Name = "Package 4" },
-                    new CatalogItemGetResponse() { Name = "Package 5" },
-                    new CatalogItemGetResponse() { Name = "Package 6" },
-                    new CatalogItemGetResponse() { Name = "Package 7" },
-                    new CatalogItemGetResponse() { Name = "Package 8" },
+                    new CatalogPackageSummary() { Name = "Package 4" },
+                    new CatalogPackageSummary() { Name = "Package 5" },
+                    new CatalogPackageSummary() { Name = "Package 6" },
+                    new CatalogPackageSummary() { Name = "Package 7" },
+                    new CatalogPackageSummary() { Name = "Package 8" },
                 },
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 5", DistributorName = "My Distributor 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 5", DistributorName = "My Distributor 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
                 },
                 Connected = true
             };
 
             _packageServerNotConnected = new PackageServerMock
             {
-                CatalogItems = new List<CatalogItemGetResponse>
+                CatalogItems = new List<CatalogPackageSummary>
                     {
-                        new CatalogItemGetResponse() { Name = "Package 9" },
-                        new CatalogItemGetResponse() { Name = "Package 10" },
-                        new CatalogItemGetResponse() { Name = "Package 11" }
+                        new CatalogPackageSummary() { Name = "Package 9" },
+                        new CatalogPackageSummary() { Name = "Package 10" },
+                        new CatalogPackageSummary() { Name = "Package 11" }
                     },
                 Connected = false
             };
@@ -220,11 +221,11 @@ namespace TwinpackTests
         public async Task RetrieveUsedPackagesAsync_WithoutSearchTerm()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
-            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            config.Projects[0].Plcs[0].Packages = new List<PlcPackageReference>
             {
-                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
             var twinpack = new TwinpackService(_packageServers, config: config);
@@ -240,11 +241,11 @@ namespace TwinpackTests
         public async Task RetrieveUsedPackagesAsync_LinkToConfig()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Name = "MyProject", Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { Name = "MyPlc" } } } } };
-            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            config.Projects[0].Plcs[0].Packages = new List<PlcPackageReference>
             {
-                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
             var twinpack = new TwinpackService(_packageServers, config: config);
 
@@ -261,11 +262,11 @@ namespace TwinpackTests
         public async Task RetrieveUsedPackagesAsync_WithSearchTerm_PackageName()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
-            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            config.Projects[0].Plcs[0].Packages = new List<PlcPackageReference>
             {
-                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
             var twinpack = new TwinpackService(_packageServers, config: config);
 
@@ -280,11 +281,11 @@ namespace TwinpackTests
         public async Task RetrieveUsedPackagesAsync_WithSearchTerm_DistributorName()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
-            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            config.Projects[0].Plcs[0].Packages = new List<PlcPackageReference>
             {
-                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
             var twinpack = new TwinpackService(_packageServers, config: config);
 
@@ -299,11 +300,11 @@ namespace TwinpackTests
         public async Task RetrieveUsedPackagesAsync_WithSearchTerm_DisplayName()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
-            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            config.Projects[0].Plcs[0].Packages = new List<PlcPackageReference>
             {
-                new ConfigPlcPackage() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                new ConfigPlcPackage() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                new PlcPackageReference() { Name = "Package 6", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
             };
 
             var twinpack = new TwinpackService(_packageServers, config: config);
@@ -319,11 +320,11 @@ namespace TwinpackTests
         public async Task RetrieveUsedPackagesAsync_ResolvingNeeded()
         {
             var config = new Config { Projects = new List<ConfigProject> { new ConfigProject { Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { } } } } };
-            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage>
+            config.Projects[0].Plcs[0].Packages = new List<PlcPackageReference>
             {
-                new ConfigPlcPackage() { Name = "Package 4", Version = null, Branch = null, Target = null, Configuration = null },
-                new ConfigPlcPackage() { Name = "Package 5", Version = "1.0.0.0", Branch = null, Target = null, Configuration = null },
-                new ConfigPlcPackage() { Name = "Package 6", Version = "0.0.0.0", Branch = null, Target = null, Configuration = null },
+                new PlcPackageReference() { Name = "Package 4", Version = null, Branch = null, Target = null, Configuration = null },
+                new PlcPackageReference() { Name = "Package 5", Version = "1.0.0.0", Branch = null, Target = null, Configuration = null },
+                new PlcPackageReference() { Name = "Package 6", Version = "0.0.0.0", Branch = null, Target = null, Configuration = null },
             };
             var twinpack = new TwinpackService(_packageServers, config: config);
 
@@ -333,25 +334,25 @@ namespace TwinpackTests
             Assert.AreEqual(2, packages.Where(x => x.Used != null).Count());
             Assert.AreEqual(1, packages.Where(x => x.Used == null).Count());
 
-            Assert.AreEqual("My Distributor 4", packages[0].Config.DistributorName);
-            Assert.AreEqual("main", packages[0].Config.Branch);
-            Assert.AreEqual("Snapshot", packages[0].Config.Configuration);
-            Assert.AreEqual("TC3.1", packages[0].Config.Target);
-            Assert.AreEqual(null, packages[0].Config.Version);
+            Assert.AreEqual("My Distributor 4", packages[0].PlcPackageReference.DistributorName);
+            Assert.AreEqual("main", packages[0].PlcPackageReference.Branch);
+            Assert.AreEqual("Snapshot", packages[0].PlcPackageReference.Configuration);
+            Assert.AreEqual("TC3.1", packages[0].PlcPackageReference.Target);
+            Assert.AreEqual(null, packages[0].PlcPackageReference.Version);
             Assert.AreEqual("1.3.0.0", packages[0].Used.Version);
 
-            Assert.AreEqual("My Distributor 5", packages[1].Config.DistributorName);
-            Assert.AreEqual("main", packages[1].Config.Branch);
-            Assert.AreEqual("Release", packages[1].Config.Configuration);
-            Assert.AreEqual("TC3.1", packages[1].Config.Target);
-            Assert.AreEqual("1.0.0.0", packages[1].Config.Version);
+            Assert.AreEqual("My Distributor 5", packages[1].PlcPackageReference.DistributorName);
+            Assert.AreEqual("main", packages[1].PlcPackageReference.Branch);
+            Assert.AreEqual("Release", packages[1].PlcPackageReference.Configuration);
+            Assert.AreEqual("TC3.1", packages[1].PlcPackageReference.Target);
+            Assert.AreEqual("1.0.0.0", packages[1].PlcPackageReference.Version);
             Assert.AreEqual("1.0.0.0", packages[1].Used.Version);
 
-            Assert.AreEqual(null, packages[2].Config.DistributorName);
-            Assert.AreEqual(null, packages[2].Config.Branch);
-            Assert.AreEqual(null, packages[2].Config.Configuration);
-            Assert.AreEqual(null, packages[2].Config.Target);
-            Assert.AreEqual("0.0.0.0", packages[2].Config.Version);
+            Assert.AreEqual(null, packages[2].PlcPackageReference.DistributorName);
+            Assert.AreEqual(null, packages[2].PlcPackageReference.Branch);
+            Assert.AreEqual(null, packages[2].PlcPackageReference.Configuration);
+            Assert.AreEqual(null, packages[2].PlcPackageReference.Target);
+            Assert.AreEqual("0.0.0.0", packages[2].PlcPackageReference.Version);
             Assert.AreEqual(null, packages[2].Used);
         }
 
@@ -369,12 +370,12 @@ namespace TwinpackTests
                 new ConfigProject { Name = "MyProject3", Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { Name = "MyPlc1" }, new ConfigPlcProject { Name = "MyPlc2" } } } ,
                 }
             };
-            config.Projects[0].Plcs[0].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
-            config.Projects[0].Plcs[1].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
-            config.Projects[1].Plcs[0].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
-            config.Projects[1].Plcs[1].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
-            config.Projects[2].Plcs[0].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
-            config.Projects[2].Plcs[1].Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[0].Plcs[0].Packages = new List<PlcPackageReference> { new PlcPackageReference() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[0].Plcs[1].Packages = new List<PlcPackageReference> { new PlcPackageReference() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[1].Plcs[0].Packages = new List<PlcPackageReference> { new PlcPackageReference() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[1].Plcs[1].Packages = new List<PlcPackageReference> { new PlcPackageReference() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[2].Plcs[0].Packages = new List<PlcPackageReference> { new PlcPackageReference() { Name = "Package 4", Version = "1.0.0.0" } };
+            config.Projects[2].Plcs[1].Packages = new List<PlcPackageReference> { new PlcPackageReference() { Name = "Package 4", Version = "1.0.0.0" } };
 
             var twinpack = new TwinpackService(_packageServers, config: config, projectName: projectName, plcName: plcName);
             var packages = (await twinpack.RetrieveUsedPackagesAsync(searchTerm: null)).ToList();
@@ -387,19 +388,19 @@ namespace TwinpackTests
         {
             var packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZAux",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore" },
-                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                            new PublishedPackageVersion() { Name = "ZCore" },
+                            new PublishedPackageVersion() { Name = "ZPlatform" },
                         }
                     }
                 },
@@ -409,11 +410,11 @@ namespace TwinpackTests
             var packageServers = new PackageServerCollection { packageServer };
             var twinpack = new TwinpackService(packageServers);
 
-            var package = new PackageItem { Catalog = new CatalogItemGetResponse { Name = "ZAux" } };
+            var package = new PackageItem { Catalog = new CatalogPackageSummary { Name = "ZAux" } };
 
             await twinpack.FetchPackageAsync(package);
 
-            Assert.AreEqual("ZAux", package.Config.Name);
+            Assert.AreEqual("ZAux", package.PlcPackageReference.Name);
             Assert.AreEqual("ZAux", package.Package.Name);
             Assert.AreEqual("ZAux", package.PackageVersion.Name);
             Assert.AreEqual("1.5.0.1", package.PackageVersion.Version);
@@ -426,19 +427,19 @@ namespace TwinpackTests
         {
             var packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZAux",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore" },
-                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                            new PublishedPackageVersion() { Name = "ZCore" },
+                            new PublishedPackageVersion() { Name = "ZPlatform" },
                         }
                     }
                 },
@@ -448,7 +449,7 @@ namespace TwinpackTests
             var packageServers = new PackageServerCollection { packageServer };
             var twinpack = new TwinpackService(packageServers);
 
-            var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
+            var package = new PackageItem { PlcPackageReference = new PlcPackageReference { Name = "ZAux" } };
 
             await twinpack.FetchPackageAsync(package);
 
@@ -466,9 +467,9 @@ namespace TwinpackTests
         {
             var packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZAux",
                         Title = "ZAux",
@@ -488,13 +489,13 @@ namespace TwinpackTests
             var packageServers = new PackageServerCollection { packageServer };
             var twinpack = new TwinpackService(packageServers, automationInterfaceMock.Object);
 
-            var package = new PackageItem { ProjectName = "TestProject1", PlcName = "Untitled1", Catalog = new CatalogItemGetResponse { Name = "ZAux" } };
+            var package = new PackageItem { ProjectName = "TestProject1", PlcName = "Untitled1", Catalog = new CatalogPackageSummary { Name = "ZAux" } };
 
             await twinpack.FetchPackageAsync(package);
 
             Assert.AreEqual("TestProject1", package.ProjectName);
             Assert.AreEqual("Untitled1", package.PlcName);
-            Assert.AreEqual("ZAux", package.Config.Name);
+            Assert.AreEqual("ZAux", package.PlcPackageReference.Name);
             Assert.AreEqual("ZAux", package.Package.Name);
             Assert.AreEqual("ZAux", package.PackageVersion.Name);
             Assert.AreEqual("ZAux", package.PackageVersion.Title);
@@ -511,9 +512,9 @@ namespace TwinpackTests
         {
             var packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZAux",
                         Title = "ZAux",
@@ -533,7 +534,7 @@ namespace TwinpackTests
             var packageServers = new PackageServerCollection { packageServer };
             var twinpack = new TwinpackService(packageServers, automationInterfaceMock.Object);
 
-            var package = new PackageItem { ProjectName = "TestProject1", PlcName = "Untitled1", Config = new ConfigPlcPackage { Name = "ZAux" } };
+            var package = new PackageItem { ProjectName = "TestProject1", PlcName = "Untitled1", PlcPackageReference = new PlcPackageReference { Name = "ZAux" } };
 
             await twinpack.FetchPackageAsync(package);
 
@@ -551,70 +552,70 @@ namespace TwinpackTests
         {
             var packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZAux",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         { 
-                            new PackageVersionGetResponse() { Name = "ZCore" },
-                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                            new PublishedPackageVersion() { Name = "ZCore" },
+                            new PublishedPackageVersion() { Name = "ZPlatform" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZPlatform",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore" },
+                            new PublishedPackageVersion() { Name = "ZCore" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZCore",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib1" },
+                            new PublishedPackageVersion() { Name = "ExternalLib1" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib1",
                         Version = "1.0.0.0",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib2" },
+                            new PublishedPackageVersion() { Name = "ExternalLib2" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib2",
                         Version = "2.0.0.0",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib3" },
+                            new PublishedPackageVersion() { Name = "ExternalLib3" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib3",
                         Version = "2.0.0.0",
@@ -630,7 +631,7 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers);
 
             var downloadedPackageVersions = new List<PackageItem>();
-            var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
+            var package = new PackageItem { PlcPackageReference = new PlcPackageReference { Name = "ZAux" } };
 
             downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package }, 
                 new TwinpackService.DownloadPackageOptions
@@ -663,70 +664,70 @@ namespace TwinpackTests
         {
             var packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZAux",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore" },
-                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                            new PublishedPackageVersion() { Name = "ZCore" },
+                            new PublishedPackageVersion() { Name = "ZPlatform" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZPlatform",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore" },
+                            new PublishedPackageVersion() { Name = "ZCore" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZCore",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib1" },
+                            new PublishedPackageVersion() { Name = "ExternalLib1" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib1",
                         Version = "1.0.0.0",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib2" },
+                            new PublishedPackageVersion() { Name = "ExternalLib2" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib2",
                         Version = "2.0.0.0",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib3" },
+                            new PublishedPackageVersion() { Name = "ExternalLib3" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib3",
                         Version = "2.0.0.0",
@@ -758,7 +759,7 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, null, config);
 
             var downloadedPackageVersions = new List<PackageItem>();
-            var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
+            var package = new PackageItem { PlcPackageReference = new PlcPackageReference { Name = "ZAux" } };
 
             downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package },
                 new TwinpackService.DownloadPackageOptions
@@ -784,70 +785,70 @@ namespace TwinpackTests
         {
             var packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZAux",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore" },
-                            new PackageVersionGetResponse() { Name = "ZPlatform" },
+                            new PublishedPackageVersion() { Name = "ZCore" },
+                            new PublishedPackageVersion() { Name = "ZPlatform" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZPlatform",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore" },
+                            new PublishedPackageVersion() { Name = "ZCore" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZCore",
                         Version = "1.5.0.1",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib1" },
+                            new PublishedPackageVersion() { Name = "ExternalLib1" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib1",
                         Version = "1.0.0.0",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib2" },
+                            new PublishedPackageVersion() { Name = "ExternalLib2" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib2",
                         Version = "2.0.0.0",
                         Branch = "main",
                         Configuration = "Release",
                         Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib3" },
+                            new PublishedPackageVersion() { Name = "ExternalLib3" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib3",
                         Version = "2.0.0.0",
@@ -879,7 +880,7 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, null, config);
 
             var downloadedPackageVersions = new List<PackageItem>();
-            var package = new PackageItem { Config = new ConfigPlcPackage { Name = "ZAux" } };
+            var package = new PackageItem { PlcPackageReference = new PlcPackageReference { Name = "ZAux" } };
 
             downloadedPackageVersions = await twinpack.DownloadPackagesAsync(new List<PackageItem> { package },
                 new TwinpackService.DownloadPackageOptions
@@ -902,87 +903,87 @@ namespace TwinpackTests
         {
             var packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZAux", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.1" },
-                            new PackageVersionGetResponse() { Name = "ZPlatform", Version = "1.5.0.1" },
+                            new PublishedPackageVersion() { Name = "ZCore", Version = "1.5.0.1" },
+                            new PublishedPackageVersion() { Name = "ZPlatform", Version = "1.5.0.1" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZAux", Version = "1.5.0.2", Branch = "main", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.2" },
-                            new PackageVersionGetResponse() { Name = "ZPlatform", Version = "1.5.0.2" },
+                            new PublishedPackageVersion() { Name = "ZCore", Version = "1.5.0.2" },
+                            new PublishedPackageVersion() { Name = "ZPlatform", Version = "1.5.0.2" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZPlatform", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.1" },
+                            new PublishedPackageVersion() { Name = "ZCore", Version = "1.5.0.1" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZPlatform", Version = "1.5.0.2", Branch = "main", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.2" },
+                            new PublishedPackageVersion() { Name = "ZCore", Version = "1.5.0.2" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZPlatform", Version = "1.2.0.1", Branch = "release/1.2", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.2" },
+                            new PublishedPackageVersion() { Name = "ZCore", Version = "1.5.0.2" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZPlatform", Version = "1.4.0.1", Branch = "release/1.4", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.2" },
+                            new PublishedPackageVersion() { Name = "ZCore", Version = "1.5.0.2" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZCore", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib1", Version = "1.2.3.4" },
+                            new PublishedPackageVersion() { Name = "ExternalLib1", Version = "1.2.3.4" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZCore", Version = "1.5.0.2", Branch = "main", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib1", Version = "2.2.3.4" },
+                            new PublishedPackageVersion() { Name = "ExternalLib1", Version = "2.2.3.4" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZCore", Version = "1.5.0.3", Branch = "main", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ExternalLib1", Version = "2.2.3.4" },
+                            new PublishedPackageVersion() { Name = "ExternalLib1", Version = "2.2.3.4" },
                         }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib1", Version = "1.2.3.4", Branch = "main", Configuration = "Release", Target = "TC3.1",
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ExternalLib1", Version = "2.2.3.4", Branch = "main", Configuration = "Release", Target = "TC3.1",
                     }
@@ -1008,9 +1009,9 @@ namespace TwinpackTests
                         Plcs = new List<ConfigPlcProject>
                         {
                             new ConfigPlcProject { Name = "ZPlatform",
-                                Packages = new List<ConfigPlcPackage> {
-                                    new ConfigPlcPackage { Name = "ZCore", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                                    new ConfigPlcPackage { Name = "ExternalLib1", Version = "1.2.3.4", Branch = "main", Configuration = "Release", Target = "TC3.1" }
+                                Packages = new List<PlcPackageReference> {
+                                    new PlcPackageReference { Name = "ZCore", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                                    new PlcPackageReference { Name = "ExternalLib1", Version = "1.2.3.4", Branch = "main", Configuration = "Release", Target = "TC3.1" }
                                 }
                             },
                         }
@@ -1021,9 +1022,9 @@ namespace TwinpackTests
                         Plcs = new List<ConfigPlcProject>
                         {
                             new ConfigPlcProject { Name = "ZAux", Version = "1.5.0.1",
-                                Packages = new List<ConfigPlcPackage> {
-                                    new ConfigPlcPackage { Name = "ZCore", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                                    new ConfigPlcPackage { Name = "ZPlatform", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                                Packages = new List<PlcPackageReference> {
+                                    new PlcPackageReference { Name = "ZCore", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                                    new PlcPackageReference { Name = "ZPlatform", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1" },
                                 }
                             },
                         }
@@ -1049,9 +1050,9 @@ namespace TwinpackTests
                 });
 
             Assert.AreEqual(1, packages.Count());
-            Assert.AreEqual("ExternalLib1", packages.FirstOrDefault().Config.Name);
+            Assert.AreEqual("ExternalLib1", packages.FirstOrDefault().PlcPackageReference.Name);
             Assert.AreEqual("ExternalLib1", packages.FirstOrDefault().PackageVersion.Name);
-            Assert.AreEqual("1.2.3.4", packages.FirstOrDefault().Config.Version);
+            Assert.AreEqual("1.2.3.4", packages.FirstOrDefault().PlcPackageReference.Version);
             Assert.AreEqual("1.2.3.4", packages.FirstOrDefault().PackageVersion.Version);
             Assert.AreEqual("ZPlatform Project", packages.FirstOrDefault().ProjectName);
             Assert.AreEqual("ZPlatform", packages.FirstOrDefault().PlcName);
@@ -1072,24 +1073,24 @@ namespace TwinpackTests
 
             Assert.AreEqual(4, packages.Count());
 
-            var platformCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.Config.Name == "ZCore");
+            var platformCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.PlcPackageReference.Name == "ZCore");
             Assert.AreEqual("ZCore", platformCorePackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.1", platformCorePackage.Config.Version);
+            Assert.AreEqual("1.5.0.1", platformCorePackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.1", platformCorePackage.PackageVersion.Version);
 
-            var platformExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.Config.Name == "ExternalLib1");
+            var platformExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.PlcPackageReference.Name == "ExternalLib1");
             Assert.AreEqual("ExternalLib1", platformExternalPackage.PackageVersion.Name);
-            Assert.AreEqual("1.2.3.4", platformExternalPackage.Config.Version);
+            Assert.AreEqual("1.2.3.4", platformExternalPackage.PlcPackageReference.Version);
             Assert.AreEqual("1.2.3.4", platformExternalPackage.PackageVersion.Version);
 
-            var auxCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZCore");
+            var auxCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ZCore");
             Assert.AreEqual("ZCore", auxCorePackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.1", auxCorePackage.Config.Version);
+            Assert.AreEqual("1.5.0.1", auxCorePackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.1", auxCorePackage.PackageVersion.Version);
 
-            var auxPlatformPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZPlatform");
+            var auxPlatformPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ZPlatform");
             Assert.AreEqual("ZPlatform", auxPlatformPackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.1", auxPlatformPackage.Config.Version);
+            Assert.AreEqual("1.5.0.1", auxPlatformPackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.1", auxPlatformPackage.PackageVersion.Version);
         }
 
@@ -1108,29 +1109,29 @@ namespace TwinpackTests
 
             Assert.AreEqual(5, packages.Count());
 
-            var platformCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.Config.Name == "ZCore");
+            var platformCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.PlcPackageReference.Name == "ZCore");
             Assert.AreEqual("ZCore", platformCorePackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.1", platformCorePackage.Config.Version);
+            Assert.AreEqual("1.5.0.1", platformCorePackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.1", platformCorePackage.PackageVersion.Version);
 
-            var platformExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.Config.Name == "ExternalLib1");
+            var platformExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.PlcPackageReference.Name == "ExternalLib1");
             Assert.AreEqual("ExternalLib1", platformExternalPackage.PackageVersion.Name);
-            Assert.AreEqual("1.2.3.4", platformExternalPackage.Config.Version);
+            Assert.AreEqual("1.2.3.4", platformExternalPackage.PlcPackageReference.Version);
             Assert.AreEqual("1.2.3.4", platformExternalPackage.PackageVersion.Version);
 
-            var auxCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZCore");
+            var auxCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ZCore");
             Assert.AreEqual("ZCore", auxCorePackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.1", auxCorePackage.Config.Version);
+            Assert.AreEqual("1.5.0.1", auxCorePackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.1", auxCorePackage.PackageVersion.Version);
 
-            var auxPlatformPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZPlatform");
+            var auxPlatformPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ZPlatform");
             Assert.AreEqual("ZPlatform", auxPlatformPackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.1", auxPlatformPackage.Config.Version);
+            Assert.AreEqual("1.5.0.1", auxPlatformPackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.1", auxPlatformPackage.PackageVersion.Version);
 
-            var auxExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ExternalLib1");
+            var auxExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ExternalLib1");
             Assert.AreEqual("ExternalLib1", auxExternalPackage.PackageVersion.Name);
-            Assert.AreEqual("1.2.3.4", auxExternalPackage.Config.Version);
+            Assert.AreEqual("1.2.3.4", auxExternalPackage.PlcPackageReference.Version);
             Assert.AreEqual("1.2.3.4", auxExternalPackage.PackageVersion.Version);
         }
 
@@ -1252,9 +1253,9 @@ namespace TwinpackTests
                 });
 
             Assert.AreEqual(1, packages.Count());
-            Assert.AreEqual("ExternalLib1", packages.FirstOrDefault().Config.Name);
+            Assert.AreEqual("ExternalLib1", packages.FirstOrDefault().PlcPackageReference.Name);
             Assert.AreEqual("ExternalLib1", packages.FirstOrDefault().PackageVersion.Name);
-            Assert.AreEqual("2.2.3.4", packages.FirstOrDefault().Config.Version);
+            Assert.AreEqual("2.2.3.4", packages.FirstOrDefault().PlcPackageReference.Version);
             Assert.AreEqual("2.2.3.4", packages.FirstOrDefault().PackageVersion.Version);
             Assert.AreEqual("ZPlatform Project", packages.FirstOrDefault().ProjectName);
             Assert.AreEqual("ZPlatform", packages.FirstOrDefault().PlcName);
@@ -1277,24 +1278,24 @@ namespace TwinpackTests
 
             Assert.AreEqual(4, packages.Count());
 
-            var platformCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.Config.Name == "ZCore");
+            var platformCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.PlcPackageReference.Name == "ZCore");
             Assert.AreEqual("ZCore", platformCorePackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.3", platformCorePackage.Config.Version);
+            Assert.AreEqual("1.5.0.3", platformCorePackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.3", platformCorePackage.PackageVersion.Version);
 
-            var platformExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.Config.Name == "ExternalLib1");
+            var platformExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.PlcPackageReference.Name == "ExternalLib1");
             Assert.AreEqual("ExternalLib1", platformExternalPackage.PackageVersion.Name);
-            Assert.AreEqual("2.2.3.4", platformExternalPackage.Config.Version);
+            Assert.AreEqual("2.2.3.4", platformExternalPackage.PlcPackageReference.Version);
             Assert.AreEqual("2.2.3.4", platformExternalPackage.PackageVersion.Version);
 
-            var auxCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZCore");
+            var auxCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ZCore");
             Assert.AreEqual("ZCore", auxCorePackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.3", auxCorePackage.Config.Version);
+            Assert.AreEqual("1.5.0.3", auxCorePackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.3", auxCorePackage.PackageVersion.Version);
 
-            var auxPlatformPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZPlatform");
+            var auxPlatformPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ZPlatform");
             Assert.AreEqual("ZPlatform", auxPlatformPackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.2", auxPlatformPackage.Config.Version);
+            Assert.AreEqual("1.5.0.2", auxPlatformPackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.2", auxPlatformPackage.PackageVersion.Version);
         }
 
@@ -1314,29 +1315,29 @@ namespace TwinpackTests
 
             Assert.AreEqual(5, packages.Count());
 
-            var platformCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.Config.Name == "ZCore");
+            var platformCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.PlcPackageReference.Name == "ZCore");
             Assert.AreEqual("ZCore", platformCorePackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.3", platformCorePackage.Config.Version);
+            Assert.AreEqual("1.5.0.3", platformCorePackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.3", platformCorePackage.PackageVersion.Version);
 
-            var platformExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.Config.Name == "ExternalLib1");
+            var platformExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZPlatform" && x.PlcPackageReference.Name == "ExternalLib1");
             Assert.AreEqual("ExternalLib1", platformExternalPackage.PackageVersion.Name);
-            Assert.AreEqual("2.2.3.4", platformExternalPackage.Config.Version);
+            Assert.AreEqual("2.2.3.4", platformExternalPackage.PlcPackageReference.Version);
             Assert.AreEqual("2.2.3.4", platformExternalPackage.PackageVersion.Version);
 
-            var auxCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZCore");
+            var auxCorePackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ZCore");
             Assert.AreEqual("ZCore", auxCorePackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.3", auxCorePackage.Config.Version);
+            Assert.AreEqual("1.5.0.3", auxCorePackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.3", auxCorePackage.PackageVersion.Version);
 
-            var auxPlatformPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ZPlatform");
+            var auxPlatformPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ZPlatform");
             Assert.AreEqual("ZPlatform", auxPlatformPackage.PackageVersion.Name);
-            Assert.AreEqual("1.5.0.2", auxPlatformPackage.Config.Version);
+            Assert.AreEqual("1.5.0.2", auxPlatformPackage.PlcPackageReference.Version);
             Assert.AreEqual("1.5.0.2", auxPlatformPackage.PackageVersion.Version);
 
-            var auxExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ExternalLib1");
+            var auxExternalPackage = packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.PlcPackageReference.Name == "ExternalLib1");
             Assert.AreEqual("ExternalLib1", auxExternalPackage.PackageVersion.Name);
-            Assert.AreEqual("2.2.3.4", auxExternalPackage.Config.Version);
+            Assert.AreEqual("2.2.3.4", auxExternalPackage.PlcPackageReference.Version);
             Assert.AreEqual("2.2.3.4", auxExternalPackage.PackageVersion.Version);
         }
 
@@ -1344,24 +1345,24 @@ namespace TwinpackTests
         {
             var packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZCore", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>()
+                        Dependencies = new List<PublishedPackageVersion>()
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZCore", Version = "1.5.0.1", Branch = "fix/some-fix", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>()
+                        Dependencies = new List<PublishedPackageVersion>()
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "ZPlatform", Version = "1.5.0.1", Branch = "main", Configuration = "Release", Target = "TC3.1",
-                        Dependencies = new List<PackageVersionGetResponse>
+                        Dependencies = new List<PublishedPackageVersion>
                         {
-                            new PackageVersionGetResponse() { Name = "ZCore", Version = "1.5.0.1", Branch = "main" }
+                            new PublishedPackageVersion() { Name = "ZCore", Version = "1.5.0.1", Branch = "main" }
                         }
                     },
                     
@@ -1382,8 +1383,8 @@ namespace TwinpackTests
             var packages = await twinpack.AffectedPackagesAsync(
                 new List<PackageItem>()
                 {
-                    new PackageItem() { Config = new ConfigPlcPackage { Name = "ZPlatform", Version = "1.5.0.1", Branch = "main" } },
-                    new PackageItem() { Config = new ConfigPlcPackage { Name = "ZCore", Version = "1.5.0.1", Branch = "fix/some-fix" } }
+                    new PackageItem() { PlcPackageReference = new PlcPackageReference { Name = "ZPlatform", Version = "1.5.0.1", Branch = "main" } },
+                    new PackageItem() { PlcPackageReference = new PlcPackageReference { Name = "ZCore", Version = "1.5.0.1", Branch = "fix/some-fix" } }
                 });
 
             Assert.AreEqual(2, packages.Count());
@@ -1407,9 +1408,9 @@ namespace TwinpackTests
                 {
                     new PackageItem()
                     { 
-                        Config = new ConfigPlcPackage { Name = "NotExisting", Version = "1.5.0.1", Branch = "main" },
-                        Package = new PackageGetResponse { Name = "NotExisting" },
-                        PackageVersion = new PackageVersionGetResponse { Name = "NotExisting", Version = "1.5.0.1", Branch = "main" },
+                        PlcPackageReference = new PlcPackageReference { Name = "NotExisting", Version = "1.5.0.1", Branch = "main" },
+                        Package = new PublishedPackage { Name = "NotExisting" },
+                        PackageVersion = new PublishedPackageVersion { Name = "NotExisting", Version = "1.5.0.1", Branch = "main" },
                         PackageServer = null
                     },
                 });

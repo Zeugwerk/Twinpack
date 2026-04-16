@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 
@@ -59,44 +59,20 @@ namespace Twinpack.Extensions
             }
         }
 
+        /// <summary>Relative path from <paramref name="absPath"/> (directory) to <paramref name="relTo"/> (file or directory), using OS separators.</summary>
         public static string RelativePath(string absPath, string relTo)
-        { 
-            string[] absDirs = absPath.Split('\\'); 
-            string[] relDirs = relTo.Split('\\');        
-            // Get the shortest of the two paths
-            int len = absDirs.Length < relDirs.Length ? absDirs.Length : relDirs.Length;
-            // Use to determine where in the loop we exited
-            int lastCommonRoot = -1;
-            int index;
-            // Find common root
-            for (index = 0; index < len; index++)
-            {            
-                if (absDirs[index] == relDirs[index])
-                    lastCommonRoot = index;
-                else
-                    break;
-            }        
-            
-            // If we didn't find a common prefix then throw
-            if (lastCommonRoot == -1)
-            {            
-                throw new ArgumentException($"Path is not located in {absPath}");
-            }        
-            // Build up the relative path
-            StringBuilder relativePath = new StringBuilder();
-            // Add on the ..
-            for (index = lastCommonRoot + 1; index < absDirs.Length; index++)   
-            {            
-                if (absDirs[index].Length > 0) 
-                    relativePath.Append("..\\");
-            }
-            // Add on the folders
-            for (index = lastCommonRoot + 1; index < relDirs.Length - 1; index++)
-            {            
-                relativePath.Append(relDirs[index] + "\\");
-            }       
-            relativePath.Append(relDirs[relDirs.Length - 1]);        
-            return relativePath.ToString();
+        {
+            var from = Path.GetFullPath(absPath ?? throw new ArgumentNullException(nameof(absPath)));
+            var to = Path.GetFullPath(relTo ?? throw new ArgumentNullException(nameof(relTo)));
+
+            if (!from.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+                && !from.EndsWith(Path.AltDirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+                from += Path.DirectorySeparatorChar;
+
+            var fromUri = new Uri(from, UriKind.Absolute);
+            var toUri = new Uri(to, UriKind.Absolute);
+            var relative = Uri.UnescapeDataString(fromUri.MakeRelativeUri(toUri).ToString());
+            return relative.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
         }
     }
 }

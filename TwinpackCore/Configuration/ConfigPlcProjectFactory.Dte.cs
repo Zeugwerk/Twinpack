@@ -10,6 +10,7 @@ using NLog;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using Twinpack.Core;
+using Twinpack.Application;
 
 #if !NETSTANDARD2_1_OR_GREATER
 using EnvDTE;
@@ -18,7 +19,7 @@ using TCatSysManagerLib;
 
 namespace Twinpack.Configuration
 {
-    public class ConfigPlcProjectFactory
+    public partial class ConfigPlcProjectFactory
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -75,11 +76,11 @@ namespace Twinpack.Configuration
             return CreateAsync(plcProjFilepath, new List<Protocol.IPackageServer> { packageServer }, cancellationToken);
         }
 
-        public static List<PlcLibrary> CollectReferencesFromPlcProj(string plcProjFilepath)
+        public static List<PackageReferenceKey> CollectReferencesFromPlcProj(string plcProjFilepath)
         {
-            AddPlcLibraryOptions ParseOptions(XElement element, bool isLibraryReference)
+            PackageReferenceAddOptions ParseOptions(XElement element, bool isLibraryReference)
             {
-                var ret = new AddPlcLibraryOptions
+                var ret = new PackageReferenceAddOptions
                 {
                     LibraryReference = isLibraryReference,
                     Optional = bool.TryParse(element.Element(TcNs + "Optional")?.Value, out var optional) && optional,
@@ -95,9 +96,9 @@ namespace Twinpack.Configuration
             }
 
             var xdoc = XDocument.Load(plcProjFilepath);
-            var references = new List<PlcLibrary>();
-            var placeholderResolutions = new List<PlcLibrary>();
-            var placeholderReferences = new List<PlcLibrary>();
+            var references = new List<PackageReferenceKey>();
+            var placeholderResolutions = new List<PackageReferenceKey>();
+            var placeholderReferences = new List<PackageReferenceKey>();
             var re = new Regex(@"(.*?),(.*?) \((.*?)\)");
 
             foreach (XElement g in xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "PlaceholderResolution").Elements(TcNs + "Resolution"))
@@ -106,7 +107,7 @@ namespace Twinpack.Configuration
                 if (match.Success)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    placeholderResolutions.Add(new PlcLibrary
+                    placeholderResolutions.Add(new PackageReferenceKey
                     {
                         Name = match.Groups[1].Value.Trim(),
                         Version = version,
@@ -124,7 +125,7 @@ namespace Twinpack.Configuration
                     var version = match.Groups[2].Value.Trim();
                     var name = match.Groups[1].Value.Trim();
 
-                    placeholderReferences.Add(new PlcLibrary
+                    placeholderReferences.Add(new PackageReferenceKey
                     {
                         Name = name,
                         Version = version,
@@ -144,7 +145,7 @@ namespace Twinpack.Configuration
                     Right = matches.FirstOrDefault()
                 })
                 .Select(
-                x => new PlcLibrary
+                x => new PackageReferenceKey
                 {
                     Name = x.Right?.Name ?? x.Left.Name,
                     DistributorName = x.Right?.DistributorName ?? x.Left.DistributorName,
@@ -164,7 +165,7 @@ namespace Twinpack.Configuration
                 if (match.Success)
                 {
                     var version = match.Groups[2].Value.Trim();
-                    references.Add(new PlcLibrary
+                    references.Add(new PackageReferenceKey
                     {
                         Name = match.Groups[1].Value.Trim(),
                         Version = version == "*" ? null : version,
@@ -185,7 +186,7 @@ namespace Twinpack.Configuration
 
             plc.Name = System.IO.Path.GetFileNameWithoutExtension(plcProjFilepath);
             plc.Title = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Title")?.FirstOrDefault()?.Value ?? plc.Name;
-            plc.Packages = new List<ConfigPlcPackage>();
+            plc.Packages = new List<PlcPackageReference>();
             //plc.Name = xdoc.Elements(Config.TcNs + "Project").Elements(Config.TcNs + "PropertyGroup").Elements(Config.TcNs + "Name")?.FirstOrDefault()?.Value;
             plc.Version = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Version")?.FirstOrDefault()?.Value;
             plc.Authors = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Author")?.FirstOrDefault()?.Value;
@@ -202,8 +203,8 @@ namespace Twinpack.Configuration
             // collect references
             var references = CollectReferencesFromPlcProj(GuessFilePath(plc));
 
-            var systemReferences = new List<PlcLibrary>();
-            var packages = new List<ConfigPlcPackage>();
+            var systemReferences = new List<PackageReferenceKey>();
+            var packages = new List<PlcPackageReference>();
 
             plc.Frameworks = plc.Frameworks ?? new ConfigFrameworks();
             plc.Frameworks.Zeugwerk = plc.Frameworks.Zeugwerk ?? new ConfigFramework();
@@ -223,7 +224,7 @@ namespace Twinpack.Configuration
                         var packageVersion = await packageServer.ResolvePackageVersionAsync(r, cancellationToken: cancellationToken);
                         if (isPackage = packageVersion?.Name != null && packageVersion?.DistributorName != null)
                         {
-                            packages.Add(new ConfigPlcPackage
+                            packages.Add(new PlcPackageReference
                             {
                                 DistributorName = packageVersion.DistributorName,
                                 Branch = packageVersion.Branch,
@@ -274,184 +275,8 @@ namespace Twinpack.Configuration
                 plc.References["*"].Add($"{r.Name}={r.Version ?? "*"}");
             }
 
-            plc.Type = GuessPlcType(plc).ToString();return plc;
-        }
-
-        public static ConfigPlcProject.PlcProjectType GuessPlcType(ConfigPlcProject plc)
-        {
-            // heuristics to find the plc type, if there is a task in the plc it is most likely an application, if not it is a library. Library that are coming from
-            // Zeugwerk are most likely Framework Libraries
-            XDocument xdoc = XDocument.Load(GuessFilePath(plc));
-            var company = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Company").FirstOrDefault()?.Value;
-            var tasks = xdoc.Elements(TcNs + "Project").Elements(TcNs + "ItemGroup").Elements(TcNs + "Compile")
-                .Where(x => x.Attribute("Include") != null && x.Attribute("Include").Value.EndsWith("TcTTO"));
-
-            if (tasks.Count() > 0)
-            {
-                return (plc.Packages.Any(x => x.Name == "TcUnit") || plc.References["*"].Any(x => x.StartsWith("TcUnit=")))
-                    ? ConfigPlcProject.PlcProjectType.UnitTestApplication
-                    : ConfigPlcProject.PlcProjectType.Application;
-            }
-            else if (company == "Zeugwerk GmbH")
-            {
-                return ConfigPlcProject.PlcProjectType.FrameworkLibrary;
-            }
-            else
-            {
-                return ConfigPlcProject.PlcProjectType.Library;
-            }
-        }
-
-        public static string GuessFilePath(ConfigPlcProject plc)
-        {
-            // todo: parse sln, ts(p)proj and xti to get the path of the PLC instead of guessing
-            if (!string.IsNullOrEmpty(plc.FilePath))
-                return plc.FilePath;
-
-            var plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
-
-            string slnFolder = new DirectoryInfo(plc.RootPath).Name;
-            plcprojPath = $"{plc.RootPath}\\{slnFolder}\\{plc.ProjectName}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
-
-            plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
-
-            plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
-
-            plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}\\{plc.Name}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
-
-            plcprojPath = $"{plc.RootPath}\\{plc.Name}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
-
-            return null;
-        }
-
-        public static String Path(ConfigPlcProject plc)
-        {
-            FileInfo fi = new FileInfo(GuessFilePath(plc));
-            return fi.DirectoryName;
-        }
-
-        public static string Namespace(ConfigPlcProject plc)
-        {
-            XDocument xdoc = XDoc(plc);
-            return xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "DefaultNamespace").FirstOrDefault()?.Value;
-        }
-
-        public static XDocument XDoc(ConfigPlcProject plc)
-        {
-            return XDocument.Load(GuessFilePath(plc));
-        }
-
-        public static IEnumerable<ConfigPlcProject> PlcProjectsFromConfig(bool compiled, string target, string rootPath = ".", string cachePath = null)
-        {
-            var config = ConfigFactory.Load(rootPath);
-
-            _logger.Info($"Pushing to Twinpack Server");
-
-            var suffix = compiled ? "compiled-library" : "library";
-            var plcs = config.Projects.SelectMany(x => x.Plcs)
-                                      .Where(x => x.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary ||
-                                             x.PlcType == ConfigPlcProject.PlcProjectType.Library);
-            // check if all requested files are present
-            foreach (var plc in plcs)
-            {
-                plc.FilePath = System.IO.Path.Combine(cachePath ?? Protocol.TwinpackServer.DefaultLibraryCachePath, target, $"{plc.Name}_{plc.Version}.{suffix}");
-                if (!File.Exists(plc.FilePath))
-                    throw new Exceptions.LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{plc.FilePath}'");
-
-                if (!string.IsNullOrEmpty(plc.LicenseFile) && !File.Exists(plc.LicenseFile))
-                    _logger.Warn($"Could not find license file '{plc.LicenseFile}'");
-
-                yield return plc;
-            }
-        }
-
-        public static IEnumerable<ConfigPlcProject> PlcProjectsFromPath(string rootPath, PackageServerCollection packageServers)
-        {
-            foreach (var libraryFile in Directory.GetFiles(rootPath, "*.library"))
-            {
-                var libraryInfo = LibraryReader.Read(File.ReadAllBytes(libraryFile));
-                var plc = new ConfigPlcProject()
-                {
-                    Name = libraryInfo.Title,
-                    DisplayName = libraryInfo.Title,
-                    Description = libraryInfo.Description,
-                    Authors = libraryInfo.Author,
-                    DistributorName = libraryInfo.Company,
-                    Version = libraryInfo.Version,
-                    FilePath = libraryFile,
-                };
-
-                foreach (var dependency in libraryInfo.Dependencies.Where(x => x.Version == "*" || Version.TryParse(x.Version, out _) == true))
-                {
-                    dependency.Version = dependency.Version == "*" ? null : dependency.Version;
-                    PackageVersionGetResponse resolvedDependency = null;
-                    foreach (var depPackageServer in packageServers.Where(x => x.Connected))
-                    {
-                        if (resolvedDependency != null)
-                            break;
-
-                        resolvedDependency = depPackageServer.ResolvePackageVersionAsync(new PlcLibrary { DistributorName = dependency.DistributorName, Name = dependency.Name, Version = dependency.Version }, null, null, null).GetAwaiter().GetResult();
-                        if (resolvedDependency.Name != null && (resolvedDependency.Version == dependency.Version || dependency.Version == null))
-                        {
-                            _logger.Info($"Dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version}) located on {depPackageServer.UrlBase}");
-                            plc.Packages = plc.Packages.Append(
-                                new ConfigPlcPackage()
-                                {
-                                    Name = resolvedDependency.Name,
-                                    DistributorName = resolvedDependency.DistributorName,
-                                    Version = resolvedDependency.Version,
-                                    Configuration = resolvedDependency.Configuration,
-                                    Branch = resolvedDependency.Branch,
-                                    Target = resolvedDependency.Target
-                                }).ToList();
-                        }
-                    }
-
-                    if (resolvedDependency == null)
-                    {
-                        _logger.Info($"Dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version})");
-                        plc.Packages = plc.Packages.Append(
-                            new ConfigPlcPackage()
-                            {
-                                Name = dependency.Name,
-                                DistributorName = dependency.DistributorName,
-                                Version = dependency.Version
-                            }).ToList();
-                    }
-                }
-
-                yield return plc;
-            }
+            plc.Type = GuessPlcType(plc).ToString();
+            return plc;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;
 using Jdenticon.Wpf;
 using Jdenticon.Rendering;
 using System.Threading;
+using Twinpack.Application;
 using Twinpack.Core;
 using System.Xml;
 using Twinpack.Configuration;
@@ -33,7 +34,7 @@ namespace Twinpack.Dialogs
         private bool _isLoading;
         private string _loadingText;
 
-        private Protocol.Api.LoginPostResponse _userInfo;
+        private Protocol.Api.TwinpackLoginResult _userInfo;
         private bool _isPublishMode;
         private bool _isPublic;
         private bool _isGeneralDataReadOnly;
@@ -49,10 +50,10 @@ namespace Twinpack.Dialogs
         private Protocol.Authentication _auth;
 
         private List<string> _branches;
-        private IEnumerable<Protocol.Api.PackageVersionGetResponse> _dependencies;
-        private Protocol.Api.PackageGetResponse _package = new Protocol.Api.PackageGetResponse();
-        private Protocol.Api.PackageVersionGetResponse _packageVersion = new Protocol.Api.PackageVersionGetResponse();
-        private Protocol.Api.PackageVersionGetResponse _packageVersionLatest = new Protocol.Api.PackageVersionGetResponse();
+        private IEnumerable<Protocol.Api.PublishedPackageVersion> _dependencies;
+        private Protocol.Api.PublishedPackage _package = new Protocol.Api.PublishedPackage();
+        private Protocol.Api.PublishedPackageVersion _packageVersion = new Protocol.Api.PublishedPackageVersion();
+        private Protocol.Api.PublishedPackageVersion _packageVersionLatest = new Protocol.Api.PublishedPackageVersion();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -164,7 +165,7 @@ namespace Twinpack.Dialogs
                             return;
                         }  
                     
-                        var resolvedPackage = await _twinpackServer.ResolvePackageVersionAsync(new Models.PlcLibrary { Name = _plcConfig.Name, Version = "*" }, cancellationToken: Token);
+                        var resolvedPackage = await _twinpackServer.ResolvePackageVersionAsync(new Models.PackageReferenceKey { Name = _plcConfig.Name, Version = "*" }, cancellationToken: Token);
                         if(resolvedPackage.PackageId != null)
                         {
                             MessageBox.Show($"The package name '{resolvedPackage.Name}' is already taken by '{resolvedPackage.DistributorName}'. Each package on the Twinpack Server must have a unique name. To publish your package, please choose an alternative name that hasn't been used by any other distributor. This can be done by renaming your PLC.", "Package name not available", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -186,13 +187,13 @@ namespace Twinpack.Dialogs
                 {
                     // try to get the specific version
                     IsNewPackageVersion = false;
-                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _package.DistributorName, Name = _package.Name, Version = _packageVersion.Version }, branch: null, configuration: null, target: null, Token);
+                    _packageVersion = await _twinpackServer.GetPackageVersionAsync(new Models.PackageReferenceKey { DistributorName = _package.DistributorName, Name = _package.Name, Version = _packageVersion.Version }, branch: null, configuration: null, target: null, Token);
 
                     // fallback to the latest available version
                     if (_packageVersion.PackageVersionId == null)
                     {
                         IsNewPackageVersion = true;
-                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync(new Models.PlcLibrary { DistributorName = _package.DistributorName, Name = _package.Name }, null, null, null, 1, 1, Token)).Item1?.FirstOrDefault()?.PackageVersionId;
+                        _packageVersion.PackageVersionId = (await _twinpackServer.GetPackageVersionsAsync(new Models.PackageReferenceKey { DistributorName = _package.DistributorName, Name = _package.Name }, null, null, null, 1, 1, Token)).Items.FirstOrDefault()?.PackageVersionId;
                     }
                 }
                 else if (_plcConfig != null)
@@ -204,8 +205,8 @@ namespace Twinpack.Dialogs
                 {
                     try
                     {
-                        _packageVersion = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name, Version = _packageVersion.Version }, _packageVersion.Branch, _packageVersion.Configuration, _packageVersion.Target, cancellationToken: Token);
-                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(new Models.PlcLibrary { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name }, _packageVersion.Branch, _packageVersion.Configuration, _packageVersion.Target, cancellationToken: Token);
+                        _packageVersion = await _twinpackServer.GetPackageVersionAsync(new Models.PackageReferenceKey { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name, Version = _packageVersion.Version }, _packageVersion.Branch, _packageVersion.Configuration, _packageVersion.Target, cancellationToken: Token);
+                        _packageVersionLatest = await _twinpackServer.GetPackageVersionAsync(new Models.PackageReferenceKey { DistributorName = _packageVersion.DistributorName, Name = _packageVersion.Name }, _packageVersion.Branch, _packageVersion.Configuration, _packageVersion.Target, cancellationToken: Token);
                         Dependencies = _packageVersion.Dependencies;
                     }
                     catch (Exceptions.ProtocolException ex)
@@ -237,7 +238,7 @@ namespace Twinpack.Dialogs
                 Notes = _packageVersion?.Notes;
                 Version = _packageVersion?.Version;
                 LatestVersion = _packageVersionLatest?.Version;
-                Dependencies = _plcConfig?.Packages?.Select(x => new Protocol.Api.PackageVersionGetResponse
+                Dependencies = _plcConfig?.Packages?.Select(x => new Protocol.Api.PublishedPackageVersion
                 {
                     DistributorName = x.DistributorName,
                     Name = x.Name,
@@ -245,7 +246,7 @@ namespace Twinpack.Dialogs
                     Target = x.Target,
                     Configuration = x.Configuration,
                     Version = x.Version
-                }) ?? new List<Protocol.Api.PackageVersionGetResponse>();
+                }) ?? new List<Protocol.Api.PublishedPackageVersion>();
 
                 try
                 {
@@ -310,7 +311,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public Protocol.Api.LoginPostResponse UserInfo
+        public Protocol.Api.TwinpackLoginResult UserInfo
         {
             get { return _userInfo; }
             set
@@ -670,7 +671,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public IEnumerable<Protocol.Api.PackageVersionGetResponse> Dependencies
+        public IEnumerable<Protocol.Api.PublishedPackageVersion> Dependencies
         {
             get { return _dependencies; }
             set
@@ -765,7 +766,7 @@ namespace Twinpack.Dialogs
             if (_package.PackageId == null)
                 return false;
 
-            var package = new Protocol.Api.PackagePatchRequest()
+            var package = new Protocol.Api.PublishedPackageUpdate()
             {
                 PackageId = (int)_package.PackageId,
                 DisplayName = DisplayName,
@@ -773,7 +774,7 @@ namespace Twinpack.Dialogs
                 ProjectUrl = ProjectUrl,
                 Authors = Authors,
                 License = License,
-                Entitlement = (EntitlementView.SelectedItem as Protocol.Api.LoginPostResponse.Entitlement).Name,
+                Entitlement = (EntitlementView.SelectedItem as Protocol.Api.TwinpackLoginResult.EntitlementOption).Name,
                 LicenseBinary = !string.IsNullOrEmpty(LicenseFile) && File.Exists(LicenseFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseFile)) : _packageVersion?.LicenseBinary,
                 LicenseTmcBinary = !string.IsNullOrEmpty(LicenseTmcFile) && File.Exists(LicenseTmcFile) ? Convert.ToBase64String(File.ReadAllBytes(LicenseTmcFile)) : _packageVersion?.LicenseTmcBinary,
                 IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
@@ -818,7 +819,7 @@ namespace Twinpack.Dialogs
             if (_packageVersion.PackageVersionId == null)
                 return false;
 
-            var packageVersion = new Protocol.Api.PackageVersionPatchRequest()
+            var packageVersion = new Protocol.Api.PublishedPackageVersionUpdate()
             {
                 PackageVersionId = (int)_packageVersion.PackageVersionId,
                 Notes = Notes
@@ -861,9 +862,9 @@ namespace Twinpack.Dialogs
                 _logger.Info("Publishing package");
 
                 var branch = BranchesView.SelectedItem as string;
-                var configuration = (ConfigurationsView.SelectedItem as Protocol.Api.LoginPostResponse.Configuration).Name;
-                var entitlement = (EntitlementView.SelectedItem as Protocol.Api.LoginPostResponse.Entitlement).Name;
-                var target = (TargetsView.SelectedItem as Protocol.Api.LoginPostResponse.Target).Name;
+                var configuration = (ConfigurationsView.SelectedItem as Protocol.Api.TwinpackLoginResult.ConfigurationOption).Name;
+                var entitlement = (EntitlementView.SelectedItem as Protocol.Api.TwinpackLoginResult.EntitlementOption).Name;
+                var target = (TargetsView.SelectedItem as Protocol.Api.TwinpackLoginResult.TargetOption).Name;
                 var compiled = FileTypeView.SelectedIndex != 0;
                 var suffix = compiled ? "compiled-library" : "library";
                 var cachePath = $@"{Path.GetDirectoryName(_context.Solution.FullName)}\.Zeugwerk\libraries\";
@@ -884,7 +885,7 @@ namespace Twinpack.Dialogs
                     _logger.Info("Uploading to Twinpack ...");
                     LoadingText = "Uploading to Twinpack ...";
 
-                    var packageVersion = new Protocol.Api.PackageVersionPostRequest()
+                    var packageVersion = new Protocol.Api.PublishedPackageVersionCreate()
                     {
                         Name = PackageName,
                         Title = PackageTitle,
@@ -906,7 +907,7 @@ namespace Twinpack.Dialogs
                         IconFilename = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Path.GetFileName(IconFile) : null,
                         IconBinary = !string.IsNullOrEmpty(IconFile) && File.Exists(IconFile) ? Convert.ToBase64String(File.ReadAllBytes(IconFile)) : null,
                         Binary = Convert.ToBase64String(File.ReadAllBytes(path)),
-                        Dependencies = _plcConfig.Packages?.Select(x => new Protocol.Api.PackageVersionDependency
+                        Dependencies = _plcConfig.Packages?.Select(x => new Protocol.Api.PublishedPackageVersionDependency
                         {
                             DistributorName = x.DistributorName,
                             Name = x.Name,
@@ -1089,9 +1090,9 @@ namespace Twinpack.Dialogs
 
         private void ValidateVisibility()
         {
-            var configuration = (ConfigurationsView.SelectedItem as Protocol.Api.LoginPostResponse.Configuration);
-            var target = (TargetsView.SelectedItem as Protocol.Api.LoginPostResponse.Target);
-            var entitlement = (EntitlementView.SelectedItem as Protocol.Api.LoginPostResponse.Entitlement);
+            var configuration = (ConfigurationsView.SelectedItem as Protocol.Api.TwinpackLoginResult.ConfigurationOption);
+            var target = (TargetsView.SelectedItem as Protocol.Api.TwinpackLoginResult.TargetOption);
+            var entitlement = (EntitlementView.SelectedItem as Protocol.Api.TwinpackLoginResult.EntitlementOption);
 
             IsPublic = configuration?.IsPublic == true && target?.IsPublic == true && entitlement?.IsPublic == true;
         }

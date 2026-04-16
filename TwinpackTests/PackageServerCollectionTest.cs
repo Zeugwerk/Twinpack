@@ -1,7 +1,8 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Twinpack.Application;
 using Twinpack.Core;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
@@ -24,49 +25,49 @@ namespace TwinpackTests
         {
             _packageServer1 = new PackageServerMock
             {
-                CatalogItems = new List<CatalogItemGetResponse>
+                CatalogItems = new List<CatalogPackageSummary>
                 {
-                    new CatalogItemGetResponse() { Name = "Package 1" },
-                    new CatalogItemGetResponse() { Name = "Package 2" },
-                    new CatalogItemGetResponse() { Name = "Package 3" },
-                    new CatalogItemGetResponse() { Name = "Package 4" },
-                    new CatalogItemGetResponse() { Name = "Package 5" },
+                    new CatalogPackageSummary() { Name = "Package 1" },
+                    new CatalogPackageSummary() { Name = "Package 2" },
+                    new CatalogPackageSummary() { Name = "Package 3" },
+                    new CatalogPackageSummary() { Name = "Package 4" },
+                    new CatalogPackageSummary() { Name = "Package 5" },
                 },
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", Version = "1.1.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", Version = "1.2.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", Version = "1.3.0.0", Branch = "main", Configuration = "Snapshot", Target = "TC3.1" },
                 },
                 Connected = true
             };
 
             _packageServer2 = new PackageServerMock
             {
-                CatalogItems = new List<CatalogItemGetResponse>
+                CatalogItems = new List<CatalogPackageSummary>
                 {
-                    new CatalogItemGetResponse() { Name = "Package 4" },
-                    new CatalogItemGetResponse() { Name = "Package 5" },
-                    new CatalogItemGetResponse() { Name = "Package 6" },
-                    new CatalogItemGetResponse() { Name = "Package 7" },
-                    new CatalogItemGetResponse() { Name = "Package 8" },
+                    new CatalogPackageSummary() { Name = "Package 4" },
+                    new CatalogPackageSummary() { Name = "Package 5" },
+                    new CatalogPackageSummary() { Name = "Package 6" },
+                    new CatalogPackageSummary() { Name = "Package 7" },
+                    new CatalogPackageSummary() { Name = "Package 8" },
                 },
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
-                    new PackageVersionGetResponse() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 4", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PublishedPackageVersion() { Name = "Package 5", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
                 },
                 Connected = true
             };
 
             _packageServerNotConnected = new PackageServerMock
             {
-                CatalogItems = new List<CatalogItemGetResponse>
+                CatalogItems = new List<CatalogPackageSummary>
                     {
-                        new CatalogItemGetResponse() { Name = "Package 9" },
-                        new CatalogItemGetResponse() { Name = "Package 10" },
-                        new CatalogItemGetResponse() { Name = "Package 11" }
+                        new CatalogPackageSummary() { Name = "Package 9" },
+                        new CatalogPackageSummary() { Name = "Package 10" },
+                        new CatalogPackageSummary() { Name = "Package 11" }
                     },
                 Connected = false
             };
@@ -181,7 +182,7 @@ namespace TwinpackTests
         [DataRow("1.3.0.0", "Package 4", "My Distributor", "1.2.0.0", "main", "Snapshot", "TC3.1")]
         public async Task FetchPackageAsync_NormalLookUp_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
-            var package = new ConfigPlcPackage
+            var package = new PlcPackageReference
             {
                 Name = name,
                 DistributorName = distributor,
@@ -196,7 +197,7 @@ namespace TwinpackTests
             Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
-            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(package, catalogItem.PlcPackageReference);
             Assert.AreEqual(false, catalogItem.IsPlaceholder);
             Assert.AreEqual(_packageServer1, catalogItem.PackageServer);
         }
@@ -205,7 +206,7 @@ namespace TwinpackTests
         [DataRow("1.0.0.0", "Package 5", "My Distributor", "1.0.0.0", "main", "Release", "TC3.1")]
         public async Task FetchPackageAsync_NormalLookUp_PackageServer2(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
-            var package = new ConfigPlcPackage
+            var package = new PlcPackageReference
             {
                 Name = name,
                 DistributorName = distributor,
@@ -220,7 +221,7 @@ namespace TwinpackTests
             Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(package.Version, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
-            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(package, catalogItem.PlcPackageReference);
             Assert.AreEqual(false, catalogItem.IsPlaceholder);
             Assert.AreEqual(_packageServer2, catalogItem.PackageServer);
         }
@@ -230,7 +231,7 @@ namespace TwinpackTests
         [DataRow("1.1.0.0", "Package 4", "My Distributor", "0.9.0.0", "main", "Release", "TC3.1")]
         public async Task FetchPackageAsync_KnownButUnresolveable_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
-            var package = new ConfigPlcPackage
+            var package = new PlcPackageReference
             {
                 Name = name,
                 DistributorName = distributor,
@@ -245,7 +246,7 @@ namespace TwinpackTests
             Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
-            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(package, catalogItem.PlcPackageReference);
             Assert.AreEqual(false, catalogItem.IsPlaceholder);
             Assert.AreEqual(_packageServer1, catalogItem.PackageServer);
         }
@@ -254,7 +255,7 @@ namespace TwinpackTests
         [DataRow("1.0.0.0", "Package 5", "My Distributor", "0.9.0.0", "main", "Release", "TC3.1")]
         public async Task FetchPackageAsync_KnownButUnresolveable_PackageServer2(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
-            var package = new ConfigPlcPackage
+            var package = new PlcPackageReference
             {
                 Name = name,
                 DistributorName = distributor,
@@ -269,7 +270,7 @@ namespace TwinpackTests
             Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
-            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(package, catalogItem.PlcPackageReference);
             Assert.AreEqual(false, catalogItem.IsPlaceholder);
             Assert.AreEqual(_packageServer2, catalogItem.PackageServer);
         }
@@ -278,7 +279,7 @@ namespace TwinpackTests
         [DataRow(null, "Package 6", "My Distributor", "0.9.0.0", "main", "Release", "TC3.1")]
         public async Task FetchPackageAsync_Unknown_PackageServer1(string updateVersion, string name, string distributor, string version, string branch, string configuration, string target)
         {
-            var package = new ConfigPlcPackage
+            var package = new PlcPackageReference
             {
                 Name = name,
                 DistributorName = distributor,
@@ -293,7 +294,7 @@ namespace TwinpackTests
             Assert.AreEqual(package.Name, catalogItem.Catalog?.Name);
             Assert.AreEqual(null, catalogItem.InstalledVersion);
             Assert.AreEqual(updateVersion, catalogItem.UpdateVersion);
-            Assert.AreEqual(package, catalogItem.Config);
+            Assert.AreEqual(package, catalogItem.PlcPackageReference);
             Assert.AreEqual(false, catalogItem.IsPlaceholder);
             Assert.AreEqual(null, catalogItem.PackageServer);
         }

@@ -23,7 +23,7 @@ namespace Twinpack
             public string Author { get; set; }
             public string Company { get; set; }
             public string Version { get; set; }
-            public List<PlcLibrary> Dependencies { get; set; } = new List<PlcLibrary> { };
+            public List<PackageReferenceKey> Dependencies { get; set; } = new List<PackageReferenceKey> { };
         }
 
         enum PropertyType
@@ -310,7 +310,7 @@ namespace Twinpack
 
                 libraryInfo.Dependencies = stringTable.Select(x => Regex.Match(x, @"^([A-Za-z].*?),\s*(.*?)\s*\(([A-Za-z].*)\)$"))
                                         .Where(x => x.Success)
-                                        .Select(x => new PlcLibrary() { Name = x.Groups[1].Value, Version = x.Groups[2].Value, DistributorName = x.Groups[3].Value })
+                                        .Select(x => new PackageReferenceKey() { Name = x.Groups[1].Value, Version = x.Groups[2].Value, DistributorName = x.Groups[3].Value })
                                         .GroupBy(x => x.Name)
                                         .Select(x => x.OrderByDescending(y => y.Version == "*").First())
                                         .ToList();
