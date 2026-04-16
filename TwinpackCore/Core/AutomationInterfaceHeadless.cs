@@ -119,15 +119,16 @@ namespace Twinpack.Core
                     root.Add(new XElement(TcNs + "QualifiedOnly", options.QualifiedOnly.ToString().ToLower()));
             }
 
+            ns = ns.Replace(" ", "_");
             var distributorName = package.PackageVersion.DistributorName;
             if (await IsPackageInstalledAsync(package))
             {
-                if (FindMatch(package.PackageVersion, requireDistributor: true) == null)
-                {
-                    // Distributor mismatch — grab the actual distributor from the installed entry
-                    distributorName = (string?)FindMatch(package.PackageVersion, requireDistributor: false)
-                                          ?.Attribute("Company");
-                }
+                var match = FindMatch(package.PackageVersion, requireDistributor: true)
+                         ?? FindMatch(package.PackageVersion, requireDistributor: false);
+
+                distributorName = match?.Attribute("Company")?.Value ?? distributorName;
+                ns = match?.Attribute("DefaultNamespace")?.Value ?? ns;
+
             }
 
             // make sure the package is not present before adding it, we have to
