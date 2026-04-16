@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Collections.Generic;
 using System.Linq;
@@ -1034,6 +1034,89 @@ namespace TwinpackTests
 
             var packageServers = new PackageServerCollection { packageServer };
             return new TwinpackService(packageServers, null, config);
+        }
+
+        [TestMethod]
+        public void PersistAfterResolve_KeepsNullVersionWhenConfiguredUnpinned()
+        {
+            var item = new PackageItem
+            {
+                PlcPackageReference = new PlcPackageReference
+                {
+                    Name = "ExternalLib1",
+                    Version = null,
+                    Branch = "main",
+                    Configuration = "Release",
+                    Target = "TC3.1",
+                    DistributorName = "Acme",
+                },
+                PackageVersion = new PublishedPackageVersion
+                {
+                    Name = "ExternalLib1",
+                    Version = "1.2.3.4",
+                    Branch = "main",
+                    Configuration = "Release",
+                    Target = "TC3.1",
+                    DistributorName = "Acme",
+                },
+            };
+
+            var persisted = PlcPackageReference.PersistAfterResolve(item);
+
+            Assert.IsNull(persisted.Version);
+            Assert.AreEqual("1.2.3.4", item.PackageVersion.Version);
+            Assert.AreEqual("ExternalLib1", persisted.Name);
+        }
+
+        [TestMethod]
+        public void PersistAfterResolve_UsesResolvedVersionWhenConfiguredPinned()
+        {
+            var item = new PackageItem
+            {
+                PlcPackageReference = new PlcPackageReference
+                {
+                    Name = "ExternalLib1",
+                    Version = "1.2.3.4",
+                    Branch = "main",
+                    Configuration = "Release",
+                    Target = "TC3.1",
+                    DistributorName = "Acme",
+                },
+                PackageVersion = new PublishedPackageVersion
+                {
+                    Name = "ExternalLib1",
+                    Version = "9.9.9.9",
+                    Branch = "main",
+                    Configuration = "Release",
+                    Target = "TC3.1",
+                    DistributorName = "Acme",
+                },
+            };
+
+            var persisted = PlcPackageReference.PersistAfterResolve(item);
+
+            Assert.AreEqual("9.9.9.9", persisted.Version);
+        }
+
+        [TestMethod]
+        public void PersistAfterResolve_WhenNoConfiguredReference_UsesResolvedVersion()
+        {
+            var item = new PackageItem
+            {
+                PlcPackageReference = null,
+                PackageVersion = new PublishedPackageVersion
+                {
+                    Name = "ExternalLib1",
+                    Version = "1.2.3.4",
+                    Branch = "main",
+                    Configuration = "Release",
+                    Target = "TC3.1",
+                },
+            };
+
+            var persisted = PlcPackageReference.PersistAfterResolve(item);
+
+            Assert.AreEqual("1.2.3.4", persisted.Version);
         }
 
         [TestMethod]

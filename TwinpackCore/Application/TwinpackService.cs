@@ -474,7 +474,7 @@ namespace Twinpack.Application
                 // update configuration
                 var plcConfig = ctx.Config?.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
-                var newPackageConfig = new PlcPackageReference(package.PackageVersion) { Options = package.PlcPackageReference.Options };
+                var newPackageConfig = PlcPackageReference.PersistAfterResolve(package);
 
                 package.PlcPackageReference = newPackageConfig;
                 addedPackages.Add(package);

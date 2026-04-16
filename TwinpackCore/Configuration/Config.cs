@@ -132,6 +132,24 @@ namespace Twinpack.Configuration
             Options = null;
         }
 
+        /// <summary>
+        /// Builds the Twinpack config row to persist after resolve/install. Uses the resolved <see cref="PackageItem.PackageVersion"/>,
+        /// but keeps <see cref="Version"/> unset when the configured <see cref="PackageItem.PlcPackageReference"/> had no version
+        /// (unpinned / placeholder semantics).
+        /// </summary>
+        public static PlcPackageReference PersistAfterResolve(PackageItem package)
+        {
+            if (package == null)
+                throw new ArgumentNullException(nameof(package));
+            if (package.PackageVersion == null)
+                throw new ArgumentNullException(nameof(package.PackageVersion));
+
+            var merged = new PlcPackageReference(package);
+            if (package.PlcPackageReference != null && string.IsNullOrEmpty(package.PlcPackageReference.Version))
+                merged.Version = null;
+            return merged;
+        }
+
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("version")]
         public string Version { get; set; }

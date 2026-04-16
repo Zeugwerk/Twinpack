@@ -150,7 +150,7 @@ namespace Twinpack.Configuration
                                 {
                                     Name = resolvedDependency.Name,
                                     DistributorName = resolvedDependency.DistributorName,
-                                    Version = resolvedDependency.Version,
+                                    Version = dependency.Version == null ? null : resolvedDependency.Version,
                                     Configuration = resolvedDependency.Configuration,
                                     Branch = resolvedDependency.Branch,
                                     Target = resolvedDependency.Target
