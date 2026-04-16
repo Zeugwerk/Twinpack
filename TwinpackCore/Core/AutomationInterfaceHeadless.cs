@@ -92,6 +92,12 @@ namespace Twinpack.Core
                 if (string.Equals(title, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
                     (package.PackageVersion.Version == null || string.Equals(version, package.PackageVersion.Version, StringComparison.InvariantCultureIgnoreCase)))
                 {
+                    // todo: there is a better place for this for sure
+                    package.Config.DistributorName = company;
+                    package.PackageVersion.DistributorName = company;
+                    package.Package.DistributorName = company;
+                    package.Catalog.DistributorName = company;
+
                     return true;
                 }
             }
