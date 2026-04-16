@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Twinpack.Models;
 using Twinpack.Protocol;
 
 namespace TwinpackTests

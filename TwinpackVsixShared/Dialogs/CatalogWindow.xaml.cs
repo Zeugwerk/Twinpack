@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.Threading;
+﻿using Microsoft.VisualStudio.Threading;
 using NLog;
 using NuGet.Protocol.Plugins;
 using System;
@@ -483,7 +483,7 @@ namespace Twinpack.Dialogs
             }
         }
 
-        public async Task<Config> LoadConfigAsync(string plcName, List<IPackageServer> packageServers, CancellationToken cancellationToken)
+        public async Task<Config> LoadConfigAsync(string plcName, IEnumerable<IPackageServer> packageServers, CancellationToken cancellationToken)
         {
             // make sure that the sln is up-to-date
             _context.Dte.ExecuteCommand("File.SaveAll");
@@ -549,7 +549,7 @@ namespace Twinpack.Dialogs
                 await EnsureInitializedAsync(cancellationToken: token);
 
                 var dialog = new PackagingServerDialog();
-                dialog.Owner = Application.Current.MainWindow;
+                dialog.Owner = System.Windows.Application.Current.MainWindow;
                 dialog.ShowDialog();
 
                 if (dialog.DialogResult == true)
