@@ -40,14 +40,52 @@ namespace Twinpack.Core
             return null;
         }
 
-        public override async Task<bool> IsPackageInstalledAsync(PackageItem package)
+        private static readonly string[] _configPaths = new[]
         {
-            return true;
+            @"C:\ProgramData\Beckhoff\TwinCAT\PlcEngineering\Managed Libraries\config",
+            @"C:\TwinCAT\3.1\Components\Plc\Managed Libraries\config"
+        };
+
+        private IEnumerable<XElement> LoadLibraryElements()
+        {
+            foreach (var dir in _configPaths)
+            {
+                if (!Directory.Exists(dir))
+                    continue;
+
+                foreach (var file in Directory.GetFiles(dir, "*.xml", SearchOption.TopDirectoryOnly))
+                {
+                    XDocument doc;
+                    try { doc = XDocument.Load(file); }
+                    catch { continue; }
+
+                    foreach (var element in doc.Descendants("Library"))
+                        yield return element;
+                }
+            }
         }
 
         public override bool IsPackageInstalled(PackageItem package)
         {
-            return true;
+            foreach (var lib in LoadLibraryElements())
+            {
+                var title = (string)lib.Attribute("Title");
+                var company = (string)lib.Attribute("Company");
+                var version = (string)lib.Attribute("Version");
+
+                if (string.Equals(title, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
+                    string.Equals(company, package.PackageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
+                    (package.PackageVersion.Version == null || string.Equals(version, package.PackageVersion.Version, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public override async Task<bool> IsPackageInstalledAsync(PackageItem package)
+        {
+            return await Task.Run(() => IsPackageInstalled(package));
         }
 
         public override async System.Threading.Tasks.Task CloseAllPackageRelatedWindowsAsync(List<PackageItem> packages)
