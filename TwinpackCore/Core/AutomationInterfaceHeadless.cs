@@ -17,6 +17,7 @@ namespace Twinpack.Core
         protected static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         protected static XNamespace TcNs = ConfigPlcProjectFactory.TcNs;
+        protected static List<XElement> LocalRepository;
 
         protected Config _config;
 
@@ -42,32 +43,32 @@ namespace Twinpack.Core
 
         private static readonly string[] _configPaths = new[]
         {
-            @"C:\ProgramData\Beckhoff\TwinCAT\PlcEngineering\Managed Libraries\config",
-            @"C:\TwinCAT\3.1\Components\Plc\Managed Libraries\config"
+            @"C:\ProgramData\Beckhoff\TwinCAT\PlcEngineering\Managed Libraries\cache",
+            @"C:\TwinCAT\3.1\Components\Plc\Managed Libraries\cache"
         };
 
         private IEnumerable<XElement> LoadLibraryElements()
         {
-            foreach (var dir in _configPaths)
+            foreach (var file in _configPaths)
             {
-                if (!Directory.Exists(dir))
+                if (!File.Exists(file))
                     continue;
 
-                foreach (var file in Directory.GetFiles(dir, "*.xml", SearchOption.TopDirectoryOnly))
-                {
-                    XDocument doc;
-                    try { doc = XDocument.Load(file); }
-                    catch { continue; }
+                XDocument doc;
+                try { doc = XDocument.Load(file); }
+                catch { continue; }
 
-                    foreach (var element in doc.Descendants("Library"))
-                        yield return element;
-                }
+                foreach (var element in doc.Descendants("Library"))
+                    yield return element;
             }
         }
 
         public override bool IsPackageInstalled(PackageItem package)
         {
-            foreach (var lib in LoadLibraryElements())
+            LocalRepository ??= LoadLibraryElements().ToList();
+
+            // prefer full match
+            foreach (var lib in LocalRepository)
             {
                 var title = (string)lib.Attribute("Title");
                 var company = (string)lib.Attribute("Company");
@@ -80,6 +81,21 @@ namespace Twinpack.Core
                     return true;
                 }
             }
+
+            // but fallback to 'guess distributor'
+            foreach (var lib in LocalRepository)
+            {
+                var title = (string)lib.Attribute("Title");
+                var company = (string)lib.Attribute("Company");
+                var version = (string)lib.Attribute("Version");
+
+                if (string.Equals(title, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
+                    (package.PackageVersion.Version == null || string.Equals(version, package.PackageVersion.Version, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
 

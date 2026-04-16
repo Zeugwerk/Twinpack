@@ -598,7 +598,8 @@ namespace Twinpack.Core
             var downloadedPackageVersions = await downloadPackagesTask;
 
             // install downloaded packages
-            if(automationInterface != null && (options?.SkipInstall == null || options?.SkipInstall == false))
+            if(automationInterface != null && !(automationInterface is AutomationInterfaceHeadless) && 
+                (options?.SkipInstall == null || options?.SkipInstall == false))
             {
                 foreach (var package in downloadedPackageVersions)
                 {
