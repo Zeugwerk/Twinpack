@@ -191,6 +191,7 @@ namespace Twinpack.Protocol.Api
             Target = packageVersion?.Target;
             Configuration = packageVersion?.Configuration;
             Compiled = packageVersion?.Compiled ?? 0;
+            Released = packageVersion?.Released ?? 0;
             Notes = packageVersion?.Notes;
             PackageType = packageVersion?.PackageType;
             Binary = packageVersion?.Binary;
@@ -211,6 +212,8 @@ namespace Twinpack.Protocol.Api
         public string Configuration { get; set; }
         [JsonPropertyName("compiled")]
         public int Compiled { get; set; }
+        [JsonPropertyName("released")]
+        public int Released { get; set; }
         [JsonPropertyName("notes")]
         public string Notes { get; set; }
         [JsonPropertyName("binary")]
