@@ -1,4 +1,5 @@
 using NLog;
+using Spectre.Console;
 using Spectre.Console.Cli;
 using System;
 using System.Collections.Generic;
@@ -14,17 +15,41 @@ namespace Twinpack.Commands
 {
     public class AbstractSettings : CommandSettings
     {
-        [CommandOption("--json-output")]
-        [Description("Output data as JSON such that it is machine readable")]
-        public bool JsonOutput { get; set; }
+        [CommandOption("-o|--output <FORMAT>")]
+        [Description("Console output format: text (default, human-readable) or json (machine-readable on stdout; log messages use stderr).")]
+        public string? Output { get; set; }
+
+        [CommandOption("--json")]
+        [Description("Shorthand for --output json.")]
+        public bool Json { get; set; }
 
         [CommandOption("--verbose")]
-        [Description("Verbose console output (only valid without --json-output)")]
+        [Description("Verbose console logging (stderr when using json output).")]
         public bool Verbose { get; set; }
 
         [CommandOption("--quiet")]
-        [Description("No console logging (only valid without --verbose)")]
+        [Description("No console logging (log file is still written).")]
         public bool Quiet { get; set; }
+
+        public bool UseJsonOutput =>
+            Json
+            || string.Equals(Output?.Trim(), "json", StringComparison.OrdinalIgnoreCase);
+
+        public override ValidationResult Validate()
+        {
+            var format = Output?.Trim();
+            if (!string.IsNullOrEmpty(format)
+                && !string.Equals(format, "text", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
+            {
+                return ValidationResult.Error("Output format must be 'text' or 'json'.");
+            }
+
+            if (Json && string.Equals(format, "text", StringComparison.OrdinalIgnoreCase))
+                return ValidationResult.Error("Cannot combine --json with --output text.");
+
+            return ValidationResult.Success();
+        }
     }
 
     public abstract class AbstractCommand<TSettings> : Command<TSettings> where TSettings : AbstractSettings
@@ -51,11 +76,12 @@ namespace Twinpack.Commands
                 KeepFileOpen = false
             };
 
-            if(settings.JsonOutput == false && settings.Quiet == false)
+            if (!settings.Quiet)
             {
                 var logConsoleTarget = new NLog.Targets.ConsoleTarget
                 {
-                    Layout = "${message} ${onexception:EXCEPTION OCCURRED\\:${exception:format=type,message,method:maxInnerExceptionLevel=5:innerFormat=shortType,message,method}}"
+                    Layout = "${message} ${onexception:EXCEPTION OCCURRED\\:${exception:format=type,message,method:maxInnerExceptionLevel=5:innerFormat=shortType,message,method}}",
+                    StdErr = settings.UseJsonOutput
                 };
 
                 loggingConfiguration.AddRule(settings.Verbose == true ? LogLevel.Trace : LogLevel.Info, LogLevel.Fatal, logConsoleTarget, "Twinpack.*");

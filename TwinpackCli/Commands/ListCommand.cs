@@ -44,7 +44,7 @@ namespace Twinpack.Commands
                 var packages = _twinpack.RetrieveUsedPackagesAsync(settings.SearchTerm).GetAwaiter().GetResult()
                     .Where(x => !settings.Outdated || x.IsUpdateable);
 
-                if(settings.JsonOutput == true)
+                if (settings.UseJsonOutput)
                 {
                     Console.Write(JsonSerializer.Serialize(
                         packages.Select(x => new { 
