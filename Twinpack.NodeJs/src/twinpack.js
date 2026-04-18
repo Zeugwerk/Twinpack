@@ -15,8 +15,7 @@ class Twinpack {
         const argsArray = [];
         argsArray.push(command);
 
-        // Add the --json flag to get JSON output
-        argsArray.push('--json-output');
+        argsArray.push('--json');
 
         // Convert args object to command line arguments
         for (const [key, value] of Object.entries(args)) {

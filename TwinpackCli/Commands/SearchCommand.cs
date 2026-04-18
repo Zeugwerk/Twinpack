@@ -36,7 +36,7 @@ namespace Twinpack.Commands
                     .Where(x => x.Catalog != null)
                     .Select(x => x.Catalog);
 
-                if (settings.JsonOutput == true)
+                if (settings.UseJsonOutput)
                 {
                     Console.Write(JsonSerializer.Serialize(packages));
                 }

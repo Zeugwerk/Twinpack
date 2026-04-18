@@ -95,7 +95,7 @@ namespace Twinpack.Commands
 
             PackagingServerRegistry.Save();
 
-            if (settings.JsonOutput == true)
+            if (settings.UseJsonOutput)
             {
                 Console.Write(JsonSerializer.Serialize(PackagingServerRegistry.Servers));
             }
