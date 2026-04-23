@@ -375,6 +375,21 @@ namespace Twinpack.Core
 
             System.Threading.Thread.Sleep(250);
             _dte.ExecuteCommand("File.SaveAll");
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            
+            _dte.ExecuteCommand("File.SaveAll");
+            int timeout = 50;
+            while (_dte.Solution.IsDirty && timeout-- > 0)
+            {
+                System.Threading.Thread.Sleep(100);
+            }
+            sw.Stop();
+
+            if (timeout <= 0)
+                _logger.Warn($"Solution could not be saved (timeout)!);
+            else
+                _logger.Info($"Solution saved");
         }
 
         protected Projects WaitProjects()
