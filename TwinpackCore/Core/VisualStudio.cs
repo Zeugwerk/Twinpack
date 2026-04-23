@@ -387,7 +387,7 @@ namespace Twinpack.Core
             sw.Stop();
 
             if (timeout <= 0)
-                _logger.Warn($"Solution could not be saved (timeout)!);
+                _logger.Warn($"Solution could not be saved (timeout)!");
             else
                 _logger.Info($"Solution saved");
         }
