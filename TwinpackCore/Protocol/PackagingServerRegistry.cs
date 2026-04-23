@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Twinpack.Core;
+using Twinpack.Application;
 using Twinpack.Exceptions;
 
 namespace Twinpack.Protocol
@@ -17,7 +17,7 @@ namespace Twinpack.Protocol
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         static List<IPackagingServerFactory> _factories = new List<IPackagingServerFactory>();
-        static PackageServerCollection _servers = new PackageServerCollection();
+        static IPackageServerCollection _servers = new PackageServerCollection();
 
         private static IEnumerable<string> FilePaths
         {
@@ -52,7 +52,7 @@ namespace Twinpack.Protocol
 
         public static async Task InitializeAsync(bool useDefaults=false, bool login=true, bool fallbackToDefaults=false)
         {
-            _factories = new List<IPackagingServerFactory>() { new NativePackagingServerFactory(), new NugetPackagingServerFactory(), new BeckhoffPackagingServerFactory() };
+            _factories = new List<IPackagingServerFactory>() { new TwinpackRepositoryPackagingServerFactory(), new NugetPackagingServerFactory(), new BeckhoffPackagingServerFactory() };
             _servers = new PackageServerCollection();
 
             if(useDefaults)
@@ -106,7 +106,7 @@ namespace Twinpack.Protocol
             }
         }
         public static IEnumerable<string> ServerTypes { get { return _factories.Select(x => x.ServerType); } }
-        public static PackageServerCollection Servers { get => _servers; }
+        public static IPackageServerCollection Servers { get => _servers; }
         public static IPackageServer CreateServer(string type, string name, string uri, bool enabled = true)
         {
             if (string.IsNullOrEmpty(name))
@@ -142,8 +142,8 @@ namespace Twinpack.Protocol
         public static void Save()
         {
             var sourceRepositories = new Models.SourceRepositories();
-            Servers.ForEach(x =>
-                sourceRepositories.PackagingServers.Add(new Models.PackagingServer() { Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase, Enabled = x.Enabled }));
+            foreach (var x in Servers)
+                sourceRepositories.PackagingServers.Add(new Models.PackagingServer() { Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase, Enabled = x.Enabled });
 
             var filePath = FilePath;
             if(filePath == null)

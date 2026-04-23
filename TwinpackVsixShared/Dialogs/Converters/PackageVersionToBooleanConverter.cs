@@ -10,7 +10,7 @@ namespace Twinpack.Dialogs
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (value as PackageVersionGetResponse)?.Name != null;
+            return (value as PublishedPackageVersion)?.Name != null;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

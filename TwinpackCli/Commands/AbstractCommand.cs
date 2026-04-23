@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using Twinpack.Application;
 using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Models;
@@ -195,7 +196,7 @@ namespace Twinpack.Commands
                 {
                     ProjectName = projectName,
                     PlcName = plcName,
-                    Config = new ConfigPlcPackage
+                    PlcPackageReference = new PlcPackageReference
                     {
                         Name = packages?.ElementAt(i),
                         Version = versions?.ElementAtOrDefault(i),

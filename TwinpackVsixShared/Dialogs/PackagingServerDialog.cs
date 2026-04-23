@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -35,8 +35,8 @@ namespace Twinpack.Dialogs
         {
             DataContext = this;
 
-            Protocol.PackagingServerRegistry.Servers.ForEach(x =>
-                PackagingServers.Add(new Models.PackagingServer() { Connected = x.Connected, LoggedIn = x.LoggedIn, Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase, Enabled = x.Enabled }));
+            foreach (var x in Protocol.PackagingServerRegistry.Servers)
+                PackagingServers.Add(new Models.PackagingServer() { Connected = x.Connected, LoggedIn = x.LoggedIn, Name = x.Name, ServerType = x.ServerType, Url = x.UrlBase, Enabled = x.Enabled });
 
             InitializeComponent();
 

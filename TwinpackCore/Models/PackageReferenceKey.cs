@@ -1,16 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Twinpack.Configuration;
 
 namespace Twinpack.Models
 {
-    public class AddPlcLibraryOptions
+    /// <summary>
+    /// Options stored on a PLC package reference (serialized with <see cref="PlcPackageReference"/>).
+    /// </summary>
+    public class PackageReferenceAddOptions
     {
-        public AddPlcLibraryOptions()
+        public PackageReferenceAddOptions()
         {
             LibraryReference = false;
             Optional = false;
@@ -19,7 +23,7 @@ namespace Twinpack.Models
             QualifiedOnly = false;
         }
 
-        public AddPlcLibraryOptions(AddPlcLibraryOptions options)
+        public PackageReferenceAddOptions(PackageReferenceAddOptions options)
         {
             if (options == null)
                 return;
@@ -31,9 +35,9 @@ namespace Twinpack.Models
             QualifiedOnly = options.QualifiedOnly;
         }
 
-        public AddPlcLibraryOptions CopyForDependency()
+        public PackageReferenceAddOptions CopyForDependency()
         {
-            return new AddPlcLibraryOptions
+            return new PackageReferenceAddOptions
             {
                 LibraryReference = false,
                 Optional = false,
@@ -68,35 +72,71 @@ namespace Twinpack.Models
         [JsonPropertyName("qualified-only")]
         public bool QualifiedOnly { get; set; }
     }
-    public class PlcLibrary
+
+    /// <summary>
+    /// Minimal identity (name, distributor, optional version) passed into <see cref="Protocol.IPackageServer"/> to list or resolve versions.
+    /// This is not persisted Twinpack config — use <see cref="PlcPackageReference"/> for stored references.
+    /// </summary>
+    public class PackageReferenceKey
     {
-        public PlcLibrary() { }
-        public PlcLibrary(PlcLibrary plcLibrary)
+        public PackageReferenceKey() { }
+
+        public PackageReferenceKey(PackageReferenceKey other)
         {
-            Name = plcLibrary?.Name;
-            Version = plcLibrary?.Version;
-            DistributorName = plcLibrary?.DistributorName;
-            Options = plcLibrary?.Options;
+            Name = other?.Name;
+            Version = other?.Version;
+            DistributorName = other?.DistributorName;
+            Options = other?.Options;
         }
+
         public string Name { get; set; }
         public string Version { get; set; }
         public string DistributorName { get; set; }
-        public AddPlcLibraryOptions Options { get; set; }
-        public static bool operator ==(PlcLibrary lhs, PlcLibrary rhs)
+        public PackageReferenceAddOptions Options { get; set; }
+
+        /// <summary>Builds a lookup key from persisted package configuration.</summary>
+        public static PackageReferenceKey From(PlcPackageReference package)
         {
-            return lhs?.Name == rhs?.Name && lhs?.Name == rhs?.Name && lhs?.Version == rhs?.Version;
+            if (package == null)
+                return null;
+            return new PackageReferenceKey
+            {
+                Name = package.Name,
+                Version = package.Version,
+                DistributorName = package.DistributorName,
+                Options = package.Options
+            };
         }
-        public static bool operator !=(PlcLibrary lhs, PlcLibrary rhs)
+
+        public static bool operator ==(PackageReferenceKey lhs, PackageReferenceKey rhs)
+        {
+            if (ReferenceEquals(lhs, rhs))
+                return true;
+            if (lhs is null || rhs is null)
+                return false;
+            return lhs.Name == rhs.Name && lhs.Version == rhs.Version && lhs.DistributorName == rhs.DistributorName;
+        }
+
+        public static bool operator !=(PackageReferenceKey lhs, PackageReferenceKey rhs)
         {
             return !(lhs == rhs);
         }
+
         public override bool Equals(object o)
         {
-            return this == o as PlcLibrary;
+            return this == o as PackageReferenceKey;
         }
+
         public override int GetHashCode()
         {
-            return 17 + Name?.GetHashCode() ?? 0 + 23 * Version?.GetHashCode() ?? 0 + 23 * DistributorName?.GetHashCode() ?? 0;
+            unchecked
+            {
+                var hash = 17;
+                hash = hash * 23 + (Name?.GetHashCode() ?? 0);
+                hash = hash * 23 + (Version?.GetHashCode() ?? 0);
+                hash = hash * 23 + (DistributorName?.GetHashCode() ?? 0);
+                return hash;
+            }
         }
     }
 }

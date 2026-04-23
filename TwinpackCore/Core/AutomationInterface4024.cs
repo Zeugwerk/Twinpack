@@ -36,7 +36,7 @@ namespace Twinpack.Core
             _thread = System.Threading.Thread.CurrentThread; 
         }
 
-        private List<PlcLibrary> _referenceCache = new List<PlcLibrary>();
+        private List<PackageReferenceKey> _referenceCache = new List<PackageReferenceKey>();
         private Dictionary<Tuple<string, string, string>, string> _effectiveVersionCache = new Dictionary<Tuple<string, string, string>, string>();
 
         protected override Version MinVersion => new Version(3, 1, 4024, 0);
@@ -271,7 +271,7 @@ namespace Twinpack.Core
                         string.Equals(r.Distributor, package.PackageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
                         (r.Version == package.PackageVersion.Version || package.PackageVersion.Version == null))
                     {
-                        _referenceCache.Add(new PlcLibrary { Name = package.PackageVersion.Title, DistributorName = package.PackageVersion.DistributorName, Version = package.PackageVersion.Version });
+                        _referenceCache.Add(new PackageReferenceKey { Name = package.PackageVersion.Title, DistributorName = package.PackageVersion.DistributorName, Version = package.PackageVersion.Version });
                         referenceFound = true;
                         break;
                     }
@@ -327,7 +327,7 @@ namespace Twinpack.Core
             // add actual packages
             var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
 
-            var options = package.Config.Options;
+            var options = package.PlcPackageReference.Options;
             var libraryName = package.PackageVersion.Title;
             var version = package.PackageVersion.Version ?? "*";
             var distributorName = package.PackageVersion.DistributorName ?? GuessDistributorName(libraryManager, libraryName, version);

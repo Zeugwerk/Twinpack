@@ -13,7 +13,7 @@ namespace Twinpack.Dialogs
             if (value == null)
                 return Visibility.Collapsed;
 
-            if (value is CatalogItemGetResponse catalogItem)
+            if (value is CatalogPackageSummary catalogItem)
             {
                 return catalogItem.Icon == null && catalogItem.IconUrl != null ? Visibility.Visible : Visibility.Collapsed;
             }

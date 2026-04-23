@@ -1,7 +1,8 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Twinpack.Application;
 using Twinpack.Core;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
@@ -18,6 +19,7 @@ namespace TwinpackTests
     using System.Runtime.Caching;
     using System.Threading.Tasks;
     using System.Xml.Linq;
+    using Twinpack.Application;
     using Twinpack.Configuration;
     using Twinpack.Core;
     using Twinpack.Models;
@@ -62,9 +64,9 @@ namespace TwinpackTests
         {
             _packageServer = new PackageServerMock
             {
-                PackageVersionItems = new List<PackageVersionGetResponse>
+                PackageVersionItems = new List<PublishedPackageVersion>
                 {
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "Plc1",
                         Title = "Plc1",
@@ -74,9 +76,9 @@ namespace TwinpackTests
                         Configuration = "Release",
                         Target = "TC3.1",
                         DistributorName = "My Company",
-                        Dependencies = new List<PackageVersionGetResponse> { new PackageVersionGetResponse() { Name = "Tc3_Module" } }
+                        Dependencies = new List<PublishedPackageVersion> { new PublishedPackageVersion() { Name = "Tc3_Module" } }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "PlcLibrary1",
                         Title = "PlcLibrary1",
@@ -86,9 +88,9 @@ namespace TwinpackTests
                         Configuration = "Release",
                         Target = "TC3.1",
                         DistributorName = "My Company",
-                        Dependencies = new List<PackageVersionGetResponse> { new PackageVersionGetResponse() { Name = "Tc3_Module" } }
+                        Dependencies = new List<PublishedPackageVersion> { new PublishedPackageVersion() { Name = "Tc3_Module" } }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "PlcLibrary1",
                         Title = "PlcLibrary1",
@@ -98,9 +100,9 @@ namespace TwinpackTests
                         Configuration = "Release",
                         Target = "TC3.1",
                         DistributorName = "My Company",
-                        Dependencies = new List<PackageVersionGetResponse> { new PackageVersionGetResponse() { Name = "Tc3_Module" } }
+                        Dependencies = new List<PublishedPackageVersion> { new PublishedPackageVersion() { Name = "Tc3_Module" } }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "PlcLibrary1",
                         Title = "PlcLibrary1",
@@ -110,9 +112,9 @@ namespace TwinpackTests
                         Configuration = "Release",
                         Target = "TC3.1",
                         DistributorName = "My Company",
-                        Dependencies = new List<PackageVersionGetResponse> { new PackageVersionGetResponse() { Name = "Tc3_Module" } }
+                        Dependencies = new List<PublishedPackageVersion> { new PublishedPackageVersion() { Name = "Tc3_Module" } }
                     },
-                    new PackageVersionGetResponse()
+                    new PublishedPackageVersion()
                     {
                         Name = "Tc3_Module",
                         Title = "Tc3_Module",
@@ -150,18 +152,18 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - uninstall previously installed package
-            var package = new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = "1.2.3.4" } };
+            var package = new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1", Version = "1.2.3.4" } };
             await twinpack.UninstallPackagesAsync(new List<PackageItem> { package });
             var uninstalled = await twinpack.UninstallPackagesAsync(new List<PackageItem> { package });
 
             Assert.IsFalse(uninstalled, "Package that is not installed does not throw if trying to uninstall");
 
             // act - add package, including dependencies
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = null } } }, 
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1", Version = null } } }, 
                 new TwinpackService.AddPackageOptions { IncludeDependencies = true, ForceDownload = false });
 
             // check if config was updated correctly
@@ -179,7 +181,7 @@ namespace TwinpackTests
 
 
             // act remove PlcLibrary1 package
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = null } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1", Version = null } } });
 
             // check if config was updated correctly
             configPackages = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
@@ -193,7 +195,7 @@ namespace TwinpackTests
             Assert.AreEqual(true, plcprojPackages.Any(x => x.Name == "Tc3_Module"));
 
             // act remove Tc3_Module package
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module", Version = null } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module", Version = null } } });
 
             // check if config was updated correctly
             configPackages = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
@@ -215,16 +217,16 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - add package, including dependencies
             await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", 
-                Config = new ConfigPlcPackage
+                PlcPackageReference = new PlcPackageReference
                 {
                     Name = "PlcLibrary1", 
                     Version = null, 
-                    Options = new AddPlcLibraryOptions
+                    Options = new PackageReferenceAddOptions
                     { 
                         HideWhenReferencedAsDependency = hide,
                         LibraryReference = library,
@@ -259,7 +261,7 @@ namespace TwinpackTests
             Assert.AreEqual(qualifiedOnly, plcprojPackage.Options?.QualifiedOnly);
 
             // act remove PlcLibrary1 package
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1", Version = null } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1", Version = null } } });
 
             // check if config was updated correctly
             configPackages = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1").Packages;
@@ -280,8 +282,8 @@ namespace TwinpackTests
             // first prepare the plc, add a library, which does not exist
             var twinpackHeadless = new TwinpackService(packageServers, automationInterface: new AutomationInterfaceHeadless(_config), config: _config);
 
-            await twinpackHeadless.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpackHeadless.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpackHeadless.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpackHeadless.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             var plcprojPlc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject").Plcs.FirstOrDefault(x => x.Name == "Plc1");
             XDocument plcprojPlcDoc = XDocument.Load(plcprojPlc.FilePath);
@@ -316,7 +318,7 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1",
-                Config = new ConfigPlcPackage
+                PlcPackageReference = new PlcPackageReference
                 {
                     Name = "PlcLibrary1", Version = "1.2.3.4",
                 }
@@ -347,10 +349,10 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
 
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - add package, including dependencies
             await twinpack.SetPackageVersionAsync("1.1.1.1", syncFrameworkPackages == null ? null : new TwinpackService.SetPackageVersionOptions { SyncFrameworkPackages = true });
@@ -374,10 +376,10 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
 
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - add package, including dependencies
             await twinpack.SetPackageVersionAsync(newVersion1, new TwinpackService.SetPackageVersionOptions { ProjectName = "TestProject", PlcName = "Plc1", SyncFrameworkPackages = true });
@@ -447,8 +449,8 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - add package, including dependencies
             await twinpack.SetPackageVersionAsync(newVersion, new TwinpackService.SetPackageVersionOptions { ProjectName = "TestProject", PlcName = "Plc1", SyncFrameworkPackages = true, 
@@ -487,8 +489,8 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - add package, including dependencies
             await twinpack.SetPackageVersionAsync("1.2.3.3", new TwinpackService.SetPackageVersionOptions
@@ -530,8 +532,8 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.AddPackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject", PlcName = "Plc1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - add package, including dependencies
             await twinpack.SetPackageVersionAsync(newVersion, new TwinpackService.SetPackageVersionOptions
@@ -622,8 +624,8 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - add package, including dependencies
             var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
@@ -643,8 +645,8 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - add package, including dependencies
             var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");
@@ -676,8 +678,8 @@ namespace TwinpackTests
             var twinpack = new TwinpackService(packageServers, automationInterface: _automationInterface, config: _config);
 
             // cleanup
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "PlcLibrary1" } } });
-            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", Config = new ConfigPlcPackage { Name = "Tc3_Module" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", PlcPackageReference = new PlcPackageReference { Name = "PlcLibrary1" } } });
+            await twinpack.RemovePackagesAsync(new List<PackageItem> { new PackageItem { ProjectName = "TestProject2", PlcName = "PlcLibrary1", PlcPackageReference = new PlcPackageReference { Name = "Tc3_Module" } } });
 
             // act - add package, including dependencies
             var plc = _config.Projects.FirstOrDefault(x => x.Name == "TestProject2").Plcs.FirstOrDefault(x => x.Name == "PlcLibrary1");

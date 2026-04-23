@@ -72,24 +72,28 @@ namespace Twinpack.Configuration
         public List<ConfigPlcProject> Plcs { get; set; }
     }
 
-    public class ConfigPlcPackage
+    /// <summary>
+    /// One package dependency as persisted for a PLC in Twinpack config (name, distributor, version axes, add options).
+    /// For <c>IPackageServer</c> queries, build a <see cref="Twinpack.Models.PackageReferenceKey"/> with <c>PackageReferenceKey.From(...)</c>.
+    /// </summary>
+    public class PlcPackageReference
     {
-        public ConfigPlcPackage(PackageItem pv)
+        public PlcPackageReference(PackageItem pv)
         {
-            Name = pv.PackageVersion?.Name ?? pv.Package?.Name ?? pv.Config?.Name ?? pv.Catalog?.Name;
-            DistributorName = pv.PackageVersion?.DistributorName ?? pv.Package?.DistributorName ?? pv.Config?.DistributorName ?? pv.Catalog?.DistributorName;
+            Name = pv.PackageVersion?.Name ?? pv.Package?.Name ?? pv.PlcPackageReference?.Name ?? pv.Catalog?.Name;
+            DistributorName = pv.PackageVersion?.DistributorName ?? pv.Package?.DistributorName ?? pv.PlcPackageReference?.DistributorName ?? pv.Catalog?.DistributorName;
 
             Version = pv.PackageVersion?.Version;
             Branch = pv.PackageVersion?.Branch;
             Target = pv.PackageVersion?.Target;
             Configuration = pv.PackageVersion?.Configuration;
 
-            Namespace = pv.Config?.Namespace;
-            Parameters = pv.Config?.Parameters;
-            Options = pv.Config?.Options;
+            Namespace = pv.PlcPackageReference?.Namespace;
+            Parameters = pv.PlcPackageReference?.Parameters;
+            Options = pv.PlcPackageReference?.Options;
         }
 
-        public ConfigPlcPackage(PackageVersionGetResponse pv)
+        public PlcPackageReference(PublishedPackageVersion pv)
         {
             Version = pv.Version;
             Name = pv.Name;
@@ -102,7 +106,7 @@ namespace Twinpack.Configuration
             Options = null;
         }
 
-        public ConfigPlcPackage(ConfigPlcPackage pv)
+        public PlcPackageReference(PlcPackageReference pv)
         {
             Version = pv.Version;
             Name = pv.Name;
@@ -115,7 +119,7 @@ namespace Twinpack.Configuration
             Options = pv.Options;
         }
 
-        public ConfigPlcPackage()
+        public PlcPackageReference()
         {
             Name = "";
             Branch = "main";
@@ -126,6 +130,24 @@ namespace Twinpack.Configuration
             Namespace = null;
             Parameters = null;
             Options = null;
+        }
+
+        /// <summary>
+        /// Builds the Twinpack config row to persist after resolve/install. Uses the resolved <see cref="PackageItem.PackageVersion"/>,
+        /// but keeps <see cref="Version"/> unset when the configured <see cref="PackageItem.PlcPackageReference"/> had no version
+        /// (unpinned / placeholder semantics).
+        /// </summary>
+        public static PlcPackageReference PersistAfterResolve(PackageItem package)
+        {
+            if (package == null)
+                throw new ArgumentNullException(nameof(package));
+            if (package.PackageVersion == null)
+                throw new ArgumentNullException(nameof(package.PackageVersion));
+
+            var merged = new PlcPackageReference(package);
+            if (package.PlcPackageReference != null && string.IsNullOrEmpty(package.PlcPackageReference.Version))
+                merged.Version = null;
+            return merged;
         }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
@@ -169,7 +191,7 @@ namespace Twinpack.Configuration
         [DefaultValue(null)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("options")]
-        public AddPlcLibraryOptions Options { get; set; }
+        public PackageReferenceAddOptions Options { get; set; }
         
     }
 
@@ -182,7 +204,7 @@ namespace Twinpack.Configuration
             Frameworks = new ConfigFrameworks();
             References = new Dictionary<string, List<string>>();
             Repositories = new List<string>();
-            Packages = new List<ConfigPlcPackage>();
+            Packages = new List<PlcPackageReference>();
             Bindings = new Dictionary<string, List<string>>();
             Patches = new ConfigPatches();
             Description = "";
@@ -264,7 +286,7 @@ namespace Twinpack.Configuration
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("packages")]
-        public List<ConfigPlcPackage> Packages { get; set; }
+        public List<PlcPackageReference> Packages { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("references")]

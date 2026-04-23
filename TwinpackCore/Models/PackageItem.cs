@@ -5,98 +5,33 @@ using Twinpack.Protocol.Api;
 
 namespace Twinpack.Models
 {
-    public class PackageItem : INotifyPropertyChanged
+    /// <summary>
+    /// Mutable row combining PLC placement (<see cref="ProjectName"/>, <see cref="PlcName"/>),
+    /// persisted <see cref="PlcPackageReference"/>, catalog/package/version payloads from servers, and optional UI binding.
+    /// Use <see cref="GetConfiguredPackageRef"/>, <see cref="GetResolvedPackageRef"/>, and <see cref="GetInstalledPackageRef"/> for explicit
+    /// <see cref="ConfiguredPackageRef"/> / <see cref="ResolvedPackageRef"/> / <see cref="InstalledPackageRef"/> views.
+    /// </summary>
+    public partial class PackageItem : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        CatalogItemGetResponse _catalog;
-        PackageGetResponse _package;
-        PackageVersionGetResponse _packageVersion;
-
-        public PackageItem()
-        {
-
-        }
-
-        public PackageItem(PackageItem p)
-        {
-            PackageServer = p.PackageServer;
-
-            var catalog = new CatalogItemGetResponse
-            {
-                PackageId = p.Catalog?.PackageId,
-                Repository = p.Catalog?.Repository,
-                Description = p.Catalog?.Description,
-                IconUrl = p.Catalog?.IconUrl,
-                Name = p.Catalog?.Name,
-                DisplayName = p.Catalog?.DisplayName,
-                DistributorName = p.Catalog?.DistributorName,
-                RuntimeLicense = p.Catalog?.RuntimeLicense,
-                Downloads = p.Catalog?.Downloads,
-            };
-
-            Catalog = catalog;
-            Used = p.Used;
-            Config = p.Config;
-            Package = p.Package;
-            PackageVersion = p.PackageVersion;
-            ProjectName = p.ProjectName;
-            PlcName = p.PlcName;
-        }
-
-        public PackageItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package)
-        {
-            Catalog = package;
-            PackageServer = packageServer;
-        }
-
-        public PackageItem(Protocol.IPackageServer packageServer, PackageVersionGetResponse packageVersion)
-        {
-            PackageServer = packageServer;
-
-            var catalog = new CatalogItemGetResponse
-            {
-                PackageId = packageVersion?.PackageId,
-                Repository = packageVersion?.Repository,
-                Description = packageVersion?.Description,
-                IconUrl = packageVersion?.IconUrl,
-                Name = packageVersion?.Name,
-                DisplayName = packageVersion?.DisplayName,
-                DistributorName = packageVersion?.DistributorName,
-                RuntimeLicense = packageVersion?.LicenseTmcBinary != null ? 1 : 0,
-                Downloads = packageVersion?.Downloads
-            };
-
-            Catalog = catalog;
-        }
-
-        public PackageItem(ConfigPlcPackage package)
-        {
-            var catalog = new CatalogItemGetResponse
-            {
-                Name = package?.Name,
-                Repository = package?.Version,
-                DistributorName = package?.DistributorName,
-                DisplayName = package?.Name,
-            };
-
-            Catalog = catalog;
-            Config = package;
-        }
+        CatalogPackageSummary _catalog;
+        PublishedPackage _package;
+        PublishedPackageVersion _packageVersion;
 
         public Protocol.IPackageServer PackageServer { get; set; }
         public string InstalledVersion { get { return Used?.Version; } }
-        public bool IsPlaceholder { get => Used != null && Config?.Version == null; }
+        public bool IsPlaceholder { get => Used != null && PlcPackageReference?.Version == null; }
         public string InstalledBranch { get { return Used?.Branch; } }
         public string InstalledTarget { get { return Used?.Target; } }
         public string InstalledConfiguration { get { return Used?.Configuration; } }
-        public PackageVersionGetResponse Update{ get; set; }
-        public PackageVersionGetResponse Used { get; set; }
+        public PublishedPackageVersion Update{ get; set; }
+        public PublishedPackageVersion Used { get; set; }
         public string ProjectName { get; set; }
         public string PlcName { get; set; }
-        public ConfigPlcPackage Config { get; set; }
+        public PlcPackageReference PlcPackageReference { get; set; }
 
-        public CatalogItemGetResponse Catalog
+        public CatalogPackageSummary Catalog
         {
             get { return _catalog; }
             set
@@ -106,7 +41,7 @@ namespace Twinpack.Models
             }
         }
 
-        public PackageGetResponse Package
+        public PublishedPackage Package
         {
             get { return _package; }
             set
@@ -115,7 +50,7 @@ namespace Twinpack.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Package)));
             }
         }
-        public PackageVersionGetResponse PackageVersion
+        public PublishedPackageVersion PackageVersion
         {
             get { return _packageVersion; }
             set
@@ -124,10 +59,59 @@ namespace Twinpack.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
             }
         }
+        /// <summary>Configured intent: solution placement + persisted <see cref="PlcPackageReference"/>.</summary>
+        public ConfiguredPackageRef? GetConfiguredPackageRef()
+        {
+            if (PlcPackageReference == null && string.IsNullOrEmpty(ProjectName) && string.IsNullOrEmpty(PlcName))
+                return null;
+            return new ConfiguredPackageRef(ProjectName, PlcName, PlcPackageReference);
+        }
+
+        public void Apply(ConfiguredPackageRef configured)
+        {
+            if (configured == null)
+                return;
+            ProjectName = configured.ProjectName;
+            PlcName = configured.PlcName;
+            PlcPackageReference = configured.Reference;
+        }
+
+        /// <summary>Server resolution used for download/install in this flow (<see cref="PackageVersion"/> / <see cref="Package"/>).</summary>
+        public ResolvedPackageRef? GetResolvedPackageRef()
+        {
+            if (PackageVersion == null)
+                return null;
+            return new ResolvedPackageRef(PackageVersion, Package);
+        }
+
+        public void Apply(ResolvedPackageRef? resolved)
+        {
+            if (resolved == null)
+            {
+                Package = null;
+                PackageVersion = null;
+                return;
+            }
+            Package = resolved.Package;
+            PackageVersion = resolved.Version;
+        }
+
+        /// <summary>Automation view of what is installed / effective for placeholders (<see cref="Used"/>).</summary>
+        public InstalledPackageRef? GetInstalledPackageRef()
+        {
+            if (Used == null)
+                return null;
+            return new InstalledPackageRef(Used);
+        }
+
+        public void Apply(InstalledPackageRef? installed)
+        {
+            Used = installed?.Version;
+        }
+
         public void Invalidate()
         {
-            Package = null;
-            PackageVersion = null;
+            Apply((ResolvedPackageRef?)null);
         }
 
         public bool IsUpdateable

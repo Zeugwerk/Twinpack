@@ -56,7 +56,7 @@ namespace Twinpack.Protocol
 
         public string Username { get; set; }
         public string Password { get; set; }
-        public LoginPostResponse UserInfo { get; set; }
+        public TwinpackLoginResult UserInfo { get; set; }
         public bool LoggedIn { get { return Connected && UserInfo?.Configurations?.FirstOrDefault()?.IsPrivate == true; } }
         public bool Connected { get { return UserInfo?.User != null; } }
         protected virtual string SearchPrefix { get => "";}
@@ -95,7 +95,7 @@ namespace Twinpack.Protocol
         }
 
 #pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
-        public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackageVersion> PostPackageVersionAsync(PublishedPackageVersionCreate packageVersion, CancellationToken cancellationToken = default)
 #pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         {
             throw new NotImplementedException();
@@ -115,10 +115,10 @@ namespace Twinpack.Protocol
                 cancellationToken);
         }
 
-        public virtual async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+        public virtual async Task<PaginatedBatch<CatalogPackageSummary>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             if(_sourceRepository == null)
-                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(new List<CatalogItemGetResponse>(), false);
+                return new PaginatedBatch<CatalogPackageSummary>(new List<CatalogPackageSummary>(), false);
 
             try
             {
@@ -126,24 +126,15 @@ namespace Twinpack.Protocol
                 var packages = await Task.WhenAll(results
                         .Where(x => x.Tags.ToLower().Contains("library") || x.Tags.ToLower().Contains("plc-library"))
                         .Select(async x =>
-                            new CatalogItemGetResponse()
-                            {
-                                PackageId = null,
-                                Name = x.Identity.Id,
-                                DistributorName = x.Authors,
-                                Description = x.Description,
-                                IconUrl = x.IconUrl?.ToString() ?? IconUrl,
-                                RuntimeLicense = 0,
-                                DisplayName = x.Identity.Id,
-                                Downloads = x.DownloadCount.HasValue && x.DownloadCount.Value > 0 ? ((int?)x.DownloadCount.Value) : null,
-                                Created = x.Published?.ToString() ?? "Unknown",
-                                Modified = x.Published?.ToString() ?? "Unknown"
+                        {
+                            var row = NugetCatalogItemMapper.FromSearchMetadata(x, IconUrl);
 #if !NETSTANDARD2_1_OR_GREATER
-                                ,Icon = await GetPackageIconAsync(x.Identity, cancellationToken),
+                            row.Icon = await GetPackageIconAsync(x.Identity, cancellationToken);
 #endif
-                            }));
+                            return row;
+                        }));
 
-                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(packages, results.Any());
+                return new PaginatedBatch<CatalogPackageSummary>(packages, results.Any());
             }
             catch(Exception)
             {
@@ -214,10 +205,10 @@ namespace Twinpack.Protocol
         }
 #endif
 
-        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch = null, string configuration = null, string target = null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+        public async Task<PaginatedBatch<PublishedPackageVersion>> GetPackageVersionsAsync(PackageReferenceKey library, string branch = null, string configuration = null, string target = null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             if (_sourceRepository == null)
-                return new Tuple<IEnumerable<PackageVersionGetResponse>, bool>(new List<PackageVersionGetResponse>(), false);
+                return new PaginatedBatch<PublishedPackageVersion>(new List<PublishedPackageVersion>(), false);
 
             PackageMetadataResource resource = await _sourceRepository.GetResourceAsync<PackageMetadataResource>();
 
@@ -229,11 +220,10 @@ namespace Twinpack.Protocol
                 NullLogger.Instance,
                 cancellationToken);
 
-            return
-                new Tuple<IEnumerable<PackageVersionGetResponse>, bool>(
+            return new PaginatedBatch<PublishedPackageVersion>(
                     results
                     .OrderByDescending(x => x.Identity.Version)
-                    .Select(x => new PackageVersionGetResponse()
+                    .Select(x => new PublishedPackageVersion()
                     {
                         PackageId = null,
                         Name = x.Identity.Id,
@@ -264,7 +254,7 @@ namespace Twinpack.Protocol
                     }).ToList(), false);
         }
 
-        public virtual async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
+        public virtual async Task<PublishedPackageVersion> ResolvePackageVersionAsync(PackageReferenceKey library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
         {
             if (library.Name.Contains(" "))
             {
@@ -275,7 +265,7 @@ namespace Twinpack.Protocol
             return await GetPackageVersionAsync(library, preferredBranch, preferredConfiguration, preferredTarget, cancellationToken);
         }
 
-        public async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task DownloadPackageVersionAsync(PublishedPackageVersion packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
         {
             if (_sourceRepository == null)
                 return;
@@ -395,10 +385,10 @@ namespace Twinpack.Protocol
             _logger.Info($"Downloaded {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {Url})");
         }
 
-        public virtual async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
+        public virtual async Task<PublishedPackageVersion> GetPackageVersionAsync(PackageReferenceKey library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
         {
             if (_sourceRepository == null)
-                return new PackageVersionGetResponse();
+                return new PublishedPackageVersion();
 
             PackageMetadataResource resource = await _sourceRepository.GetResourceAsync<PackageMetadataResource>();
 
@@ -416,13 +406,13 @@ namespace Twinpack.Protocol
                 : packages.FirstOrDefault(p => EvaluateVersion(p.Identity.Version) == library.Version);
 
             if (x == null)
-                return new PackageVersionGetResponse();
+                return new PublishedPackageVersion();
 
             if (!x.Tags?.ToLower().Contains("library") == true && !x.Tags?.ToLower().Contains("plc-library") == true)
                 throw new LibraryFileInvalidException($"Package {library.Name} {library.Version} (distributor: {library.DistributorName}) does not have a 'plc-library' or 'library' tag!");
 
             var dependencyPackages = x.DependencySets?.SelectMany(p => p.Packages).ToList() ?? new List<PackageDependency>();
-            List<PackageVersionGetResponse> dependencies = new List<PackageVersionGetResponse>();
+            List<PublishedPackageVersion> dependencies = new List<PublishedPackageVersion>();
 
             foreach(var d in dependencyPackages)
             {
@@ -446,7 +436,7 @@ namespace Twinpack.Protocol
                 if(dependency?.Tags?.ToLower().Contains("library") == true || dependency?.Tags?.ToLower().Contains("plc-library") == true)
                 {
                     dependencies.Add(
-                        new PackageVersionGetResponse()
+                        new PublishedPackageVersion()
                         {
                             PackageId = null,
                             Name = dependency.Identity.Id,
@@ -481,7 +471,7 @@ namespace Twinpack.Protocol
 
             }
 
-            return new PackageVersionGetResponse()
+            return new PublishedPackageVersion()
             {
                 PackageId = null,
                 Name = x.Identity.Id,
@@ -514,10 +504,10 @@ namespace Twinpack.Protocol
             };
         }
 
-        public async Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackage> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)
         {
             if (_sourceRepository == null)
-                return new PackageGetResponse();
+                return new PublishedPackage();
 
             PackageMetadataResource resource = await _sourceRepository.GetResourceAsync<PackageMetadataResource>();
 
@@ -534,7 +524,7 @@ namespace Twinpack.Protocol
             if (x == null)
                 throw new Exceptions.LibraryNotFoundException(packageName, null, $"Package {packageName} (distributor: {distributorName}) not found");
 
-            return new PackageGetResponse()
+            return new PublishedPackage()
             {
                 PackageId = null,
                 Name = x.Identity.Id,
@@ -556,7 +546,7 @@ namespace Twinpack.Protocol
         }
 
 #pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
-        public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackageVersion> PutPackageVersionAsync(PublishedPackageVersionUpdate package, CancellationToken cancellationToken = default)
 #pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         {
             throw new NotImplementedException();
@@ -564,7 +554,7 @@ namespace Twinpack.Protocol
         }
 
 #pragma warning disable CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
-        public async Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackage> PutPackageAsync(PublishedPackageUpdate package, CancellationToken cancellationToken = default)
 #pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
 
         {
@@ -572,11 +562,11 @@ namespace Twinpack.Protocol
 
         }
 
-        public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
+        public async Task<TwinpackLoginResult> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
             var storePassword = !string.IsNullOrEmpty(password);
             InvalidateCache();
-            UserInfo = new LoginPostResponse();
+            UserInfo = new TwinpackLoginResult();
             if (!Enabled)
             {
                 return UserInfo;
@@ -623,10 +613,10 @@ namespace Twinpack.Protocol
                     };
                 }
 
-                UserInfo = new LoginPostResponse() { User = Username };
+                UserInfo = new TwinpackLoginResult() { User = Username };
 
                 if (!string.IsNullOrEmpty(Password))
-                    UserInfo.Configurations = new List<LoginPostResponse.Configuration> { new LoginPostResponse.Configuration { Public = 0 } };
+                    UserInfo.Configurations = new List<TwinpackLoginResult.ConfigurationOption> { new TwinpackLoginResult.ConfigurationOption { Public = 0 } };
 
                 if (storePassword)
                 {
@@ -670,7 +660,7 @@ namespace Twinpack.Protocol
 
         private void DeleteCredential()
         {
-            UserInfo = new LoginPostResponse();
+            UserInfo = new TwinpackLoginResult();
             Username = "";
             Password = "";
             try
@@ -685,7 +675,7 @@ namespace Twinpack.Protocol
 #pragma warning restore CS1998 // Bei der asynchronen Methode fehlen "await"-Operatoren. Die Methode wird synchron ausgeführt.
         {
 
-            UserInfo = new LoginPostResponse();
+            UserInfo = new TwinpackLoginResult();
             Username = "";
             Password = "";
 

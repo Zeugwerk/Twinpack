@@ -64,7 +64,7 @@ namespace Twinpack.Core
             }
         }
 
-        private XElement? FindMatch(PackageVersionGetResponse pv, bool requireDistributor)
+        private XElement? FindMatch(PublishedPackageVersion pv, bool requireDistributor)
         {
             return LocalRepository.FirstOrDefault(lib =>
             {
@@ -104,7 +104,7 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task AddPackageAsync(PackageItem package, string ns)
         {
-            static void AddOptions(XElement root, AddPlcLibraryOptions options)
+            static void AddOptions(XElement root, PackageReferenceAddOptions options)
             {
                 if (options?.Optional == true)
                     root.Add(new XElement(TcNs + "Optional", options.Optional.ToString().ToLower()));
@@ -149,7 +149,7 @@ namespace Twinpack.Core
             var referencesGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "PlaceholderReference").Any()).FirstOrDefault();
             var libraryGroup = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "LibraryReference").Any()).FirstOrDefault();
 
-            if (package.Config?.Options?.LibraryReference == true)
+            if (package.PlcPackageReference?.Options?.LibraryReference == true)
             {
                 if (libraryGroup == null)
                 {
@@ -163,7 +163,7 @@ namespace Twinpack.Core
                             new XElement(TcNs + "Namespace", ns),
                         });
 
-                AddOptions(library, package.Config?.Options);
+                AddOptions(library, package.PlcPackageReference?.Options);
                 referencesGroup.Add(library);
             }
             else
@@ -188,7 +188,7 @@ namespace Twinpack.Core
                         }
                     );
 
-                AddOptions(reference, package.Config?.Options);
+                AddOptions(reference, package.PlcPackageReference?.Options);
                 referencesGroup.Add(reference);
 
                 resolutionsGroup.Add(
@@ -222,7 +222,7 @@ namespace Twinpack.Core
                 var match = re.Match(g.Value);
                 if (match.Success)
                 {
-                    var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
+                    var library = new PackageReferenceKey { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
                     if (library.Name == package.PackageVersion.Title)
                         g.Parent.Remove();
                 }
@@ -233,7 +233,7 @@ namespace Twinpack.Core
                 var match = re.Match(g.Value);
                 if (match.Success)
                 {
-                    var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
+                    var library = new PackageReferenceKey { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
                     if (library.Name == package.PackageVersion.Title)
                         g.Parent.Remove();
                 }
@@ -249,7 +249,7 @@ namespace Twinpack.Core
                 var match = re.Match(libraryReference);
                 if (match.Success)
                 {
-                    var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
+                    var library = new PackageReferenceKey { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
                     if (library.Name == package.PackageVersion.Title)
                         g.Remove();
                 }

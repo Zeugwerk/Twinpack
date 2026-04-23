@@ -38,10 +38,10 @@ namespace Twinpack.Protocol
 
         }
 
-        public override async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
+        public override async Task<PublishedPackageVersion> ResolvePackageVersionAsync(PackageReferenceKey library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
         {
             return await base.ResolvePackageVersionAsync(
-                new PlcLibrary(library) { Name = !library.Name.StartsWith("TwinCAT.XAE.PLC.Lib.") ? "TwinCAT.XAE.PLC.Lib." + library.Name : library.Name },
+                new PackageReferenceKey(library) { Name = !library.Name.StartsWith("TwinCAT.XAE.PLC.Lib.") ? "TwinCAT.XAE.PLC.Lib." + library.Name : library.Name },
                 preferredTarget, preferredConfiguration, preferredBranch, cancellationToken);
         }
 

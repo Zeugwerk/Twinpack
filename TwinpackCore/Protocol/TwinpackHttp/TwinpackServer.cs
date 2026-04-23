@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,7 +21,8 @@ using System.Net;
 
 namespace Twinpack.Protocol
 {
-    class NativePackagingServerFactory : IPackagingServerFactory
+    /// <summary>Creates <see cref="TwinpackServer"/> instances (first-party twinpack.dev HTTP API, not OS-native).</summary>
+    class TwinpackRepositoryPackagingServerFactory : IPackagingServerFactory
     {
         public IPackageServer Create(string name, string uri)
         {
@@ -54,7 +55,7 @@ namespace Twinpack.Protocol
 
         public string Username { get; set; }
         public string Password { get; set; }
-        public LoginPostResponse UserInfo { get; set; }
+        public TwinpackLoginResult UserInfo { get; set; }
         public bool LoggedIn { get { return UserInfo?.User != null; } }
         public bool Connected { get { return UserInfo?.UpdateVersion != null; } }
 
@@ -97,7 +98,7 @@ namespace Twinpack.Protocol
             request.Headers.Add("twinpack-client-version", ClientVersion.ToString());
         }
 
-        public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackageVersion> PostPackageVersionAsync(PublishedPackageVersionCreate packageVersion, CancellationToken cancellationToken = default)
         {
             _logger.Info($"Uploading {packageVersion.Name} {packageVersion.Version} (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration})");
 
@@ -113,10 +114,10 @@ namespace Twinpack.Protocol
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            PackageVersionGetResponse result = null;
+            PublishedPackageVersion result = null;
             try
             {
-                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                result = JsonSerializer.Deserialize<PublishedPackageVersion>(responseBody);
             }
             catch (JsonException)
             {
@@ -133,7 +134,7 @@ namespace Twinpack.Protocol
             return result;
         }
 
-        private async Task<Tuple<IEnumerable<T>, bool>> QueryWithPaginationAsync<T>(string endpoint, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+        private async Task<PaginatedBatch<T>> QueryWithPaginationAsync<T>(string endpoint, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             var results = new List<T>();
             var uri = new Uri(Url + $"/{endpoint}?page={page}&per_page={perPage}");
@@ -186,21 +187,21 @@ namespace Twinpack.Protocol
                 }
 
                 if (results.Count() >= perPage)
-                    return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination.Next != null);
+                    return new PaginatedBatch<T>(results.Take(perPage), pagination?.Next != null);
             }
 
-            return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination.Next != null);
+            return new PaginatedBatch<T>(results.Take(perPage), pagination?.Next != null);
         }
 
-        public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+        public async Task<PaginatedBatch<CatalogPackageSummary>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
-            return await QueryWithPaginationAsync<CatalogItemGetResponse>($"catalog" +
+            return await QueryWithPaginationAsync<CatalogPackageSummary>($"catalog" +
                                                 $"?search={HttpUtility.UrlEncode(search)}", page, perPage, cancellationToken);
         }
 
-        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch=null, string configuration=null, string target=null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+        public async Task<PaginatedBatch<PublishedPackageVersion>> GetPackageVersionsAsync(PackageReferenceKey library, string branch=null, string configuration=null, string target=null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
-            return await QueryWithPaginationAsync<PackageVersionGetResponse>($"package-versions" +
+            return await QueryWithPaginationAsync<PublishedPackageVersion>($"package-versions" +
                                             $"?distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
                                             $"&name={HttpUtility.UrlEncode(library.Name)}" +
                                             $"&version={HttpUtility.UrlEncode(library.Version)}" +
@@ -210,7 +211,7 @@ namespace Twinpack.Protocol
                                             page, perPage, cancellationToken);
         }
 
-        public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackageVersion> ResolvePackageVersionAsync(PackageReferenceKey library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Url + $"/package-resolve" +
                 $"?distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
@@ -226,10 +227,10 @@ namespace Twinpack.Protocol
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            PackageVersionGetResponse result = null;
+            PublishedPackageVersion result = null;
             try
             {
-                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                result = JsonSerializer.Deserialize<PublishedPackageVersion>(responseBody);
             }
             catch (JsonException)
             {
@@ -253,7 +254,7 @@ namespace Twinpack.Protocol
             }
         }
 
-        private async Task<bool> DownloadPackageVersionFromDownloadUrlAsync(PackageVersionGetResponse packageVersion, string fileName, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
+        private async Task<bool> DownloadPackageVersionFromDownloadUrlAsync(PublishedPackageVersion packageVersion, string fileName, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -298,7 +299,7 @@ namespace Twinpack.Protocol
             return true;
         }
 
-        public async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
+        public async Task DownloadPackageVersionAsync(PublishedPackageVersion packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
         {
             var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
             var filePath = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target);
@@ -330,10 +331,10 @@ namespace Twinpack.Protocol
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            PackageVersionGetResponse result;
+            PublishedPackageVersion result;
             try
             {
-                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                result = JsonSerializer.Deserialize<PublishedPackageVersion>(responseBody);
             }
             catch
             {
@@ -369,7 +370,7 @@ namespace Twinpack.Protocol
             }
         }
 
-        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackageVersion> GetPackageVersionAsync(PackageReferenceKey library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Url + $"/package-version" +
                                             $"?distributor-name={library.DistributorName}" +
@@ -386,10 +387,10 @@ namespace Twinpack.Protocol
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            PackageVersionGetResponse result = null;
+            PublishedPackageVersion result = null;
             try
             {
-                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                result = JsonSerializer.Deserialize<PublishedPackageVersion>(responseBody);
             }
             catch (JsonException)
             {
@@ -403,7 +404,7 @@ namespace Twinpack.Protocol
             return result;
         }
 
-        public async Task<PackageVersionGetResponse> PutPackageVersionDownloadsAsync(PackageVersionDownloadsPutRequest packageVersionDownloads, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackageVersion> PutPackageVersionDownloadsAsync(PublishedPackageVersionDownloadsUpdate packageVersionDownloads, CancellationToken cancellationToken = default)
         {
             var requestBodyJson = JsonSerializer.Serialize(packageVersionDownloads);
             var request = new HttpRequestMessage(HttpMethod.Put, new Uri(Url + $"/package-version/downloads"));
@@ -418,10 +419,10 @@ namespace Twinpack.Protocol
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            PackageVersionGetResponse result;
+            PublishedPackageVersion result;
             try
             {
-                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                result = JsonSerializer.Deserialize<PublishedPackageVersion>(responseBody);
             }
             catch (JsonException)
             {
@@ -435,7 +436,7 @@ namespace Twinpack.Protocol
             return result;
         }
 
-        public async Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackage> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Url + $"/package" +
                 $"?distributor-name={HttpUtility.UrlEncode(distributorName)}" +
@@ -447,10 +448,10 @@ namespace Twinpack.Protocol
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            PackageGetResponse result = null;
+            PublishedPackage result = null;
             try
             {
-                result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+                result = JsonSerializer.Deserialize<PublishedPackage>(responseBody);
             }
             catch (JsonException)
             {
@@ -464,7 +465,7 @@ namespace Twinpack.Protocol
             return result;
         }
 
-        public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackageVersion> PutPackageVersionAsync(PublishedPackageVersionUpdate package, CancellationToken cancellationToken = default)
         {
             _logger.Info("Updating package version");
             var requestBodyJson = JsonSerializer.Serialize(package);
@@ -478,10 +479,10 @@ namespace Twinpack.Protocol
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            PackageVersionGetResponse result = null;
+            PublishedPackageVersion result = null;
             try
             {
-                result = JsonSerializer.Deserialize<PackageVersionGetResponse>(responseBody);
+                result = JsonSerializer.Deserialize<PublishedPackageVersion>(responseBody);
             }
             catch (JsonException)
             {
@@ -495,7 +496,7 @@ namespace Twinpack.Protocol
             return result;
         }
 
-        public async Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package, CancellationToken cancellationToken = default)
+        public async Task<PublishedPackage> PutPackageAsync(PublishedPackageUpdate package, CancellationToken cancellationToken = default)
         {
             _logger.Info("Updating general package");
             var requestBodyJson = JsonSerializer.Serialize(package);
@@ -510,10 +511,10 @@ namespace Twinpack.Protocol
             var response = await _client.SendAsync(request, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            PackageGetResponse result = null;
+            PublishedPackage result = null;
             try
             {
-                result = JsonSerializer.Deserialize<PackageGetResponse>(responseBody);
+                result = JsonSerializer.Deserialize<PublishedPackage>(responseBody);
             }
             catch (JsonException)
             {
@@ -527,13 +528,13 @@ namespace Twinpack.Protocol
             return result;
         }
 
-        public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
+        public async Task<TwinpackLoginResult> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
         {
             _client.Invalidate(); // clear the cache
 
             if (!Enabled)
             {
-                UserInfo = new LoginPostResponse();
+                UserInfo = new TwinpackLoginResult();
                 return UserInfo;
             }
 
@@ -565,10 +566,10 @@ namespace Twinpack.Protocol
 
             try
             {
-                LoginPostResponse result = null;
+                TwinpackLoginResult result = null;
                 try
                 {
-                    result = JsonSerializer.Deserialize<LoginPostResponse>(responseBody);
+                    result = JsonSerializer.Deserialize<TwinpackLoginResult>(responseBody);
                 }
                 catch (JsonException)
                 {
@@ -641,7 +642,7 @@ namespace Twinpack.Protocol
                 try
                 {
                     // check if package version already exists and skip it
-                    var packageVersionLookup = await GetPackageVersionAsync(new PlcLibrary { DistributorName = plc.DistributorName, Name = plc.Name, Version = plc.Version }, branch, configuration, target, cancellationToken);
+                    var packageVersionLookup = await GetPackageVersionAsync(new PackageReferenceKey { DistributorName = plc.DistributorName, Name = plc.Name, Version = plc.Version }, branch, configuration, target, cancellationToken);
                     if (packageVersionLookup.PackageVersionId != null)
                     {
                         string msg = $"already published package '{packageVersionLookup.Name}' (branch: {packageVersionLookup.Branch}, target: {packageVersionLookup.Target}, configuration: {packageVersionLookup.Configuration}, version: {packageVersionLookup.Version})";
@@ -661,7 +662,7 @@ namespace Twinpack.Protocol
                     string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
                     string iconBinary = (!File.Exists(plc.IconFile) || string.IsNullOrEmpty(plc.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.IconFile));
 
-                    var packageVersion = new PackageVersionPostRequest()
+                    var packageVersion = new PublishedPackageVersionCreate()
                     {
                         Name = plc.Name,
                         Version = plc.Version,
@@ -683,7 +684,7 @@ namespace Twinpack.Protocol
                         LicenseBinary = licenseBinary,
                         LicenseTmcBinary = licenseTmcBinary,
                         Binary = binary,
-                        Dependencies = plc.Packages?.Select(x => new PackageVersionDependency
+                        Dependencies = plc.Packages?.Select(x => new PublishedPackageVersionDependency
                         {
                             DistributorName = x.DistributorName,
                             Name = x.Name,
@@ -711,7 +712,7 @@ namespace Twinpack.Protocol
 
         private void DeleteCredential()
         {
-            UserInfo = new LoginPostResponse();
+            UserInfo = new TwinpackLoginResult();
             Username = "";
             Password = "";
             try
@@ -725,7 +726,7 @@ namespace Twinpack.Protocol
         public async Task LogoutAsync()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            UserInfo = new LoginPostResponse();
+            UserInfo = new TwinpackLoginResult();
             Username = "";
             Password = "";
 
