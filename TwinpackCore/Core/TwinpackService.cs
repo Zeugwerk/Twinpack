@@ -377,7 +377,7 @@ namespace Twinpack.Core
                             .Where(x => excludedPackages == null || !excludedPackages.Contains(x.Name))
                             .Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
                         {
-                            PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, token);
+                            PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, preferEffectiveVersionForWildcard: true, cancellationToken: token);
 
                             _usedPackagesCache.RemoveAll(x => x.ProjectName == project.Name && x.PlcName == plc.Name && !string.IsNullOrEmpty(x.Catalog?.Name) && x.Catalog?.Name == catalogItem.Catalog?.Name);
                             _usedPackagesCache.Add(catalogItem);
@@ -716,7 +716,7 @@ namespace Twinpack.Core
                     package.Package = null;
                     package.PackageVersion = null;
                     package.PackageServer = null;
-                    resolvedPackage = await packageServers.FetchPackageAsync(package.PackageServer, package.ProjectName, package.PlcName, package.Config, includeMetadata: true, automationInterface, cancellationToken);
+                    resolvedPackage = await packageServers.FetchPackageAsync(package.PackageServer, package.ProjectName, package.PlcName, package.Config, includeMetadata: true, automationInterface: automationInterface, cancellationToken: cancellationToken);
                     package.Package ??= resolvedPackage.Package;
                     package.PackageVersion ??= resolvedPackage.PackageVersion;
                     package.PackageServer ??= resolvedPackage.PackageServer;

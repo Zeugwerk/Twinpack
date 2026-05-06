@@ -95,17 +95,17 @@ namespace Twinpack.Core
             return new PackageVersionGetResponse();
         }
 
-        public async Task<PackageItem> FetchPackageAsync(ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, CancellationToken cancellationToken = default)
+        public async Task<PackageItem> FetchPackageAsync(ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, bool preferEffectiveVersionForWildcard = false, CancellationToken cancellationToken = default)
         {
-            return await FetchPackageAsync(null, null, null, item, includeMetadata, automationInterface, cancellationToken);
+            return await FetchPackageAsync(null, null, null, item, includeMetadata, automationInterface, preferEffectiveVersionForWildcard, cancellationToken);
         }
 
-        public async Task<PackageItem> FetchPackageAsync(string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, CancellationToken cancellationToken = default)
+        public async Task<PackageItem> FetchPackageAsync(string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, bool preferEffectiveVersionForWildcard = false, CancellationToken cancellationToken = default)
         {
-            return await FetchPackageAsync(null, projectName, plcName, item, includeMetadata, automationInterface, cancellationToken);
+            return await FetchPackageAsync(null, projectName, plcName, item, includeMetadata, automationInterface, preferEffectiveVersionForWildcard, cancellationToken);
         }
 
-        public async Task<PackageItem> FetchPackageAsync(IPackageServer packageServer, string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken cancellationToken = default)
+        public async Task<PackageItem> FetchPackageAsync(IPackageServer packageServer, string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, bool preferEffectiveVersionForWildcard = false, CancellationToken cancellationToken = default)
         {
             var cacheKey = $"FetchPackageAsync-{projectName}-{plcName}-{item.DistributorName}-{item.Name}-{item.Version}-{item.Branch}-{item.Configuration}-{item.Target}";
             if (_cache.Contains(cacheKey))
@@ -155,7 +155,7 @@ namespace Twinpack.Core
                 }
 
 
-                if (packageVersion?.Name != null && item.Version == null && projectName != null && plcName != null)
+                if (preferEffectiveVersionForWildcard && packageVersion?.Name != null && item.Version == null && projectName != null && plcName != null)
                 {
                     if (automationInterface != null)
                     {
