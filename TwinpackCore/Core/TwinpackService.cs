@@ -692,6 +692,7 @@ namespace Twinpack.Core
             packageItem.Package = resolvedPackage.Package;
             packageItem.PackageVersion = resolvedPackage.PackageVersion;
             packageItem.PackageServer = resolvedPackage.PackageServer;
+            packageItem.Dependencies = resolvedPackage.Dependencies;
         }
 
         public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, bool includeDependencies = true, CancellationToken cancellationToken = default)

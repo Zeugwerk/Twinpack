@@ -621,10 +621,10 @@
                             </Expander>
 
                             <Expander Grid.ColumnSpan="3" Margin="0,10,0,0" Header="Dependencies" 
-                                      Visibility="{Binding HasDependencies, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                      Visibility="{Binding HasDependencies, ElementName=This, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <Grid Margin="5 5 0 0">
                                     <ListView Grid.Column="0" Grid.Row="0"
-                                        ItemsSource="{Binding Dependencies}"
+                                        ItemsSource="{Binding Dependencies, ElementName=This}"
                                         BorderThickness="0" d:ItemsSource="{d:SampleData ItemCount=3}"
                                         ScrollViewer.CanContentScroll="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
                                         <ListBox.ItemContainerStyle>
@@ -639,12 +639,12 @@
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Margin="8 0 0 0">
-                                                <Run Text="{Binding Name}" FontWeight="DemiBold"/>
-                                                <Run Text="{Binding Version}"/><Run Text=","/>
-                                                <Run Text="{Binding DistributorName}"/>
-                                                <Run Text="("/><Run Text="{Binding Branch}"/><Run Text=","/>
-                                                <Run Text="{Binding Configuration}"/><Run Text=","/>
-                                                <Run Text="{Binding Target}"/><Run Text=")"/>
+                                                <Run Text="{Binding Config.Name}" FontWeight="DemiBold"/>
+                                                <Run Text=" "/><Run Text="{Binding Config.Version, TargetNullValue=*}"/><Run Text=", "/>
+                                                <Run Text="{Binding Config.DistributorName}"/>
+                                                <Run Text=" ("/><Run Text="{Binding Config.Branch}"/><Run Text=", "/>
+                                                <Run Text="{Binding Config.Configuration}"/><Run Text=", "/>
+                                                <Run Text="{Binding Config.Target}"/><Run Text=")"/>
                                               </TextBlock>
                                             </StackPanel>
                                           </DataTemplate>
