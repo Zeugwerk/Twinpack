@@ -142,6 +142,20 @@ namespace Twinpack.Dialogs
             }
         }
 
+        Dictionary<string, string> _parameters;
+        public Dictionary<string, string> Parameters
+        {
+            get { return _parameters; }
+            set
+            {
+                _parameters = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Parameters)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasParameters)));
+            }
+        }
+
+        public bool HasParameters => _parameters?.Any() == true;
+
         private bool _addDependencies;
         public bool AddDependencies
         {
@@ -1084,7 +1098,9 @@ namespace Twinpack.Dialogs
 
                 await _twinpack.FetchPackageAsync(_selectedItem, token);
 
-                Options = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _selectedItem.Catalog?.Name)?.Options ?? new AddPlcLibraryOptions();
+                var selectedPackage = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _selectedItem.Catalog?.Name);
+                Options = selectedPackage?.Options ?? new AddPlcLibraryOptions();
+                Parameters = selectedPackage?.Parameters ?? new Dictionary<string, string>();
 
                 BranchesView.Visibility = _selectedItem.Package?.Branches?.Any() == true ? Visibility.Visible : Visibility.Collapsed;
                 TargetsView.Visibility = _selectedItem.Package?.Targets?.Any() == true ? Visibility.Visible : Visibility.Collapsed;
