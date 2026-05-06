@@ -366,10 +366,12 @@ namespace Twinpack.Core
             }
 
 
+            var parameters = package.Config?.Parameters;
             if (options?.QualifiedOnly == true ||
                 options?.HideWhenReferencedAsDependency == true ||
                 options?.Optional == true ||
-                options?.PublishSymbolsInContainer == true)
+                options?.PublishSymbolsInContainer == true ||
+                parameters?.Any() == true)
             {
                 ITcSmTreeItem referenceItem = null;
                 ITcSmTreeItem libraryManagerItem = (libraryManager as ITcSmTreeItem);
@@ -437,11 +439,64 @@ namespace Twinpack.Core
                         publishSymbolsInContainerItem.Value = options?.PublishSymbolsInContainer == true ? "True" : "False";
                     }
 
+                    if (parameters?.Any() == true)
+                    {
+                        var placeholderReference = referenceDoc.Elements("TreeItem")
+                            .Elements("PlcLibPlaceholder")
+                            .Elements("PlaceholderReference")
+                            .FirstOrDefault();
+
+                        if (placeholderReference == null)
+                        {
+                            _logger.Warn($"Could not apply parameters to {package.PackageVersion.Name} {package.PackageVersion.Version}. PlaceholderReference not found.");
+                        }
+                        else
+                        {
+                            var parameterList = placeholderReference.Element("ParameterList") ?? new XElement("ParameterList");
+                            if (placeholderReference.Element("ParameterList") == null)
+                                placeholderReference.Add(parameterList);
+
+                            foreach (var parameter in parameters)
+                            {
+                                if (string.IsNullOrWhiteSpace(parameter.Key))
+                                    continue;
+
+                                var keyParts = parameter.Key.Split(new[] { '.' }, 2, StringSplitOptions.None);
+                                if (keyParts.Length != 2 || string.IsNullOrWhiteSpace(keyParts[0]) || string.IsNullOrWhiteSpace(keyParts[1]))
+                                {
+                                    _logger.Warn($"Skipping invalid package parameter key '{parameter.Key}'. Expected format 'LISTNAME.KEY'.");
+                                    continue;
+                                }
+
+                                var parameterName = $"{keyParts[0]}.{keyParts[1]}";
+                                var existingParameter = parameterList.Elements("Parameter")
+                                    .FirstOrDefault(x => string.Equals(x.Element("Name")?.Value, parameterName, StringComparison.InvariantCultureIgnoreCase));
+
+                                if (existingParameter == null)
+                                {
+                                    parameterList.Add(
+                                        new XElement("Parameter",
+                                            new XElement("Name", parameterName),
+                                            new XElement("Value", parameter.Value ?? string.Empty))
+                                    );
+                                }
+                                else
+                                {
+                                    var valueElement = existingParameter.Element("Value");
+                                    if (valueElement == null)
+                                        existingParameter.Add(new XElement("Value", parameter.Value ?? string.Empty));
+                                    else
+                                        valueElement.Value = parameter.Value ?? string.Empty;
+                                }
+                            }
+                        }
+                    }
+
                     referenceItem.ConsumeXml(referenceDoc.ToString());
                 }
                 else
                 {
-                    _logger.Warn($"Could not apply options to {package.PackageVersion.Name} {package.PackageVersion.Version}");
+                    _logger.Warn($"Could not apply options/parameters to {package.PackageVersion.Name} {package.PackageVersion.Version}");
                 }
             }
         }
