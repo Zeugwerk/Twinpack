@@ -474,7 +474,7 @@
                                         </CheckBox>
                                         <CheckBox Margin="0 5 0 0"
                                                   DataContext="{Binding Options}"
-                                                  IsChecked="{Binding PublishAll}">
+                                                  IsChecked="{Binding PublishSymbolsInContainer}">
                                             <TextBlock>Publish all IEC symbols</TextBlock>
                                         </CheckBox>
                                         <CheckBox Margin="0 5 0 0"
