@@ -1,6 +1,7 @@
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -119,6 +120,39 @@ namespace Twinpack.Core
                     root.Add(new XElement(TcNs + "QualifiedOnly", options.QualifiedOnly.ToString().ToLower()));
             }
 
+            static void AddParameters(XElement root, Dictionary<string, string> parameters)
+            {
+                if (parameters == null || parameters.Count == 0)
+                    return;
+
+                var parametersElement = root.Element(TcNs + "Parameters");
+                if (parametersElement == null)
+                {
+                    parametersElement = new XElement(TcNs + "Parameters");
+                    root.Add(parametersElement);
+                }
+
+                parametersElement.RemoveAll();
+
+                foreach (var parameter in parameters)
+                {
+                    if (string.IsNullOrWhiteSpace(parameter.Key))
+                        continue;
+
+                    var keyParts = parameter.Key.Split(new[] { '.' }, 2, StringSplitOptions.None);
+                    if (keyParts.Length != 2 || string.IsNullOrWhiteSpace(keyParts[0]) || string.IsNullOrWhiteSpace(keyParts[1]))
+                    {
+                        _logger.Warn($"Skipping invalid package parameter key '{parameter.Key}'. Expected format 'LISTNAME.KEY'.");
+                        continue;
+                    }
+
+                    parametersElement.Add(new XElement("Parameter",
+                        new XAttribute("ListName", keyParts[0]),
+                        new XElement("Key", keyParts[1]),
+                        new XElement("Value", parameter.Value ?? string.Empty)));
+                }
+            }
+
             ns = ns.Replace(" ", "_");
             var distributorName = package.PackageVersion.DistributorName;
             if (await IsPackageInstalledAsync(package))
@@ -189,6 +223,7 @@ namespace Twinpack.Core
                     );
 
                 AddOptions(reference, package.Config?.Options);
+                AddParameters(reference, package.Config?.Parameters);
                 referencesGroup.Add(reference);
 
                 resolutionsGroup.Add(

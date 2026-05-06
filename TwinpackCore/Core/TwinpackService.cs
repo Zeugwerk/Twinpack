@@ -619,15 +619,17 @@ namespace Twinpack.Core
                     await automationInterface.AddPackageAsync(package);
                 }
 
-                var parameters = package.Config.Parameters;
-
                 // delete from package cache so the pac
                 cache.RemoveAll(x => string.Equals(x.Catalog?.Name, package.PackageVersion.Name, StringComparison.InvariantCultureIgnoreCase));
 
                 // update configuration
                 var plcConfig = config?.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
-                var newPackageConfig = new ConfigPlcPackage(package.PackageVersion) { Options = package.Config.Options };
+                var newPackageConfig = new ConfigPlcPackage(package.PackageVersion)
+                {
+                    Options = package.Config?.Options,
+                    Parameters = package.Config?.Parameters
+                };
 
                 package.Config = newPackageConfig;
                 addedPackages.Add(package);
