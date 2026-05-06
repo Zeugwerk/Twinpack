@@ -710,16 +710,23 @@ namespace Twinpack.Core
         {
             foreach (var package in packages)
             {
-                if (package.Package == null || package.PackageVersion == null || package.PackageServer == null)
+                PackageItem resolvedPackage = null;
+                if (package.Package == null || package.PackageVersion == null || package.PackageServer == null || package.Dependencies == null)
                 {
                     package.Package = null;
                     package.PackageVersion = null;
                     package.PackageServer = null;
-                    var resolvedPackage = await packageServers.FetchPackageAsync(package.PackageServer, package.ProjectName, package.PlcName, package.Config, includeMetadata: true, automationInterface, cancellationToken);
+                    resolvedPackage = await packageServers.FetchPackageAsync(package.PackageServer, package.ProjectName, package.PlcName, package.Config, includeMetadata: true, automationInterface, cancellationToken);
                     package.Package ??= resolvedPackage.Package;
                     package.PackageVersion ??= resolvedPackage.PackageVersion;
                     package.PackageServer ??= resolvedPackage.PackageServer;
                 }
+
+                // Always normalize dependency metadata from the latest resolved package.
+                if (resolvedPackage != null)
+                    package.Dependencies = resolvedPackage.Dependencies ?? new List<PackageItem>();
+                else
+                    package.Dependencies ??= new List<PackageItem>();
 
                 if (package.PackageVersion?.Name == null)
                 {
@@ -736,26 +743,23 @@ namespace Twinpack.Core
             {
                 foreach (var package in packages)
                 {
-                    var dependencies = package.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>();
-                    await AffectedPackagesAsync(automationInterface, packageServers,
-                        dependencies.Select(x =>
-                                    new PackageItem()
-                                    {
-                                        PackageServer = packages.Where(y => (y.Config?.Name ?? y.PackageVersion?.Name) == x.Name).FirstOrDefault()?.PackageServer,
-                                        ProjectName = package.ProjectName,
-                                        PlcName = package.PlcName,
-                                        Catalog = new CatalogItemGetResponse { Name = x.Name },
-                                        Package = x,
-                                        PackageVersion = x,
-                                        Config = new ConfigPlcPackage(x)
-                                        {
-                                            Version = x.Version, // perserve 'null'
-                                            Options = package.Config.Options?.CopyForDependency()
-                                        }
-                                    }).ToList(),
-                                    cache,
-                                    includeDependencies: true,
-                                    cancellationToken: cancellationToken);
+                    foreach (var dependency in package.Dependencies ?? new List<PackageItem>())
+                    {
+                        if (dependency?.PackageVersion?.Name == null)
+                            continue;
+
+                        dependency.ProjectName = package.ProjectName;
+                        dependency.PlcName = package.PlcName;
+                        dependency.Config ??= new ConfigPlcPackage(dependency.PackageVersion);
+                        dependency.Config.Options = package.Config?.Options?.CopyForDependency();
+
+                        if (cache.Any(x => x.ProjectName == dependency.ProjectName &&
+                                           x.PlcName == dependency.PlcName &&
+                                           x.PackageVersion?.Name == dependency.PackageVersion?.Name) == false)
+                        {
+                            cache.Add(dependency);
+                        }
+                    }
                 }
             }
 
