@@ -627,6 +627,7 @@ namespace Twinpack.Core
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
                 var newPackageConfig = new ConfigPlcPackage(package.PackageVersion)
                 {
+                    Version = package.Config?.Version,
                     Options = package.Config?.Options,
                     Parameters = package.Config?.Parameters
                 };
@@ -746,7 +747,11 @@ namespace Twinpack.Core
                                         Catalog = new CatalogItemGetResponse { Name = x.Name },
                                         Package = x,
                                         PackageVersion = x,
-                                        Config = new ConfigPlcPackage(x) { Options = package.Config.Options?.CopyForDependency() }
+                                        Config = new ConfigPlcPackage(x)
+                                        {
+                                            Version = x.Version, // perserve 'null'
+                                            Options = package.Config.Options?.CopyForDependency()
+                                        }
                                     }).ToList(),
                                     cache,
                                     includeDependencies: true,

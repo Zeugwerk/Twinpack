@@ -1192,15 +1192,18 @@ namespace Twinpack.Dialogs
                     await _twinpack.FetchPackageAsync(_selectedItem, cancellationToken: token);
                 }
 
+                if (plcVersion.IsWildcard && _selectedItem.PackageVersion != null)
+                    _selectedItem.Config.Version = null;
+
                 IsNewReference = _selectedItem.PackageVersion?.Name == null ||
                     !_twinpack.UsedPackages.Any(x => x.Catalog?.Name == _selectedItem.Package.Name);
             },
-                () =>
-                {
-                    IsPackageVersionLoading = false;
+            () =>
+            {
+                IsPackageVersionLoading = false;
 
-                    return Task.CompletedTask;
-                });
+                return Task.CompletedTask;
+            });
         }
 
         private void PackageVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)
