@@ -125,7 +125,7 @@ namespace Twinpack.Core
                 if (parameters == null || parameters.Count == 0)
                     return;
 
-                _logger.Info($"Applying {parameters.Count} package parameter(s) to placeholder '{root.Attribute("Include")?.Value}'.");
+                _logger.Info($"Applying {parameters.Count} package parameter(s) to placeholder '{root.Attribute("Include")?.Value}'");
 
                 var parametersElement = root.Element(TcNs + "Parameters");
                 if (parametersElement == null)
@@ -148,7 +148,7 @@ namespace Twinpack.Core
                         continue;
                     }
 
-                    _logger.Info($"Adding package parameter '{keyParts[0]}.{keyParts[1]}'='{parameter.Value ?? string.Empty}'.");
+                    _logger.Info($"Adding package parameter '{keyParts[0]}.{keyParts[1]}'='{parameter.Value ?? string.Empty}'");
                     parametersElement.Add(new XElement("Parameter",
                         new XAttribute("ListName", keyParts[0]),
                         new XElement("Key", keyParts[1]),

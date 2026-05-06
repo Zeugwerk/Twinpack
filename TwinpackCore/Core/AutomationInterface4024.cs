@@ -441,7 +441,7 @@ namespace Twinpack.Core
 
                     if (parameters?.Any() == true)
                     {
-                        _logger.Info($"Applying {parameters.Count} package parameter(s) to {package.PackageVersion.Name} {package.PackageVersion.Version}.");
+                        _logger.Info($"Applying {parameters.Count} package parameter(s) to {package.PackageVersion.Name} {package.PackageVersion.Version}");
                         var placeholderReference = referenceDoc.Elements("TreeItem")
                             .Elements("PlcLibPlaceholder")
                             .Elements("PlaceholderReference")
@@ -470,7 +470,7 @@ namespace Twinpack.Core
                                 }
 
                                 var parameterName = $"{keyParts[0]}.{keyParts[1]}";
-                                _logger.Info($"Adding package parameter '{parameterName}'='{parameter.Value ?? string.Empty}'.");
+                                _logger.Info($"Adding package parameter '{parameterName}'='{parameter.Value ?? string.Empty}'");
                                 var existingParameter = parameterList.Elements("Parameter")
                                     .FirstOrDefault(x => string.Equals(x.Element("Name")?.Value, parameterName, StringComparison.InvariantCultureIgnoreCase));
 
