@@ -377,7 +377,7 @@ namespace Twinpack.Core
                             .Where(x => excludedPackages == null || !excludedPackages.Contains(x.Name))
                             .Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
                         {
-                            PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, token);
+                            PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, preferEffectiveVersionForWildcard: true, cancellationToken: token);
 
                             _usedPackagesCache.RemoveAll(x => x.ProjectName == project.Name && x.PlcName == plc.Name && !string.IsNullOrEmpty(x.Catalog?.Name) && x.Catalog?.Name == catalogItem.Catalog?.Name);
                             _usedPackagesCache.Add(catalogItem);
@@ -627,6 +627,7 @@ namespace Twinpack.Core
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
                 var newPackageConfig = new ConfigPlcPackage(package.PackageVersion)
                 {
+                    Version = package.Config?.Version,
                     Options = package.Config?.Options,
                     Parameters = package.Config?.Parameters
                 };
@@ -692,6 +693,7 @@ namespace Twinpack.Core
             packageItem.Package = resolvedPackage.Package;
             packageItem.PackageVersion = resolvedPackage.PackageVersion;
             packageItem.PackageServer = resolvedPackage.PackageServer;
+            packageItem.Dependencies = resolvedPackage.Dependencies;
         }
 
         public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, bool includeDependencies = true, CancellationToken cancellationToken = default)
@@ -708,16 +710,23 @@ namespace Twinpack.Core
         {
             foreach (var package in packages)
             {
-                if (package.Package == null || package.PackageVersion == null || package.PackageServer == null)
+                PackageItem resolvedPackage = null;
+                if (package.Package == null || package.PackageVersion == null || package.PackageServer == null || package.Dependencies == null)
                 {
                     package.Package = null;
                     package.PackageVersion = null;
                     package.PackageServer = null;
-                    var resolvedPackage = await packageServers.FetchPackageAsync(package.PackageServer, package.ProjectName, package.PlcName, package.Config, includeMetadata: true, automationInterface, cancellationToken);
+                    resolvedPackage = await packageServers.FetchPackageAsync(package.PackageServer, package.ProjectName, package.PlcName, package.Config, includeMetadata: true, automationInterface: automationInterface, cancellationToken: cancellationToken);
                     package.Package ??= resolvedPackage.Package;
                     package.PackageVersion ??= resolvedPackage.PackageVersion;
                     package.PackageServer ??= resolvedPackage.PackageServer;
                 }
+
+                // Always normalize dependency metadata from the latest resolved package.
+                if (resolvedPackage != null)
+                    package.Dependencies = resolvedPackage.Dependencies ?? new List<PackageItem>();
+                else
+                    package.Dependencies ??= new List<PackageItem>();
 
                 if (package.PackageVersion?.Name == null)
                 {
@@ -734,22 +743,23 @@ namespace Twinpack.Core
             {
                 foreach (var package in packages)
                 {
-                    var dependencies = package.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>();
-                    await AffectedPackagesAsync(automationInterface, packageServers,
-                        dependencies.Select(x =>
-                                    new PackageItem()
-                                    {
-                                        PackageServer = packages.Where(y => (y.Config?.Name ?? y.PackageVersion?.Name) == x.Name).FirstOrDefault()?.PackageServer,
-                                        ProjectName = package.ProjectName,
-                                        PlcName = package.PlcName,
-                                        Catalog = new CatalogItemGetResponse { Name = x.Name },
-                                        Package = x,
-                                        PackageVersion = x,
-                                        Config = new ConfigPlcPackage(x) { Options = package.Config.Options?.CopyForDependency() }
-                                    }).ToList(),
-                                    cache,
-                                    includeDependencies: true,
-                                    cancellationToken: cancellationToken);
+                    foreach (var dependency in package.Dependencies ?? new List<PackageItem>())
+                    {
+                        if (dependency?.PackageVersion?.Name == null)
+                            continue;
+
+                        dependency.ProjectName = package.ProjectName;
+                        dependency.PlcName = package.PlcName;
+                        dependency.Config ??= new ConfigPlcPackage(dependency.PackageVersion);
+                        dependency.Config.Options = package.Config?.Options?.CopyForDependency();
+
+                        if (cache.Any(x => x.ProjectName == dependency.ProjectName &&
+                                           x.PlcName == dependency.PlcName &&
+                                           x.PackageVersion?.Name == dependency.PackageVersion?.Name) == false)
+                        {
+                            cache.Add(dependency);
+                        }
+                    }
                 }
             }
 
