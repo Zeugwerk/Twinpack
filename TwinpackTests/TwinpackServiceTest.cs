@@ -1137,7 +1137,7 @@ namespace TwinpackTests
         [DataTestMethod]
         [DataRow("1.5.0.2", "1.5.0.2")]
         [DataRow("1.5.0.3", "1.5.0.3")]
-        [DataRow(null, "1.5.0.3")]
+        [DataRow(null, null)]
         [DataRow("1.5.0.100", "1.5.0.100")]
         public async Task UpdateAsync_NoIncludedProvidedPackages_NoIncludedDependencies_WithFilters1(string version, string expectedVersion)
         {
@@ -1169,9 +1169,9 @@ namespace TwinpackTests
         }
 
         [DataTestMethod]
-        [DataRow("release/1.2", null, "1.2.0.1")]
-        [DataRow("release/1.4", null, "1.4.0.1")]
-        [DataRow("release/1.4", "", "1.4.0.1")]
+        [DataRow("release/1.2", null, null)]
+        [DataRow("release/1.4", null, null)]
+        [DataRow("release/1.4", "", null)]
         [DataRow(null, "1.5.0.2", "1.5.0.2")]
         public async Task UpdateAsync_NoIncludedProvidedPackages_NoIncludedDependencies_WithBranch(string branch, string version, string expectedVersion)
         {
@@ -1207,7 +1207,7 @@ namespace TwinpackTests
         [DataTestMethod]
         [DataRow("1.5.0.2", "1.5.0.2")]
         [DataRow("1.5.0.3", "1.5.0.3")]
-        [DataRow(null, "1.5.0.2")]
+        [DataRow(null, null)]
         public async Task UpdateAsync_NoIncludedProvidedPackages_NoIncludedDependencies_WithFilters2(string version, string expectedVersion)
         {
             Config config;
