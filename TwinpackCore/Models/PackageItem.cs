@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using Twinpack.Configuration;
 using Twinpack.Protocol.Api;
@@ -12,6 +13,7 @@ namespace Twinpack.Models
         CatalogItemGetResponse _catalog;
         PackageGetResponse _package;
         PackageVersionGetResponse _packageVersion;
+        List<PackageItem> _dependencies;
 
         public PackageItem()
         {
@@ -42,6 +44,7 @@ namespace Twinpack.Models
             PackageVersion = p.PackageVersion;
             ProjectName = p.ProjectName;
             PlcName = p.PlcName;
+            Dependencies = p.Dependencies;
         }
 
         public PackageItem(Protocol.IPackageServer packageServer, CatalogItemGetResponse package)
@@ -122,6 +125,16 @@ namespace Twinpack.Models
             {
                 _packageVersion = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
+            }
+        }
+
+        public List<PackageItem> Dependencies
+        {
+            get { return _dependencies; }
+            set
+            {
+                _dependencies = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Dependencies)));
             }
         }
         public void Invalidate()

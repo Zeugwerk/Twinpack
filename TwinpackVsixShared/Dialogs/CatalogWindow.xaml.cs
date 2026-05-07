@@ -128,6 +128,8 @@ namespace Twinpack.Dialogs
         public PackageGetResponse Package { get =>  _selectedItem.Package; }
 
         public PackageVersionGetResponse PackageVersion { get => _selectedItem.PackageVersion; }
+        public IEnumerable<PackageItem> Dependencies { get => _selectedItem.Dependencies; }
+        public bool HasDependencies { get => _selectedItem.Dependencies?.Any() == true; }
 
         public bool IsBusy { get => _cancelableTask.Busy; }
 
@@ -1061,6 +1063,11 @@ namespace Twinpack.Dialogs
                 PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Package)));
             else if (e.PropertyName == nameof(_selectedItem.PackageVersion))
                 PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(PackageVersion)));
+            else if (e.PropertyName == nameof(_selectedItem.Dependencies))
+            {
+                PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Dependencies)));
+                PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(HasDependencies)));
+            }
         }
 
         private void CancelableTask_Changed(object sender, PropertyChangedEventArgs e)
@@ -1087,6 +1094,7 @@ namespace Twinpack.Dialogs
             _selectedItem.Update = packageItem?.Update;
             _selectedItem.Package = packageItem?.Package;
             _selectedItem.PackageVersion = packageItem?.PackageVersion;
+            _selectedItem.Dependencies = packageItem?.Dependencies;
             InstalledPackageVersion = _selectedItem.IsPlaceholder ? _selectedItem.InstalledVersion + "*" : _selectedItem.InstalledVersion;
 
             await _cancelableTask.RunAsync(async token =>
@@ -1185,17 +1193,17 @@ namespace Twinpack.Dialogs
                 }
 
                 if (plcVersion.IsWildcard && _selectedItem.PackageVersion != null)
-                    _selectedItem.PackageVersion.Version = null;
+                    _selectedItem.Config.Version = null;
 
                 IsNewReference = _selectedItem.PackageVersion?.Name == null ||
                     !_twinpack.UsedPackages.Any(x => x.Catalog?.Name == _selectedItem.Package.Name);
             },
-                () =>
-                {
-                    IsPackageVersionLoading = false;
+            () =>
+            {
+                IsPackageVersionLoading = false;
 
-                    return Task.CompletedTask;
-                });
+                return Task.CompletedTask;
+            });
         }
 
         private void PackageVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -166,7 +166,7 @@ namespace Twinpack.Core
                 var reference = new XElement(TcNs + "PlaceholderReference",
                         new XAttribute("Include", package.PackageVersion.Title),
                         new List<XElement> {
-                            new XElement(TcNs + "DefaultResolution", $"{package.PackageVersion.Title}, {(package.PackageVersion.Version ?? "*")} ({package.PackageVersion.DistributorName})"),
+                            new XElement(TcNs + "DefaultResolution", $"{package.PackageVersion.Title}, {(package.Config.Version ?? "*")} ({package.PackageVersion.DistributorName})"),
                             new XElement(TcNs + "Namespace", ns),
                         }
                     );

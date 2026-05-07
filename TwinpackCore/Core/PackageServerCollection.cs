@@ -15,6 +15,12 @@ namespace Twinpack.Core
 {
     public class PackageServerCollection : List<IPackageServer>
     {
+        private class ResolvedDependenciesResult
+        {
+            public List<PackageItem> Immediate { get; } = new List<PackageItem>();
+            public List<PackageItem> Flat { get; } = new List<PackageItem>();
+        }
+
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private static MemoryCache _cache = MemoryCache.Default;
 
@@ -89,17 +95,17 @@ namespace Twinpack.Core
             return new PackageVersionGetResponse();
         }
 
-        public async Task<PackageItem> FetchPackageAsync(ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, CancellationToken cancellationToken = default)
+        public async Task<PackageItem> FetchPackageAsync(ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, bool preferEffectiveVersionForWildcard = false, CancellationToken cancellationToken = default)
         {
-            return await FetchPackageAsync(null, null, null, item, includeMetadata, automationInterface, cancellationToken);
+            return await FetchPackageAsync(null, null, null, item, includeMetadata, automationInterface, preferEffectiveVersionForWildcard, cancellationToken);
         }
 
-        public async Task<PackageItem> FetchPackageAsync(string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, CancellationToken cancellationToken = default)
+        public async Task<PackageItem> FetchPackageAsync(string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, bool preferEffectiveVersionForWildcard = false, CancellationToken cancellationToken = default)
         {
-            return await FetchPackageAsync(null, projectName, plcName, item, includeMetadata, automationInterface, cancellationToken);
+            return await FetchPackageAsync(null, projectName, plcName, item, includeMetadata, automationInterface, preferEffectiveVersionForWildcard, cancellationToken);
         }
 
-        public async Task<PackageItem> FetchPackageAsync(IPackageServer packageServer, string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, CancellationToken cancellationToken = default)
+        public async Task<PackageItem> FetchPackageAsync(IPackageServer packageServer, string projectName, string plcName, ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface=null, bool preferEffectiveVersionForWildcard = false, CancellationToken cancellationToken = default)
         {
             var cacheKey = $"FetchPackageAsync-{projectName}-{plcName}-{item.DistributorName}-{item.Name}-{item.Version}-{item.Branch}-{item.Configuration}-{item.Target}";
             if (_cache.Contains(cacheKey))
@@ -149,7 +155,7 @@ namespace Twinpack.Core
                 }
 
 
-                if (packageVersion?.Name != null && item.Version == null && projectName != null && plcName != null)
+                if (preferEffectiveVersionForWildcard && packageVersion?.Name != null && item.Version == null && projectName != null && plcName != null)
                 {
                     if (automationInterface != null)
                     {
@@ -198,7 +204,9 @@ namespace Twinpack.Core
                     if (includeMetadata)
                     {
                         catalogItem.PackageVersion = packageVersion;
-                        catalogItem.PackageVersion.Dependencies = (await ResolvePackageDependenciesAsync(catalogItem, automationInterface, cancellationToken)).Select(x => x.PackageVersion).ToList();
+                        var resolvedDependencies = await ResolvePackageDependenciesAsync(catalogItem, automationInterface, cancellationToken);
+                        catalogItem.Dependencies = resolvedDependencies.Flat;
+                        catalogItem.PackageVersion.Dependencies = resolvedDependencies.Immediate.Select(x => x.PackageVersion).ToList();
                     }
                 }
 
@@ -305,45 +313,140 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<List<PackageItem>> ResolvePackageDependenciesAsync(PackageItem package, IAutomationInterface automationInterface, CancellationToken cancellationToken = default)
+        private async Task<ResolvedDependenciesResult> ResolvePackageDependenciesAsync(PackageItem package, IAutomationInterface automationInterface, CancellationToken cancellationToken = default)
         {
-            var resolvedDependencies = new List<PackageItem>();
-            var resolvedPackageServers = new List<IPackageServer>();
+            var resolvedDependencies = new ResolvedDependenciesResult();
+            var visitedDependencyKeys = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+            var addedDependencyKeys = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+
             foreach (var dependency in package?.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
             {
-                var version = dependency.Version;
-                foreach (var packageServer in this.Where(x => x.Connected))
-                {
-                    try
-                    {
-                        var resolvedDependency = await FetchPackageAsync(
-                            package.ProjectName,
-                            package.PlcName,
-                            new ConfigPlcPackage
-                            {
-                                Name = dependency.Name,
-                                DistributorName = dependency.DistributorName,
-                                Version = dependency.Version,
-                                Branch = dependency.Branch,
-                                Configuration = dependency.Configuration,
-                                Target = dependency.Target
-                            },
-                            includeMetadata: true,
-                            automationInterface: automationInterface,
-                            cancellationToken: cancellationToken);
+                var immediateDependency = await ResolveDependencyReferenceAsync(package, dependency, automationInterface, cancellationToken);
+                if (immediateDependency?.PackageVersion?.Name == null)
+                    continue;
 
-                        if (resolvedDependency?.PackageVersion?.Name != null)
-                        {
-                            resolvedDependencies.Add(new PackageItem() { PackageServer = packageServer, PackageVersion = resolvedDependency.PackageVersion });
-                            break;
-                        }
-                    }
-                    catch
-                    { }
+                var immediateDependencyKey = BuildDependencyKey(
+                    immediateDependency.PackageVersion.DistributorName,
+                    immediateDependency.PackageVersion.Name,
+                    immediateDependency.PackageVersion.Version,
+                    immediateDependency.PackageVersion.Branch,
+                    immediateDependency.PackageVersion.Configuration,
+                    immediateDependency.PackageVersion.Target);
+
+                if (addedDependencyKeys.Add(immediateDependencyKey))
+                {
+                    resolvedDependencies.Immediate.Add(immediateDependency);
+                    resolvedDependencies.Flat.Add(immediateDependency);
                 }
+
+                await ResolvePackageDependencyRecursiveAsync(immediateDependency, automationInterface, resolvedDependencies.Flat, visitedDependencyKeys, addedDependencyKeys, cancellationToken);
             }
 
             return resolvedDependencies;
+        }
+
+        private async Task ResolvePackageDependencyRecursiveAsync(PackageItem parentDependency, IAutomationInterface automationInterface, List<PackageItem> resolvedDependencies, HashSet<string> visitedDependencyKeys, HashSet<string> addedDependencyKeys, CancellationToken cancellationToken)
+        {
+            foreach (var dependency in parentDependency?.Dependencies ?? new List<PackageItem>())
+            {
+                if (dependency?.Config?.Name == null)
+                    continue;
+
+                var requestedDependencyKey = BuildDependencyKey(dependency.Config);
+                if (!visitedDependencyKeys.Add(requestedDependencyKey))
+                    continue;
+
+                var dependencyRequest = new PackageVersionGetResponse
+                {
+                    Name = dependency.Config.Name,
+                    DistributorName = dependency.Config.DistributorName,
+                    Version = dependency.Config.Version,
+                    Branch = dependency.Config.Branch,
+                    Configuration = dependency.Config.Configuration,
+                    Target = dependency.Config.Target
+                };
+
+                var resolvedDependency = await ResolveDependencyReferenceAsync(parentDependency, dependencyRequest, automationInterface, cancellationToken);
+                if (resolvedDependency?.PackageVersion?.Name == null)
+                    continue;
+
+                var resolvedDependencyKey = BuildDependencyKey(resolvedDependency.PackageVersion);
+
+                if (addedDependencyKeys.Add(resolvedDependencyKey))
+                    resolvedDependencies.Add(resolvedDependency);
+
+                await ResolvePackageDependencyRecursiveAsync(resolvedDependency, automationInterface, resolvedDependencies, visitedDependencyKeys, addedDependencyKeys, cancellationToken);
+            }
+        }
+
+        private async Task<PackageItem> ResolveDependencyReferenceAsync(PackageItem parentPackage, PackageVersionGetResponse dependency, IAutomationInterface automationInterface, CancellationToken cancellationToken)
+        {
+            foreach (var packageServer in this.Where(x => x.Connected))
+            {
+                try
+                {
+                    var requestedDependency = new ConfigPlcPackage
+                    {
+                        Name = dependency.Name,
+                        DistributorName = dependency.DistributorName,
+                        Version = dependency.Version,
+                        Branch = dependency.Branch,
+                        Configuration = dependency.Configuration,
+                        Target = dependency.Target
+                    };
+
+                    var resolvedDependency = await FetchPackageAsync(
+                        parentPackage.ProjectName,
+                        parentPackage.PlcName,
+                        requestedDependency,
+                        includeMetadata: true,
+                        automationInterface: automationInterface,
+                        cancellationToken: cancellationToken);
+
+                    if (resolvedDependency?.PackageVersion?.Name != null)
+                    {
+                        var immediateDependencies = (resolvedDependency.PackageVersion?.Dependencies ?? new List<PackageVersionGetResponse>())
+                            .Select(x =>
+                            {
+                                var match = resolvedDependency.Dependencies?.FirstOrDefault(y => BuildDependencyKey(y.PackageVersion) == BuildDependencyKey(x));
+                                return new PackageItem
+                                {
+                                    PackageServer = match?.PackageServer ?? resolvedDependency.PackageServer,
+                                    Config = match?.Config ?? new ConfigPlcPackage(x),
+                                    PackageVersion = x
+                                };
+                            })
+                            .ToList();
+
+                        return new PackageItem()
+                        {
+                            PackageServer = packageServer,
+                            Config = requestedDependency,
+                            PackageVersion = resolvedDependency.PackageVersion,
+                            Dependencies = immediateDependencies
+                        };
+                    }
+                }
+                catch
+                { }
+            }
+
+            return null;
+        }
+
+        private static string BuildDependencyKey(string distributorName, string name, string version, string branch, string configuration, string target)
+        {
+            return $"{distributorName ?? string.Empty}|{name ?? string.Empty}|{version ?? string.Empty}|{branch ?? string.Empty}|{configuration ?? string.Empty}|{target ?? string.Empty}";
+        }
+
+        private static string BuildDependencyKey(ConfigPlcPackage dependency)
+        {
+            return BuildDependencyKey(dependency?.DistributorName, dependency?.Name, dependency?.Version, dependency?.Branch, dependency?.Configuration, dependency?.Target);
+        }
+
+        private static string BuildDependencyKey(PackageVersionGetResponse dependency)
+        {
+            return BuildDependencyKey(dependency?.DistributorName, dependency?.Name, dependency?.Version, dependency?.Branch, dependency?.Configuration, dependency?.Target);
         }
 
         public async Task<bool> DownloadPackageVersionAsync(PackageItem package, string downloadPath=null, CancellationToken cancellationToken = default)
