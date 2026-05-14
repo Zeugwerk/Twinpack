@@ -308,57 +308,72 @@ namespace Twinpack.Configuration
             if (!string.IsNullOrEmpty(plc.FilePath))
                 return plc.FilePath;
 
-            var plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
+            if (string.IsNullOrEmpty(plc.RootPath))
+                return null;
 
             string slnFolder = new DirectoryInfo(plc.RootPath).Name;
-            plcprojPath = $"{plc.RootPath}\\{slnFolder}\\{plc.ProjectName}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
+            string proj      = plc.ProjectName ?? string.Empty;
+            string name      = plc.Name ?? string.Empty;
+            string fileName  = name + ".plcproj";
+
+            // Candidate layouts, ordered most-likely first. PathUtil.Combine swaps backslashes
+            // for the platform separator so paths built from JSON/sln fragments authored on
+            // Windows still resolve on Linux/macOS.
+            var candidates = new[]
             {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
+                PathUtil.Combine(plc.RootPath, proj, fileName),
+                PathUtil.Combine(plc.RootPath, slnFolder, proj, fileName),
+                PathUtil.Combine(plc.RootPath, proj + ".plcproj"),
+                PathUtil.Combine(plc.RootPath, proj, name, fileName),
+                PathUtil.Combine(plc.RootPath, proj, name, name, fileName),
+                PathUtil.Combine(plc.RootPath, name, fileName),
+            };
+
+            foreach (var c in candidates)
+            {
+                if (File.Exists(c))
+                {
+                    plc.FilePath = c;
+                    return c;
+                }
             }
 
-            plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}.plcproj";
-            if (File.Exists(plcprojPath))
+            // Last resort: enumerate and match case-insensitively. Lets us recover when the
+            // filename on a case-sensitive file system differs only by casing from what the
+            // .sln/.tsproj/config.json claims (a common situation in Windows-authored repos
+            // cloned onto Linux/macOS).
+            try
             {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
+                if (Directory.Exists(plc.RootPath))
+                {
+                    var match = Directory.EnumerateFiles(plc.RootPath, "*.plcproj", SearchOption.AllDirectories)
+                        .FirstOrDefault(p => string.Equals(
+                            System.IO.Path.GetFileName(p), fileName, StringComparison.OrdinalIgnoreCase));
 
-            plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
+                    if (match != null)
+                    {
+                        plc.FilePath = match;
+                        return match;
+                    }
+                }
             }
-
-            plcprojPath = $"{plc.RootPath}\\{plc.ProjectName}\\{plc.Name}\\{plc.Name}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
-
-            plcprojPath = $"{plc.RootPath}\\{plc.Name}\\{plc.Name}.plcproj";
-            if (File.Exists(plcprojPath))
-            {
-                plc.FilePath = plcprojPath;
-                return plcprojPath;
-            }
+            catch (DirectoryNotFoundException) { /* RootPath disappeared between checks */ }
 
             return null;
         }
 
-        public static String Path(ConfigPlcProject plc)
+        /// <summary>
+        /// Returns the directory containing the .plcproj for the given PLC, or null if
+        /// the .plcproj could not be located.
+        /// </summary>
+        public static string GetDirectory(ConfigPlcProject plc)
         {
-            FileInfo fi = new FileInfo(GuessFilePath(plc));
-            return fi.DirectoryName;
+            var path = GuessFilePath(plc);
+            return string.IsNullOrEmpty(path) ? null : new FileInfo(path).DirectoryName;
         }
+
+        [System.Obsolete("Use GetDirectory(plc) instead; this overload shadowed System.IO.Path.")]
+        public static String Path(ConfigPlcProject plc) => GetDirectory(plc);
 
         public static string Namespace(ConfigPlcProject plc)
         {
