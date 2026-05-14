@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Twinpack;
 
 namespace Twinpack.Models
 {
@@ -37,9 +38,17 @@ namespace Twinpack.Models
             var projectMatches = Regex.Matches(content ?? "", $"Project\\(.*?\\)\\s*=\\s*\"(.*?)\"\\s*,\\s*\"(.*?ts[p]?proj)\"\\s*,.*");
 
             Name = Path.GetFileNameWithoutExtension(filepath);
+            // The path captured from the .sln line is Windows-style ("ZApp\\ZApp.tspproj").
+            // PathUtil.Combine converts the embedded '\\' to the platform separator so the
+            // lookup also succeeds on Linux/macOS.
             Projects = projectMatches.Cast<Match>()
-                .Where(x => File.Exists(directory + "\\" + x.Groups[2].Value))
-                .Select(x => new Project(x.Groups[1].Value, directory + "\\" + x.Groups[2].Value))
+                .Select(x => new
+                {
+                    ProjectName = x.Groups[1].Value,
+                    ProjectPath = PathUtil.Combine(directory, x.Groups[2].Value)
+                })
+                .Where(x => File.Exists(x.ProjectPath))
+                .Select(x => new Project(x.ProjectName, x.ProjectPath))
                 .ToList();
         }
 

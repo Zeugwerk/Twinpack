@@ -41,6 +41,22 @@ namespace Twinpack.Configuration
             return Path.GetFullPath(Path.GetDirectoryName(Path.Combine(basePath, ".Zeugwerk")) ?? basePath);
         }
 
+        /// <summary>
+        /// Like <see cref="Directory.EnumerateFiles(string, string, SearchOption)"/> but
+        /// matches by extension case-insensitively on every OS. Required because the wildcard
+        /// matcher in <see cref="Directory.GetFiles"/> is case-sensitive on Linux/macOS and
+        /// case-insensitive on Windows; we want consistent Windows-style behaviour everywhere.
+        /// </summary>
+        private static IEnumerable<string> EnumerateFilesCaseInsensitive(string root, string extensionWithDot)
+        {
+            if (!Directory.Exists(root))
+                return Enumerable.Empty<string>();
+
+            return Directory
+                .EnumerateFiles(root, "*", SearchOption.AllDirectories)
+                .Where(p => p.EndsWith(extensionWithDot, StringComparison.OrdinalIgnoreCase));
+        }
+
         public static Config Load(string path = ".", bool validate=false)
         {
             Config config = null;
@@ -83,11 +99,15 @@ namespace Twinpack.Configuration
                     var solution = new Models.Solution();
                     try
                     {
-                        solution.Load(Path.Combine(path, config.Solution ?? ""));
+                        solution.Load(PathUtil.Combine(path, config.Solution ?? ""));
                     }
-                    catch(FileNotFoundException)
+                    catch(FileNotFoundException ex)
                     {
-                        if(validate)
+                        // Surfacing this is important on case-sensitive file systems: a missing
+                        // .sln means the only remaining lookup is GuessFilePath, which is
+                        // strictly weaker than parsing the .sln/.tsproj layout.
+                        _logger.Warn($"Solution '{config.Solution}' referenced in '{configPath}' could not be loaded ({ex.Message}); falling back to filesystem guessing for .plcproj locations.");
+                        if (validate)
                             throw;
                     }
 
@@ -95,7 +115,13 @@ namespace Twinpack.Configuration
                     {
                         foreach (var plc in project.Plcs)
                         {
-                            var plcpath = solution.Projects.Where(x => x.Name == project.Name).FirstOrDefault()?.Plcs.Where(x => x.Name == plc.Name)?.FirstOrDefault()?.FilePath;
+                            // Compare names case-insensitively so a config.json or .sln authored
+                            // on Windows still matches on a case-sensitive file system.
+                            var plcpath = solution.Projects
+                                .FirstOrDefault(x => string.Equals(x.Name, project.Name, StringComparison.OrdinalIgnoreCase))?
+                                .Plcs
+                                .FirstOrDefault(x => string.Equals(x.Name, plc.Name, StringComparison.OrdinalIgnoreCase))?
+                                .FilePath;
 
                             plc.RootPath = config.WorkingDirectory;
                             plc.ProjectName = project.Name;
@@ -188,7 +214,7 @@ namespace Twinpack.Configuration
             packageServers = packageServers == null ? new List<Protocol.IPackageServer>() : packageServers;
 
             Config config = new Config();
-            var solutions = Directory.GetFiles(path, "*.sln", SearchOption.AllDirectories);
+            var solutions = EnumerateFilesCaseInsensitive(path, ".sln").ToArray();
 
             if (solutions.Count() > 1)
                 _logger.Warn("There is more than 1 solution present in the current directory, only the first one is considered!");
@@ -210,7 +236,7 @@ namespace Twinpack.Configuration
             {
                 config.FilePath = Path.Combine(Environment.CurrentDirectory, ".Zeugwerk", "config.json");
 
-                var tsprojs = Directory.GetFiles(path, "*.tsproj", SearchOption.AllDirectories);
+                var tsprojs = EnumerateFilesCaseInsensitive(path, ".tsproj").ToArray();
                 if (tsprojs.Any())
                 {
                     var name = Path.GetFileNameWithoutExtension(tsprojs.First());
@@ -219,7 +245,7 @@ namespace Twinpack.Configuration
 
                 if (solution == null)
                 {
-                    var plcprojs = Directory.GetFiles(path, "*.plcproj", SearchOption.AllDirectories);
+                    var plcprojs = EnumerateFilesCaseInsensitive(path, ".plcproj").ToArray();
                     if (plcprojs.Any())
                     {
                         var name = Path.GetFileNameWithoutExtension(plcprojs.First());

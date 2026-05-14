@@ -60,42 +60,49 @@ namespace Twinpack.Extensions
         }
 
         public static string RelativePath(string absPath, string relTo)
-        { 
-            string[] absDirs = absPath.Split('\\'); 
-            string[] relDirs = relTo.Split('\\');        
+        {
+            // Accept either Windows or POSIX separators in either argument and always emit
+            // the platform separator in the result. The split therefore happens on BOTH
+            // '\\' and '/'; the rebuild uses Path.DirectorySeparatorChar.
+            var sep = Path.DirectorySeparatorChar;
+            var splitChars = new[] { '\\', '/' };
+
+            string[] absDirs = absPath.Split(splitChars);
+            string[] relDirs = relTo.Split(splitChars);
             // Get the shortest of the two paths
             int len = absDirs.Length < relDirs.Length ? absDirs.Length : relDirs.Length;
             // Use to determine where in the loop we exited
             int lastCommonRoot = -1;
             int index;
-            // Find common root
+            // Find common root (case-insensitive: Windows file systems don't distinguish
+            // casing, and Windows-authored paths we get fed are routinely mixed-case).
             for (index = 0; index < len; index++)
-            {            
-                if (absDirs[index] == relDirs[index])
+            {
+                if (string.Equals(absDirs[index], relDirs[index], StringComparison.OrdinalIgnoreCase))
                     lastCommonRoot = index;
                 else
                     break;
-            }        
-            
+            }
+
             // If we didn't find a common prefix then throw
             if (lastCommonRoot == -1)
-            {            
+            {
                 throw new ArgumentException($"Path is not located in {absPath}");
-            }        
+            }
             // Build up the relative path
             StringBuilder relativePath = new StringBuilder();
             // Add on the ..
-            for (index = lastCommonRoot + 1; index < absDirs.Length; index++)   
-            {            
-                if (absDirs[index].Length > 0) 
-                    relativePath.Append("..\\");
+            for (index = lastCommonRoot + 1; index < absDirs.Length; index++)
+            {
+                if (absDirs[index].Length > 0)
+                    relativePath.Append("..").Append(sep);
             }
             // Add on the folders
             for (index = lastCommonRoot + 1; index < relDirs.Length - 1; index++)
-            {            
-                relativePath.Append(relDirs[index] + "\\");
-            }       
-            relativePath.Append(relDirs[relDirs.Length - 1]);        
+            {
+                relativePath.Append(relDirs[index]).Append(sep);
+            }
+            relativePath.Append(relDirs[relDirs.Length - 1]);
             return relativePath.ToString();
         }
     }

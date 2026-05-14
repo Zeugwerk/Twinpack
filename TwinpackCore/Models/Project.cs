@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using Twinpack;
 
 namespace Twinpack.Models
 {
@@ -22,13 +23,15 @@ namespace Twinpack.Models
             var content = XDocument.Load(filepath);
 
             Name = name;
+            // PrjFilePath / File attributes inside .tsproj/.xti are Windows-style ("ZCore\\ZCore.plcproj");
+            // PathUtil.Combine swaps the inner separators so the lookup also succeeds on Linux/macOS.
             Plcs = content?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")
                 .Where(x => x.Attribute("Name")?.Value != null && x.Attribute("PrjFilePath")?.Value != null)
-                .Select(x => new Plc(x.Attribute("Name")?.Value, Path.Combine(directory, x.Attribute("PrjFilePath")?.Value))).ToList();
+                .Select(x => new Plc(x.Attribute("Name")?.Value, PathUtil.Combine(directory, x.Attribute("PrjFilePath")?.Value))).ToList();
 
             var xtis = content?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")
                 .Where(x => x.Attribute("File")?.Value != null)
-                .Select(x => Path.Combine(directory, "_Config", "PLC", x.Attribute("File")?.Value)).ToList();
+                .Select(x => PathUtil.Combine(directory, "_Config", "PLC", x.Attribute("File")?.Value)).ToList();
 
             foreach(var xti in xtis)
             {
@@ -40,7 +43,7 @@ namespace Twinpack.Models
 
                 Plcs = Plcs.Concat(content?.Root?.Elements("Project")?
                 .Where(x => x.Attribute("Name")?.Value != null && x.Attribute("PrjFilePath")?.Value != null)
-                .Select(x => new Plc(x.Attribute("Name")?.Value, Path.Combine(directory, x.Attribute("PrjFilePath")?.Value)))).ToList();
+                .Select(x => new Plc(x.Attribute("Name")?.Value, PathUtil.Combine(directory, x.Attribute("PrjFilePath")?.Value)))).ToList();
             }
         }
 

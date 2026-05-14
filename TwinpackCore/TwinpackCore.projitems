@@ -30,6 +30,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\CachedHttpClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DirectoryExtension.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PathUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\Exceptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LibraryReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PackageItem.cs" />
