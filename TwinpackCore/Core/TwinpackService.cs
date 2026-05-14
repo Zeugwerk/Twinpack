@@ -627,7 +627,7 @@ namespace Twinpack.Core
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
                 var newPackageConfig = new ConfigPlcPackage(package.PackageVersion)
                 {
-                    Version = package.Config?.Version,
+                    Version = package.Config?.Version == null ? null : package.PackageVersion.Version,
                     Options = package.Config?.Options,
                     Parameters = package.Config?.Parameters
                 };
