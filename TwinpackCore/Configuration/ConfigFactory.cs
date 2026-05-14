@@ -213,6 +213,9 @@ namespace Twinpack.Configuration
         {
             packageServers = packageServers == null ? new List<Protocol.IPackageServer>() : packageServers;
 
+            if (!Directory.Exists(path))
+                throw new DirectoryNotFoundException($"Could not find a part of the path '{path}'.");
+
             Config config = new Config();
             var solutions = EnumerateFilesCaseInsensitive(path, ".sln").ToArray();
 
