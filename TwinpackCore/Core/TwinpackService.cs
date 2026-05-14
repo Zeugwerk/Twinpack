@@ -360,7 +360,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, List<string> excludedPackages = null, CancellationToken token = default, bool refreshUsedPackageCache = false)
+        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, List<string> excludedPackages = null, CancellationToken token = default)
         {
             if (_config.Modules?.Any() == true)
                 throw new NotSupportedException("Modules are not supported");
@@ -368,9 +368,6 @@ namespace Twinpack.Core
             try
             {
                 await _usedPackagesMutex.WaitAsync();
-
-                if (refreshUsedPackageCache)
-                    _usedPackagesCache.Clear();
 
                 foreach (var project in _config.Projects.Where(x => x.Name == _projectName || _projectName == null))
                 {
@@ -490,7 +487,7 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(UpdatePackageFilters filters = default, UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
         {
-            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken, refreshUsedPackageCache: true);
+            var usedPackages = await RetrieveUsedPackagesAsync();
             List<PackageItem> packages;
             if (filters?.Packages != null || filters?.Frameworks != null)
             {
@@ -697,9 +694,6 @@ namespace Twinpack.Core
             packageItem.PackageVersion = resolvedPackage.PackageVersion;
             packageItem.PackageServer = resolvedPackage.PackageServer;
             packageItem.Dependencies = resolvedPackage.Dependencies;
-            packageItem.Update = resolvedPackage.Update;
-            if (resolvedPackage.Used != null)
-                packageItem.Used = resolvedPackage.Used;
         }
 
         public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, bool includeDependencies = true, CancellationToken cancellationToken = default)
