@@ -242,6 +242,43 @@ namespace Twinpack.Core
             return catalogItem;
         }
 
+        /// <summary>
+        /// Loads catalog metadata and resolves the dependency graph for a package that already has
+        /// <see cref="PackageItem.PackageServer"/> and <see cref="PackageItem.PackageVersion"/> set
+        /// (for example the update target version), without re-resolving the version from <see cref="PackageItem.Config"/>.
+        /// </summary>
+        public async Task PopulateMetadataAndDependenciesAsync(PackageItem package, IAutomationInterface automationInterface = null, CancellationToken cancellationToken = default)
+        {
+            if (package?.PackageServer == null || package.PackageVersion?.Name == null)
+                return;
+
+            var ps = package.PackageServer;
+            var v = package.PackageVersion;
+
+            if (v.Dependencies == null || v.Dependencies.Count == 0)
+            {
+                var full = await ps.GetPackageVersionAsync(
+                    new PlcLibrary { DistributorName = v.DistributorName, Name = v.Name, Version = v.Version },
+                    v.Branch ?? package.Config?.Branch,
+                    v.Configuration ?? package.Config?.Configuration,
+                    v.Target ?? package.Config?.Target,
+                    cancellationToken: cancellationToken);
+
+                if (full?.Name != null)
+                {
+                    package.PackageVersion = full;
+                    v = full;
+                }
+            }
+
+            if (package.Package == null)
+                package.Package = await ps.GetPackageAsync(v.DistributorName, v.Name, cancellationToken: cancellationToken);
+
+            var resolvedDependencies = await ResolvePackageDependenciesAsync(package, automationInterface, cancellationToken);
+            package.Dependencies = resolvedDependencies.Flat;
+            package.PackageVersion.Dependencies = resolvedDependencies.Immediate.Select(x => x.PackageVersion).ToList();
+        }
+
         public async Task PullAsync(Config config, bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string cachePath = null, CancellationToken cancellationToken = default)
         {
             _logger.Info($"Pulling from Package Server(s) (skip internal packages: {(skipInternalPackages ? "true" : "false")})");
