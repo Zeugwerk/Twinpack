@@ -360,7 +360,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, List<string> excludedPackages = null, CancellationToken token = default)
+        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, List<string> excludedPackages = null, CancellationToken token = default, bool refreshUsedPackageCache = false)
         {
             if (_config.Modules?.Any() == true)
                 throw new NotSupportedException("Modules are not supported");
@@ -368,6 +368,9 @@ namespace Twinpack.Core
             try
             {
                 await _usedPackagesMutex.WaitAsync();
+
+                if (refreshUsedPackageCache)
+                    _usedPackagesCache.Clear();
 
                 foreach (var project in _config.Projects.Where(x => x.Name == _projectName || _projectName == null))
                 {
@@ -487,7 +490,7 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(UpdatePackageFilters filters = default, UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
         {
-            var usedPackages = await RetrieveUsedPackagesAsync();
+            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken, refreshUsedPackageCache: true);
             List<PackageItem> packages;
             if (filters?.Packages != null || filters?.Frameworks != null)
             {
@@ -496,7 +499,10 @@ namespace Twinpack.Core
                 (filters.ProjectName == null || filters.ProjectName == x.ProjectName) &&
                 (filters.Packages == null || filters.Packages.Any(y => y == x.Update?.Name)) &&
                 (filters.Frameworks == null || filters.Frameworks.Any(y => y == x.Update?.Framework)))
-                    .Select(x => new PackageItem(x) { Package = new Protocol.Api.PackageGetResponse(x.Update), PackageVersion = x.Update }).ToList();
+                    .Select(x => new PackageItem(x) { 
+                        Package = new PackageGetResponse(x.Update), 
+                        PackageVersion = x.Update,
+                    }).ToList();
 
                 foreach (var package in packages)
                 {
@@ -528,7 +534,9 @@ namespace Twinpack.Core
             }
             else
             {
-                packages = usedPackages.Select(x => new PackageItem(x) { Package = new Protocol.Api.PackageGetResponse(x.Update), PackageVersion = x.Update }).ToList();
+                packages = usedPackages.Select(x => new PackageItem(x) {
+                    Package = new PackageGetResponse(x.Update), 
+                    PackageVersion = x.Update }).ToList();
             }
 
             return await UpdatePackagesAsync(packages, options, cancellationToken);
@@ -693,6 +701,9 @@ namespace Twinpack.Core
             packageItem.PackageVersion = resolvedPackage.PackageVersion;
             packageItem.PackageServer = resolvedPackage.PackageServer;
             packageItem.Dependencies = resolvedPackage.Dependencies;
+            packageItem.Update = resolvedPackage.Update;
+            if (resolvedPackage.Used != null)
+                packageItem.Used = resolvedPackage.Used;
         }
 
         public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, bool includeDependencies = true, CancellationToken cancellationToken = default)
@@ -710,7 +721,7 @@ namespace Twinpack.Core
             foreach (var package in packages)
             {
                 PackageItem resolvedPackage = null;
-                if (package.Package == null || package.PackageVersion == null || package.PackageServer == null || package.Dependencies == null)
+                if (package.Package == null || package.PackageVersion == null || package.PackageServer == null)
                 {
                     package.Package = null;
                     package.PackageVersion = null;
@@ -719,11 +730,15 @@ namespace Twinpack.Core
                     package.Package ??= resolvedPackage.Package;
                     package.PackageVersion ??= resolvedPackage.PackageVersion;
                     package.PackageServer ??= resolvedPackage.PackageServer;
-                }
-
-                // Always normalize dependency metadata from the latest resolved package.
-                if (resolvedPackage != null)
                     package.Dependencies = resolvedPackage.Dependencies ?? new List<PackageItem>();
+                }
+                else if (package.Dependencies == null)
+                {
+                    if (includeDependencies)
+                        await packageServers.PopulateMetadataAndDependenciesAsync(package, automationInterface, cancellationToken);
+                    else
+                        package.Dependencies = new List<PackageItem>();
+                }
                 else
                     package.Dependencies ??= new List<PackageItem>();
 
