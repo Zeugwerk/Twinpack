@@ -176,11 +176,11 @@ namespace Twinpack.Core
                         if (effectivePackageVersion?.Name != null)
                             packageVersion = effectivePackageVersion;
                         else
-                            _logger.Warn($"Package {packageVersion?.Name} {effectiveVersion}* not available!");
+                            _logger.Warn("[resolve] package {0} {1}* not available", packageVersion?.Name, effectiveVersion);
                     }
                     else
                     {
-                        _logger.Warn($"Cannot resolve wildcard reference '{packageVersion.Name}' without automation interface");
+                        _logger.Warn("[resolve] cannot resolve wildcard '{0}' without automation interface", packageVersion.Name);
                     }
                 }
 
@@ -281,7 +281,7 @@ namespace Twinpack.Core
 
         public async Task PullAsync(Config config, bool skipInternalPackages = false, IEnumerable<ConfigPlcPackage> filter = null, string cachePath = null, CancellationToken cancellationToken = default)
         {
-            _logger.Info($"Pulling from Package Server(s) (skip internal packages: {(skipInternalPackages ? "true" : "false")})");
+            _logger.Info("[pull] from package server(s) (skip internal: {0})", skipInternalPackages);
             var plcs = config.Projects.SelectMany(x => x.Plcs);
             var exceptions = new List<Exception>();
             var handled = new List<ConfigPlcPackage>();
@@ -336,7 +336,7 @@ namespace Twinpack.Core
                         }
                         catch (Exception ex)
                         {
-                            _logger.Warn($"{package.Name} {package.Version}: {ex.Message}");
+                            _logger.Warn("[pull] {0} {1}: {2}", package.Name, package.Version, ex.Message);
                             exceptions.Add(ex);
                         }
                     }
@@ -503,7 +503,7 @@ namespace Twinpack.Core
 
             if (!success)
             {
-                _logger.Warn($"Package {package.PackageVersion.Title} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) not found on any package server!");
+                _logger.Warn("[download] {0} {1} (distributor: {2}) not found on any server", package.PackageVersion.Title, package.PackageVersion.Version, package.PackageVersion.DistributorName);
             }
 
             return success;

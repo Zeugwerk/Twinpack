@@ -94,7 +94,7 @@ namespace Twinpack.Protocol
                 catch(Exception ex)
                 {
                     _logger.Trace(ex);
-                    _logger.Warn($"Failed to load configuration, using default repositories");
+                    _logger.Warn("[config] failed to load sourceRepositories.json, using defaults");
 
                     if(useDefaults)
                     {
@@ -154,7 +154,7 @@ namespace Twinpack.Protocol
                 Directory.CreateDirectory(dirPath);
 
             File.WriteAllText(filePath, JsonSerializer.Serialize(sourceRepositories, new JsonSerializerOptions { WriteIndented = true }));
-            _logger.Info($"Saved configuration in '{filePath}'");
+            _logger.Info("[config] saved sourceRepositories.json: {0}", LogPath.Display(filePath));
         }
 
         public static async Task PurgeAsync()

@@ -97,7 +97,7 @@ namespace Twinpack.Core
                 Type t = Type.GetTypeFromProgID(shell);
                 if (t != null)
                 {
-                    _logger.Info($"Loading {shell}");
+                    _logger.Info("[vs] loading {0}", shell);
                     DTE2 dte = Activator.CreateInstance(t) as DTE2;
                     dte.SuppressUI = hidden;
                     dte.MainWindow.Visible = !hidden;
@@ -152,7 +152,7 @@ namespace Twinpack.Core
                 {
                     try
                     {
-                        _logger.Info($"Removing '{project.Name}' (not included in config)");
+                        _logger.Info("[vs] removing project {0} (not in config)", project.Name);
                         _solution.Remove(project);
                     }
                     catch (Exception ex)
@@ -182,7 +182,7 @@ namespace Twinpack.Core
             {
                 if (automationInterface.IsSupported(UsedTcVersion))
                 {
-                    _logger.Info("Using " + automationInterface.GetType().FullName);
+                    _logger.Info("[vs] automation: {0}", automationInterface.GetType().FullName);
                     _automationInterface = automationInterface;
                     return _automationInterface;
                 }
@@ -217,7 +217,7 @@ namespace Twinpack.Core
             // set target system - check if the target system is installed. If not, abort
             if (requestedTcVersion != null && requestedTcVersion != "")
             {
-                _logger.Info($"Output target system: {requestedTcVersion}");
+                _logger.Info("[target] requested: {0}", requestedTcVersion);
 
                 var rmversions = (remote.Version != null && remote.Version != "") ? new string[] { remote.Version } : ((string[])remote.Versions);
                 var len = rmversions[0].Split('.').Length;
@@ -242,7 +242,7 @@ namespace Twinpack.Core
                 if (!found)
                     throw new System.ArgumentException($"Output target system {tcversion} not found in {string.Join(",", remote.Versions)}");
 
-                _logger.Info($"Using target system:  TC{tcversion}");
+                _logger.Info("[target] using TC{0}", tcversion);
 
                 if(remote.Version != tcversion)
                     remote.Version = tcversion;
@@ -250,7 +250,7 @@ namespace Twinpack.Core
             }
             else
             {
-                _logger.Info($"Using target system: Local default");
+                _logger.Info("[target] using local default");
                 return null;
             }
         }
@@ -425,7 +425,7 @@ namespace Twinpack.Core
 
         public virtual void Dispose()
         {
-            _logger.Info($"Disposing VisualStudio");
+            _logger.Info("[vs] disposing automation host");
         
             _filter?.Dispose();
             if (_quitOnDispose)

@@ -80,7 +80,7 @@ namespace Twinpack.Configuration
                         if ((string.IsNullOrEmpty(config.Solution) && config.Projects == null && config.Projects.Count == 0) &&
                             (config.Modules == null && config.Modules.Count == 0))
                         {
-                            _logger.Warn($"Failed to parse '{configPath}'");
+                            _logger.Warn("[config] failed to parse: {0}", LogPath.Display(configPath));
                             continue;
                         }
                     }
@@ -88,7 +88,7 @@ namespace Twinpack.Configuration
                     {
                         config = null;
                         _logger.Trace(ex);
-                        _logger.Warn($"Failed to parse '{configPath}'");
+                        _logger.Warn("[config] failed to parse: {0}", LogPath.Display(configPath));
                         continue;
                     }
 
@@ -106,7 +106,7 @@ namespace Twinpack.Configuration
                         // Surfacing this is important on case-sensitive file systems: a missing
                         // .sln means the only remaining lookup is GuessFilePath, which is
                         // strictly weaker than parsing the .sln/.tsproj layout.
-                        _logger.Warn($"Solution '{config.Solution}' referenced in '{configPath}' could not be loaded ({ex.Message}); falling back to filesystem guessing for .plcproj locations.");
+                        _logger.Warn("[config] solution {0} from {1} could not be loaded ({2}); falling back to filesystem scan", LogPath.Display(config.Solution), LogPath.Display(configPath), ex.Message);
                         if (validate)
                             throw;
                     }
@@ -220,7 +220,7 @@ namespace Twinpack.Configuration
             var solutions = EnumerateFilesCaseInsensitive(path, ".sln").ToArray();
 
             if (solutions.Count() > 1)
-                _logger.Warn("There is more than 1 solution present in the current directory, only the first one is considered!");
+                _logger.Warn("[config] multiple solutions in cwd, using first only");
             else if (solutions.Any() == false && continueWithoutSolution == false)
                 return null;
 
@@ -307,11 +307,11 @@ namespace Twinpack.Configuration
         {
             if (config == null || plcConfig == null)
             {
-                _logger.Warn($"The solution doesn't have a package configuration");
+                _logger.Warn("[config] solution has no Zeugwerk package configuration");
                 return;
             }
 
-            _logger.Info($"Updating package configuration {Path.GetFullPath(config.FilePath)}");
+            _logger.Info("[config] updating package configuration: {0}", LogPath.Display(config.FilePath));
 
             var projectIndex = config.Projects.FindIndex(x => x.Name == plcConfig.ProjectName);
             if (projectIndex < 0)

@@ -33,17 +33,17 @@ namespace Twinpack.Protocol
             }
             catch (TimeoutException ex)
             {
-                _logger.Warn($"Log in to '{_packageServer.Url}' timed-out");
+                _logger.Warn("[login] timed out: {0}", _packageServer.UrlBase);
                 throw ex;
             }
             catch (OperationCanceledException)
             {
-                _logger.Warn($"Log in to '{_packageServer.Url}' cancelled");
+                _logger.Warn("[login] cancelled: {0}", _packageServer.UrlBase);
                 throw;
             }
             catch (LoginException)
             {
-                _logger.Warn($"Log in to '{_packageServer.Url}' failed");
+                _logger.Warn("[login] failed: {0}", _packageServer.UrlBase);
             }
             catch (Exception)
             { }
