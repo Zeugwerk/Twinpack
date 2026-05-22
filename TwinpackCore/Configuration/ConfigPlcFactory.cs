@@ -390,7 +390,7 @@ namespace Twinpack.Configuration
         {
             var config = ConfigFactory.Load(rootPath);
 
-            _logger.Info($"Pushing to Twinpack Server");
+            _logger.Info("[upload] pushing libraries to Twinpack server");
 
             var suffix = compiled ? "compiled-library" : "library";
             var plcs = config.Projects.SelectMany(x => x.Plcs)
@@ -404,7 +404,7 @@ namespace Twinpack.Configuration
                     throw new Exceptions.LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{plc.FilePath}'");
 
                 if (!string.IsNullOrEmpty(plc.LicenseFile) && !File.Exists(plc.LicenseFile))
-                    _logger.Warn($"Could not find license file '{plc.LicenseFile}'");
+                    _logger.Warn("[upload] license file not found: {0}", LogPath.Display(plc.LicenseFile));
 
                 yield return plc;
             }
@@ -438,7 +438,7 @@ namespace Twinpack.Configuration
                         resolvedDependency = depPackageServer.ResolvePackageVersionAsync(new PlcLibrary { DistributorName = dependency.DistributorName, Name = dependency.Name, Version = dependency.Version }, null, null, null).GetAwaiter().GetResult();
                         if (resolvedDependency.Name != null && (resolvedDependency.Version == dependency.Version || dependency.Version == null))
                         {
-                            _logger.Info($"Dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version}) located on {depPackageServer.UrlBase}");
+                            _logger.Info("[upload] dependency {0} {1} on {2}", dependency.Name, dependency.Version, depPackageServer.UrlBase);
                             plc.Packages = plc.Packages.Append(
                                 new ConfigPlcPackage()
                                 {
@@ -454,7 +454,7 @@ namespace Twinpack.Configuration
 
                     if (resolvedDependency == null)
                     {
-                        _logger.Info($"Dependency '{dependency.Name}' (distributor: {dependency.DistributorName}, version: {dependency.Version})");
+                        _logger.Info("[upload] dependency {0} {1} (distributor: {2})", dependency.Name, dependency.Version, dependency.DistributorName);
                         plc.Packages = plc.Packages.Append(
                             new ConfigPlcPackage()
                             {

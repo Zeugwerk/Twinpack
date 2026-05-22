@@ -53,7 +53,7 @@ namespace Twinpack.Core
                         delay = Math.Min(delay, maxDelayMs.Value);
                     }
 
-                    _logger.Info($"Retry ({retry}/{maxRetries}) in {delay}ms due to: {ex.Message}");
+                    _logger.Info("[retry] {0}/{1} in {2}ms: {3}", retry, maxRetries, delay, ex.Message);
 
                     Thread.Sleep(delay);
                 }

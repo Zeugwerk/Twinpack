@@ -78,7 +78,7 @@ namespace Twinpack.Core
             }
             catch (FormatException ex) // TwinCAT throws a FormatException for some reason
             {
-                _logger.Warn("PLC contains packages not available on the system, please update or remove them");
+                _logger.Warn("[automation] PLC has packages not available on the system; update or remove them");
                 _logger.Trace(ex);
                 distributorName = null;
                 effectiveVersion = null;
@@ -441,7 +441,7 @@ namespace Twinpack.Core
 
                     if (parameters?.Any() == true)
                     {
-                        _logger.Info($"Applying {parameters.Count} package parameter(s) to {package.PackageVersion.Name} {package.PackageVersion.Version}");
+                        _logger.Info("[parameters] applying {0} parameter(s) to {1} {2}", parameters.Count, package.PackageVersion.Name, package.PackageVersion.Version);
                         var placeholderReference = referenceDoc.Elements("TreeItem")
                             .Elements("PlcLibPlaceholder")
                             .Elements("PlaceholderReference")
@@ -449,7 +449,7 @@ namespace Twinpack.Core
 
                         if (placeholderReference == null)
                         {
-                            _logger.Warn($"Could not apply parameters to {package.PackageVersion.Name} {package.PackageVersion.Version}. PlaceholderReference not found.");
+                            _logger.Warn("[parameters] placeholder not found for {0} {1}", package.PackageVersion.Name, package.PackageVersion.Version);
                         }
                         else
                         {
@@ -465,12 +465,12 @@ namespace Twinpack.Core
                                 var keyParts = parameter.Key.Split(new[] { '.' }, 2, StringSplitOptions.None);
                                 if (keyParts.Length != 2 || string.IsNullOrWhiteSpace(keyParts[0]) || string.IsNullOrWhiteSpace(keyParts[1]))
                                 {
-                                    _logger.Warn($"Skipping invalid package parameter key '{parameter.Key}'. Expected format 'LISTNAME.KEY'.");
+                                    _logger.Warn("[parameters] skipping invalid key '{0}' (expected LISTNAME.KEY)", parameter.Key);
                                     continue;
                                 }
 
                                 var parameterName = $"{keyParts[0]}.{keyParts[1]}";
-                                _logger.Info($"Adding package parameter '{parameterName}'='{parameter.Value ?? string.Empty}'");
+                                _logger.Info("[parameters] {0}='{1}'", parameterName, parameter.Value ?? string.Empty);
                                 var existingParameter = parameterList.Elements("Parameter")
                                     .FirstOrDefault(x => string.Equals(x.Element("Name")?.Value, parameterName, StringComparison.InvariantCultureIgnoreCase));
 
@@ -498,7 +498,7 @@ namespace Twinpack.Core
                 }
                 else
                 {
-                    _logger.Warn($"Could not apply options/parameters to {package.PackageVersion.Name} {package.PackageVersion.Version}");
+                    _logger.Warn("[parameters] could not apply options to {0} {1}", package.PackageVersion.Name, package.PackageVersion.Version);
                 }
             }
         }
@@ -603,17 +603,17 @@ namespace Twinpack.Core
                 if (!string.IsNullOrEmpty(plc.Name) && allowedPlcNameRegex.IsMatch(plc.Name))
                 {
                     writer.WriteElementString("Name", plc.Name);
-                    _logger.Info($"Updated title to '{plc.Name}'");
+                    _logger.Info("[plc] updated title to '{0}'", plc.Name);
                 }
                 else
                 {
-                    _logger.Warn($"Title '{plc.Name}' contains invalid characters - skipping PLC title update!");
+                    _logger.Warn("[plc] title '{0}' has invalid characters, skipping", plc.Name);
                 }
 
                 if (!string.IsNullOrEmpty(titleStr) && allowedPlcNameRegex.IsMatch(titleStr))
                 {
                     writer.WriteElementString("Title", titleStr);
-                    _logger.Info($"Updated title to '{titleStr}'");
+                    _logger.Info("[plc] updated title to '{0}'", titleStr);
                 }
                 else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
                 {
@@ -621,14 +621,14 @@ namespace Twinpack.Core
                 }
                 else
                 {
-                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update!");
+                    _logger.Warn("[plc] title '{0}' has invalid characters, skipping", titleStr);
                 }
 
                 var versionStr = NormalizedVersion(plc.Version);
                 if (!string.IsNullOrEmpty(versionStr))
                 {
                     writer.WriteElementString("Version", new Version(versionStr).ToString());
-                    _logger.Info($"Updated version to '{versionStr}'");
+                    _logger.Info("[plc] updated version to {0}", versionStr);
                 }
                 else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))
                 {
@@ -636,13 +636,13 @@ namespace Twinpack.Core
                 }
                 else
                 {
-                    _logger.Warn($"Version '{versionStr}' is empty - skipping PLC company update!");
+                    _logger.Warn("[plc] version empty, skipping company update");
                 }
 
                 if (!string.IsNullOrEmpty(plc.DistributorName) && allowedCompanyRegex.IsMatch(plc.DistributorName))
                 {
                     writer.WriteElementString("Company", plc.DistributorName);
-                    _logger.Info($"Updated company to '{plc.DistributorName}'");
+                    _logger.Info("[plc] updated company to {0}", plc.DistributorName);
                 }
                 else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(plc.DistributorName))
                 {
@@ -651,7 +651,7 @@ namespace Twinpack.Core
                 else
                 {
                     writer.WriteElementString("Company", "Unknown Company");
-                    _logger.Info($"Updated company to 'Unknown Company'");
+                    _logger.Info("[plc] updated company to Unknown Company");
                 }
 
                 writer.WriteEndElement();     // ProjectInfo
@@ -669,7 +669,7 @@ namespace Twinpack.Core
                 return;
 
             if (preExistingErrorCount > 0)
-                _logger.Warn($"There are {preExistingErrorCount} errors before checking all objects!");
+                _logger.Warn("[automation] {0} error(s) before object check", preExistingErrorCount);
 
             int errorCount = 0;
             int warningCount = 0;
@@ -715,7 +715,7 @@ namespace Twinpack.Core
             var iec = projectRoot.NestedProject as ITcPlcIECProject2;
             EnsureCompiled(plc.ProjectName, plc.Name, iec);
 
-            _logger.Info($"Saving library to {filePath}");
+            _logger.Info("[automation] saving library to {0}", LogPath.Display(filePath));
 
             if (!Directory.Exists(new FileInfo(filePath).Directory.FullName))
                 Directory.CreateDirectory(new FileInfo(filePath).Directory.FullName);

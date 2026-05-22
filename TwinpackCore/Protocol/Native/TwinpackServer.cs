@@ -263,7 +263,7 @@ namespace Twinpack.Protocol
             {
                 if (ChecksumMode.IgnoreMismatch == checksumMode)
                 {
-                    _logger.Warn("Checksum mismatch is ignored");
+                    _logger.Warn("[download] checksum mismatch ignored");
                     return;
                 }
 
@@ -325,7 +325,7 @@ namespace Twinpack.Protocol
             }
             catch
             {
-                _logger.Warn($"Download failed {packageVersion.BinaryDownloadUrl}");
+                _logger.Warn("[download] failed from {0}", packageVersion.BinaryDownloadUrl);
                 return false;
             }
 
@@ -555,7 +555,7 @@ namespace Twinpack.Protocol
             }
             catch (Exception ex)
             {
-                _logger.Warn("Failed to load credentials from Windows Credential Storage");
+                _logger.Warn("[login] failed to load credentials from Windows Credential Storage");
                 _logger.Trace(ex);
                 Username = username;
                 Password = password;
@@ -600,7 +600,7 @@ namespace Twinpack.Protocol
                     }
                     catch(Exception ex)
                     {
-                        _logger.Warn("Failed to save credentials to Windows Credential Storage");
+                        _logger.Warn("[login] failed to save credentials to Windows Credential Storage");
                         _logger.Trace(ex);
                     }
                 }
@@ -608,12 +608,12 @@ namespace Twinpack.Protocol
                 if (IsClientUpdateAvailable && !_clientUpdateInformed)
                 {
                     _clientUpdateInformed = true;
-                    _logger.Info($"Twinpack {UserInfo?.UpdateVersion} is available! Update at '{UserInfo.UpdateUrl}'");
+                    _logger.Info("[login] Twinpack {0} available at {1}", UserInfo?.UpdateVersion, UserInfo.UpdateUrl);
                 }
 
                 _ = RefreshTokenAsync();
 
-                _logger.Info($"Log in to '{UrlBase}' successful");
+                _logger.Info("[login] successful: {0}", UrlBase);
                 return UserInfo;
             }
             catch
@@ -657,12 +657,12 @@ namespace Twinpack.Protocol
                         string msg = $"already published package '{packageVersionLookup.Name}' (branch: {packageVersionLookup.Branch}, target: {packageVersionLookup.Target}, configuration: {packageVersionLookup.Configuration}, version: {packageVersionLookup.Version})";
                         if (skipDuplicate)
                         {
-                            _logger.Info($"Skipping " + msg);
+                            _logger.Info("[upload] skipping {0}", msg);
                             continue;
                         }
                         else
                         {
-                            _logger.Warn($"Uploading " + msg);
+                            _logger.Warn("[upload] {0}", msg);
                         }
                     }
 
@@ -708,7 +708,7 @@ namespace Twinpack.Protocol
                 }
                 catch (Exception ex)
                 {
-                    _logger.Warn($"{plc.Name}: {ex.Message}");
+                    _logger.Warn("[upload] {0}: {1}", plc.Name, ex.Message);
                     exceptions.Add(ex);
                 }
             }
@@ -743,7 +743,7 @@ namespace Twinpack.Protocol
             {
                 if(CredentialManager.GetCredentials(UrlBase) != null)
                 {
-                    _logger.Info($"Removing existing credentials for {UrlBase}");
+                    _logger.Info("[login] removing stored credentials for {0}", UrlBase);
                     CredentialManager.RemoveCredentials(UrlBase);
                 }
             }
@@ -752,7 +752,7 @@ namespace Twinpack.Protocol
 
         public void InvalidateCache()
         {
-            _logger.Info("Resetting Twinpack Cache");
+            _logger.Info("[cache] resetting HTTP cache");
             _client.Invalidate();
         }
     }

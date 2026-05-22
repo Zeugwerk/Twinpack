@@ -125,7 +125,7 @@ namespace Twinpack.Core
                 if (parameters == null || parameters.Count == 0)
                     return;
 
-                _logger.Info($"Applying {parameters.Count} package parameter(s) to placeholder '{root.Attribute("Include")?.Value}'");
+                _logger.Info("[parameters] applying {0} parameter(s) to placeholder '{1}'", parameters.Count, root.Attribute("Include")?.Value);
 
                 var parametersElement = root.Element(TcNs + "Parameters");
                 if (parametersElement == null)
@@ -144,7 +144,7 @@ namespace Twinpack.Core
                     var keyParts = parameter.Key.Split(new[] { '.' }, 2, StringSplitOptions.None);
                     if (keyParts.Length != 2 || string.IsNullOrWhiteSpace(keyParts[0]) || string.IsNullOrWhiteSpace(keyParts[1]))
                     {
-                        _logger.Warn($"Skipping invalid package parameter key '{parameter.Key}'. Expected format 'LISTNAME.KEY'.");
+                        _logger.Warn("[parameters] skipping invalid key '{0}' (expected LISTNAME.KEY)", parameter.Key);
                         continue;
                     }
 
@@ -326,12 +326,12 @@ namespace Twinpack.Core
 
         public override async System.Threading.Tasks.Task InstallPackageAsync(PackageItem package, string cachePath = null)
         {
-            _logger.Warn("Headless AutomationInterface can not install packages");
+            _logger.Warn("[install] headless mode cannot install packages");
         }
 
         public override async Task<bool> UninstallPackageAsync(PackageItem package)
         {
-            _logger.Warn("Headless AutomationInterface can not uninstall packages");
+            _logger.Warn("[remove] headless mode cannot uninstall packages");
             return false;
         }
 
@@ -364,11 +364,11 @@ namespace Twinpack.Core
                     else
                         propertyGroup.Add(new XElement(TcNs + "Name", plc.Name));
 
-                    _logger.Info($"Updated name to '{plc.Name}'");
+                    _logger.Info("[plc] updated name to {0}", plc.Name);
                 }
                 else
                 {
-                    _logger.Warn($"Name '{plc.Name}' contains invalid characters - skipping PLC Name update!");
+                    _logger.Warn("[plc] name '{0}' has invalid characters, skipping", plc.Name);
 
                 }
 
@@ -381,7 +381,7 @@ namespace Twinpack.Core
                     else
                         propertyGroup.Add(new XElement(TcNs + "Title", titleStr));
 
-                    _logger.Info($"Updated title to '{titleStr}'");
+                    _logger.Info("[plc] updated title to '{0}'", titleStr);
                 }
                 else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(titleStr))
                 {
@@ -389,7 +389,7 @@ namespace Twinpack.Core
                 }
                 else
                 {
-                    _logger.Warn($"Title '{titleStr}' contains invalid characters - skipping PLC title update!");
+                    _logger.Warn("[plc] title '{0}' has invalid characters, skipping", titleStr);
 
                 }
 
@@ -400,7 +400,7 @@ namespace Twinpack.Core
                     else
                         propertyGroup.Add(new XElement(TcNs + "Company", plc.DistributorName));
 
-                    _logger.Info($"Updated company to '{plc.DistributorName}'");
+                    _logger.Info("[plc] updated company to {0}", plc.DistributorName);
                 }
                 else if((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.Library) && string.IsNullOrEmpty(plc.DistributorName))
                 {
@@ -414,7 +414,7 @@ namespace Twinpack.Core
                     else
                         propertyGroup.Add(new XElement(TcNs + "Company", fallbackCompany));
 
-                    _logger.Info($"Updated company to '{plc.DistributorName}'");
+                    _logger.Info("[plc] updated company to {0}", plc.DistributorName);
                 }
 
                 var versionStr = NormalizedVersion(plc.Version);
@@ -425,7 +425,7 @@ namespace Twinpack.Core
                     else
                         propertyGroup.Add(new XElement(TcNs + "ProjectVersion", versionStr));
 
-                    _logger.Info($"Updated version to '{versionStr}'");
+                    _logger.Info("[plc] updated version to {0}", versionStr);
                 }
                 else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))
                 {
@@ -433,7 +433,7 @@ namespace Twinpack.Core
                 }
                 else
                 {
-                    _logger.Warn($"Version '{versionStr}' is empty - skipping PLC company update!");
+                    _logger.Warn("[plc] version empty, skipping company update");
                 }
             }
 

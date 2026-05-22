@@ -216,7 +216,7 @@ namespace Twinpack.Core
             {
                 if (package.PackageVersion.HasLicenseTmcBinary)
                 {
-                    _logger.Trace($"Copying license description file to TwinCAT for {package.PackageVersion.Name} ...");
+                    _logger.Trace("[license] copying runtime license for {0}", package.PackageVersion.Name);
                     try
                     {
                         var licenseId = ParseRuntimeLicenseIdFromTmc(package.PackageVersion.LicenseTmcText);
@@ -225,11 +225,11 @@ namespace Twinpack.Core
 
                         if (knownLicenseIds.Contains(licenseId))
                         {
-                            _logger.Trace($"LicenseId={licenseId} already known");
+                            _logger.Trace("[license] licenseId={0} already known", licenseId);
                         }
                         else
                         {
-                            _logger.Info($"Copying license tmc with licenseId={licenseId} to {automationInterface.LicensesPath}");
+                            _logger.Info("[license] copying tmc licenseId={0} to {1}", licenseId, LogPath.Display(automationInterface.LicensesPath));
 
                             using (var md5 = MD5.Create())
                             {
@@ -386,7 +386,7 @@ namespace Twinpack.Core
                             _usedPackagesCache.Add(catalogItem);
 
                             if (catalogItem.PackageServer == null)
-                                _logger.Warn($"Package {package.Name} (distributor: {package.DistributorName}) referenced in the configuration can not be found on any package server");
+                                _logger.Warn("[resolve] package {0} (distributor: {1}) not found on any server", package.Name, package.DistributorName);
                             else
                                 _logger.Debug($"Package {package.Name} (distributor: {package.DistributorName}) located on {catalogItem.PackageServer.UrlBase}");
                         }
@@ -443,10 +443,10 @@ namespace Twinpack.Core
 
             foreach (var package in affectedPackages.Where(x => packages.Any(y => x.Catalog?.Name == y.Catalog?.Name)))
             {
-                _logger.Info($"Removing {package.PackageVersion.Name}");
+                _logger.Info("[remove] {0}", package.PackageVersion.Name);
 
                 if (uninstall)
-                    _logger.Info($"Uninstalling {package.PackageVersion.Name} from system ...");
+                    _logger.Info("[remove] uninstalling {0} from system", package.PackageVersion.Name);
 
                 await _automationInterface.RemovePackageAsync(package, uninstall: uninstall);
 
@@ -611,7 +611,7 @@ namespace Twinpack.Core
             {
                 foreach (var package in downloadedPackageVersions)
                 {
-                    _logger.Info($"Installing {package.PackageVersion.Name} {package.PackageVersion.Version}");
+                    _logger.Info("[install] {0} {1}", package.PackageVersion.Name, package.PackageVersion.Version);
                     await automationInterface.InstallPackageAsync(package, cachePath: downloadPath); 
                     cancellationToken.ThrowIfCancellationRequested();
                 }
@@ -620,7 +620,7 @@ namespace Twinpack.Core
             // add affected packages as references
             foreach (var package in (options?.IncludeDependencies == true ? affectedPackages : packages).Where(x => x.PackageVersion?.Name != null))
             {
-                _logger.Info($"Adding {package.PackageVersion.Name} {package.PackageVersion.Version} (distributor: {package.PackageVersion.DistributorName}) to {package.ProjectName}/{package.PlcName}");
+                _logger.Info("[add] {0} {1} (distributor: {2}) to {3}/{4}", package.PackageVersion.Name, package.PackageVersion.Version, package.PackageVersion.DistributorName, package.ProjectName, package.PlcName);
 
                 if (automationInterface != null && (options?.UpdatePlc == null || options?.UpdatePlc == true))
                 {
@@ -745,7 +745,7 @@ namespace Twinpack.Core
 
                 if (package.PackageVersion?.Name == null)
                 {
-                    _logger.Trace($"Package {package.Config.Name} {package.Config.Version ?? "*"} could not be found!");
+                    _logger.Trace("[resolve] package {0} {1} could not be found", package.Config.Name, package.Config.Version ?? "*");
                     continue;
                 }
 
@@ -805,7 +805,7 @@ namespace Twinpack.Core
             }).Select(x => x.First()).ToList();
 
             if (!options.ForceDownload && automationInterface == null)
-                _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
+                _logger.Warn("[download] headless mode: downloading even if packages appear available on the system");
 
             // ignore packages, which are provided by the loaded configuration
             if(!options.IncludeProvidedPackages)

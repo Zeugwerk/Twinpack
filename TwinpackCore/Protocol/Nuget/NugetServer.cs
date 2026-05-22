@@ -392,7 +392,7 @@ namespace Twinpack.Protocol
                 }
             }
 
-            _logger.Info($"Downloaded {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {Url})");
+            _logger.Info("[download] {0} {1} (distributor: {2}) (from {3})", packageVersion.Title, packageVersion.Version, packageVersion.DistributorName, Url);
         }
 
         public virtual async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
@@ -590,7 +590,7 @@ namespace Twinpack.Protocol
             }
             catch (Exception ex)
             {
-                _logger.Warn("Failed to load credentials");
+                _logger.Warn("[login] failed to load credentials");
                 _logger.Trace(ex);
                 Username = username ?? "";
                 Password = password ?? "";
@@ -636,12 +636,12 @@ namespace Twinpack.Protocol
                     }
                     catch (Exception ex)
                     {
-                        _logger.Warn("Failed to save credentials");
+                        _logger.Warn("[login] failed to save credentials");
                         _logger.Trace(ex);
                     }
                 }
 
-                _logger.Info($"Log in to '{UrlBase}' successful");
+                _logger.Info("[login] successful: {0}", UrlBase);
             }
             catch (TimeoutException)
             {
@@ -693,7 +693,7 @@ namespace Twinpack.Protocol
             {
                 if (CredentialManager.GetCredentials(UrlBase) != null)
                 {
-                    _logger.Info($"Removing existing credentials for {UrlBase}");
+                    _logger.Info("[login] removing stored credentials for {0}", UrlBase);
                     CredentialManager.RemoveCredentials(UrlBase);
                 }
             }

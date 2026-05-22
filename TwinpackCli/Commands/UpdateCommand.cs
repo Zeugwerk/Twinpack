@@ -89,6 +89,9 @@ namespace Twinpack.Commands
                         SkipDownload = settings.SkipDownload,
                         IncludeDependencies = true
                     }).GetAwaiter().GetResult();
+
+                _logger.Info("[update] {0} package(s) affected", updated.Count);
+                TwinpackRunLog.LogPhaseDone(_logger, "update", sw.Elapsed.TotalSeconds);
                 return 0;
             });
         }
