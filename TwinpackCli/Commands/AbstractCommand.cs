@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using Twinpack;
+using Twinpack;
 using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Models;
@@ -65,31 +67,7 @@ namespace Twinpack.Commands
 
         public void SetUpLogger(AbstractSettings settings)
         {
-            var loggingConfiguration = LogManager.Configuration ?? new NLog.Config.LoggingConfiguration();
-            var logFileTraceTarget = new NLog.Targets.FileTarget("Twinpack")
-            {
-                FileName = @"${specialfolder:folder=LocalApplicationData}\Zeugwerk\logs\Twinpack\TwinpackCli.debug.log",
-                MaxArchiveFiles = 7,
-                ArchiveEvery = NLog.Targets.FileArchivePeriod.Day,
-                ArchiveFileName = @"${specialfolder:folder=LocalApplicationData}\Zeugwerk\logs\Twinpack\TwinpackCli.debug{#}.log",
-                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.Rolling,
-                KeepFileOpen = false
-            };
-
-            if (!settings.Quiet)
-            {
-                var logConsoleTarget = new NLog.Targets.ConsoleTarget
-                {
-                    Layout = "${message} ${onexception:EXCEPTION OCCURRED\\:${exception:format=type,message,method:maxInnerExceptionLevel=5:innerFormat=shortType,message,method}}",
-                    StdErr = settings.UseJsonOutput
-                };
-
-                loggingConfiguration.AddRule(settings.Verbose == true ? LogLevel.Trace : LogLevel.Info, LogLevel.Fatal, logConsoleTarget, "Twinpack.*");
-            }
-
-            loggingConfiguration.AddRule(LogLevel.Trace, LogLevel.Fatal, logFileTraceTarget, "Twinpack.*");
-            LogManager.Configuration = loggingConfiguration;
-
+            TwinpackCliLogging.ConfigureForCommand(settings);
             _logger = LogManager.GetCurrentClassLogger();
         }
 
@@ -110,6 +88,14 @@ namespace Twinpack.Commands
 
                 if(_config != null)
                     _config.FilePath = null;
+            }
+
+            if (_config != null)
+            {
+                if (!string.IsNullOrEmpty(_config.FilePath))
+                    _logger.Info("[config] using: {0}", LogPath.Display(_config.FilePath));
+                else if (!string.IsNullOrEmpty(_config.Solution))
+                    _logger.Info("[config] solution: {0}", LogPath.Display(_config.Solution));
             }
 
             if (_config == null && requiresConfig)

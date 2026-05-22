@@ -1,7 +1,9 @@
 using System.Collections.Generic;
-using Twinpack.Core;
 using System.ComponentModel;
+using System.Diagnostics;
 using Spectre.Console.Cli;
+using Twinpack;
+using Twinpack.Core;
 
 namespace Twinpack.Commands
 {
@@ -39,7 +41,10 @@ namespace Twinpack.Commands
 
             return RunWithAutomationTeardown(() =>
             {
-                _twinpack.RestorePackagesAsync(
+                var sw = Stopwatch.StartNew();
+                TwinpackRunLog.LogBanner(_logger, "restore", "Download and install packages from config");
+
+                var restored = _twinpack.RestorePackagesAsync(
                     new TwinpackService.RestorePackageOptions
                     {
                         SkipDownload = settings.SkipDownload,
@@ -48,6 +53,8 @@ namespace Twinpack.Commands
                         IncludeDependencies = true
                     }).GetAwaiter().GetResult();
 
+                _logger.Info("[restore] {0} package(s) affected", restored.Count);
+                TwinpackRunLog.LogPhaseDone(_logger, "restore", sw.Elapsed.TotalSeconds);
                 return 0;
             });
         }

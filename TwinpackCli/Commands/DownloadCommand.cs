@@ -2,7 +2,9 @@ using Spectre.Console.Cli;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
+using Twinpack;
 using Twinpack.Core;
 
 namespace Twinpack.Commands
@@ -48,19 +50,26 @@ namespace Twinpack.Commands
 
             return RunWithAutomationTeardown(() =>
             {
+                var sw = Stopwatch.StartNew();
+                TwinpackRunLog.LogBanner(_logger, "download", "Download packages to local cache");
+
                 var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations);
 
                 if (settings.Packages == null)
                     packages = _twinpack.RetrieveUsedPackagesAsync().GetAwaiter().GetResult().ToList();
 
-                _twinpack.DownloadPackagesAsync(packages,
+                _logger.Info("[download] {0} package(s) to process", packages.Count);
+
+                var downloaded = _twinpack.DownloadPackagesAsync(packages,
                     new TwinpackService.DownloadPackageOptions
                     {
-                        IncludeProvidedPackages = settings.IncludeProvidedPackages, 
-                        IncludeDependencies = true, 
+                        IncludeProvidedPackages = settings.IncludeProvidedPackages,
+                        IncludeDependencies = true,
                         ForceDownload = settings.ForceDownload,
                     }).GetAwaiter().GetResult();
 
+                _logger.Info("[download] {0} package(s) written to cache", downloaded.Count);
+                TwinpackRunLog.LogPhaseDone(_logger, "download", sw.Elapsed.TotalSeconds);
                 return 0;
             });
         }
