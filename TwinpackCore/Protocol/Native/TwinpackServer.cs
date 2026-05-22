@@ -161,8 +161,7 @@ namespace Twinpack.Protocol
                     throw new ProtocolException("Response could not be parsed");
                 }
 
-                var linkHeader = response.Headers.GetValues("Link");
-                if (linkHeader.Any())
+                if (response.Headers.TryGetValues("Link", out var linkHeader) && linkHeader.Any())
                 {
                     var h = Regex.Unescape(linkHeader.First());
 
@@ -183,6 +182,10 @@ namespace Twinpack.Protocol
 
                     if (pagination?.Next != null)
                         uri = new Uri(pagination.Next);
+                }
+                else
+                {
+                    hasNextPage = false;
                 }
 
                 if (results.Count() >= perPage)
@@ -275,6 +278,9 @@ namespace Twinpack.Protocol
                 var binaryStream = await response.Content.ReadAsStreamAsync();
                 await binaryStream.CopyToAsync(fileStream);
             }
+
+            if (new FileInfo(fileName).Length == 0)
+                throw new ProtocolException($"Download returned an empty file for {fileName}");
         }
 
         private async Task ThrowProtocolExceptionFromResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
