@@ -99,7 +99,7 @@ namespace Twinpack.Protocol
 
         public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
         {
-            _logger.Info($"Uploading {packageVersion.Name} {packageVersion.Version} (branch: {packageVersion.Branch}, target: {packageVersion.Target}, configuration: {packageVersion.Configuration})");
+            _logger.Info("[upload] {0} {1} (branch: {2}, target: {3}, configuration: {4})", packageVersion.Name, packageVersion.Version, packageVersion.Branch, packageVersion.Target, packageVersion.Configuration);
 
             var requestBodyJson = JsonSerializer.Serialize(packageVersion);
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri(Url + "/package-version"));
@@ -323,7 +323,7 @@ namespace Twinpack.Protocol
                 return false;
             }
 
-            _logger.Info($"Downloaded {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {packageVersion.BinaryDownloadUrl})");
+            _logger.Info("[download] {0} {1} (distributor: {2}) (from {3})", packageVersion.Title, packageVersion.Version, packageVersion.DistributorName, packageVersion.BinaryDownloadUrl);
             return true;
         }
 
@@ -344,7 +344,7 @@ namespace Twinpack.Protocol
             await WriteResponseContentToFileAsync(response, fileName, cancellationToken);
             VerifyDownloadedChecksum(packageVersion, fileName, checksumMode);
 
-            _logger.Info($"Downloaded {packageVersion.Title} {packageVersion.Version} (distributor: {packageVersion.DistributorName}) (from {UrlBase})");
+            _logger.Info("[download] {0} {1} (distributor: {2}) (from {3})", packageVersion.Title, packageVersion.Version, packageVersion.DistributorName, UrlBase);
         }
 
         public async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
@@ -470,7 +470,7 @@ namespace Twinpack.Protocol
 
         public async Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package, CancellationToken cancellationToken = default)
         {
-            _logger.Info("Updating package version");
+            _logger.Info("[upload] updating package version metadata");
             var requestBodyJson = JsonSerializer.Serialize(package);
 
             var request = new HttpRequestMessage(HttpMethod.Put, new Uri(Url + "/package-version"));
@@ -501,7 +501,7 @@ namespace Twinpack.Protocol
 
         public async Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package, CancellationToken cancellationToken = default)
         {
-            _logger.Info("Updating general package");
+            _logger.Info("[upload] updating general package metadata");
             var requestBodyJson = JsonSerializer.Serialize(package);
 
             var request = new HttpRequestMessage(HttpMethod.Put, new Uri(Url + "/package"));

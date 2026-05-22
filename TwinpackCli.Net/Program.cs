@@ -1,50 +1,32 @@
-﻿using NLog;
-using Twinpack.Commands;
 using Spectre.Console.Cli;
+using Twinpack.Commands;
 
 namespace Twinpack
 {
     class Program
     {
-        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         [STAThread]
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+#pragma warning disable CS1998
         static int Main(string[] args)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+#pragma warning restore CS1998
         {
-            _logger.Info("sadf");
-            var app = new CommandApp();
-            app.Configure(config =>
+            return CliProgram.Run(args, configure =>
             {
-                config.AddCommand<ConfigCommand>("config");
-                config.AddCommand<SearchCommand>("search");
-                config.AddCommand<ListCommand>("list");
-                config.AddCommand<DownloadCommand>("download");
-                config.AddCommand<AddCommand>("add");
-                config.AddCommand<RemoveCommand>("remove");
-                config.AddCommand<RestoreCommand>("restore");
-                config.AddCommand<UpdateCommand>("update");
-                config.AddCommand<SetVersionCommand>("set-version");
-                config.AddCommand<PullCommand>("pull");
-                config.AddCommand<PushCommand>("push");
-                config.Settings.StrictParsing = true;
-                config.Settings.ApplicationName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-                config.Settings.ApplicationVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                configure.AddCommand<ConfigCommand>("config");
+                configure.AddCommand<SearchCommand>("search");
+                configure.AddCommand<ListCommand>("list");
+                configure.AddCommand<DownloadCommand>("download");
+                configure.AddCommand<AddCommand>("add");
+                configure.AddCommand<RemoveCommand>("remove");
+                configure.AddCommand<RestoreCommand>("restore");
+                configure.AddCommand<UpdateCommand>("update");
+                configure.AddCommand<SetVersionCommand>("set-version");
+                configure.AddCommand<PullCommand>("pull");
+                configure.AddCommand<PushCommand>("push");
+                configure.Settings.StrictParsing = true;
+                configure.Settings.ApplicationName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                configure.Settings.ApplicationVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             });
-
-            try
-            {
-                return app.Run(args);
-            }
-            catch(Exception ex)
-            {
-                _logger.Error(ex.Message);
-                _logger.Error(ex);
-                return -1;
-            }
-            finally
-            {
-            }
         }
     }
 }

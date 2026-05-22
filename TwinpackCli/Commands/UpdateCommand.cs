@@ -1,6 +1,8 @@
-using Twinpack.Core;
 using System.ComponentModel;
+using System.Diagnostics;
 using Spectre.Console.Cli;
+using Twinpack;
+using Twinpack.Core;
 
 namespace Twinpack.Commands
 {
@@ -65,7 +67,10 @@ namespace Twinpack.Commands
 
             return RunWithAutomationTeardown(() =>
             {
-                _twinpack.UpdatePackagesAsync(
+                var sw = Stopwatch.StartNew();
+                TwinpackRunLog.LogBanner(_logger, "update", "Update package references");
+
+                var updated = _twinpack.UpdatePackagesAsync(
                     new TwinpackService.UpdatePackageFilters
                     {
                         ProjectName = settings.ProjectName,

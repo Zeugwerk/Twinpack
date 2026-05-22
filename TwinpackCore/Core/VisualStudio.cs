@@ -126,7 +126,7 @@ namespace Twinpack.Core
         {
             ThrowIfNotMainThread();
 
-            _logger.Info(new string('-', 3) + $" open-solution:{config.Solution}");
+            _logger.Info("[solution] opening: {0}", LogPath.Display(config.Solution));
 
             OutputTcVersion = tcversion;
             var remoteManagerTcVersion = FindTargetSystem(tcversion);

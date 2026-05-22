@@ -856,7 +856,7 @@ namespace Twinpack.Core
             List<Artifact> artifacts = new List<Artifact>();
             foreach (var plc in plcs)
             {
-                _logger.Info(new string('-', 3) + $" set-version:{plc.Name}");
+                _logger.Info("[set-version] {0}", plc.Name);
 
                 plc.Version = version;
 
@@ -881,7 +881,7 @@ namespace Twinpack.Core
 
             if (options?.PurgePackages == true && _automationInterface != null)
             {
-                _logger.Info("Purging packages");
+                _logger.Info("[set-version] purging packages");
                 await PurgePackagesAsync(_config, _automationInterface);
                 await ConfigUtils.ProcessModulesAsync(_config, moduleConfig => PurgePackagesAsync(moduleConfig, new AutomationInterfaceHeadless(moduleConfig)));
             }
@@ -912,7 +912,7 @@ namespace Twinpack.Core
                 var allNonFrameworkPackages = affectedPackages.Where(x => !frameworks.Contains(x.PackageVersion?.Framework)).ToList();
 
                 if (allFrameworkPackages.Any())
-                    _logger.Info("Synchronizing framework packages");
+                    _logger.Info("[set-version] synchronizing framework packages");
 
                 foreach (var artifact in artifacts)
                 {

@@ -2,6 +2,8 @@
 using Spectre.Console.Cli;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using Twinpack;
 using static Twinpack.Core.TwinpackService;
 
 namespace Twinpack.Commands
@@ -60,6 +62,9 @@ namespace Twinpack.Commands
 
             return RunWithAutomationTeardown(() =>
             {
+                var sw = Stopwatch.StartNew();
+                TwinpackRunLog.LogBanner(_logger, "set-version", "Set PLC package version to " + settings.Version);
+
                 try
                 {
                     _twinpack.SetPackageVersionAsync(settings.Version,
@@ -75,12 +80,15 @@ namespace Twinpack.Commands
                         }
                     ).GetAwaiter().GetResult();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.Trace(ex);
                     _logger.Error(ex.Message);
+                    TwinpackRunLog.LogPhaseDone(_logger, "set-version", sw.Elapsed.TotalSeconds, failed: true);
+                    return -1;
                 }
 
+                TwinpackRunLog.LogPhaseDone(_logger, "set-version", sw.Elapsed.TotalSeconds);
                 return 0;
             });
         }

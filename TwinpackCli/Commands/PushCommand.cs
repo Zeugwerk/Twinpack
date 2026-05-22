@@ -1,7 +1,9 @@
 using System;
-using Spectre.Console.Cli;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
+using Spectre.Console.Cli;
+using Twinpack;
 using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Protocol;
@@ -73,8 +75,12 @@ namespace Twinpack.Commands
                     + (settings.WithoutConfig ? $"No .library files in '{settings.LibraryPath}'" : ""));
             }
 
+            var sw = Stopwatch.StartNew();
+            TwinpackRunLog.LogBanner(_logger, "push", "Upload libraries to Twinpack server");
+
             foreach (var twinpackServer in PackagingServerRegistry.Servers.Where(x => x as TwinpackServer != null).Select(x => x as TwinpackServer))
-            {          
+            {
+                _logger.Info("[push] server: {0}", twinpackServer.UrlBase);
                 twinpackServer.PushAsync(
                     plcs,
                     settings.Configuration,
@@ -85,6 +91,7 @@ namespace Twinpack.Commands
                     settings.SkipDuplicate).GetAwaiter().GetResult();
             }
 
+            TwinpackRunLog.LogPhaseDone(_logger, "push", sw.Elapsed.TotalSeconds);
             return 0;
         }
     }

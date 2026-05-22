@@ -1,6 +1,8 @@
-using Twinpack.Core;
 using System.ComponentModel;
+using System.Diagnostics;
 using Spectre.Console.Cli;
+using Twinpack;
+using Twinpack.Core;
 
 namespace Twinpack.Commands
 {
@@ -57,8 +59,14 @@ namespace Twinpack.Commands
 
             return RunWithAutomationTeardown(() =>
             {
+                var sw = Stopwatch.StartNew();
+                TwinpackRunLog.LogBanner(_logger, "add", "Download and add package references");
+
                 var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations, settings.ProjectName, settings.PlcName);
-                _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload=settings.ForceDownload, IncludeDependencies= settings.AddDependencies }).GetAwaiter().GetResult();
+                var added = _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload = settings.ForceDownload, IncludeDependencies = settings.AddDependencies }).GetAwaiter().GetResult();
+
+                _logger.Info("[add] {0} package(s) added", added.Count);
+                TwinpackRunLog.LogPhaseDone(_logger, "add", sw.Elapsed.TotalSeconds);
                 return 0;
             });
         }

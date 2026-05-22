@@ -6,6 +6,8 @@
     <SharedGUID>{E7B2C9D1-4F8A-4E3B-9D2C-1A0B5E6F7A8B}</SharedGUID>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CliProgram.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TwinpackCliLogging.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\AbstractCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\AddCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\ConfigCommand.cs" />
@@ -18,5 +20,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Commands\SearchCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\SetVersionCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\UpdateCommand.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)NLog.dll.nlog">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

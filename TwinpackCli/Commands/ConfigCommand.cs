@@ -1,11 +1,13 @@
 using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Twinpack.Protocol;
-using Twinpack.Exceptions;
-using System.ComponentModel;
-using Spectre.Console.Cli;
 using System.Text.Json;
+using Spectre.Console.Cli;
+using Twinpack;
+using Twinpack.Exceptions;
+using Twinpack.Protocol;
 
 namespace Twinpack.Commands
 {
@@ -41,6 +43,9 @@ namespace Twinpack.Commands
         {
             SetUpLogger(settings);
 
+            var sw = Stopwatch.StartNew();
+            TwinpackRunLog.LogBanner(_logger, "config", "Configure package source repositories");
+
             try
             {
                 PackagingServerRegistry.InitializeAsync(useDefaults: false, login: false).GetAwaiter().GetResult();
@@ -49,7 +54,7 @@ namespace Twinpack.Commands
 
             if (settings.Purge)
             {
-                _logger.Info("Purging existing configuration");
+                _logger.Info("[config] purging existing configuration");
                 PackagingServerRegistry.PurgeAsync().GetAwaiter().GetResult();
             }
 
@@ -65,7 +70,7 @@ namespace Twinpack.Commands
                 var type = settings.Types?.ElementAtOrDefault(i) ?? null;
    
                 var uri = sources.ElementAt(i);
-                _logger.Info($"Adding package server {uri}");
+                _logger.Info("[config] adding server: {0}", uri);
                 var packageServer = PackagingServerRegistry.AddServerAsync(
                     type,
                     settings.Names?.ElementAtOrDefault(i) ?? uri,
@@ -84,7 +89,7 @@ namespace Twinpack.Commands
                 }
                 catch (LoginException)
                 {
-                    _logger.Warn($"Log in to '{packageServer.UrlBase}' failed");
+                    _logger.Warn("[config] log in failed: {0}", packageServer.UrlBase);
                 }
                 catch (Exception ex)
                 {
@@ -100,6 +105,7 @@ namespace Twinpack.Commands
                 Console.Write(JsonSerializer.Serialize(PackagingServerRegistry.Servers));
             }
 
+            TwinpackRunLog.LogPhaseDone(_logger, "config", sw.Elapsed.TotalSeconds);
             return 0;
         }
     }

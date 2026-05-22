@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<nlog xmlns="http://www.nlog-project.org/schemas/NLog.xsd"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.nlog-project.org/schemas/NLog.xsd NLog.xsd"
+      autoReload="true"
+      throwExceptions="true"
+      internalLogLevel="Trace" internalLogFile="${tempdir}/nlog-internal-twinpack.log">
+	<targets>
+		<target xsi:type="ColoredConsole" name="ConsoleLogger"
+			useDefaultRowHighlightingRules="false"
+			enableAnsiOutput="true"
+			detectOutputRedirected="true"
+			layout="${message} ${onexception:EXCEPTION OCCURRED\:${exception:format=type,message,method:maxInnerExceptionLevel=5:innerFormat=shortType,message,method}}">
+			<highlight-row condition="level == LogLevel.Fatal" foregroundColor="Red" backgroundColor="White" />
+			<highlight-row condition="level == LogLevel.Error" foregroundColor="Red" />
+			<highlight-row condition="level == LogLevel.Warn"  foregroundColor="Yellow" />
+			<highlight-row foregroundColor="Green"
+				condition="contains(message, 'SUCCESS') or contains(message, 'success') or contains(message, 'succeeded') or contains(message, 'passed') or contains(message, 'successfully') or regex-matches(message, '(?i)\b(ok|done)\b')" />
+			<highlight-row condition="level == LogLevel.Trace" foregroundColor="DarkGray" />
+			<highlight-row condition="level == LogLevel.Debug" foregroundColor="Gray" />
+		</target>
+	</targets>
+	<rules>
+		<logger name="Twinpack.*" minlevel="Info" writeTo="ConsoleLogger" enabled="true" />
+	</rules>
+</nlog>
