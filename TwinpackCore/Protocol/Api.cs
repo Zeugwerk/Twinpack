@@ -90,7 +90,7 @@ namespace Twinpack.Protocol.Api
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public bool HasRuntimeLicense { get { return RuntimeLicense > 0; } }
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public System.Windows.Media.Imaging.BitmapImage Icon { get; set; }
 #endif

@@ -9,7 +9,7 @@ using System.Xml.Linq;
 using NLog;
 using Twinpack.Models;
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
 using EnvDTE;
 using TCatSysManagerLib;
 #endif
@@ -156,7 +156,7 @@ namespace Twinpack.Configuration
 
             return config;
         }
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
         public static Task<Config> CreateFromSolutionAsync(EnvDTE.Solution solution, Protocol.IPackageServer packageServer, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter = null, CancellationToken cancellationToken = default)
         {
             return CreateFromSolutionAsync(solution, new List<Protocol.IPackageServer> { packageServer }, plcTypeFilter, cancellationToken);

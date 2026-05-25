@@ -11,7 +11,7 @@ using Twinpack.Models;
 using Twinpack.Protocol.Api;
 using Twinpack.Core;
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
 using EnvDTE;
 using TCatSysManagerLib;
 #endif
@@ -29,7 +29,7 @@ namespace Twinpack.Configuration
             return config.Projects.SelectMany(x => x.Plcs).FirstOrDefault(x => x.Name == plcName);
         }
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
         public static Task<ConfigPlcProject> CreateAsync(EnvDTE.Solution solution, EnvDTE.Project prj, Protocol.IPackageServer packageServer, CancellationToken cancellationToken = default)
         {
             return CreateAsync(solution, prj, new List<Protocol.IPackageServer> { packageServer }, cancellationToken);

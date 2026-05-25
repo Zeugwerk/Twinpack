@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Twinpack.Configuration;
 using Twinpack.Models;
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
 using Microsoft.Win32;
 #endif
 
@@ -23,7 +23,7 @@ namespace Twinpack.Core
             {
                 try
                 {
-#if NETSTANDARD2_1_OR_GREATER
+#if TWINPACK_HEADLESS
                     return null;
 #else
                     using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))

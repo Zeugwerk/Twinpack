@@ -1,4 +1,4 @@
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
 using EnvDTE;
 using EnvDTE80;
 using NLog;

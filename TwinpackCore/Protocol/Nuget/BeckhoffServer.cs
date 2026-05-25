@@ -45,7 +45,7 @@ namespace Twinpack.Protocol
                 preferredTarget, preferredConfiguration, preferredBranch, cancellationToken);
         }
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
         protected override async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
         {
             // Beckhoff Packages come without Icons
