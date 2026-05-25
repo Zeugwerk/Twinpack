@@ -138,7 +138,7 @@ namespace Twinpack.Protocol
                                 Downloads = x.DownloadCount.HasValue && x.DownloadCount.Value > 0 ? ((int?)x.DownloadCount.Value) : null,
                                 Created = x.Published?.ToString() ?? "Unknown",
                                 Modified = x.Published?.ToString() ?? "Unknown"
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
                                 ,Icon = await GetPackageIconAsync(x.Identity, cancellationToken),
 #endif
                             }));
@@ -152,7 +152,7 @@ namespace Twinpack.Protocol
 
         }
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
         protected virtual async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
         {
             try

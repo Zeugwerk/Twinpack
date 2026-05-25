@@ -53,7 +53,7 @@ namespace Twinpack.Protocol
 
             cancellationToken.ThrowIfCancellationRequested();
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !TWINPACK_HEADLESS
             // then login with prompting if it didn't work
             while (!_packageServer.LoggedIn)
             {

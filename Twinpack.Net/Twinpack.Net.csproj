@@ -1,24 +1,44 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFrameworks>net8.0;netstandard2.1</TargetFrameworks>
+    <RootNamespace>Twinpack</RootNamespace>
+    <AssemblyName>Twinpack.Net</AssemblyName>
     <Nullable>enable</Nullable>
+    <Authors>Zeugwerk</Authors>
+    <PackageId>Twinpack.Net</PackageId>
+    <Version>1.5.37</Version>
+    <Description>Twinpack core library for .NET (CLI and headless tools). Package manager for TwinCAT libraries without Visual Studio IDE dependencies.</Description>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- Exclude EnvDTE / WPF / TwinCAT IDE paths from TwinpackCore (see #if TWINPACK_HEADLESS). -->
+    <DefineConstants>$(DefineConstants);TWINPACK_HEADLESS</DefineConstants>
   </PropertyGroup>
 
   <Import Project="..\TwinpackCore\TwinpackCore.projitems" Label="Shared" />
 
   <ItemGroup>
+    <PackageReference Include="NuGet.Build.Tasks.Pack" Version="6.14.0">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AdysTech.CredentialManager" Version="2.6.0" />
-    <PackageReference Include="NLog" Version="5.3.4" />
+    <PackageReference Include="NLog" Version="5.2.2" />
     <PackageReference Include="NuGet.Packaging" Version="6.14.3" />
     <PackageReference Include="NuGet.Protocol" Version="6.14.3" />
     <PackageReference Include="System.IO.Packaging" Version="9.0.0" />
     <PackageReference Include="System.Management" Version="9.0.0" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
-    <PackageReference Include="System.Runtime" Version="4.3.1" />
     <PackageReference Include="System.Runtime.Caching" Version="9.0.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.6" />
     <PackageReference Include="WixToolset.Dtf.WindowsInstaller" Version="5.0.2" />
     <PackageReference Include="WixToolset.Dtf.WindowsInstaller.Package" Version="5.0.2" />
   </ItemGroup>
+
+  <!-- netstandard2.1: Json and legacy facades are not in-box. net8.0: use shared-framework System.Text.Json. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Runtime" Version="4.3.1" />
+    <PackageReference Include="System.Text.Json" Version="8.0.6" />
+  </ItemGroup>
+
 </Project>
