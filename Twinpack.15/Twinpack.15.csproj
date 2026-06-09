@@ -14,6 +14,7 @@
     <Deterministic>true</Deterministic>
     <Authors>Zeugwerk</Authors>
     <PackageId>Twinpack.15</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Description>Twinpack is a package manager for TwinCAT libraries. It enables the TwinCAT community to share their libraries and simplifies the continous integration of third-party components into TwinCAT projects</Description>
     <LangVersion>8</LangVersion>
   </PropertyGroup>
