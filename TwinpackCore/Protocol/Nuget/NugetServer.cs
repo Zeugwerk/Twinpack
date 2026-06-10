@@ -107,7 +107,7 @@ namespace Twinpack.Protocol
             PackageSearchResource resource = await _sourceRepository.GetResourceAsync<PackageSearchResource>(cancellationToken);
 
             return await resource.SearchAsync(
-                searchPrefix + search.Replace(" ", "_"),
+                searchPrefix + (search ?? "").Replace(" ", "_"),
                 new SearchFilter(includePrerelease: true),
                 skip: skip,
                 take: take,
