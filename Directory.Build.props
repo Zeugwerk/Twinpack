@@ -1,0 +1,15 @@
+<Project>
+  <!-- TcXaeShell / Beckhoff System.Memory 4.0.1.1: STJ 6.x + NuGet 6.11.x (6.13+ pulls STJ 8). -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Twinpack.15' Or '$(MSBuildProjectName)' == 'TwinpackVsix.15'">
+    <TwinpackNuGetBuildTasksPackVersion>6.11.1</TwinpackNuGetBuildTasksPackVersion>
+    <TwinpackNuGetConfigurationVersion>6.11.2</TwinpackNuGetConfigurationVersion>
+    <TwinpackNuGetPackagingVersion>6.11.2</TwinpackNuGetPackagingVersion>
+    <TwinpackNuGetProtocolVersion>6.11.2</TwinpackNuGetProtocolVersion>
+    <TwinpackSystemTextJsonVersion>6.0.10</TwinpackSystemTextJsonVersion>
+    <TwinpackSystemMemoryVersion>4.5.4</TwinpackSystemMemoryVersion>
+    <TwinpackMicrosoftBclAsyncInterfacesVersion>6.0.0</TwinpackMicrosoftBclAsyncInterfacesVersion>
+    <TwinpackSystemTextEncodingsWebVersion>6.0.0</TwinpackSystemTextEncodingsWebVersion>
+    <!-- NuGet.Protocol 6.11.x still depends on STJ 7.x vs pinned 6.0.10 -->
+    <NoWarn>$(NoWarn);NU1605</NoWarn>
+  </PropertyGroup>
+</Project>
