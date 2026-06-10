@@ -20,6 +20,50 @@ namespace Twinpack.Commands
             EnsureFileTarget();
         }
 
+        /// <summary>Apply console routing before <see cref="CliProgram"/> logs its startup banner.</summary>
+        public static void ConfigureFromArgs(string[] args) =>
+            ConfigureForCommand(ParseGlobalOptions(args));
+
+        static AbstractSettings ParseGlobalOptions(string[] args)
+        {
+            var settings = new AbstractSettings();
+            for (var i = 0; i < args.Length; i++)
+            {
+                var arg = args[i];
+                if (arg.Equals("--json", StringComparison.OrdinalIgnoreCase))
+                    settings.Json = true;
+                else if (arg.Equals("--quiet", StringComparison.OrdinalIgnoreCase))
+                    settings.Quiet = true;
+                else if (arg.Equals("--verbose", StringComparison.OrdinalIgnoreCase))
+                    settings.Verbose = true;
+                else if (arg.Equals("-o", StringComparison.OrdinalIgnoreCase)
+                      || arg.Equals("--output", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (i + 1 < args.Length)
+                        settings.Output = args[++i];
+                }
+                else if (TryReadPrefixedOptionValue(arg, "-o", "--output", out var value))
+                    settings.Output = value;
+            }
+
+            return settings;
+        }
+
+        static bool TryReadPrefixedOptionValue(string arg, string shortName, string longName, out string value)
+        {
+            foreach (var prefix in new[] { shortName + "=", longName + "=", shortName + ":", longName + ":" })
+            {
+                if (arg.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = arg.Substring(prefix.Length);
+                    return true;
+                }
+            }
+
+            value = null!;
+            return false;
+        }
+
         static void EnsureFileTarget()
         {
             var config = LogManager.Configuration ?? new LoggingConfiguration();
@@ -72,8 +116,15 @@ namespace Twinpack.Commands
                 config.AddTarget(consoleTarget);
             }
 
-            if (consoleTarget is ConsoleTarget console)
-                console.StdErr = settings.UseJsonOutput;
+            switch (consoleTarget)
+            {
+                case ColoredConsoleTarget colored:
+                    colored.StdErr = settings.UseJsonOutput;
+                    break;
+                case ConsoleTarget console:
+                    console.StdErr = settings.UseJsonOutput;
+                    break;
+            }
 
             if (!settings.Quiet)
             {

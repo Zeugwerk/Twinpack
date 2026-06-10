@@ -18,6 +18,7 @@ namespace Twinpack
         public static int Run(string[] args, Action<IConfigurator> configure)
         {
             TwinpackCliLogging.Initialize();
+            TwinpackCliLogging.ConfigureFromArgs(args);
 
             if (!IsHelp(args))
             {
