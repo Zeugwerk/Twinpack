@@ -113,6 +113,7 @@ namespace Twinpack.Commands
 
             if(window != null)
             {
+                (window as Dialogs.CatalogPane)?.Reset();
                 ((window as Dialogs.CatalogPane)?.Frame as IVsWindowFrame).Hide();
             }
             base.PackageReset();

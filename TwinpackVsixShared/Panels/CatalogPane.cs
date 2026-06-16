@@ -41,5 +41,10 @@ namespace Twinpack.Dialogs
             var plc = _context.VisualStudio.ActivePlc();
             Caption = $"Twinpack: {plc?.Name ?? "No Context"}";
         }
+
+        public void Reset()
+        {
+            _catalogWindow.Reset();
+        }
     }
 }
