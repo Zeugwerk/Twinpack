@@ -416,6 +416,12 @@ namespace Twinpack.Dialogs
             });
         }
 
+        public void Reset()
+        {
+            _isDialogLoaded = false;
+            _plcConfig = null;
+        }
+
         private async Task EnsureInitializedAsync(CancellationToken cancellationToken)
         {
             // Ensure that we are initialized
