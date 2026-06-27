@@ -56,6 +56,27 @@ class Twinpack {
     }
 
     /**
+     * Resolve a specific package version.
+     * @param {string} packageName Name of the package to resolve.
+     * @param {string} version Preferred version.
+     * @param {string} branch Preferred branch.
+     * @param {string} target Preferred target.
+     * @param {string} configuration Preferred configuration.
+     * @param {boolean} strict Fail if the resolved package does not exactly match every explicitly provided option.
+     * @returns {Promise<Object>} JSON object with the resolved package version, or rejects if not found.
+     */
+    resolve({ packageName, version = null, branch = null, target = null, configuration = null, strict = false } = {}) {
+        return this.runCommand('resolve', {
+            package: packageName,
+            version,
+            branch,
+            target,
+            configuration,
+            strict
+        });
+    }
+
+    /**
      * Configure package servers.
      * @param {Object} options Configuration options.
      * @returns {Promise<Object>} JSON object with the configuration result.

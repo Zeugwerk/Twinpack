@@ -14,6 +14,7 @@ namespace Twinpack
             {
                 configure.AddCommand<ConfigCommand>("config");
                 configure.AddCommand<SearchCommand>("search");
+                configure.AddCommand<ResolveCommand>("resolve");
                 configure.AddCommand<ListCommand>("list");
                 configure.AddCommand<DownloadCommand>("download");
                 configure.AddCommand<AddCommand>("add");

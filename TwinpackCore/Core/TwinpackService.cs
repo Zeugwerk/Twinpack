@@ -312,6 +312,11 @@ namespace Twinpack.Core
             }
         }
 
+        public async Task<PackageVersionGetResponse> ResolvePackageAsync(string name, ResolvePackageOptions options = default, CancellationToken cancellationToken = default)
+        {
+            return await _packageServers.ResolvePackageAsync(name, options, cancellationToken);
+        }
+
         public async Task<IEnumerable<PackageItem>> RetrieveAvailablePackagesAsync(string searchTerm = null, int? maxNewPackages = null, int batchSize = 5, CancellationToken token = default)
         {
             try
