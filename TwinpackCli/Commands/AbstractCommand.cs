@@ -77,7 +77,7 @@ namespace Twinpack.Commands
 
             _config = ConfigFactory.Load(rootPath);
 
-            if (_config == null)
+            if (_config == null && requiresConfig)
             {
                 _config = ConfigFactory.CreateFromSolutionFileAsync(
                     rootPath,
