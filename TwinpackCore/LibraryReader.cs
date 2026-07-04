@@ -37,21 +37,21 @@ namespace Twinpack
             LibraryCategories = 0x81,
         }
 
+        // LEB128 variable-length unsigned integer: 7 bits of payload per byte, high bit (0x80) marks
+        // that another byte follows. Used both for lengths and for string-table indices.
         static int ReadLength(BinaryReader reader)
         {
-            return ReadLength(reader, reader.ReadByte());
-        }
-
-        static int ReadLength(BinaryReader reader, byte currentByte)
-        {
-            int length = currentByte;
-            if (length > 128) // check if last bit is set
+            int result = 0, shift = 0;
+            while (true)
             {
-                currentByte = reader.ReadByte();
-                length = (length - 128) + currentByte * 128;
+                byte current = reader.ReadByte();
+                result |= (current & 0x7f) << shift;
+                if ((current & 0x80) == 0)
+                    break;
+                shift += 7;
             }
 
-            return length;
+            return result;
         }
 
         public static List<string> ReadStringTable(ZipArchive archive, bool includeHeaderByte, string dumpFilenamePrefix = null)
@@ -59,38 +59,30 @@ namespace Twinpack
             _logger.Trace("Reading string table");
 
             var stringTable = new List<string>();
-            var stream = archive.Entries.Where(x => x.Name == "__shared_data_storage_string_table__.auxiliary")?.FirstOrDefault().Open();
+            var entry = archive.Entries.Where(x => x.Name == "__shared_data_storage_string_table__.auxiliary")?.FirstOrDefault();
+            if (entry == null)
+                return stringTable;
 
-            var objects = 0;
-            var index = 0;
             try
             {
-                using (var reader = new BinaryReader(stream))
+                using (var reader = new BinaryReader(entry.Open()))
                 {
                     if (includeHeaderByte)
                         reader.ReadByte();
 
-                    objects = ReadLength(reader);
+                    // Layout: LEB128 entry count, then for each entry a LEB128 running index (ordered,
+                    // so ignored), a LEB128 byte length and that many UTF-8 bytes. The previous
+                    // implementation used single-byte indices and stopped after 128 entries, which
+                    // truncated/garbled every larger library.
+                    var objects = ReadLength(reader);
                     _logger.Trace($"String table contains {objects} strings");
-                    index = reader.ReadByte();
-                    while (index < objects - 1 && index < 128)
+                    for (var i = 0; i < objects; i++)
                     {
+                        ReadLength(reader);                     // running index (ignored)
                         var length = ReadLength(reader);
-                        byte[] data = reader.ReadBytes(length);
-                        string str = Encoding.UTF8.GetString(data);
-                        stringTable.Add(str);
-
-                        var nextIndex = reader.ReadByte();
-
-                        // we reached the last string?
-                        if (nextIndex - 1 != index)
-                        {
-                            break;
-                        }
-
-                        index = nextIndex;
+                        var data = reader.ReadBytes(length);
+                        stringTable.Add(Encoding.UTF8.GetString(data));
                     }
-
                 }
             }
             catch (Exception ex)
@@ -104,7 +96,7 @@ namespace Twinpack
             {
                 using (var streamWriter = new StreamWriter(dumpFilenamePrefix + ".stringtable"))
                 {
-                    index = 0;
+                    var index = 0;
                     foreach (var key in stringTable)
                     {
                         streamWriter.WriteLine($"{index.ToString("X")}: {key}");
@@ -182,10 +174,13 @@ namespace Twinpack
                 _logger.Trace($"Read section " + BitConverter.ToString(header));
 
                 using (var libcatWriter = dumpFilenamePrefix == null ? null : new StreamWriter(dumpFilenamePrefix + ".libcat"))
+                try
                 {
                     while (true)
                     {
-                        var nameIdx = reader.ReadByte();
+                        // Property/string references are LEB128 indices (they exceed a single byte on
+                        // any non-trivial library), not raw bytes as previously assumed.
+                        var nameIdx = ReadLength(reader);
                         var name = stringTable[nameIdx];
                         var type = reader.ReadByte();
 
@@ -205,11 +200,11 @@ namespace Twinpack
                             //    properties[name] = reader.ReadUInt16().ToString();
                             //    break;
                             case PropertyType.Text:
-                                properties[name] = stringTable[reader.ReadByte()];
+                                properties[name] = stringTable[ReadLength(reader)];
                                 break;
                             case PropertyType.Version:
                                 var parts = reader.ReadByte(); // not sure why this is needed from codesys
-                                properties[name] = stringTable[reader.ReadByte()];
+                                properties[name] = stringTable[ReadLength(reader)];
                                 break;
                             case PropertyType.LibraryCategories:
                                 var guid = stringTable[reader.ReadByte()]; // For LibraryCategories this is System.Guid
@@ -276,6 +271,14 @@ namespace Twinpack
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    // The library-category block layout is only partially understood; on libraries
+                    // where it desynchronises the stream we keep the properties parsed so far (which
+                    // always include the leading Company/DefaultNamespace) instead of failing hard.
+                    _logger.Trace(ex);
+                    _logger.Debug($"Stopped parsing binary project information early: {ex.Message}");
+                }
             }
 
             // not needed anymore
@@ -298,9 +301,7 @@ namespace Twinpack
             using (var memoryStream = new MemoryStream(libraryBinary))
             using (var zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
             {
-                var stringTable = 
-                    ReadStringTable(zipArchive, false, dumpFilenamePrefix).Concat(ReadStringTable(zipArchive, true, dumpFilenamePrefix)).ToList()
-                    ;
+                var stringTable = ReadStringTable(zipArchive, false, dumpFilenamePrefix);
 
                 var libraryInfo = ReadProjectInformationXml(zipArchive, stringTable, dumpFilenamePrefix) ??
                                   ReadProjectInformationBin(zipArchive, stringTable, dumpFilenamePrefix);
