@@ -23,8 +23,6 @@ namespace Twinpack
 {
     public class PackageContext
     {
-        public static string UrlLibraryRepository = "https://zeugwerk.dev/Zeugwerk_Twinpack/Repositories";
-
         public Solution Solution { get; set; }
         public DTE2 Dte { get; set; }
         public VisualStudio VisualStudio { get; set; }
