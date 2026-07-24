@@ -251,7 +251,6 @@ namespace Twinpack.Configuration
             plc.Packages = packages;
 
             plc.Bindings = plc.Bindings ?? new Dictionary<string, List<string>>();
-            plc.Repositories = plc.Repositories ?? new List<string>();
             plc.Patches = plc.Patches ?? new ConfigPatches();
             plc.References = new Dictionary<string, List<string>>();
             plc.References["*"] = new List<string>();

@@ -180,7 +180,6 @@ namespace Twinpack.Configuration
         {
             Version = "1.0.0.0";
             References = new Dictionary<string, List<string>>();
-            Repositories = new List<string>();
             Packages = new List<ConfigPlcPackage>();
             Bindings = new Dictionary<string, List<string>>();
             Patches = new ConfigPatches();
@@ -264,10 +263,6 @@ namespace Twinpack.Configuration
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("references")]
         public Dictionary<String, List<String>> References { get; set; }
-
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        [JsonPropertyName("repositories")]
-        public List<String> Repositories { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("bindings")]
