@@ -120,7 +120,6 @@ namespace Twinpack.Configuration
 
             return shallow.Count > 0 ? shallow : EnumerateFilesCaseInsensitive(root, extensionWithDot);
         }
-        }
 
         public static Config Load(string path = ".", bool validate=false)
         {

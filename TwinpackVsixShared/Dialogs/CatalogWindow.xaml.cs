@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualStudio.Threading;
+using Microsoft.VisualStudio.Threading;
 using NLog;
 using NuGet.Protocol.Plugins;
 using System;
