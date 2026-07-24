@@ -532,7 +532,9 @@ namespace Twinpack.Dialogs
                 _plcConfig = ConfigPlcProjectFactory.MapPlcConfigToPlcProj(config, plcName);
 
                 IsCreateConfigVisible = config.FilePath == null;
-                IsMigrateConfigVisible = config != null && _plcConfig?.Packages?.Any() == false && _plcConfig?.Frameworks?.Zeugwerk?.References?.Any() == true;
+                // The legacy Frameworks.Zeugwerk config node has been removed, so there is no longer an
+                // old frameworks-based config to migrate to packages/references.
+                IsMigrateConfigVisible = false;
                 IsConfigured = _plcConfig != null;
 
                 cancellationToken.ThrowIfCancellationRequested();

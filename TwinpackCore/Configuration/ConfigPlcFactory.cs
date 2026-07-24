@@ -75,42 +75,6 @@ namespace Twinpack.Configuration
             return CreateAsync(plcProjFilepath, new List<Protocol.IPackageServer> { packageServer }, cancellationToken);
         }
 
-        /// <summary>
-        /// The deprecated <c>Frameworks.Zeugwerk</c> configuration node is only required for
-        /// devkit/framework versions up to and including 1.5.x.x. For newer projects the framework
-        /// node is obsolete and Zeugwerk-distributor references are routed through <c>References</c>
-        /// instead. An unknown/wildcard version is treated as modern (returns false).
-        /// </summary>
-        internal static bool IsLegacyZeugwerkFrameworkVersion(string version)
-        {
-            if (string.IsNullOrEmpty(version) || version == "*")
-                return false;
-            if (!System.Version.TryParse(version, out var v))
-                return false;
-            return v.Major < 1 || (v.Major == 1 && v.Minor <= 5);
-        }
-
-        /// <summary>
-        /// The fixed set of Zeugwerk framework libraries the deprecated <c>Frameworks.Zeugwerk</c> node ever
-        /// tracked. The legacy routing (§ <see cref="IsLegacyZeugwerkFrameworkVersion"/>) applies ONLY to these
-        /// names — any other Zeugwerk-distributor reference (e.g. a solution-local <c>[ZComponents]</c> or a
-        /// standalone Zeugwerk library) is routed through <c>References</c> regardless of version.
-        /// </summary>
-        internal static readonly HashSet<string> ZeugwerkFrameworkLibraries = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "ZCore",
-            "ZPlatform",
-            "ZAux",
-            "ZEquipment",
-            "ZApplication",
-            "ZEquipmentBeckhoff",
-            "ZEquipmentPepperlFuchs",
-            "ZExperimental",
-        };
-
-        internal static bool IsZeugwerkFrameworkLibrary(string name)
-            => !string.IsNullOrEmpty(name) && ZeugwerkFrameworkLibraries.Contains(name);
-
         public static List<PlcLibrary> CollectReferencesFromPlcProj(string plcProjFilepath)
         {
             AddPlcLibraryOptions ParseOptions(XElement element, bool isLibraryReference)
@@ -238,24 +202,8 @@ namespace Twinpack.Configuration
             // collect references
             var references = CollectReferencesFromPlcProj(GuessFilePath(plc));
 
-            // The deprecated Frameworks.Zeugwerk bucket is only required for devkit/framework
-            // <= 1.5.x.x. Determine the project's Zeugwerk framework version from its concrete
-            // framework-library references (ZCore/ZAux/... — see ZeugwerkFrameworkLibraries; e.g. 1.6.0.25).
-            // Non-framework Zeugwerk refs and solution-local placeholders such as [ZComponents]=* carry no
-            // relevant concrete version, so they must not drive this decision.
-            var zeugwerkFrameworkVersion = references
-                .Where(x => IsZeugwerkFrameworkLibrary(x.Name))
-                .Select(x => x.Version)
-                .FirstOrDefault(v => !string.IsNullOrEmpty(v) && v != "*");
-            bool legacyZeugwerkFramework = IsLegacyZeugwerkFrameworkVersion(zeugwerkFrameworkVersion);
-
             var systemReferences = new List<PlcLibrary>();
             var packages = new List<ConfigPlcPackage>();
-
-            plc.Frameworks = plc.Frameworks ?? new ConfigFrameworks();
-            plc.Frameworks.Zeugwerk = plc.Frameworks.Zeugwerk ?? new ConfigFramework();
-            plc.Frameworks.Zeugwerk.References = new List<string>();
-            plc.Frameworks.Zeugwerk.Hide = false;
 
             // distingiush between system references (not available on a package server) and packages (references available on package server)
             foreach (var r in references)
@@ -293,31 +241,14 @@ namespace Twinpack.Configuration
                 }
 
 
-                // Legacy Frameworks.Zeugwerk routing applies ONLY to the fixed framework-library set
-                // (ZCore/ZPlatform/ZAux/ZEquipment/ZApplication/ZEquipmentBeckhoff/ZEquipmentPepperlFuchs/
-                // ZExperimental) AND only for devkit/framework <= 1.5.x.x. Any other reference — including a
-                // Zeugwerk-distributor library that is NOT one of those, and solution-local [ZComponents] —
-                // falls through to References.
-                if (IsZeugwerkFrameworkLibrary(r.Name) && legacyZeugwerkFramework) // backwards compatibility for devkit/framework <= 1.5.x.x
-                {
-                    plc.Frameworks.Zeugwerk.References.Add(r.Name);
-                    plc.Frameworks.Zeugwerk.Version = r.Version;
-                }
-                else if (!isPackage)
-                {
-                    // Modern framework (> 1.5.x.x) or a non-framework Zeugwerk/solution-local reference: the
-                    // obsolete Frameworks node is not used, so these fall through as system references and are
-                    // emitted via References with brackets/version preserved (e.g. [ZComponents]=*).
+                // Every reference that is not resolvable as a Twinpack package is emitted as a system
+                // reference through References, with brackets/version preserved (e.g. [ZComponents]=*).
+                // The obsolete Frameworks.Zeugwerk config node is no longer produced.
+                if (!isPackage)
                     systemReferences.Add(r);
-                }
             }
 
             plc.Packages = packages;
-            plc.Frameworks.Zeugwerk.References = plc.Frameworks.Zeugwerk.References.Distinct().ToList();
-
-            if (plc.Frameworks.Zeugwerk.Repositories.Count == 0)
-                plc.Frameworks.Zeugwerk.Repositories = new List<string> { ConfigFactory.DefaultRepository };
-
 
             plc.Bindings = plc.Bindings ?? new Dictionary<string, List<string>>();
             plc.Repositories = plc.Repositories ?? new List<string>();

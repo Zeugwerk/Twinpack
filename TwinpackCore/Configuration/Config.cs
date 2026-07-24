@@ -179,7 +179,6 @@ namespace Twinpack.Configuration
         public ConfigPlcProject()
         {
             Version = "1.0.0.0";
-            Frameworks = new ConfigFrameworks();
             References = new Dictionary<string, List<string>>();
             Repositories = new List<string>();
             Packages = new List<ConfigPlcPackage>();
@@ -257,10 +256,6 @@ namespace Twinpack.Configuration
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         [JsonPropertyName("type")]
         public string Type { get; set; }
-
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        [JsonPropertyName("frameworks")]
-        public ConfigFrameworks Frameworks { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("packages")]
@@ -406,53 +401,4 @@ namespace Twinpack.Configuration
         }
     }
 
-    public class ConfigFrameworks : Dictionary<string, ConfigFramework>
-    {
-        public ConfigFrameworks() : base() { }
-        public ConfigFrameworks(IDictionary<string, ConfigFramework> frameworks) : base(frameworks) { }
-        public ConfigFramework Zeugwerk
-        {
-            get
-            {
-                if (ContainsKey("zeugwerk"))
-                    return this["zeugwerk"];
-
-                var Zeugwerk = new ConfigFramework();
-                Zeugwerk.Repositories = new List<String> { ConfigFactory.DefaultRepository };
-
-                return null;
-            }
-            set
-            {
-                this["zeugwerk"] = value;
-            }
-        }
-    }
-
-    public class ConfigFramework
-    {
-        public ConfigFramework()
-        {
-            Version = "";
-            References = new List<string>();
-            Repositories = new List<string>();
-            Hide = false;
-            QualifiedOnly = true;
-        }
-
-        [JsonPropertyName("version")]
-        public String Version { get; set; }
-
-        [JsonPropertyName("references")]
-        public List<String> References { get; set; }
-
-        [JsonPropertyName("repositories")]
-        public List<String> Repositories { get; set; }
-
-        [JsonPropertyName("hide")]
-        public bool Hide { get; set; }
-
-        [JsonPropertyName("qualified-only")]
-        public bool QualifiedOnly { get; set; }
-    }
 }
