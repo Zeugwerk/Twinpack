@@ -41,20 +41,85 @@ namespace Twinpack.Configuration
             return Path.GetFullPath(Path.GetDirectoryName(Path.Combine(basePath, ".Zeugwerk")) ?? basePath);
         }
 
+        /// <summary>Directory names (case-insensitive) that never contain a TwinCAT
+        /// <c>.sln</c>/<c>.tsproj</c>/<c>.plcproj</c> but can hold thousands of files each — pruning them
+        /// keeps solution discovery proportional to the project tree instead of the whole checkout. On a
+        /// real solution the blind <c>AllDirectories</c> walk descended into the NuGet <c>Packages</c>
+        /// restore, the TwinCAT HMI project's <c>node_modules</c>/web assets, <c>.git</c>, <c>bin</c>/
+        /// <c>obj</c> and <c>_Boot</c> — ~7,800 files (~11 s cold) to find one <c>.sln</c>.</summary>
+        private static readonly HashSet<string> PrunedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".git", ".svn", ".hg",
+            ".vs", ".vscode", ".idea",
+            "bin", "obj",
+            "node_modules",
+            "packages",
+            "_Boot", "_CompileInfo",
+        };
+
         /// <summary>
         /// Like <see cref="Directory.EnumerateFiles(string, string, SearchOption)"/> but
         /// matches by extension case-insensitively on every OS. Required because the wildcard
         /// matcher in <see cref="Directory.GetFiles"/> is case-sensitive on Linux/macOS and
         /// case-insensitive on Windows; we want consistent Windows-style behaviour everywhere.
+        /// Prunes <see cref="PrunedDirectories"/> subtrees so discovery scales with the project tree,
+        /// not the whole checkout.
         /// </summary>
         private static IEnumerable<string> EnumerateFilesCaseInsensitive(string root, string extensionWithDot)
         {
             if (!Directory.Exists(root))
+                yield break;
+
+            var stack = new Stack<string>();
+            stack.Push(root);
+
+            while (stack.Count > 0)
+            {
+                var dir = stack.Pop();
+
+                string[] files;
+                try { files = Directory.GetFiles(dir); }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) { continue; }
+
+                foreach (var file in files)
+                    if (file.EndsWith(extensionWithDot, StringComparison.OrdinalIgnoreCase))
+                        yield return file;
+
+                string[] subdirs;
+                try { subdirs = Directory.GetDirectories(dir); }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) { continue; }
+
+                foreach (var sub in subdirs)
+                    if (!PrunedDirectories.Contains(Path.GetFileName(sub)))
+                        stack.Push(sub);
+            }
+        }
+
+        /// <summary>Extension lookup that avoids walking the tree in the common case: checks the search
+        /// root and its <see cref="DefaultLocations"/> (<c>.Zeugwerk</c>, root) first — where a
+        /// <c>.sln</c> normally lives — and only falls back to the pruned recursive
+        /// <see cref="EnumerateFilesCaseInsensitive"/> when nothing is found there. Pointing Twinpack at a
+        /// solution directory (the usual case) therefore never descends into the checkout at all; the
+        /// recursion is reserved for the uncommon "solution nested in a subfolder" layout.</summary>
+        private static IEnumerable<string> EnumerateFilesShallowFirst(string root, string extensionWithDot)
+        {
+            if (!Directory.Exists(root))
                 return Enumerable.Empty<string>();
 
-            return Directory
-                .EnumerateFiles(root, "*", SearchOption.AllDirectories)
-                .Where(p => p.EndsWith(extensionWithDot, StringComparison.OrdinalIgnoreCase));
+            var shallow = DefaultLocations
+                .Select(loc => string.IsNullOrEmpty(loc) ? root : Path.Combine(root, loc))
+                .Where(Directory.Exists)
+                .SelectMany(dir =>
+                {
+                    try { return Directory.GetFiles(dir); }
+                    catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+                    { return Array.Empty<string>(); }
+                })
+                .Where(p => p.EndsWith(extensionWithDot, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            return shallow.Count > 0 ? shallow : EnumerateFilesCaseInsensitive(root, extensionWithDot);
+        }
         }
 
         public static Config Load(string path = ".", bool validate=false)
@@ -217,7 +282,10 @@ namespace Twinpack.Configuration
                 throw new DirectoryNotFoundException($"Could not find a part of the path '{path}'.");
 
             Config config = new Config();
-            var solutions = EnumerateFilesCaseInsensitive(path, ".sln").ToArray();
+            // Root-first: the .sln normally sits at the directory you point Twinpack at, so this skips the
+            // recursive tree walk entirely in the common case (falls back to a pruned recursive search only
+            // when no .sln is at the root / .Zeugwerk).
+            var solutions = EnumerateFilesShallowFirst(path, ".sln").ToArray();
 
             if (solutions.Count() > 1)
                 _logger.Warn("[config] multiple solutions in cwd, using first only");
