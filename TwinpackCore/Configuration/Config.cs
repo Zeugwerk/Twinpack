@@ -71,20 +71,10 @@ namespace Twinpack.Configuration
         [JsonPropertyName("plcs")]
         public List<ConfigPlcProject> Plcs { get; set; }
 
-        /// <summary>HMI publish profile name from Properties/tchmipublish.config.json.</summary>
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        [JsonPropertyName("publish-profile")]
-        public string PublishProfile { get; set; }
-
         /// <summary>TF2000 runtime service instance folder name under ProgramData\...\service\.</summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("server-instance")]
         public string ServerInstance { get; set; }
-
-        /// <summary>Optional plaintext password for the publish profile; otherwise profile encrypted password is used.</summary>
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        [JsonPropertyName("server-password")]
-        public string ServerPassword { get; set; }
     }
 
     public class ConfigPlcPackage
