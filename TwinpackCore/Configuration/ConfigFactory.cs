@@ -77,8 +77,9 @@ namespace Twinpack.Configuration
                     {
                         config = JsonSerializer.Deserialize<Config>(File.ReadAllText(configPath), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                        if ((string.IsNullOrEmpty(config.Solution) && config.Projects == null && config.Projects.Count == 0) &&
-                            (config.Modules == null && config.Modules.Count == 0))
+                        var noProjects = config.Projects == null || config.Projects.Count == 0;
+                        var noModules = config.Modules == null || config.Modules.Count == 0;
+                        if (string.IsNullOrEmpty(config.Solution) && noProjects && noModules)
                         {
                             _logger.Warn("[config] failed to parse: {0}", LogPath.Display(configPath));
                             continue;
@@ -88,7 +89,7 @@ namespace Twinpack.Configuration
                     {
                         config = null;
                         _logger.Trace(ex);
-                        _logger.Warn("[config] failed to parse: {0}", LogPath.Display(configPath));
+                        _logger.Warn("[config] failed to parse: {0} ({1})", LogPath.Display(configPath), ex.Message);
                         continue;
                     }
 
@@ -97,27 +98,31 @@ namespace Twinpack.Configuration
                     config.FilePath = Path.GetFullPath(configPath);
 
                     var solution = new Models.Solution();
-                    try
+                    // Modules-only roots have no solution/projects — skip .sln resolution entirely.
+                    if (!string.IsNullOrWhiteSpace(config.Solution))
                     {
-                        solution.Load(PathUtil.Combine(path, config.Solution ?? ""));
-                    }
-                    catch(FileNotFoundException ex)
-                    {
-                        // Surfacing this is important on case-sensitive file systems: a missing
-                        // .sln means the only remaining lookup is GuessFilePath, which is
-                        // strictly weaker than parsing the .sln/.tsproj layout.
-                        _logger.Warn("[config] solution {0} from {1} could not be loaded ({2}); falling back to filesystem scan", LogPath.Display(config.Solution), LogPath.Display(configPath), ex.Message);
-                        if (validate)
-                            throw;
+                        try
+                        {
+                            solution.Load(PathUtil.Combine(path, config.Solution));
+                        }
+                        catch (FileNotFoundException ex)
+                        {
+                            // Surfacing this is important on case-sensitive file systems: a missing
+                            // .sln means the only remaining lookup is GuessFilePath, which is
+                            // strictly weaker than parsing the .sln/.tsproj layout.
+                            _logger.Warn("[config] solution {0} from {1} could not be loaded ({2}); falling back to filesystem scan", LogPath.Display(config.Solution), LogPath.Display(configPath), ex.Message);
+                            if (validate)
+                                throw;
+                        }
                     }
 
-                    foreach (var project in config.Projects)
+                    foreach (var project in config.Projects ?? Enumerable.Empty<ConfigProject>())
                     {
-                        foreach (var plc in project.Plcs)
+                        foreach (var plc in project.Plcs ?? Enumerable.Empty<ConfigPlcProject>())
                         {
                             // Compare names case-insensitively so a config.json or .sln authored
                             // on Windows still matches on a case-sensitive file system.
-                            var plcpath = solution.Projects
+                            var plcpath = solution.Projects?
                                 .FirstOrDefault(x => string.Equals(x.Name, project.Name, StringComparison.OrdinalIgnoreCase))?
                                 .Plcs
                                 .FirstOrDefault(x => string.Equals(x.Name, plc.Name, StringComparison.OrdinalIgnoreCase))?
