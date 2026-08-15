@@ -11,11 +11,11 @@ Twinpack is free. It is developed by [Zeugwerk](https://zeugwerk.at) and is the 
 
 Twinpack currently supports the following package sources
 
-1. [Twinpack server](https://doc.zeugwerk.dev/twinpack/twinpack_quickstart.html#share-a-package-): Zeugwerk hosts open source libraries for and from everyone who is interested for free. Additionally this server type supports special features for Zeugwerk customers like feature branches.
-1. [Nuget Server](https://doc.zeugwerk.dev/twinpack/twinpack_nuget_package.html): Everyone can host his own NuGet server and create packages to consume them from the on premises server.
-1. [Beckhoff Library Repository](https://doc.zeugwerk.dev/twinpack/twinpack_beckhoffrepository.html): Since TwinCAT 4026, Beckhoff provides a public repository for their libraries. Twinpack can connect this repositories and integrate them seamlessly into the IDE.
+1. [Twinpack server](https://doc.zeugwerk.dev/development-tools/twinpack/twinpack_quickstart.html#share-a-package-): Zeugwerk hosts open source libraries for and from everyone who is interested for free. Additionally this server type supports special features for Zeugwerk customers like feature branches.
+1. [Nuget Server](https://doc.zeugwerk.dev/development-tools/twinpack/twinpack_nuget_package.html): Everyone can host his own NuGet server and create packages to consume them from the on premises server.
+1. [Beckhoff Library Repository](https://doc.zeugwerk.dev/development-tools/twinpack/twinpack_beckhoffrepository.html): Since TwinCAT 4026, Beckhoff provides a public repository for their libraries. Twinpack can connect this repositories and integrate them seamlessly into the IDE.
 
-The full project documentation, including a quickstart guide for **Twinpack**, is available at the following at [Project Documentation](https://doc.zeugwerk.dev/twinpack/twinpack_quickstart.html)
+The full project documentation, including a quickstart guide for **Twinpack**, is available at the following at [Project Documentation](https://doc.zeugwerk.dev/development-tools/twinpack/overview.html)
 
 Visit the link to get detailed instructions on setting up and using the project.
 
