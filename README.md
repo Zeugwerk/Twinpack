@@ -22,7 +22,7 @@ Visit the link to get detailed instructions on setting up and using the project.
 ## Quicklinks
 - [Download latest Release](https://github.com/Zeugwerk/Twinpack/releases/latest)
 - [Twinpack-Registry](https://github.com/Zeugwerk/Twinpack-Registry) for automatic publishing of your library on Twinpack by "pulling" them from your GitHub releases
-- [Registration](https://zeugwerk.dev/wp-login.php?action=register), only needed to "push" package, i.e. if you want to publish packages manually or with CI
+- [Registration](https://zeugwerk.dev/wp-login.php?action=register), only needed to "push" package to the Twinpack Server hosted by Zeugwerk, i.e. if you want to publish packages manually or with CI to this server so the community can use your package.
 - [Contact us](mailto:info@zeugwerk.at)
 
 ## Zeugwerk Ecosystem
