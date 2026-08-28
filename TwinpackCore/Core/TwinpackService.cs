@@ -89,6 +89,12 @@ namespace Twinpack.Core
             public string? PreferredConfiguration;
         }
 
+        public class EnsureConfigFileResult
+        {
+            public string Path;
+            public bool Created;
+        }
+
         public class Artifact
         {
             public Artifact(Config config, ConfigPlcProject plc)
@@ -198,6 +204,29 @@ namespace Twinpack.Core
             _config = config;
             _projectName = projectName;
             _plcName = plcName;
+        }
+
+        /// <summary>
+        /// Ensures '.Zeugwerk/config.json' exists for the solution/plcproj(s) found under <paramref name="rootPath"/>,
+        /// without ever touching an already-existing file. Shared by 'twinpack init' and 'zkmake init' so both
+        /// tools agree on what "just create the config if it's missing" means.
+        /// </summary>
+        public static async Task<EnsureConfigFileResult> EnsureConfigFileAsync(string rootPath, IEnumerable<IPackageServer> packageServers, CancellationToken cancellationToken = default)
+        {
+            var existing = ConfigFactory.Load(rootPath);
+            if (existing != null)
+            {
+                _logger.Info("[init] '{0}' already exists, leaving it unchanged", LogPath.Display(existing.FilePath));
+                return new EnsureConfigFileResult { Path = existing.FilePath, Created = false };
+            }
+
+            var config = await ConfigFactory.CreateFromSolutionFileAsync(rootPath, continueWithoutSolution: true, packageServers: packageServers, cancellationToken: cancellationToken);
+            if (config == null)
+                throw new FileNotFoundException("No .sln, .tsproj or .plcproj found in the current directory - could not create '.Zeugwerk/config.json'.");
+
+            var path = ConfigFactory.Save(config);
+            _logger.Info("[init] created '{0}'", LogPath.Display(path));
+            return new EnsureConfigFileResult { Path = path, Created = true };
         }
 
         public IEnumerable<IPackageServer> PackageServers { get => _packageServers; }

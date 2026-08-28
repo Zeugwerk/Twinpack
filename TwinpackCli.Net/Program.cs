@@ -13,6 +13,7 @@ namespace Twinpack
             return CliProgram.Run(args, configure =>
             {
                 configure.AddCommand<ConfigCommand>("config");
+                configure.AddCommand<InitCommand>("init");
                 configure.AddCommand<SearchCommand>("search");
                 configure.AddCommand<ResolveCommand>("resolve");
                 configure.AddCommand<ListCommand>("list");

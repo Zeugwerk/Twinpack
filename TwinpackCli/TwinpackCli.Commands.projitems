@@ -12,6 +12,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Commands\AddCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\ConfigCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\DownloadCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\InitCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\ListCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\PullCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\PushCommand.cs" />
