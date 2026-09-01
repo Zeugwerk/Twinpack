@@ -13,7 +13,9 @@ namespace Twinpack.Core
         public bool IsSupported(string tcversion);
         public string DefaultLibraryCachePath { get; }
         public string TwincatPath { get; }
+        public IReadOnlyList<string> TwincatPaths { get; }
         public string LicensesPath { get; }
+        public IReadOnlyList<string> LicensesPaths { get; }
         public string BootFolderPath { get; }
         public string SolutionPath { get; }
         public Task<string> ResolveEffectiveVersionAsync(string projectName, string plcName, string placeholderName);
