@@ -240,6 +240,12 @@ namespace Twinpack.Core
                 return;
 
             var knownLicenseIds = KnownRuntimeLicenseIds(automationInterface);
+            var licenseFolders = ResolveLicenseFolders(automationInterface);
+            if (!licenseFolders.Any())
+            {
+                _logger.Warn("[license] no TwinCAT CustomConfig\\Licenses folder could be resolved; runtime license will not be copied");
+                return;
+            }
 
             foreach (var package in packages)
             {
@@ -258,20 +264,36 @@ namespace Twinpack.Core
                         }
                         else
                         {
-                            _logger.Info("[license] copying tmc licenseId={0} to {1}", licenseId, LogPath.Display(automationInterface.LicensesPath));
-
                             using (var md5 = MD5.Create())
                             {
-                                if (!Directory.Exists(automationInterface.LicensesPath))
-                                    Directory.CreateDirectory(automationInterface.LicensesPath);
+                                var fileName = BitConverter.ToString(
+                                    md5.ComputeHash(Encoding.ASCII.GetBytes($"{package.PackageVersion.DistributorName}{package.PackageVersion.Name}"))).Replace("-", "") + ".tmc";
 
-                                File.WriteAllText(Path.Combine(automationInterface.LicensesPath, BitConverter.ToString(
-                                    md5.ComputeHash(Encoding.ASCII.GetBytes($"{package.PackageVersion.DistributorName}{package.PackageVersion.Name}"))).Replace("-", "") + ".tmc"),
-                                                  package.PackageVersion.LicenseTmcText);
+                                var copied = 0;
+                                foreach (var licenseFolder in licenseFolders)
+                                {
+                                    try
+                                    {
+                                        _logger.Info("[license] copying tmc licenseId={0} to {1}", licenseId, LogPath.Display(licenseFolder));
 
+                                        if (!Directory.Exists(licenseFolder))
+                                            Directory.CreateDirectory(licenseFolder);
+
+                                        File.WriteAllText(Path.Combine(licenseFolder, fileName), package.PackageVersion.LicenseTmcText);
+                                        copied++;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        _logger.Warn("[license] could not copy tmc licenseId={0} to {1}: {2}", licenseId, LogPath.Display(licenseFolder), ex.Message);
+                                        _logger.Trace(ex);
+                                    }
+                                }
+
+                                if (copied == 0)
+                                    _logger.Error("[license] failed to copy tmc licenseId={0} to any TwinCAT CustomConfig\\Licenses folder", licenseId);
+                                else
+                                    knownLicenseIds.Add(licenseId);
                             }
-
-                            knownLicenseIds.Add(licenseId);
                         }
                     }
                     catch (Exception ex)
@@ -693,6 +715,11 @@ namespace Twinpack.Core
             return addedPackages;
         }
 
+        static IReadOnlyList<string> ResolveLicenseFolders(IAutomationInterface automationInterface)
+        {
+            return TwincatInstall.ResolveLicenseFolders(automationInterface?.LicensesPath, automationInterface?.LicensesPaths);
+        }
+
         public HashSet<string> KnownRuntimeLicenseIds()
         {
             return KnownRuntimeLicenseIds(_automationInterface);
@@ -705,23 +732,26 @@ namespace Twinpack.Core
             if (automationInterface == null)
                 return result;
 
-            if (!Directory.Exists(automationInterface.LicensesPath))
-                return result;
-
-            foreach (var fileName in Directory.GetFiles(automationInterface.LicensesPath, "*.tmc", SearchOption.AllDirectories))
+            foreach (var licenseFolder in ResolveLicenseFolders(automationInterface))
             {
-                try
-                {
-                    var licenseId = ParseRuntimeLicenseIdFromTmc(File.ReadAllText(fileName));
+                if (!Directory.Exists(licenseFolder))
+                    continue;
 
-                    if (licenseId == null)
-                        throw new InvalidDataException($"The file {fileName} is not a valid license file!");
-
-                    result.Add(licenseId);
-                }
-                catch (Exception ex)
+                foreach (var fileName in Directory.GetFiles(licenseFolder, "*.tmc", SearchOption.AllDirectories))
                 {
-                    _logger.Trace(ex);
+                    try
+                    {
+                        var licenseId = ParseRuntimeLicenseIdFromTmc(File.ReadAllText(fileName));
+
+                        if (licenseId == null)
+                            throw new InvalidDataException($"The file {fileName} is not a valid license file!");
+
+                        result.Add(licenseId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Trace(ex);
+                    }
                 }
             }
 

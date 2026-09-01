@@ -7,43 +7,17 @@ using System.Threading.Tasks;
 using Twinpack.Configuration;
 using Twinpack.Models;
 
-#if !TWINPACK_HEADLESS
-using Microsoft.Win32;
-#endif
-
 namespace Twinpack.Core
 {
     public abstract class AutomationInterface : IAutomationInterface
     {
         public string DefaultLibraryCachePath { get { return Path.Combine(Directory.GetCurrentDirectory(), ".Zeugwerk", "libraries"); } }
 
-        public string? TwincatPath
-        {
-            get
-            {
-                try
-                {
-#if TWINPACK_HEADLESS
-                    return null;
-#else
-                    using (RegistryKey key = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node\\Beckhoff\\TwinCAT3\\3.1"))
-                    {
-                        var bootDir = key?.GetValue("BootDir") as string;
-
-                        // need to do GetParent twice because of the trailing \
-                        return bootDir == null ? null : new DirectoryInfo(bootDir)?.Parent?.FullName;
-                    }
-#endif
-                }
-                catch
-                {
-                    return null;
-                }
-            }
-        }
-
-        public string LicensesPath { get => TwincatPath + @"\CustomConfig\Licenses"; }
-        public string BootFolderPath { get => TwincatPath + @"\Boot"; }
+        public string TwincatPath { get => TwincatPaths.FirstOrDefault(); }
+        public IReadOnlyList<string> TwincatPaths { get => TwincatInstall.DiscoverRoots(); }
+        public string LicensesPath { get => LicensesPaths.FirstOrDefault(); }
+        public IReadOnlyList<string> LicensesPaths { get => TwincatInstall.DiscoverLicenseFolders(); }
+        public string BootFolderPath { get => TwincatPath == null ? null : Path.Combine(TwincatPath, "Boot"); }
 
         public bool IsSupported(string tcversion)
         {

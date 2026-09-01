@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
@@ -12,6 +12,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigPlcFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\TwincatInstall.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterfaceHeadless.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\AutomationInterface4024.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\CancelableTask.cs" />
