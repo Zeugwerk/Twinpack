@@ -93,6 +93,79 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task CreateFromSolutionFile_SolutionPath_LoadsNamedSolutionAsync()
+        {
+            var config = await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution\TestSolution.sln");
+
+            Assert.AreEqual(Path.GetFullPath(@"assets\TestSolution"), config.WorkingDirectory);
+            Assert.AreEqual(@"TestSolution.sln", config.Solution);
+            Assert.AreEqual(Path.Combine(Path.GetFullPath(@"assets\TestSolution"), ".Zeugwerk", "config.json"), config.FilePath);
+            Assert.AreEqual(2, config.Projects.Count);
+        }
+
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task CreateFromSolution_SolutionFileNotFound_Async(bool continueWithoutSolution)
+        {
+            // A named .sln that is not on disk must not fall through to directory discovery — that would
+            // quietly load whatever other solution happens to sit next to it.
+            await Assert.ThrowsExceptionAsync<FileNotFoundException>(async () => await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution\NoSuch.sln", continueWithoutSolution));
+        }
+
+        [TestMethod]
+        public async Task CreateFromSolutionFile_TwoSolutionsInOneFolder_EachLoadsItsOwnProjectsAsync()
+        {
+            EnsureMultiSolutionFixture();
+
+            var first = await ConfigFactory.CreateFromSolutionFileAsync(Path.Combine(MultiSolutionDir, "First.sln"));
+            var second = await ConfigFactory.CreateFromSolutionFileAsync(Path.Combine(MultiSolutionDir, "Second.sln"));
+
+            Assert.AreEqual(@"First.sln", first.Solution);
+            Assert.AreEqual(@"TestProject", first.Projects.Single().Name);
+            Assert.AreEqual(@"Plc1", first.Projects.Single().Plcs.Single().Name);
+
+            Assert.AreEqual(@"Second.sln", second.Solution);
+            Assert.AreEqual(@"TestProject2", second.Projects.Single().Name);
+            Assert.AreEqual(@"PlcLibrary1", second.Projects.Single().Plcs.Single().Name);
+        }
+
+        [TestMethod]
+        public async Task CreateFromSolutionFile_TwoSolutionsInOneFolder_DirectoryStillPicksOneAsync()
+        {
+            EnsureMultiSolutionFixture();
+
+            var config = await ConfigFactory.CreateFromSolutionFileAsync(MultiSolutionDir);
+
+            // Directory input is unchanged: still first-only, never a merge of both solutions. Which of the
+            // two wins is filesystem enumeration order, so only the count is asserted.
+            CollectionAssert.Contains(new[] { "First.sln", "Second.sln" }, config.Solution);
+            Assert.AreEqual(1, config.Projects.Count);
+        }
+
+        private static readonly string MultiSolutionDir = Path.Combine("assets", "MultiSolution");
+
+        /// <summary>
+        /// Two solutions side by side in one folder — the shape that first-only discovery cannot express.
+        /// Written at test time (like <c>NoSolutionInside</c>) so the fixture needs no csproj copy plumbing;
+        /// it points at the TestSolution projects, which are already copied to the output directory.
+        /// </summary>
+        private static void EnsureMultiSolutionFixture()
+        {
+            Directory.CreateDirectory(MultiSolutionDir);
+            File.WriteAllText(Path.Combine(MultiSolutionDir, "First.sln"),
+                SolutionText("TestProject", @"..\TestSolution\TestProject\TestProject.tsproj"));
+            File.WriteAllText(Path.Combine(MultiSolutionDir, "Second.sln"),
+                SolutionText("TestProject2", @"..\TestSolution\TestProject2\TestProject2.tspproj"));
+        }
+
+        private static string SolutionText(string projectName, string projectPath) =>
+            "Microsoft Visual Studio Solution File, Format Version 12.00\r\n" +
+            "# TcXaeShell Solution File, Format Version 11.00\r\n" +
+            "Project(\"{B1E792BE-AA5F-4E3C-8C82-674BF9C0715B}\") = \"" + projectName + "\", \"" + projectPath + "\", \"{FBF99FD5-3861-429A-AA44-FD661631289F}\"\r\n" +
+            "EndProject\r\n";
+
+        [TestMethod]
         public async Task GuessPlcTypeAsyncWithPackageAsync()
         {
             var config = await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution");

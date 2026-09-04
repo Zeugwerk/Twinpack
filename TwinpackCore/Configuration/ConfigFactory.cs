@@ -121,6 +121,25 @@ namespace Twinpack.Configuration
             return shallow.Count > 0 ? shallow : EnumerateFilesCaseInsensitive(root, extensionWithDot);
         }
 
+        /// <summary>The full path of <paramref name="path"/> when it names a <c>.sln</c> file, otherwise
+        /// <c>null</c> (meaning: treat it as a directory to discover in). A directory wins over the
+        /// extension check, so a folder that happens to be called <c>Foo.sln</c> still behaves as one.</summary>
+        /// <exception cref="FileNotFoundException">A <c>.sln</c> was named but is not on disk. Falling back to
+        /// directory discovery there would quietly load some other solution.</exception>
+        private static string AsSolutionFilePath(string path)
+        {
+            if (string.IsNullOrEmpty(path) || Directory.Exists(path))
+                return null;
+
+            if (!path.EndsWith(".sln", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            if (!File.Exists(path))
+                throw new FileNotFoundException($"Could not find the solution '{path}'.", path);
+
+            return Path.GetFullPath(path);
+        }
+
         public static Config Load(string path = ".", bool validate=false)
         {
             Config config = null;
@@ -278,18 +297,28 @@ namespace Twinpack.Configuration
         }
 #endif
 
+        /// <summary>
+        /// Builds a <see cref="Config"/> from a TwinCAT solution. <paramref name="path"/> is either a
+        /// directory to discover the solution in (the historic behaviour) or the <c>.sln</c> file itself.
+        /// Naming the file is the only way to reach a specific solution when a folder holds more than one —
+        /// discovery always collapses to the first, which cannot express "the other one".
+        /// </summary>
         public static async Task<Config> CreateFromSolutionFileAsync(string path=".", bool continueWithoutSolution=false, IEnumerable<Protocol.IPackageServer> packageServers=null, IEnumerable<ConfigPlcProject.PlcProjectType> plcTypeFilter=null, CancellationToken cancellationToken = default)
         {
             packageServers = packageServers == null ? new List<Protocol.IPackageServer>() : packageServers;
 
-            if (!Directory.Exists(path))
+            var solutionFile = AsSolutionFilePath(path);
+
+            if (solutionFile == null && !Directory.Exists(path))
                 throw new DirectoryNotFoundException($"Could not find a part of the path '{path}'.");
 
             Config config = new Config();
             // Root-first: the .sln normally sits at the directory you point Twinpack at, so this skips the
             // recursive tree walk entirely in the common case (falls back to a pruned recursive search only
-            // when no .sln is at the root / .Zeugwerk).
-            var solutions = EnumerateFilesShallowFirst(path, ".sln").ToArray();
+            // when no .sln is at the root / .Zeugwerk). A named .sln skips discovery altogether.
+            var solutions = solutionFile != null
+                ? new[] { solutionFile }
+                : EnumerateFilesShallowFirst(path, ".sln").ToArray();
 
             if (solutions.Count() > 1)
                 _logger.Warn("[config] multiple solutions in cwd, using first only");
@@ -297,7 +326,7 @@ namespace Twinpack.Configuration
                 return null;
 
             config.Fileversion = 1;
-            config.WorkingDirectory = path;
+            config.WorkingDirectory = solutionFile != null ? Path.GetDirectoryName(solutionFile) : path;
 
             Models.Solution solution = null;
             if (solutions.Any())
