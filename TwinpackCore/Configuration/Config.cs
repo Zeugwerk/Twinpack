@@ -190,16 +190,7 @@ namespace Twinpack.Configuration
             Packages = new List<ConfigPlcPackage>();
             Bindings = new Dictionary<string, List<string>>();
             Patches = new ConfigPatches();
-            Description = "";
-            IconFile = "";
-            DisplayName = "";
             DistributorName = "";
-            ProjectUrl = "";
-            Authors = "";
-            Entitlement = "";
-            License = "";
-            LicenseFile = "";
-            LicenseTmcFile = "";
         }
 
         public enum PlcProjectType
@@ -287,55 +278,6 @@ namespace Twinpack.Configuration
         [JsonPropertyName("patches")]
         public ConfigPatches Patches { get; set; }
 
-        [JsonPropertyName("description")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string Description { get; set; }
-
-        [JsonPropertyName("icon-file")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string IconFile { get; set; }        
-
-        [JsonPropertyName("project-url")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string ProjectUrl { get; set; } 
-        
-        [JsonPropertyName("display-name")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string DisplayName { get; set; }  
-
-        [JsonPropertyName("authors")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string Authors { get; set; }
-
-        [JsonPropertyName("entitlement")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string Entitlement { get; set; }
-
-        [JsonPropertyName("license")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string License { get; set; }
-
-        [JsonPropertyName("license-file")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string LicenseFile { get; set; }
-        
-        [JsonPropertyName("license-tmc-file")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string LicenseTmcFile { get; set; }
-
-        [JsonPropertyName("binary-download-url")]
-        [DefaultValue("")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string BinaryDownloadUrl { get; set; }     
     }
 
     public class ConfigPatches

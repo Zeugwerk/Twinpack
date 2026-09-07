@@ -25,6 +25,15 @@ namespace Twinpack
         List<IPackageServer> _packageServers;
         List<string> _licenseFileHeuristics = new List<string>() { "LICENSE", "LICENSE.txt", "LICENSE.md" };
 
+        // Publish metadata (description, authors, license, icon, provenance URL, ...) is intentionally
+        // not part of ConfigPlcProject/config.json anymore. DownloadReleaseAsync still needs to carry it
+        // alongside each generated plc entry for the subsequent push, so it's tracked here in-memory,
+        // keyed by "DistributorName|Name|Version", and looked up by PullCommand right before pushing.
+        public Dictionary<string, PlcPublishMetadata> PublishMetadataByKey { get; } = new Dictionary<string, PlcPublishMetadata>();
+
+        public static string PublishMetadataKey(string distributorName, string name, string version)
+            => $"{distributorName}|{name}|{version}";
+
         public TwinpackRegistry(List<IPackageServer> packageServers)
         {
             _packageServers = packageServers;
@@ -227,17 +236,20 @@ namespace Twinpack
                         Version = libraryInfo.Version,
                         //References =
                         //Packages =
-                        Description = libraryInfo.Description,
-                        //IconFile =
-                        DisplayName = libraryInfo.Title,
                         DistributorName = libraryInfo.Company,
-                        ProjectUrl = repoUrl,
+                        Type = ConfigPlcProject.PlcProjectType.Library.ToString()
+                    };
+
+                    PublishMetadataByKey[PublishMetadataKey(plc.DistributorName, plc.Name, plc.Version)] = new PlcPublishMetadata
+                    {
+                        Description = libraryInfo.Description,
+                        DisplayName = libraryInfo.Title,
                         Authors = libraryInfo.Author,
+                        ProjectUrl = repoUrl,
                         License = "LICENSE",
                         LicenseFile = licenseFileName,
                         IconFile = iconFileName,
                         BinaryDownloadUrl = asset.BrowserDownloadUrl,
-                        Type = ConfigPlcProject.PlcProjectType.Library.ToString()
                     };
 
                     // only upload if the package is not published on Twinpack yet
