@@ -367,11 +367,18 @@ namespace Twinpack.Core
 
 
             var parameters = package.Config?.Parameters;
+            var namespaceOverride = package.Config?.Namespace;
+
+            // only touch the reference item's xml when something actually needs to be written. Merely calling
+            // ProduceXml/ConsumeXml on a freshly resolved reference can make TwinCAT materialize and persist
+            // "raw" library metadata (e.g. a NuGet-style DefaultNamespace) into the plcproj that would otherwise
+            // never be written, so we must not do this unconditionally "just to read back" the effective value.
             if (options?.QualifiedOnly == true ||
                 options?.HideWhenReferencedAsDependency == true ||
                 options?.Optional == true ||
                 options?.PublishSymbolsInContainer == true ||
-                parameters?.Any() == true)
+                parameters?.Any() == true ||
+                !string.IsNullOrEmpty(namespaceOverride))
             {
                 ITcSmTreeItem referenceItem = null;
                 ITcSmTreeItem libraryManagerItem = (libraryManager as ITcSmTreeItem);
@@ -437,6 +444,27 @@ namespace Twinpack.Core
                         .Where(x => x.Element("Name").Value == "PublishAll")
                         .Elements("Value").FirstOrDefault();
                         publishSymbolsInContainerItem.Value = options?.PublishSymbolsInContainer == true ? "True" : "False";
+                    }
+
+                    if (!string.IsNullOrEmpty(namespaceOverride))
+                    {
+                        // the "Namespace" element under PlcLibPlaceholder/PlaceholderReference is a read-only
+                        // mirror - the editable one is the "Namespace" VSProperty (same pattern as the options above).
+                        var namespaceItem = referenceDoc.Elements("TreeItem")
+                            .Elements("VSProperties")
+                            .Elements("VSProperty")
+                            .Where(x => x.Element("Name").Value == "Namespace")
+                            .Elements("Value").FirstOrDefault();
+
+                        if (namespaceItem != null)
+                        {
+                            _logger.Info("[namespace] setting namespace of {0} {1} to '{2}'", package.PackageVersion.Name, package.PackageVersion.Version, namespaceOverride);
+                            namespaceItem.Value = namespaceOverride;
+                        }
+                        else
+                        {
+                            _logger.Warn("[namespace] Namespace VSProperty not found for {0} {1}", package.PackageVersion.Name, package.PackageVersion.Version);
+                        }
                     }
 
                     if (parameters?.Any() == true)

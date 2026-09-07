@@ -611,7 +611,7 @@ namespace Twinpack.Core
             if (packages.Any(x => x.Config.Name == null) == true)
                 throw new Exception("Invalid package(s) should be added or updated!");
 
-            var affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, packages, includeDependencies: true, cache: new List<PackageItem>(), cancellationToken: cancellationToken);
+            var affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, packages, includeDependencies: true, cache: new List<PackageItem>(), config: config, cancellationToken: cancellationToken);
             var downloadPath = options?.DownloadPath ?? Path.Combine(automationInterface?.SolutionPath ?? ".", ".Zeugwerk", "libraries");
 
             // copy runtime licenses
@@ -664,7 +664,8 @@ namespace Twinpack.Core
                 {
                     Version = package.Config?.Version == null ? null : package.PackageVersion.Version,
                     Options = package.Config?.Options,
-                    Parameters = package.Config?.Parameters
+                    Parameters = package.Config?.Parameters,
+                    Namespace = package.Config?.Namespace
                 };
 
                 package.Config = newPackageConfig;
@@ -749,10 +750,10 @@ namespace Twinpack.Core
 
         public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, List<PackageItem> cache, bool includeDependencies = true, CancellationToken cancellationToken = default)
         {
-            return await AffectedPackagesAsync(_automationInterface, _packageServers, packages, cache, includeDependencies, cancellationToken);
+            return await AffectedPackagesAsync(_automationInterface, _packageServers, packages, cache, includeDependencies, config: _config, cancellationToken: cancellationToken);
         }
 
-        private static async Task<List<PackageItem>> AffectedPackagesAsync(IAutomationInterface automationInterface, PackageServerCollection packageServers, List<PackageItem> packages, List<PackageItem> cache, bool includeDependencies = true, CancellationToken cancellationToken = default)
+        private static async Task<List<PackageItem>> AffectedPackagesAsync(IAutomationInterface automationInterface, PackageServerCollection packageServers, List<PackageItem> packages, List<PackageItem> cache, bool includeDependencies = true, Config config = null, CancellationToken cancellationToken = default)
         {
             foreach (var package in packages)
             {
@@ -803,6 +804,18 @@ namespace Twinpack.Core
                         dependency.Config ??= new ConfigPlcPackage(dependency.PackageVersion);
                         dependency.Config.Options = package.Config?.Options?.CopyForDependency();
 
+                        // preserve an explicitly configured namespace/parameters for the dependency (e.g.
+                        // hand-set in config.json) even though the dependency itself was never directly
+                        // added/updated - it was only pulled in transitively as someone else's dependency
+                        var existingDependencyConfig = config?.Projects
+                            ?.FirstOrDefault(x => x.Name == dependency.ProjectName)?.Plcs
+                            ?.FirstOrDefault(x => x.Name == dependency.PlcName)?.Packages
+                            ?.FirstOrDefault(x => x.Name == dependency.PackageVersion?.Name);
+                        if (!string.IsNullOrEmpty(existingDependencyConfig?.Namespace))
+                            dependency.Config.Namespace = existingDependencyConfig.Namespace;
+                        if (existingDependencyConfig?.Parameters?.Any() == true)
+                            dependency.Config.Parameters = existingDependencyConfig.Parameters;
+
                         if (cache.Any(x => x.ProjectName == dependency.ProjectName &&
                                            x.PlcName == dependency.PlcName &&
                                            x.PackageVersion?.Name == dependency.PackageVersion?.Name) == false)
@@ -827,7 +840,7 @@ namespace Twinpack.Core
             List<PackageItem> affectedPackages = packages.ToList();
 
             if (options.IncludeDependencies)
-                affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, affectedPackages, cache: new List<PackageItem>(), includeDependencies: true, cancellationToken);
+                affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, affectedPackages, cache: new List<PackageItem>(), includeDependencies: true, config: config, cancellationToken: cancellationToken);
 
             // avoid downloading duplicates
             affectedPackages = affectedPackages.GroupBy(x => new

@@ -168,6 +168,9 @@ namespace Twinpack.Core
 
             }
 
+            // an explicitly configured namespace (e.g. preserved from a previous reference) wins over the computed default
+            ns = string.IsNullOrEmpty(package.Config?.Namespace) ? ns : package.Config.Namespace;
+
             // make sure the package is not present before adding it, we have to
             // force, because the package might not even be installed
             await RemovePackageAsync(package, forceRemoval: true);

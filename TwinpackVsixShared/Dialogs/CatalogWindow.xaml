@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Twinpack.Dialogs.CatalogWindow"
+<UserControl x:Class="Twinpack.Dialogs.CatalogWindow"
              x:Name="This"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -564,6 +564,12 @@
                             <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Distributor name: " FontWeight="SemiBold"  ></TextBlock>
                                 <TextBlock Text="{Binding DistributorName}" TextWrapping="Wrap"></TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0"
+                                        Visibility="{Binding HasNamespace, ElementName=This, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Namespace: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock Text="{Binding Namespace, ElementName=This}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
                             <StackPanel Visibility="{Binding Authors, Converter={StaticResource NullToVisibilityConverter}}"
