@@ -241,9 +241,6 @@ namespace Twinpack.Core
             }
 
             xdoc.Save(plcConfig.FilePath);
-
-            if (package.Config != null)
-                package.Config.Namespace = ns;
         }
 
         public override async System.Threading.Tasks.Task RemovePackageAsync(PackageItem package, bool uninstall = false, bool forceRemoval = false)

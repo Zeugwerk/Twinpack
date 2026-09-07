@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -76,13 +76,11 @@ namespace Twinpack.Models
             Name = plcLibrary?.Name;
             Version = plcLibrary?.Version;
             DistributorName = plcLibrary?.DistributorName;
-            Namespace = plcLibrary?.Namespace;
             Options = plcLibrary?.Options;
         }
         public string Name { get; set; }
         public string Version { get; set; }
         public string DistributorName { get; set; }
-        public string Namespace { get; set; }
         public AddPlcLibraryOptions Options { get; set; }
         public static bool operator ==(PlcLibrary lhs, PlcLibrary rhs)
         {
