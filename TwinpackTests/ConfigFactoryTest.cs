@@ -166,6 +166,70 @@ namespace TwinpackTests
             "EndProject\r\n";
 
         [TestMethod]
+        public void Load_LegacyPublishMetadataFields_AreIgnoredWithoutThrowing()
+        {
+            // description, authors, display-name, project-url, entitlement, license, license-file,
+            // license-tmc-file, icon-file and binary-download-url used to be persisted on a PLC entry.
+            // They were removed from ConfigPlcProject; older config.json files that still have them
+            // must keep loading fine, just silently dropping those fields (System.Text.Json ignores
+            // unmapped members by default), same as the older "repository" field on packages.
+            var dir = Path.Combine("assets", "LegacyPublishMetadata");
+            Directory.CreateDirectory(Path.Combine(dir, ".Zeugwerk"));
+            File.WriteAllText(Path.Combine(dir, ".Zeugwerk", "config.json"), @"{
+                ""fileversion"": 1,
+                ""solution"": ""Dummy.sln"",
+                ""projects"": [
+                    {
+                        ""name"": ""MyProject"",
+                        ""plcs"": [
+                            {
+                                ""name"": ""MyPlc"",
+                                ""version"": ""1.0.0.0"",
+                                ""type"": ""Library"",
+                                ""distributor-name"": ""My Company"",
+                                ""description"": ""Some description"",
+                                ""authors"": ""Jane Doe"",
+                                ""display-name"": ""My PLC Library"",
+                                ""project-url"": ""https://example.com"",
+                                ""entitlement"": ""commercial"",
+                                ""license"": ""MIT"",
+                                ""license-file"": ""LICENSE"",
+                                ""license-tmc-file"": ""LICENSE.tmc"",
+                                ""icon-file"": ""icon.png"",
+                                ""binary-download-url"": ""https://example.com/download"",
+                                ""packages"": [
+                                    {
+                                        ""name"": ""ZCore"",
+                                        ""version"": ""1.0.0.0""
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }");
+
+            Config config = null;
+            try
+            {
+                config = ConfigFactory.Load(dir);
+            }
+            finally
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+
+            Assert.IsNotNull(config);
+            Assert.AreEqual(1, config.Projects.Count);
+
+            var plc = config.Projects.Single().Plcs.Single();
+            Assert.AreEqual("MyPlc", plc.Name);
+            Assert.AreEqual("My Company", plc.DistributorName);
+            Assert.AreEqual(1, plc.Packages.Count);
+            Assert.AreEqual("ZCore", plc.Packages.Single().Name);
+        }
+
+        [TestMethod]
         public async Task GuessPlcTypeAsyncWithPackageAsync()
         {
             var config = await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution");
