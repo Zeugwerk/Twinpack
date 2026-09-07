@@ -188,12 +188,7 @@ namespace Twinpack.Configuration
             plc.Packages = new List<ConfigPlcPackage>();
             //plc.Name = xdoc.Elements(Config.TcNs + "Project").Elements(Config.TcNs + "PropertyGroup").Elements(Config.TcNs + "Name")?.FirstOrDefault()?.Value;
             plc.Version = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Version")?.FirstOrDefault()?.Value;
-            plc.Authors = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Author")?.FirstOrDefault()?.Value;
-            plc.Description = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Description")?.FirstOrDefault()?.Value;
             plc.DistributorName = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Company")?.FirstOrDefault()?.Value;
-            plc.IconFile = "";
-            plc.DisplayName = plc.Title;
-            plc.ProjectUrl = "";
 
             // Fallback
             plc.Version = plc.Version ?? xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "ProjectVersion").FirstOrDefault()?.Value;
@@ -371,7 +366,50 @@ namespace Twinpack.Configuration
             return XDocument.Load(GuessFilePath(plc));
         }
 
-        public static IEnumerable<ConfigPlcProject> PlcProjectsFromConfig(bool compiled, string target, string rootPath = ".", string cachePath = null)
+        /// <summary>
+        /// Derives publish metadata (description, authors, display-name) straight from the PLC
+        /// project's own TwinCAT properties, before it has even been compiled into a .library file.
+        /// Used to pre-fill the publish dialog for a package that hasn't been pushed yet.
+        /// </summary>
+        public static PlcPublishMetadata DerivePublishMetadataFromPlcProj(ConfigPlcProject plc)
+        {
+            try
+            {
+                var xdoc = XDoc(plc);
+                return new PlcPublishMetadata
+                {
+                    Description = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Description")?.FirstOrDefault()?.Value,
+                    Authors = xdoc.Elements(TcNs + "Project").Elements(TcNs + "PropertyGroup").Elements(TcNs + "Author")?.FirstOrDefault()?.Value,
+                    DisplayName = plc.Title,
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                return new PlcPublishMetadata { DisplayName = plc?.Title };
+            }
+        }
+
+        /// <summary>
+        /// Derives publish metadata (description, authors, display-name) straight from a compiled
+        /// library's own embedded TwinCAT project properties. This is the baseline used by `twinpack
+        /// push`; explicit CLI flags / GUI input can still override individual fields on top of it.
+        /// </summary>
+        public static PlcPublishMetadata DerivePublishMetadata(string libraryFilePath)
+        {
+            if (string.IsNullOrEmpty(libraryFilePath) || !File.Exists(libraryFilePath))
+                return new PlcPublishMetadata();
+
+            var libraryInfo = LibraryReader.Read(File.ReadAllBytes(libraryFilePath));
+            return new PlcPublishMetadata
+            {
+                Description = libraryInfo.Description,
+                Authors = libraryInfo.Author,
+                DisplayName = libraryInfo.Title,
+            };
+        }
+
+        public static IEnumerable<(ConfigPlcProject Plc, PlcPublishMetadata Metadata)> PlcProjectsFromConfig(bool compiled, string target, string rootPath = ".", string cachePath = null)
         {
             var config = ConfigFactory.Load(rootPath);
 
@@ -388,14 +426,11 @@ namespace Twinpack.Configuration
                 if (!File.Exists(plc.FilePath))
                     throw new Exceptions.LibraryNotFoundException(plc.Name, plc.Version, $"Could not find library file '{plc.FilePath}'");
 
-                if (!string.IsNullOrEmpty(plc.LicenseFile) && !File.Exists(plc.LicenseFile))
-                    _logger.Warn("[upload] license file not found: {0}", LogPath.Display(plc.LicenseFile));
-
-                yield return plc;
+                yield return (plc, DerivePublishMetadata(plc.FilePath));
             }
         }
 
-        public static IEnumerable<ConfigPlcProject> PlcProjectsFromPath(string rootPath, PackageServerCollection packageServers)
+        public static IEnumerable<(ConfigPlcProject Plc, PlcPublishMetadata Metadata)> PlcProjectsFromPath(string rootPath, PackageServerCollection packageServers)
         {
             foreach (var libraryFile in Directory.GetFiles(rootPath, "*.library"))
             {
@@ -403,12 +438,15 @@ namespace Twinpack.Configuration
                 var plc = new ConfigPlcProject()
                 {
                     Name = libraryInfo.Title,
-                    DisplayName = libraryInfo.Title,
-                    Description = libraryInfo.Description,
-                    Authors = libraryInfo.Author,
                     DistributorName = libraryInfo.Company,
                     Version = libraryInfo.Version,
                     FilePath = libraryFile,
+                };
+                var metadata = new PlcPublishMetadata
+                {
+                    Description = libraryInfo.Description,
+                    Authors = libraryInfo.Author,
+                    DisplayName = libraryInfo.Title,
                 };
 
                 foreach (var dependency in libraryInfo.Dependencies.Where(x => x.Version == "*" || Version.TryParse(x.Version, out _) == true))
@@ -450,7 +488,7 @@ namespace Twinpack.Configuration
                     }
                 }
 
-                yield return plc;
+                yield return (plc, metadata);
             }
         }
     }

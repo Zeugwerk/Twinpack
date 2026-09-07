@@ -643,10 +643,10 @@ namespace Twinpack.Protocol
             }
         }
 
-        public async Task PushAsync(IEnumerable<ConfigPlcProject> plcs, string configuration, string branch, string target, string notes, bool compiled, bool skipDuplicate = false, CancellationToken cancellationToken = default)
+        public async Task PushAsync(IEnumerable<(ConfigPlcProject Plc, PlcPublishMetadata Metadata)> plcs, string configuration, string branch, string target, string notes, bool compiled, bool skipDuplicate = false, CancellationToken cancellationToken = default)
         {
             var exceptions = new List<Exception>();
-            foreach (var plc in plcs)
+            foreach (var (plc, metadata) in plcs)
             {
                 try
                 {
@@ -667,29 +667,29 @@ namespace Twinpack.Protocol
                     }
 
                     string binary = Convert.ToBase64String(File.ReadAllBytes(plc.FilePath));
-                    string licenseBinary = (!File.Exists(plc.LicenseFile) || string.IsNullOrEmpty(plc.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseFile));
-                    string licenseTmcBinary = (!File.Exists(plc.LicenseTmcFile) || string.IsNullOrEmpty(plc.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.LicenseTmcFile));
-                    string iconBinary = (!File.Exists(plc.IconFile) || string.IsNullOrEmpty(plc.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(plc.IconFile));
+                    string licenseBinary = (string.IsNullOrEmpty(metadata?.LicenseFile) || !File.Exists(metadata.LicenseFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(metadata.LicenseFile));
+                    string licenseTmcBinary = (string.IsNullOrEmpty(metadata?.LicenseTmcFile) || !File.Exists(metadata.LicenseTmcFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(metadata.LicenseTmcFile));
+                    string iconBinary = (string.IsNullOrEmpty(metadata?.IconFile) || !File.Exists(metadata.IconFile)) ? null : Convert.ToBase64String(File.ReadAllBytes(metadata.IconFile));
 
                     var packageVersion = new PackageVersionPostRequest()
                     {
                         Name = plc.Name,
                         Version = plc.Version,
                         Target = target,
-                        License = plc.License,
-                        Description = plc.Description,
+                        License = metadata?.License,
+                        Description = metadata?.Description,
                         DistributorName = plc.DistributorName,
-                        Authors = plc.Authors,
-                        Entitlement = plc.Entitlement,
-                        ProjectUrl = plc.ProjectUrl,
-                        DisplayName = plc.DisplayName,
+                        Authors = metadata?.Authors,
+                        Entitlement = metadata?.Entitlement,
+                        ProjectUrl = metadata?.ProjectUrl,
+                        DisplayName = metadata?.DisplayName,
                         Branch = branch,
                         Configuration = configuration,
                         Compiled = compiled ? 1 : 0,
                         Notes = notes,
-                        IconFilename = Path.GetFileName(plc.IconFile),
+                        IconFilename = string.IsNullOrEmpty(metadata?.IconFile) ? null : Path.GetFileName(metadata.IconFile),
                         IconBinary = iconBinary,
-                        BinaryDownloadUrl = plc.BinaryDownloadUrl,
+                        BinaryDownloadUrl = metadata?.BinaryDownloadUrl,
                         LicenseBinary = licenseBinary,
                         LicenseTmcBinary = licenseTmcBinary,
                         Binary = binary,
