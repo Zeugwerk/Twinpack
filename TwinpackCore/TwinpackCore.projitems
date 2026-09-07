@@ -38,6 +38,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Api.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configuration\Config.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Configuration\ConfigFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Configuration\PlcPublishMetadata.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\PlcLibrary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Plc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Project.cs" />

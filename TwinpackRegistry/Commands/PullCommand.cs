@@ -51,11 +51,22 @@ namespace Twinpack.Commands
             _logger.Info(new string('-', 3) + $" download");
             await registry.DownloadAsync(RegistryOwner, RegistryName, token: Token);
 
-            var plcs = ConfigPlcProjectFactory.PlcProjectsFromConfig(compiled: false, target: "TC3.1");
+            var plcs = ConfigPlcProjectFactory.PlcProjectsFromConfig(compiled: false, target: "TC3.1").ToList();
             if (!DryRun && plcs.Any())
             {
                 _logger.Info(new string('-', 3) + $" push");
-                await _twinpackServer.PushAsync(plcs, "Release", "main", "TC3.1", null, false);
+
+                // merge each plc's auto-derived metadata (from the compiled .library) with the
+                // registry-specific metadata collected while downloading it (license, icon, provenance
+                // URL, ...), which never round-trips through config.json.
+                var plcsWithMetadata = plcs.Select(x =>
+                {
+                    var key = TwinpackRegistry.PublishMetadataKey(x.Plc.DistributorName, x.Plc.Name, x.Plc.Version);
+                    var registryMetadata = registry.PublishMetadataByKey.TryGetValue(key, out var m) ? m : null;
+                    return (x.Plc, PlcPublishMetadata.Merge(x.Metadata, registryMetadata));
+                });
+
+                await _twinpackServer.PushAsync(plcsWithMetadata, "Release", "main", "TC3.1", null, false);
             }
 
             return 0;
