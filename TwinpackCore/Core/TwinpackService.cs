@@ -693,7 +693,8 @@ namespace Twinpack.Core
                 {
                     Version = package.Config?.Version == null ? null : package.PackageVersion.Version,
                     Options = package.Config?.Options,
-                    Parameters = package.Config?.Parameters
+                    Parameters = package.Config?.Parameters,
+                    Namespace = package.Config?.Namespace
                 };
 
                 package.Config = newPackageConfig;

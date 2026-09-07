@@ -129,6 +129,7 @@ namespace Twinpack.Configuration
                         Name = name,
                         Version = version,
                         DistributorName = match.Groups[3].Value.Trim(),
+                        Namespace = g.Parent.Element(TcNs + "Namespace")?.Value,
                         Options = ParseOptions(g.Parent, false)
                     });
                 }
@@ -149,6 +150,7 @@ namespace Twinpack.Configuration
                     Name = x.Right?.Name ?? x.Left.Name,
                     DistributorName = x.Right?.DistributorName ?? x.Left.DistributorName,
                     Version = (x.Right?.Version ?? x.Left.Version) == "*" ? null : (x.Right?.Version ?? x.Left.Version),
+                    Namespace = x.Right?.Namespace ?? x.Left.Namespace,
                     Options = x.Right?.Options ?? x.Left.Options,
                 })
                 .ToList();
@@ -169,6 +171,7 @@ namespace Twinpack.Configuration
                         Name = match.Groups[1].Value.Trim(),
                         Version = version == "*" ? null : version,
                         DistributorName = match.Groups[3].Value.Trim(),
+                        Namespace = g.Element(TcNs + "Namespace")?.Value,
                         Options = ParseOptions(g, true)
                     });
                 }
@@ -226,6 +229,7 @@ namespace Twinpack.Configuration
                                 Name = packageVersion.Name,
                                 Target = packageVersion.Target,
                                 Version = r.Version,
+                                Namespace = r.Namespace,
                                 Options = r.Options
                             });
                         }

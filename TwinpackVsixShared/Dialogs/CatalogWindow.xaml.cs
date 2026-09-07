@@ -158,6 +158,20 @@ namespace Twinpack.Dialogs
 
         public bool HasParameters => _parameters?.Any() == true;
 
+        string _namespace;
+        public string Namespace
+        {
+            get { return _namespace; }
+            set
+            {
+                _namespace = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Namespace)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasNamespace)));
+            }
+        }
+
+        public bool HasNamespace => !string.IsNullOrEmpty(_namespace);
+
         private bool _addDependencies;
         public bool AddDependencies
         {
@@ -1117,6 +1131,7 @@ namespace Twinpack.Dialogs
                 var selectedPackage = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _selectedItem.Catalog?.Name);
                 Options = selectedPackage?.Options ?? new AddPlcLibraryOptions();
                 Parameters = selectedPackage?.Parameters ?? new Dictionary<string, string>();
+                Namespace = selectedPackage?.Namespace;
 
                 BranchesView.Visibility = _selectedItem.Package?.Branches?.Any() == true ? Visibility.Visible : Visibility.Collapsed;
                 TargetsView.Visibility = _selectedItem.Package?.Targets?.Any() == true ? Visibility.Visible : Visibility.Collapsed;

@@ -367,38 +367,46 @@ namespace Twinpack.Core
 
 
             var parameters = package.Config?.Parameters;
-            if (options?.QualifiedOnly == true ||
-                options?.HideWhenReferencedAsDependency == true ||
-                options?.Optional == true ||
-                options?.PublishSymbolsInContainer == true ||
-                parameters?.Any() == true)
-            {
-                ITcSmTreeItem referenceItem = null;
-                ITcSmTreeItem libraryManagerItem = (libraryManager as ITcSmTreeItem);
+            var namespaceOverride = package.Config?.Namespace;
 
-                if (options?.LibraryReference == true)
+            // we always look up the reference item and produce its xml, since we want to read back the
+            // effective namespace (assigned by TwinCAT itself, e.g. from the library's DefaultNamespace)
+            // into the config, even if nothing needs to be written.
+            ITcSmTreeItem referenceItem = null;
+            ITcSmTreeItem libraryManagerItem = (libraryManager as ITcSmTreeItem);
+
+            if (options?.LibraryReference == true)
+            {
+                for (var i = 1; i < libraryManagerItem.ChildCount; i++)
                 {
-                    for (var i = 1; i < libraryManagerItem.ChildCount; i++)
+                    ITcSmTreeItem child = libraryManagerItem.Child[i];
+                    string childName = child.Name;
+                    if (childName == libraryName)
                     {
-                        ITcSmTreeItem child = libraryManagerItem.Child[i];
-                        string childName = child.Name;
-                        if (childName == libraryName)
-                        {
-                            referenceItem = libraryManagerItem.Child[i];
-                            break;
-                        }
+                        referenceItem = libraryManagerItem.Child[i];
+                        break;
                     }
                 }
-                else
-                {
-                    referenceItem = (libraryManager as ITcSmTreeItem).LookupChild(libraryName);
-                }
+            }
+            else
+            {
+                referenceItem = (libraryManager as ITcSmTreeItem).LookupChild(libraryName);
+            }
 
-                if (referenceItem != null)
-                {
-                    var referenceXml = referenceItem.ProduceXml(bRecursive: true);
-                    var referenceDoc = XDocument.Parse(referenceXml);
+            if (referenceItem != null)
+            {
+                var referenceXml = referenceItem.ProduceXml(bRecursive: true);
+                var referenceDoc = XDocument.Parse(referenceXml);
 
+                bool needsConsume = options?.QualifiedOnly == true ||
+                    options?.HideWhenReferencedAsDependency == true ||
+                    options?.Optional == true ||
+                    options?.PublishSymbolsInContainer == true ||
+                    parameters?.Any() == true ||
+                    !string.IsNullOrEmpty(namespaceOverride);
+
+                if (needsConsume)
+                {
                     if (options?.QualifiedOnly == true)
                     {
                         var qualifiedOnlyItem = referenceDoc.Elements("TreeItem")
@@ -437,6 +445,27 @@ namespace Twinpack.Core
                         .Where(x => x.Element("Name").Value == "PublishAll")
                         .Elements("Value").FirstOrDefault();
                         publishSymbolsInContainerItem.Value = options?.PublishSymbolsInContainer == true ? "True" : "False";
+                    }
+
+                    if (!string.IsNullOrEmpty(namespaceOverride))
+                    {
+                        // the "Namespace" element under PlcLibPlaceholder/PlaceholderReference is a read-only
+                        // mirror - the editable one is the "Namespace" VSProperty (same pattern as the options above).
+                        var namespaceItem = referenceDoc.Elements("TreeItem")
+                            .Elements("VSProperties")
+                            .Elements("VSProperty")
+                            .Where(x => x.Element("Name").Value == "Namespace")
+                            .Elements("Value").FirstOrDefault();
+
+                        if (namespaceItem != null)
+                        {
+                            _logger.Info("[namespace] setting namespace of {0} {1} to '{2}'", package.PackageVersion.Name, package.PackageVersion.Version, namespaceOverride);
+                            namespaceItem.Value = namespaceOverride;
+                        }
+                        else
+                        {
+                            _logger.Warn("[namespace] Namespace VSProperty not found for {0} {1}", package.PackageVersion.Name, package.PackageVersion.Version);
+                        }
                     }
 
                     if (parameters?.Any() == true)
@@ -495,11 +524,24 @@ namespace Twinpack.Core
                     }
 
                     referenceItem.ConsumeXml(referenceDoc.ToString());
+
+                    // re-read so we capture whatever TwinCAT actually accepted, not just what we asked for
+                    referenceDoc = XDocument.Parse(referenceItem.ProduceXml(bRecursive: true));
                 }
-                else
-                {
-                    _logger.Warn("[parameters] could not apply options to {0} {1}", package.PackageVersion.Name, package.PackageVersion.Version);
-                }
+
+                // capture the effective namespace (either just set above, or TwinCAT's own default) into the config
+                var effectiveNamespace = referenceDoc.Elements("TreeItem")
+                    .Elements("VSProperties")
+                    .Elements("VSProperty")
+                    .Where(x => x.Element("Name").Value == "Namespace")
+                    .Elements("Value").FirstOrDefault()?.Value;
+
+                if (package.Config != null && !string.IsNullOrEmpty(effectiveNamespace))
+                    package.Config.Namespace = effectiveNamespace;
+            }
+            else
+            {
+                _logger.Warn("[automation] could not locate reference item for {0} {1} to read/apply extended properties", package.PackageVersion.Name, package.PackageVersion.Version);
             }
         }
 

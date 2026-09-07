@@ -566,6 +566,12 @@
                                 <TextBlock Text="{Binding DistributorName}" TextWrapping="Wrap"></TextBlock>
                             </StackPanel>
 
+                            <StackPanel Orientation="Horizontal" Margin="10,5,0,0"
+                                        Visibility="{Binding HasNamespace, ElementName=This, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Namespace: " FontWeight="SemiBold"></TextBlock>
+                                <TextBlock Text="{Binding Namespace, ElementName=This}" TextWrapping="Wrap"></TextBlock>
+                            </StackPanel>
+
                             <StackPanel Visibility="{Binding Authors, Converter={StaticResource NullToVisibilityConverter}}"
                                         Orientation="Horizontal" Margin="10,5,0,0">
                                 <TextBlock Text="Authors: " FontWeight="SemiBold"></TextBlock>

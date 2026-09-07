@@ -102,7 +102,7 @@ namespace Twinpack.Configuration
             Target = pv.Target;
             Configuration = pv.Configuration;
             DistributorName = pv.DistributorName;
-            Namespace = pv.Name;
+            Namespace = null;
             Parameters = null;
             Options = null;
         }
@@ -115,7 +115,7 @@ namespace Twinpack.Configuration
             Target = pv.Target;
             Configuration = pv.Configuration;
             DistributorName = pv.DistributorName;
-            Namespace = pv.Name;
+            Namespace = pv.Namespace;
             Parameters = pv.Parameters;
             Options = pv.Options;
         }
