@@ -28,11 +28,36 @@ namespace Twinpack.Core
 
         public static string NormalizedVersion(string version)
         {
-            version = version?.Trim().TrimStart(new char[] { 'v', 'V', ' ', '\t' }).Replace('-', '.');
-            if (version != null && !Version.TryParse(version, out _))
-                throw new ArgumentException("Version has wrong format! Valid formats include '1.0.0.0', 'v1.0.0.0', '1.0.0-0'");
+            version = version?.Trim().TrimStart(new char[] { 'v', 'V', ' ', '\t' });
+            if (version != null && !Version.TryParse(TwincatNumericVersion(version), out _))
+                throw new ArgumentException("Version has wrong format! Valid formats include '1.0.0.0', 'v1.0.0.0', '1.0.0-0', '1.0.0.0-feat-ci'");
+
+            var dash = version?.IndexOf('-') ?? -1;
+            if (dash >= 0 && int.TryParse(version.Substring(dash + 1), out _))
+                return TwincatNumericVersion(version);
 
             return version;
+        }
+
+        /// <summary>
+        /// TwinCAT plcproj versions are four integers. Package versions may keep a SemVer
+        /// prerelease (<c>1.0.0.0-feat-ci</c>). The old <c>1.0.0-0</c> form still maps to <c>1.0.0.0</c>.
+        /// </summary>
+        public static string TwincatNumericVersion(string version)
+        {
+            if (string.IsNullOrEmpty(version))
+                return version;
+
+            var dash = version.IndexOf('-');
+            if (dash < 0)
+                return version;
+
+            var prefix = version.Substring(0, dash);
+            var suffix = version.Substring(dash + 1);
+            if (int.TryParse(suffix, out _))
+                return $"{prefix}.{suffix}";
+
+            return prefix;
         }
 
         public abstract string SolutionPath { get; }
