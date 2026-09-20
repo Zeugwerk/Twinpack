@@ -652,7 +652,7 @@ namespace Twinpack.Core
                     _logger.Warn("[plc] title '{0}' has invalid characters, skipping", titleStr);
                 }
 
-                var versionStr = NormalizedVersion(plc.Version);
+                var versionStr = TwincatNumericVersion(NormalizedVersion(plc.Version));
                 if (!string.IsNullOrEmpty(versionStr))
                 {
                     writer.WriteElementString("Version", new Version(versionStr).ToString());

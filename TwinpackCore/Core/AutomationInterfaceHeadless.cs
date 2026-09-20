@@ -420,7 +420,7 @@ namespace Twinpack.Core
                     _logger.Info("[plc] updated company to {0}", plc.DistributorName);
                 }
 
-                var versionStr = NormalizedVersion(plc.Version);
+                var versionStr = TwincatNumericVersion(NormalizedVersion(plc.Version));
                 if (!string.IsNullOrEmpty(versionStr))
                 {
                     if (projectVersion != null)
