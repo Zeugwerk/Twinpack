@@ -60,6 +60,29 @@ namespace Twinpack.Core
             return prefix;
         }
 
+        /// <summary>
+        /// Version string TwinCAT library manager / plcproj placeholders accept.
+        /// Keeps <c>*</c> and empty values; otherwise strips a SemVer qualifier.
+        /// </summary>
+        public static string TwinCATLibraryVersion(string version)
+        {
+            if (string.IsNullOrEmpty(version) || version == "*")
+                return version;
+
+            return TwincatNumericVersion(NormalizedVersion(version));
+        }
+
+        public static bool TwinCATLibraryVersionsEqual(string left, string right)
+        {
+            if (string.IsNullOrEmpty(left) || left == "*" || string.IsNullOrEmpty(right) || right == "*")
+                return string.IsNullOrEmpty(left) || left == "*" || string.IsNullOrEmpty(right) || right == "*";
+
+            if (string.Equals(left, right, StringComparison.Ordinal))
+                return true;
+
+            return string.Equals(TwinCATLibraryVersion(left), TwinCATLibraryVersion(right), StringComparison.Ordinal);
+        }
+
         public abstract string SolutionPath { get; }
         public abstract Task<string> ResolveEffectiveVersionAsync(string projectName, string plcName, string placeholderName);
         public abstract Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken = default);
