@@ -234,7 +234,7 @@ namespace Twinpack.Core
             // try to find the vendor
             foreach (ITcPlcLibrary r in libManager.ScanLibraries())
             {
-                if (r.Name == libraryName && (r.Version == version || version == "*" || version == null))
+                if (r.Name == libraryName && (version == "*" || version == null || TwinCATLibraryVersionsEqual(r.Version, version)))
                 {
                     return r.Distributor;
                 }
@@ -269,7 +269,7 @@ namespace Twinpack.Core
                 {
                     if (string.Equals(r.Name, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
                         string.Equals(r.Distributor, package.PackageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
-                        (r.Version == package.PackageVersion.Version || package.PackageVersion.Version == null))
+                        (package.PackageVersion.Version == null || TwinCATLibraryVersionsEqual(r.Version, package.PackageVersion.Version)))
                     {
                         _referenceCache.Add(new PlcLibrary { Name = package.PackageVersion.Title, DistributorName = package.PackageVersion.DistributorName, Version = package.PackageVersion.Version });
                         referenceFound = true;
@@ -329,7 +329,7 @@ namespace Twinpack.Core
 
             var options = package.Config.Options;
             var libraryName = package.PackageVersion.Title;
-            var version = package.PackageVersion.Version ?? "*";
+            var version = TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*";
             var distributorName = package.PackageVersion.DistributorName ?? GuessDistributorName(libraryManager, libraryName, version);
 
             // if we can't find the reference with the distributor name from the package, fallback to looking it up

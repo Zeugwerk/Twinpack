@@ -21,6 +21,16 @@ namespace TwinpackTests
         {
             Assert.AreEqual(normalized, AutomationInterface.NormalizedVersion(input));
             Assert.AreEqual(numeric, AutomationInterface.TwincatNumericVersion(AutomationInterface.NormalizedVersion(input)));
+            Assert.AreEqual(numeric, AutomationInterface.TwinCATLibraryVersion(input));
+        }
+
+        [TestMethod]
+        public void TwinCATLibraryVersionKeepsWildcard()
+        {
+            Assert.AreEqual("*", AutomationInterface.TwinCATLibraryVersion("*"));
+            Assert.IsNull(AutomationInterface.TwinCATLibraryVersion(null));
+            Assert.IsTrue(AutomationInterface.TwinCATLibraryVersionsEqual("0.1.1.0-feat-ci", "0.1.1.0"));
+            Assert.IsFalse(AutomationInterface.TwinCATLibraryVersionsEqual("0.1.1.0-feat-ci", "0.1.2.0"));
         }
 
         [DataTestMethod]
