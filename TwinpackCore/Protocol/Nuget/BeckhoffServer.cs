@@ -27,6 +27,7 @@ namespace Twinpack.Protocol
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         public new string ServerType { get; } = "Beckhoff Repository";
         protected override string SearchPrefix { get => "tags:library "; }
+        protected override bool ResolveForeignDependencies { get => false; }
         public override string UrlRegister
         {
             get => "https://www.beckhoff.com/en-en/mybeckhoff-registration/index.aspx";
