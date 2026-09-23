@@ -57,7 +57,46 @@ namespace Twinpack.Core
             if (int.TryParse(suffix, out _))
                 return $"{prefix}.{suffix}";
 
+            var revision = PrereleaseRevision(prefix, suffix);
+            if (revision != null)
+                return $"{prefix}.{revision}";
+
             return prefix;
+        }
+
+        /// <summary>
+        /// NuGet packages of TwinCAT libraries carry the 4th version part in the prerelease,
+        /// <c>1.0.0-1</c> is <c>1.0.0.1</c> and <c>1.0.0-feat-ci.1</c> is <c>1.0.0.1-feat-ci</c>.
+        /// Returns the version as <c>x.y.z.w[-qualifier]</c>, or unchanged if it has another form.
+        /// </summary>
+        public static string FourPartVersion(string version)
+        {
+            var dash = version?.IndexOf('-') ?? -1;
+            if (dash < 0)
+                return version;
+
+            var prefix = version.Substring(0, dash);
+            var suffix = version.Substring(dash + 1);
+            if (prefix.Split('.').Length != 3)
+                return version;
+
+            if (int.TryParse(suffix, out _))
+                return $"{prefix}.{suffix}";
+
+            var revision = PrereleaseRevision(prefix, suffix);
+            if (revision != null)
+                return $"{prefix}.{revision}-{suffix.Substring(0, suffix.Length - revision.Length - 1)}";
+
+            return version;
+        }
+
+        private static string PrereleaseRevision(string prefix, string suffix)
+        {
+            var dot = suffix.LastIndexOf('.');
+            if (prefix.Split('.').Length != 3 || dot <= 0 || !int.TryParse(suffix.Substring(dot + 1), out _))
+                return null;
+
+            return suffix.Substring(dot + 1);
         }
 
         /// <summary>

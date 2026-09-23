@@ -60,6 +60,7 @@ namespace Twinpack.Protocol
         public bool LoggedIn { get { return Connected && UserInfo?.Configurations?.FirstOrDefault()?.IsPrivate == true; } }
         public bool Connected { get { return UserInfo?.User != null; } }
         protected virtual string SearchPrefix { get => "";}
+        protected virtual bool ResolveForeignDependencies { get => true; }
         protected virtual string IconUrl { get => null; }
 
         public NugetServer(string name = "", string url = null)
@@ -413,7 +414,7 @@ namespace Twinpack.Protocol
             var ordered = packages.OrderByDescending(p => p.Identity.Version);
             IPackageSearchMetadata x = library.Version == null
                 ? ordered.FirstOrDefault()
-                : packages.FirstOrDefault(p => EvaluateVersion(p.Identity.Version) == library.Version);
+                : packages.FirstOrDefault(p => VersionMatches(p.Identity.Version, library.Version));
 
             if (x == null)
                 return new PackageVersionGetResponse();
@@ -441,9 +442,22 @@ namespace Twinpack.Protocol
                     cancellationToken);
                 var dependency = dependencyMetadata
                     .OrderByDescending(p => p.Identity.Version)
-                    .FirstOrDefault(p => version == null || version.ToString() == EvaluateVersion(p.Identity.Version));
+                    .FirstOrDefault(p => version == null || VersionMatches(p.Identity.Version, version));
 
-                if(dependency?.Tags?.ToLower().Contains("library") == true || dependency?.Tags?.ToLower().Contains("plc-library") == true)
+                if (dependency == null && ResolveForeignDependencies)
+                {
+                    // not in this feed; leave branch, target and configuration open so other servers can resolve it
+                    dependencies.Add(
+                        new PackageVersionGetResponse()
+                        {
+                            Name = d.Id,
+                            Title = d.Id,
+                            DisplayName = d.Id,
+                            Version = version,
+                            Dependencies = null
+                        });
+                }
+                else if(dependency?.Tags?.ToLower().Contains("library") == true || dependency?.Tags?.ToLower().Contains("plc-library") == true)
                 {
                     dependencies.Add(
                         new PackageVersionGetResponse()
@@ -451,7 +465,7 @@ namespace Twinpack.Protocol
                             PackageId = null,
                             Name = dependency.Identity.Id,
                             Title = await EvaluateTitleAsync(dependency, cancellationToken),
-                            DistributorName = x.Authors,
+                            DistributorName = dependency.Authors,
                             DisplayName = dependency.Identity.Id,
                             Description = dependency.Description,
                             Entitlement = null,
@@ -747,6 +761,18 @@ namespace Twinpack.Protocol
         protected virtual string EvaluateVersion(NuGetVersion version)
         {
             return version?.OriginalVersion?.ToString();
+        }
+
+        // nuget pack drops a trailing ".0", so "1.0.0.0-feat-ci" has to match a package stored as "1.0.0-feat-ci";
+        // packages may also carry the 4th part in the prerelease ("1.0.0-feat-ci.1" is "1.0.0.1-feat-ci")
+        protected bool VersionMatches(NuGetVersion candidate, string requested)
+        {
+            if (EvaluateVersion(candidate) == requested)
+                return true;
+
+            return NuGetVersion.TryParse(Core.AutomationInterface.FourPartVersion(candidate.OriginalVersion ?? candidate.ToString()), out var left)
+                && NuGetVersion.TryParse(Core.AutomationInterface.FourPartVersion(requested), out var right)
+                && VersionComparer.Default.Equals(left, right);
         }
 
         protected virtual int EvaluateCompiled(string tags)
