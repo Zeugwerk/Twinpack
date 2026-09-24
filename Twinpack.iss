@@ -198,8 +198,9 @@ var
   Response: String;
 begin
   WinHttpReq := CreateOleObject('WinHttp.WinHttpRequest.5.1');
-  WinHttpReq.Open('GET', 'https://operations.zeugwerk.dev/api.php?method=zkregister&usermail='+UrlEncode(UserPage.Edits[0].Text), False);
-  WinHttpReq.Send('');
+  WinHttpReq.Open('POST', 'https://operations.zeugwerk.dev/api.php', False);
+  WinHttpReq.SetRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  WinHttpReq.Send('method=zkregister&usermail='+UrlEncode(UserPage.Edits[0].Text));
   if WinHttpReq.Status <> 200 then
   begin
       MsgBox('Could not connect to Login server. Please check your internet connection!', mbError, MB_OK);
