@@ -67,6 +67,11 @@ namespace Twinpack.Core
 
         private XElement? FindMatch(PackageVersionGetResponse pv, bool requireDistributor)
         {
+            // An unpinned request takes whatever is installed, so it must not be compared against the
+            // repository entry literally. "*" is how a plcproj reference spells that, next to null and
+            // empty, and every one of them has to be accepted here or the library is reported missing.
+            var unpinned = string.IsNullOrEmpty(pv.Version) || pv.Version == "*";
+
             return LocalRepository.FirstOrDefault(lib =>
             {
                 var title = (string)lib.Attribute("Title");
@@ -75,7 +80,7 @@ namespace Twinpack.Core
 
                 return string.Equals(title, pv.Title, StringComparison.InvariantCultureIgnoreCase)
                     && (!requireDistributor || string.Equals(company, pv.DistributorName, StringComparison.InvariantCultureIgnoreCase))
-                    && (pv.Version == null || string.Equals(version, pv.Version, StringComparison.InvariantCultureIgnoreCase));
+                    && (unpinned || TwinCATLibraryVersionsEqual(version, pv.Version));
             });
         }
 
