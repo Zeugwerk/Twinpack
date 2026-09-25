@@ -84,13 +84,20 @@ namespace Twinpack.Core
             });
         }
 
-        public override bool IsPackageInstalled(PackageItem package)
+        private XElement? FindInstalled(PackageVersionGetResponse pv)
         {
             LocalRepository ??= LoadLibraryElements().ToList();
 
-            // Prefer full match (title + distributor + version), fall back to title + version only
-            return FindMatch(package.PackageVersion, requireDistributor: true) != null
-                || FindMatch(package.PackageVersion, requireDistributor: false) != null;
+            if (string.IsNullOrEmpty(pv.DistributorName))
+                return FindMatch(pv, requireDistributor: false);
+
+            return FindMatch(pv, requireDistributor: true)
+                ?? FindMatch(pv, requireDistributor: false);
+        }
+
+        public override bool IsPackageInstalled(PackageItem package)
+        {
+            return FindInstalled(package.PackageVersion) != null;
         }
 
         public override async Task<bool> IsPackageInstalledAsync(PackageItem package)
@@ -162,16 +169,17 @@ namespace Twinpack.Core
             }
 
             ns = ns.Replace(" ", "_");
-            var distributorName = package.PackageVersion.DistributorName;
-            if (await IsPackageInstalledAsync(package))
-            {
-                var match = FindMatch(package.PackageVersion, requireDistributor: true)
-                         ?? FindMatch(package.PackageVersion, requireDistributor: false);
 
-                distributorName = match?.Attribute("Company")?.Value ?? distributorName;
-                ns = match?.Attribute("DefaultNamespace")?.Value ?? ns;
+            var match = FindInstalled(package.PackageVersion);
+            var distributorName = match?.Attribute("Company")?.Value ?? package.PackageVersion.DistributorName;
+            ns = match?.Attribute("DefaultNamespace")?.Value ?? ns;
 
-            }
+            // Without a distributor the reference is written as "Name, * ()", which TwinCAT reports much
+            // later as a library that "has not been installed to the system". Say so here instead.
+            if (string.IsNullOrEmpty(distributorName))
+                throw new InvalidOperationException(
+                    $"Cannot resolve the distributor of '{package.PackageVersion.Title}': it states none and no " +
+                    $"TwinCAT library repository index ({string.Join(", ", _configPaths)}) lists it");
 
             // an explicitly configured namespace (e.g. preserved from a previous reference) wins over the computed default
             ns = string.IsNullOrEmpty(package.Config?.Namespace) ? ns : package.Config.Namespace;
