@@ -112,6 +112,24 @@ namespace TwinpackTests
         }
 
         /// <summary>
+        /// NugetServer reports the four part version but has to ask its feed for the version the package
+        /// was published under, so the pair of conversions it uses has to be a round trip in that
+        /// direction too, not just the packing direction.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow("1.6.0-28", "1.6.0.28")]
+        [DataRow("1.1.0-e2e.0", "1.1.0.0-e2e")]
+        [DataRow("1.1.0-0", "1.1.0.0")]
+        [DataRow("1.2.3", "1.2.3")]
+        [DataRow("1.2.3-feat-ci", "1.2.3-feat-ci")]
+        public void FourPartVersionRoundTripsBackToThePublishedVersion(string publishedVersion, string expected)
+        {
+            var reported = AutomationInterface.FourPartVersion(publishedVersion);
+            Assert.AreEqual(expected, reported);
+            Assert.AreEqual(publishedVersion, AutomationInterface.NugetVersion(reported));
+        }
+
+        /// <summary>
         /// A revision of 0 is encoded like any other, so the library version TwinCAT registers is
         /// still recoverable from the package version. `nuget pack` would have dropped it.
         /// </summary>

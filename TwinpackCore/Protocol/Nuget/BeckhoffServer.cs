@@ -72,6 +72,16 @@ namespace Twinpack.Protocol
             return version?.Version?.ToString();
         }
 
+        /// <summary>
+        /// Beckhoff versions are plain numbers, so <see cref="EvaluateVersion"/> only pads them to four
+        /// parts and never moves anything into a prerelease. NuGet's own normalization drops the padding
+        /// again, which means the version is already the one the feed published and must be left alone.
+        /// </summary>
+        protected override string PublishedVersion(string version)
+        {
+            return version;
+        }
+
         protected override int EvaluateCompiled(string tags)
         {
             return 1;
