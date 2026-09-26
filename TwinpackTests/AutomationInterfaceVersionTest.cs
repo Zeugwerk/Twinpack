@@ -35,6 +35,24 @@ namespace TwinpackTests
             Assert.IsFalse(AutomationInterface.TwinCATLibraryVersionsEqual("0.1.1.0-feat-ci", "0.1.2.0"));
         }
 
+        /// <summary>
+        /// The shape a library published to a NuGet server comes back as. A package version keeps the
+        /// revision in the prerelease, so it has to compare equal to the four part version TwinCAT
+        /// registered the library under.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow("1.4.2.0", "1.4.2-0", true)]
+        [DataRow("1.4.2-0", "1.4.2.0", true)]
+        [DataRow("1.4.2.0", "1.4.2.0", true)]
+        [DataRow("1.4.2.1", "1.4.2-1", true)]
+        [DataRow("1.4.2.0-feat-ci", "1.4.2-feat-ci.0", true)]
+        [DataRow("1.4.2.1", "1.4.2-0", false)]
+        [DataRow("1.4.2.0", "1.4.3-0", false)]
+        public void TwinCATLibraryVersionsEqualMatchesAPackageVersion(string left, string right, bool expected)
+        {
+            Assert.AreEqual(expected, AutomationInterface.TwinCATLibraryVersionsEqual(left, right));
+        }
+
         [DataTestMethod]
         [DataRow("0.1.2", "0.1.2")]
         [DataRow("0.1.2-1", "0.1.2.1")]
@@ -56,10 +74,10 @@ namespace TwinpackTests
         }
 
         [DataTestMethod]
-        [DataRow("1.2.3.0", "1.2.3")]
-        [DataRow("v1.2.3.0", "1.2.3")]
+        [DataRow("1.2.3.0", "1.2.3-0")]
+        [DataRow("v1.2.3.0", "1.2.3-0")]
         [DataRow("1.2.3.4", "1.2.3-4")]
-        [DataRow("1.2.3.0-feat-ci", "1.2.3-feat-ci")]
+        [DataRow("1.2.3.0-feat-ci", "1.2.3-feat-ci.0")]
         [DataRow("1.2.3.4-feat-ci", "1.2.3-feat-ci.4")]
         public void NugetVersionMovesRevisionIntoPrerelease(string input, string expected)
         {
@@ -86,26 +104,28 @@ namespace TwinpackTests
         [DataRow("1.2.3.4")]
         [DataRow("1.2.3.4-feat-ci")]
         [DataRow("0.1.2.11-release-1-x")]
+        [DataRow("1.2.3.0")]
+        [DataRow("1.2.3.0-feat-ci")]
         public void NugetVersionRoundTripsThroughFourPartVersion(string twincatVersion)
         {
             Assert.AreEqual(twincatVersion, AutomationInterface.FourPartVersion(AutomationInterface.NugetVersion(twincatVersion)));
         }
 
         /// <summary>
-        /// A revision of 0 is dropped rather than encoded, exactly as `nuget pack` would drop it.
-        /// The round trip is therefore version-equal rather than string-equal, which is the same
-        /// equivalence NugetServer relies on when it matches a requested version against a feed.
+        /// A revision of 0 is encoded like any other, so the library version TwinCAT registers is
+        /// still recoverable from the package version. `nuget pack` would have dropped it.
         /// </summary>
         [DataTestMethod]
-        [DataRow("1.2.3.0", "1.2.3")]
-        [DataRow("1.2.3.0-feat-ci", "1.2.3-feat-ci")]
-        public void NugetVersionDropsAZeroRevision(string twincatVersion, string expected)
+        [DataRow("1.2.3.0", "1.2.3-0")]
+        [DataRow("1.2.3.0-feat-ci", "1.2.3-feat-ci.0")]
+        public void NugetVersionKeepsAZeroRevision(string twincatVersion, string expected)
         {
             var nuget = AutomationInterface.NugetVersion(twincatVersion);
             Assert.AreEqual(expected, nuget);
+            Assert.AreEqual(twincatVersion, AutomationInterface.FourPartVersion(nuget));
             Assert.AreEqual(
-                NuGetVersion.Parse(twincatVersion),
-                NuGetVersion.Parse(AutomationInterface.FourPartVersion(nuget)));
+                AutomationInterface.TwincatNumericVersion(twincatVersion),
+                AutomationInterface.TwinCATLibraryVersion(nuget));
         }
     }
 }

@@ -93,11 +93,16 @@ namespace Twinpack.Core
         /// <summary>
         /// Inverse of <see cref="FourPartVersion"/>: turns a TwinCAT <c>x.y.z.w[-qualifier]</c>
         /// version into the NuGet version a package is published under. NuGet SemVer only has
-        /// three numbers, so <c>w</c> moves into the prerelease and a <c>w</c> of 0 drops out
-        /// entirely (which is what <c>nuget pack</c> itself does).
-        /// <c>1.0.0.0</c> is <c>1.0.0</c>, <c>1.0.0.1</c> is <c>1.0.0-1</c>,
-        /// <c>1.0.0.0-feat-ci</c> is <c>1.0.0-feat-ci</c> and <c>1.0.0.1-feat-ci</c> is
+        /// three numbers, so <c>w</c> moves into the prerelease.
+        /// <c>1.0.0.0</c> is <c>1.0.0-0</c>, <c>1.0.0.1</c> is <c>1.0.0-1</c>,
+        /// <c>1.0.0.0-feat-ci</c> is <c>1.0.0-feat-ci.0</c> and <c>1.0.0.1-feat-ci</c> is
         /// <c>1.0.0-feat-ci.1</c>. Anything that is not four numbers is returned unchanged.
+        /// <para>
+        /// A <c>w</c> of 0 is encoded like any other, even though <c>nuget pack</c> would drop it,
+        /// because dropping it cannot be undone: the library file inside the package is still
+        /// registered under <c>x.y.z.0</c> and <c>ITcPlcLibraryManager.AddLibrary</c> matches the
+        /// version string exactly, so a package that says <c>1.0.0</c> could not reference it.
+        /// </para>
         /// </summary>
         public static string NugetVersion(string version)
         {
@@ -117,9 +122,9 @@ namespace Twinpack.Core
             var revision = int.Parse(parts[3]);
 
             if (string.IsNullOrEmpty(qualifier))
-                return revision == 0 ? xyz : $"{xyz}-{revision}";
+                return $"{xyz}-{revision}";
 
-            return revision == 0 ? $"{xyz}-{qualifier}" : $"{xyz}-{qualifier}.{revision}";
+            return $"{xyz}-{qualifier}.{revision}";
         }
 
         private static string PrereleaseRevision(string prefix, string suffix)

@@ -61,7 +61,7 @@ namespace TwinpackTests
 
             var path = NugetPackService.PackLibrary(plc, _library, "TC3.1", compiled: false, outputDirectory: _output);
 
-            // nuget pack drops the zero revision, so 1.0.2.4 stays encoded as a prerelease
+            // the 4th version part is always carried in the prerelease
             Assert.AreEqual("PlcLibrary1.1.0.2-4.nupkg", Path.GetFileName(path));
 
             using (var reader = new PackageArchiveReader(File.OpenRead(path)))
@@ -91,7 +91,7 @@ namespace TwinpackTests
 
                 var dependencies = nuspec.GetDependencyGroups().SelectMany(x => x.Packages).ToList();
                 Assert.AreEqual(2, dependencies.Count);
-                Assert.AreEqual("[1.4.2, )", dependencies.Single(x => x.Id == "ZCore").VersionRange.ToNormalizedString());
+                Assert.AreEqual("[1.4.2-0, )", dependencies.Single(x => x.Id == "ZCore").VersionRange.ToNormalizedString());
                 Assert.AreEqual("Any.Version.Lib", dependencies.Single(x => x.Id != "ZCore").Id);
             }
         }
@@ -103,7 +103,7 @@ namespace TwinpackTests
 
             var path = NugetPackService.PackLibrary(plc, _library, "TC3.1", compiled: true, outputDirectory: _output);
 
-            Assert.AreEqual("PlcLibrary1.2.0.0.nupkg", Path.GetFileName(path));
+            Assert.AreEqual("PlcLibrary1.2.0.0-0.nupkg", Path.GetFileName(path));
 
             using (var reader = new PackageArchiveReader(File.OpenRead(path)))
             {
