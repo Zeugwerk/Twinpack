@@ -80,7 +80,7 @@ namespace Twinpack.Core
 
                 return string.Equals(title, pv.Title, StringComparison.InvariantCultureIgnoreCase)
                     && (!requireDistributor || string.Equals(company, pv.DistributorName, StringComparison.InvariantCultureIgnoreCase))
-                    && (unpinned || TwinCATLibraryVersionsEqual(version, pv.Version));
+                    && (unpinned || TwinCATLibraryVersionsEquivalent(version, pv.Version));
             });
         }
 

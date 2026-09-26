@@ -229,12 +229,42 @@ namespace Twinpack.Core
             return null;
         }
 
+        /// <summary>
+        /// The version string of the library that is actually installed, which is the only one
+        /// <see cref="ITcPlcLibraryManager.AddLibrary"/> accepts, since it matches versions literally.
+        /// A package version cannot always name it: NuGet publishes a library versioned
+        /// <c>x.y.z.0</c> as <c>x.y.z</c>, and TwinCAT allows a library to be versioned <c>x.y.z</c>
+        /// outright, so by the time the version gets here the two are the same string. Asking the library
+        /// manager which one exists settles it. The requested version is kept when nothing matches, so
+        /// the caller still fails reporting the version that was asked for.
+        /// </summary>
+        protected string ResolveInstalledVersion(ITcPlcLibraryManager libraryManager, string libraryName, string version)
+        {
+            if (libraryManager == null || string.IsNullOrEmpty(version) || version == "*")
+                return version;
+
+            string equivalent = null;
+            foreach (ITcPlcLibrary r in libraryManager.ScanLibraries())
+            {
+                if (!string.Equals(r.Name, libraryName, StringComparison.InvariantCultureIgnoreCase))
+                    continue;
+
+                if (string.Equals(r.Version, version, StringComparison.Ordinal))
+                    return version;
+
+                if (equivalent == null && TwinCATLibraryVersionsEquivalent(r.Version, version))
+                    equivalent = r.Version;
+            }
+
+            return equivalent ?? version;
+        }
+
         protected string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
         {
             // try to find the vendor
             foreach (ITcPlcLibrary r in libManager.ScanLibraries())
             {
-                if (r.Name == libraryName && (version == "*" || version == null || TwinCATLibraryVersionsEqual(r.Version, version)))
+                if (r.Name == libraryName && (version == "*" || version == null || TwinCATLibraryVersionsEquivalent(r.Version, version)))
                 {
                     return r.Distributor;
                 }
@@ -269,7 +299,7 @@ namespace Twinpack.Core
                 {
                     if (string.Equals(r.Name, package.PackageVersion.Title, StringComparison.InvariantCultureIgnoreCase) &&
                         string.Equals(r.Distributor, package.PackageVersion.DistributorName, StringComparison.InvariantCultureIgnoreCase) &&
-                        (package.PackageVersion.Version == null || TwinCATLibraryVersionsEqual(r.Version, package.PackageVersion.Version)))
+                        (package.PackageVersion.Version == null || TwinCATLibraryVersionsEquivalent(r.Version, package.PackageVersion.Version)))
                     {
                         _referenceCache.Add(new PlcLibrary { Name = package.PackageVersion.Title, DistributorName = package.PackageVersion.DistributorName, Version = package.PackageVersion.Version });
                         referenceFound = true;
@@ -329,7 +359,7 @@ namespace Twinpack.Core
 
             var options = package.Config.Options;
             var libraryName = package.PackageVersion.Title;
-            var version = TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*";
+            var version = ResolveInstalledVersion(libraryManager, libraryName, TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*");
             var distributorName = package.PackageVersion.DistributorName ?? GuessDistributorName(libraryManager, libraryName, version);
 
             // if we can't find the reference with the distributor name from the package, fallback to looking it up

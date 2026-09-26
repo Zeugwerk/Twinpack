@@ -61,15 +61,15 @@ namespace TwinpackTests
 
             var path = NugetPackService.PackLibrary(plc, _library, "TC3.1", compiled: false, outputDirectory: _output);
 
-            // the 4th version part is always carried in the prerelease
-            Assert.AreEqual("PlcLibrary1.1.0.2-4.nupkg", Path.GetFileName(path));
+            // NuGet understands the four part version as it is
+            Assert.AreEqual("PlcLibrary1.1.0.2.4.nupkg", Path.GetFileName(path));
 
             using (var reader = new PackageArchiveReader(File.OpenRead(path)))
             {
                 var nuspec = reader.NuspecReader;
 
                 Assert.AreEqual("PlcLibrary1", nuspec.GetId());
-                Assert.AreEqual("1.0.2-4", nuspec.GetVersion().ToNormalizedString());
+                Assert.AreEqual("1.0.2.4", nuspec.GetVersion().ToNormalizedString());
 
                 // the version the package is published under has to resolve back to what the
                 // project asked for, otherwise Twinpack cannot match it
@@ -91,7 +91,7 @@ namespace TwinpackTests
 
                 var dependencies = nuspec.GetDependencyGroups().SelectMany(x => x.Packages).ToList();
                 Assert.AreEqual(2, dependencies.Count);
-                Assert.AreEqual("[1.4.2-0, )", dependencies.Single(x => x.Id == "ZCore").VersionRange.ToNormalizedString());
+                Assert.AreEqual("[1.4.2, )", dependencies.Single(x => x.Id == "ZCore").VersionRange.ToNormalizedString());
                 Assert.AreEqual("Any.Version.Lib", dependencies.Single(x => x.Id != "ZCore").Id);
             }
         }
@@ -103,10 +103,16 @@ namespace TwinpackTests
 
             var path = NugetPackService.PackLibrary(plc, _library, "TC3.1", compiled: true, outputDirectory: _output);
 
-            Assert.AreEqual("PlcLibrary1.2.0.0-0.nupkg", Path.GetFileName(path));
+            // a revision of 0 is the one part NuGet normalizes away, so this is a stable 2.0.0
+            Assert.AreEqual("PlcLibrary1.2.0.0.nupkg", Path.GetFileName(path));
 
             using (var reader = new PackageArchiveReader(File.OpenRead(path)))
             {
+                // NuGet writes the version into the nuspec itself and normalizes the revision of 0 away,
+                // so the package is a stable 2.0.0 and nothing downstream can tell it apart from a
+                // library whose version was three parts to begin with
+                Assert.AreEqual("2.0.0", reader.NuspecReader.GetVersion().OriginalVersion);
+
                 var tags = reader.NuspecReader.GetTags().Split(' ');
                 CollectionAssert.Contains(tags, NugetPackService.LibraryTag);
                 CollectionAssert.Contains(tags, NugetPackService.CompiledLibraryTag);
@@ -130,7 +136,7 @@ namespace TwinpackTests
             var path = NugetPackService.PackLibrary(plc, _library, "TC3.1", false, _output,
                 new PlcPublishMetadata { DisplayName = "My Library With Spaces", Description = "d", Authors = "a" });
 
-            Assert.AreEqual("My.Library.With.Spaces.1.0.0-1.nupkg", Path.GetFileName(path));
+            Assert.AreEqual("My.Library.With.Spaces.1.0.0.1.nupkg", Path.GetFileName(path));
 
             using (var reader = new PackageArchiveReader(File.OpenRead(path)))
             {
@@ -182,7 +188,7 @@ namespace TwinpackTests
 
             var path = NugetPackService.PackApplication(plc, boot, tmc, _output);
 
-            Assert.AreEqual("MyApp.1.4.2-1.nupkg", Path.GetFileName(path));
+            Assert.AreEqual("MyApp.1.4.2.1.nupkg", Path.GetFileName(path));
 
             using (var reader = new PackageArchiveReader(File.OpenRead(path)))
             {

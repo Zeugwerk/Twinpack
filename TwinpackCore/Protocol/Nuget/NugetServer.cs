@@ -285,8 +285,8 @@ namespace Twinpack.Protocol
 
             using (MemoryStream packageStream = new MemoryStream())
             {
-                var version = packageVersion.Version == null ? null : new NuGetVersion(PublishedVersion(packageVersion.Version));
-                if (version == null)
+                NuGetVersion version;
+                if (packageVersion.Version == null)
                 {
                     PackageMetadataResource meta = await _sourceRepository.GetResourceAsync<PackageMetadataResource>();
                     IEnumerable<IPackageSearchMetadata> metaData = await meta.GetMetadataAsync(
@@ -297,6 +297,17 @@ namespace Twinpack.Protocol
                         NullLogger.Instance,
                         cancellationToken);
                     version = metaData.OrderByDescending(p => p.Identity.Version).FirstOrDefault()?.Identity.Version;
+                }
+                else
+                {
+                    // the published version is never reconstructed from the four part one, because more
+                    // than one published version can produce the same four part version: a package using
+                    // the superseded convention that put the revision in the prerelease yields the same
+                    // one as a package that spells all four parts out. Asking the feed which versions it
+                    // has and matching against those is unambiguous.
+                    var published = await resource.GetAllVersionsAsync(packageVersion.Name, _cache, NullLogger.Instance, cancellationToken);
+                    version = published.FirstOrDefault(x => VersionMatches(x, packageVersion.Version))
+                        ?? new NuGetVersion(packageVersion.Version);
                 }
 
                 await resource.CopyNupkgToStreamAsync(
@@ -759,28 +770,19 @@ namespace Twinpack.Protocol
         }
 
         /// <summary>
-        /// Version as the rest of Twinpack spells it: four parts, with the revision taken back out of
-        /// the prerelease. This value ends up in config.json, in library file names and in requests to
-        /// the other configured package servers, and none of those understand NuGet's three part form.
+        /// Version as the rest of Twinpack spells it: four parts, with a revision of 0 that NuGet
+        /// normalized away padded back. This value ends up in config.json, in library file names and
+        /// in requests to the other configured package servers, and none of those understand NuGet's
+        /// three part form.
         /// </summary>
         protected virtual string EvaluateVersion(NuGetVersion version)
         {
             return Core.AutomationInterface.FourPartVersion(version?.OriginalVersion ?? version?.ToString());
         }
 
-        /// <summary>
-        /// Inverse of <see cref="EvaluateVersion"/>: the version this feed actually published the
-        /// package under, which is what <see cref="FindPackageByIdResource"/> has to be asked for.
-        /// A server that overrides <see cref="EvaluateVersion"/> has to override this as well, or it
-        /// ends up asking its feed for a version that was never published there.
-        /// </summary>
-        protected virtual string PublishedVersion(string version)
-        {
-            return Core.AutomationInterface.NugetVersion(version);
-        }
-
-        // nuget pack drops a trailing ".0", so "1.0.0.0-feat-ci" has to match a package stored as "1.0.0-feat-ci";
-        // packages may also carry the 4th part in the prerelease ("1.0.0-feat-ci.1" is "1.0.0.1-feat-ci")
+        // NuGet normalizes a trailing ".0" away, so "1.0.0.0-feat-ci" has to match a package stored as
+        // "1.0.0-feat-ci"; packages published under the superseded convention may also carry the 4th
+        // part in the prerelease ("1.0.0-feat-ci.1" is "1.0.0.1-feat-ci")
         protected bool VersionMatches(NuGetVersion candidate, string requested)
         {
             if (EvaluateVersion(candidate) == requested)
