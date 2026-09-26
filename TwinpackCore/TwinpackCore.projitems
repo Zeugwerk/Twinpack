@@ -27,6 +27,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Authentication.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\BeckhoffServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetPackBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\CachedHttpClient.cs" />
@@ -45,6 +46,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\Solution.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\IPackageServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\TwinpackServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\NugetPackService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\PackageServerCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\TwinpackService.cs" />

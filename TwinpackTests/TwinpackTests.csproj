@@ -64,6 +64,7 @@
     <Compile Include="AutomationInterfaceVersionTest.cs" />
     <Compile Include="ConfigFactoryTest.cs" />
     <Compile Include="mocks\PackageServerMock.cs" />
+    <Compile Include="NugetPackBuilderTest.cs" />
     <Compile Include="SystemTest.cs" />
     <Compile Include="TwinpackServiceTest.cs" />
     <Compile Include="PackageServerCollectionTest.cs" />

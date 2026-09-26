@@ -413,8 +413,6 @@ namespace Twinpack.Configuration
         {
             var config = ConfigFactory.Load(rootPath);
 
-            _logger.Info("[upload] pushing libraries to Twinpack server");
-
             var suffix = compiled ? "compiled-library" : "library";
             var plcs = config.Projects.SelectMany(x => x.Plcs)
                                       .Where(x => x.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary ||

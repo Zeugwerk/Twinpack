@@ -25,6 +25,13 @@ namespace Twinpack
                 configure.AddCommand<SetVersionCommand>("set-version");
                 configure.AddCommand<PullCommand>("pull");
                 configure.AddCommand<PushCommand>("push");
+                // 'nuget' groups everything that produces/consumes NuGet-format packages, so
+                // `nuget pack` cannot be confused with `push`, which targets a Twinpack repository.
+                configure.AddBranch("nuget", nuget =>
+                {
+                    nuget.SetDescription("Work with NuGet packages of TwinCAT libraries");
+                    nuget.AddCommand<NugetPackCommand>("pack");
+                });
                 configure.Settings.StrictParsing = true;
                 configure.Settings.ApplicationName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
                 configure.Settings.ApplicationVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();

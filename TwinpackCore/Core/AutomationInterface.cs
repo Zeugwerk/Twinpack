@@ -90,6 +90,38 @@ namespace Twinpack.Core
             return version;
         }
 
+        /// <summary>
+        /// Inverse of <see cref="FourPartVersion"/>: turns a TwinCAT <c>x.y.z.w[-qualifier]</c>
+        /// version into the NuGet version a package is published under. NuGet SemVer only has
+        /// three numbers, so <c>w</c> moves into the prerelease and a <c>w</c> of 0 drops out
+        /// entirely (which is what <c>nuget pack</c> itself does).
+        /// <c>1.0.0.0</c> is <c>1.0.0</c>, <c>1.0.0.1</c> is <c>1.0.0-1</c>,
+        /// <c>1.0.0.0-feat-ci</c> is <c>1.0.0-feat-ci</c> and <c>1.0.0.1-feat-ci</c> is
+        /// <c>1.0.0-feat-ci.1</c>. Anything that is not four numbers is returned unchanged.
+        /// </summary>
+        public static string NugetVersion(string version)
+        {
+            var v = version?.Trim().TrimStart(new char[] { 'v', 'V', ' ', '\t' });
+            if (string.IsNullOrEmpty(v))
+                return version;
+
+            var dash = v.IndexOf('-');
+            var prefix = dash < 0 ? v : v.Substring(0, dash);
+            var qualifier = dash < 0 ? null : v.Substring(dash + 1);
+
+            var parts = prefix.Split('.');
+            if (parts.Length != 4 || !parts.All(x => int.TryParse(x, out _)))
+                return version;
+
+            var xyz = string.Join(".", parts.Take(3).ToArray());
+            var revision = int.Parse(parts[3]);
+
+            if (string.IsNullOrEmpty(qualifier))
+                return revision == 0 ? xyz : $"{xyz}-{revision}";
+
+            return revision == 0 ? $"{xyz}-{qualifier}" : $"{xyz}-{qualifier}.{revision}";
+        }
+
         private static string PrereleaseRevision(string prefix, string suffix)
         {
             var dot = suffix.LastIndexOf('.');
