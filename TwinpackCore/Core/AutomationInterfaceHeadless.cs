@@ -182,7 +182,14 @@ namespace Twinpack.Core
                     $"TwinCAT library repository index ({string.Join(", ", _configPaths)}) lists it");
 
             // an explicitly configured namespace (e.g. preserved from a previous reference) wins over the computed default
-            ns = string.IsNullOrEmpty(package.Config?.Namespace) ? ns : package.Config.Namespace;
+            var namespaceOverride = package.Config?.Namespace;
+            if (!string.IsNullOrEmpty(namespaceOverride) && !ConfigPlcPackage.IsUsableNamespace(namespaceOverride))
+            {
+                _logger.Warn("[namespace] ignoring '{0}' configured for {1}, it is no valid identifier", namespaceOverride, package.PackageVersion.Name);
+                namespaceOverride = null;
+            }
+
+            ns = string.IsNullOrEmpty(namespaceOverride) ? ns : namespaceOverride;
 
             // make sure the package is not present before adding it, we have to
             // force, because the package might not even be installed

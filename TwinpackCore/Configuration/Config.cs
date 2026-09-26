@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
 
@@ -79,6 +80,18 @@ namespace Twinpack.Configuration
 
     public class ConfigPlcPackage
     {
+        /// <summary>
+        /// Whether a configured namespace can be handed to TwinCAT at all. Only an identifier is accepted,
+        /// anything else is reported as C0416 and takes every qualified access to the library down with it.
+        /// Configurations written before Twinpack 1.7.17.0 stamped the package name in here, which nothing
+        /// read back then, so names like "SPT Base Types" or "TwinCAT.XAE.PLC.Lib.Tc2_System" are still
+        /// sitting in older config.json files and have to be ignored rather than passed on.
+        /// </summary>
+        public static bool IsUsableNamespace(string ns)
+        {
+            return !string.IsNullOrEmpty(ns) && Regex.IsMatch(ns, @"^[A-Za-z_][A-Za-z0-9_]*$");
+        }
+
         public ConfigPlcPackage(PackageItem pv)
         {
             Name = pv.PackageVersion?.Name ?? pv.Package?.Name ?? pv.Config?.Name ?? pv.Catalog?.Name;

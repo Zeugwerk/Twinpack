@@ -770,10 +770,11 @@ namespace Twinpack.Protocol
         }
 
         /// <summary>
-        /// Version as the rest of Twinpack spells it: four parts, with a revision of 0 that NuGet
-        /// normalized away padded back. This value ends up in config.json, in library file names and
-        /// in requests to the other configured package servers, and none of those understand NuGet's
-        /// three part form.
+        /// Version as the rest of Twinpack spells it. The version a NuGet feed reports needs no
+        /// translation, since NuGet keeps all four parts, so this only decodes the superseded
+        /// convention that carried the revision in the prerelease. A three part version is left as
+        /// it is, because TwinCAT accepts one. This value ends up in config.json, in library file
+        /// names and in requests to the other configured package servers.
         /// </summary>
         protected virtual string EvaluateVersion(NuGetVersion version)
         {

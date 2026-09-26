@@ -398,6 +398,11 @@ namespace Twinpack.Core
 
             var parameters = package.Config?.Parameters;
             var namespaceOverride = package.Config?.Namespace;
+            if (!string.IsNullOrEmpty(namespaceOverride) && !ConfigPlcPackage.IsUsableNamespace(namespaceOverride))
+            {
+                _logger.Warn("[namespace] ignoring '{0}' configured for {1}, it is no valid identifier", namespaceOverride, package.PackageVersion.Name);
+                namespaceOverride = null;
+            }
 
             // only touch the reference item's xml when something actually needs to be written. Merely calling
             // ProduceXml/ConsumeXml on a freshly resolved reference can make TwinCAT materialize and persist

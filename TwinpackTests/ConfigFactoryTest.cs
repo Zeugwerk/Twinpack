@@ -254,5 +254,27 @@ namespace TwinpackTests
             Assert.AreEqual(ConfigPlcProject.PlcProjectType.UnitTestApplication, ConfigPlcProjectFactory.GuessPlcType(plc));
 
         }
+
+        [DataTestMethod]
+        [DataRow("ZCore")]
+        [DataRow("Tc2_Standard")]
+        [DataRow("_Internal")]
+        [DataRow("Lib3")]
+        public void IsUsableNamespaceAcceptsIdentifier(string ns)
+        {
+            Assert.IsTrue(ConfigPlcPackage.IsUsableNamespace(ns));
+        }
+
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow("SPT Base Types")]
+        [DataRow("TwinCAT.XAE.PLC.Lib.Tc2_System")]
+        [DataRow("XY-PLC")]
+        [DataRow("3Phase")]
+        public void IsUsableNamespaceRejectsEverythingElse(string ns)
+        {
+            Assert.IsFalse(ConfigPlcPackage.IsUsableNamespace(ns));
+        }
     }
 }
