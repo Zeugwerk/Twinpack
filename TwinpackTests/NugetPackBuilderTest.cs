@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NuGet.Packaging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -192,6 +193,57 @@ namespace TwinpackTests
                 CollectionAssert.Contains(files, "MyApp.tmc");
                 Assert.AreEqual("application", reader.NuspecReader.GetTags());
             }
+        }
+
+        [TestMethod]
+        public void ResolveTargetKeepsWhatTheCallerAskedFor()
+        {
+            Directory.CreateDirectory(Path.Combine(_output, ".Zeugwerk", "libraries", "TC3.1.4024.56"));
+
+            Assert.AreEqual("TC3.1", LibraryTargets.Resolve("TC3.1", new[] { LibraryTargets.DirectoryOf(_output) }));
+        }
+
+        /// <summary>
+        /// The case that used to silently read from a folder that does not exist: a build with no
+        /// --tcversion resolves the target through the remote manager, so packing has to read the
+        /// target back out of the build output rather than assume TC3.1.
+        /// </summary>
+        [TestMethod]
+        public void ResolveTargetTakesTheOneTheBuildProduced()
+        {
+            Directory.CreateDirectory(Path.Combine(_output, ".Zeugwerk", "libraries", "TC3.1.4024.56"));
+
+            Assert.AreEqual("TC3.1.4024.56", LibraryTargets.Resolve(null, new[] { LibraryTargets.DirectoryOf(_output) }));
+        }
+
+        [TestMethod]
+        public void ResolveTargetFindsTheTargetInAModuleDirectory()
+        {
+            var module = Path.Combine(_output, "modules", "D_Core", "src");
+            Directory.CreateDirectory(Path.Combine(module, ".Zeugwerk", "libraries", "TC3.1.4026.14"));
+
+            var directories = new[] { LibraryTargets.DirectoryOf(_output), LibraryTargets.DirectoryOf(module) };
+
+            Assert.AreEqual("TC3.1.4026.14", LibraryTargets.Resolve(null, directories));
+        }
+
+        [TestMethod]
+        public void ResolveTargetRefusesToGuessBetweenSeveralTargets()
+        {
+            Directory.CreateDirectory(Path.Combine(_output, ".Zeugwerk", "libraries", "TC3.1"));
+            Directory.CreateDirectory(Path.Combine(_output, ".Zeugwerk", "libraries", "TC3.1.4024.56"));
+
+            var ex = Assert.ThrowsException<InvalidOperationException>(
+                () => LibraryTargets.Resolve(null, new[] { LibraryTargets.DirectoryOf(_output) }));
+
+            StringAssert.Contains(ex.Message, "TC3.1");
+            StringAssert.Contains(ex.Message, "TC3.1.4024.56");
+        }
+
+        [TestMethod]
+        public void ResolveTargetFallsBackWhenNothingWasBuilt()
+        {
+            Assert.AreEqual(LibraryTargets.Default, LibraryTargets.Resolve(null, new[] { LibraryTargets.DirectoryOf(_output) }));
         }
     }
 }

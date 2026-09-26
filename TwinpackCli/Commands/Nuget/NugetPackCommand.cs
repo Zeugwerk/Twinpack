@@ -17,8 +17,8 @@ namespace Twinpack.Commands
         public class Settings : AbstractSettings
         {
             [CommandOption("--target")]
-            [Description("TwinCAT target the libraries were built for, e.g. TC3.1. Selects which build output is packed and is also the folder the library is placed in inside the package.")]
-            public string Target { get; set; } = "TC3.1";
+            [Description("TwinCAT target the libraries were built for, e.g. TC3.1. Selects which build output is packed and is also the folder the library is placed in inside the package. Defaults to the target found in the build output.")]
+            public string Target { get; set; }
 
             [CommandOption("--compiled")]
             [Description("Pack .compiled-library files instead of .library files. Adds the 'tp-compiled-library' tag Twinpack needs to recognize them.")]
@@ -75,14 +75,19 @@ namespace Twinpack.Commands
             // Packing is offline, so unlike `push` there is no login to perform. --without-config
             // still needs the package servers to resolve the dependencies it reads from the binary.
             List<(ConfigPlcProject Plc, PlcPublishMetadata Metadata)> plcs;
+            string target;
             if (settings.WithoutConfig)
             {
+                // --library-path says where the libraries are, so the target is only the folder
+                // they end up in inside the package and there is no build output to read it from.
+                target = settings.Target ?? LibraryTargets.Default;
                 PackagingServerRegistry.InitializeAsync(useDefaults: true, login: false).GetAwaiter().GetResult();
                 plcs = ConfigPlcProjectFactory.PlcProjectsFromPath(settings.LibraryPath, PackagingServerRegistry.Servers).ToList();
             }
             else
             {
-                plcs = ConfigPlcProjectFactory.PlcProjectsFromConfig(settings.Compiled, settings.Target).ToList();
+                target = LibraryTargets.Resolve(settings.Target, new[] { LibraryTargets.DirectoryOf(null) });
+                plcs = ConfigPlcProjectFactory.PlcProjectsFromConfig(settings.Compiled, target).ToList();
             }
 
             if (!plcs.Any())
@@ -114,7 +119,7 @@ namespace Twinpack.Commands
                 packages.Add(NugetPackService.PackLibrary(
                     plc,
                     plc.FilePath,
-                    settings.Target,
+                    target,
                     settings.Compiled,
                     outputDirectory,
                     PlcPublishMetadata.Merge(metadata, overrides)));

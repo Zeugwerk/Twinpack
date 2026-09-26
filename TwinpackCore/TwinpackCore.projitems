@@ -46,6 +46,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\Solution.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\IPackageServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\TwinpackServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\LibraryTargets.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NugetPackService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\PackageServerCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerRegistry.cs" />
