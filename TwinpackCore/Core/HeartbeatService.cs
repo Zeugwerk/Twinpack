@@ -42,8 +42,8 @@ public static class HeartbeatService
                 _timer = new System.Threading.Timer(OnTimeout, null, _timeout, System.Threading.Timeout.InfiniteTimeSpan);
                 _started = true;
                 
-                _logger?.Info(
-                    "HeartbeatService: First heartbeat received — starting timeout watchdog ({Timeout} min).",
+                _logger?.Debug(
+                    "HeartbeatService: First heartbeat received, starting timeout watchdog ({Timeout} min).",
                     _timeout.TotalMinutes);
             }
             else
