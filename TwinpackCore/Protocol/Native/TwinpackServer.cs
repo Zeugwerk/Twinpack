@@ -49,7 +49,9 @@ namespace Twinpack.Protocol
         }
         public string UrlRegister
         {
-            get => UrlBase + "/wp-login.php";
+            // Stays relative to UrlBase so self-hosted servers keep working; the
+            // Zeugwerk server redirects this to its account pages.
+            get => UrlBase + "/login.php?action=register";
         }
 
         public string Username { get; set; }

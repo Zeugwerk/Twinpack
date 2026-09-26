@@ -311,12 +311,12 @@ namespace Twinpack.Dialogs
 
         private void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("https://zeugwerk.dev/wp-login.php");
+            Process.Start("https://api.zeugwerk.dev/account/login");
         }
 
         private void ForgotPasswordButton_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("https://zeugwerk.dev/wp-login.php?action=lostpassword");
+            Process.Start("https://api.zeugwerk.dev/account/lost-password");
         }
 
         public bool IsRemoveButtonEnabled
