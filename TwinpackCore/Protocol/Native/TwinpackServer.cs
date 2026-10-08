@@ -215,8 +215,19 @@ namespace Twinpack.Protocol
                                             page, perPage, cancellationToken);
         }
 
+        // twinpack.dev only knows numeric versions (1.2.3.4, wildcards allowed). Asking it for
+        // prerelease versions like 0.2.0-feat-ci gets a validation error back, so treat those as
+        // not available here and let the next server answer.
+        private static bool IsServableVersion(string version)
+        {
+            return string.IsNullOrEmpty(version) || Regex.IsMatch(version, @"^[0-9.*]+$");
+        }
+
         public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
         {
+            if (!IsServableVersion(library.Version))
+                return new PackageVersionGetResponse();
+
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Url + $"/package-resolve" +
                 $"?distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
                 $"&name={HttpUtility.UrlEncode(library.Name)}" +
@@ -383,6 +394,9 @@ namespace Twinpack.Protocol
 
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
         {
+            if (!IsServableVersion(library.Version))
+                return new PackageVersionGetResponse();
+
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Url + $"/package-version" +
                                             $"?distributor-name={library.DistributorName}" +
                                             $"&name={library.Name}" +
