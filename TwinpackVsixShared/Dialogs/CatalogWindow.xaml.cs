@@ -1192,7 +1192,7 @@ namespace Twinpack.Dialogs
                 IsPackageLoading = true;
                 IsPackageVersionLoading = true;
 
-                await _twinpack.FetchPackageAsync(_selectedItem, token);
+                await _twinpack.FetchPackageAsync(_selectedItem, token, includeDependencies: false);
 
                 var selectedPackage = _plcConfig?.Packages?.FirstOrDefault(x => x.Name == _selectedItem.Catalog?.Name);
                 Options = selectedPackage?.Options ?? new AddPlcLibraryOptions();
@@ -1203,10 +1203,49 @@ namespace Twinpack.Dialogs
                 TargetsView.Visibility = _selectedItem.Package?.Targets?.Any() == true ? Visibility.Visible : Visibility.Collapsed;
                 ConfigurationsView.Visibility = _selectedItem.Package?.Configurations?.Any() == true ? Visibility.Visible : Visibility.Collapsed;
 
-                ConfigurationsView.SelectedIndex = -1;
-                BranchesView.SelectedIndex = string.IsNullOrEmpty(_selectedItem.Used?.Branch) ? 0 : _selectedItem.Package?.Branches?.FindIndex(x => x == _selectedItem.Used?.Branch) ?? -1;
-                TargetsView.SelectedIndex = string.IsNullOrEmpty(_selectedItem.Used?.Target) ? 0 : _selectedItem.Package?.Targets?.FindIndex(x => x == _selectedItem.Used?.Target) ?? -1;
-                ConfigurationsView.SelectedIndex = string.IsNullOrEmpty(_selectedItem.Used?.Configuration) ? 0 : _selectedItem.Package?.Configurations?.FindIndex(x => x == _selectedItem.Used?.Configuration) ?? -1;
+                // These assignments raise SelectionChanged. That handler loads the version list and
+                // fetches the package again, so the click waits for the same request twice.
+                BranchesView.SelectionChanged -= PackageFilter_SelectionChanged;
+                TargetsView.SelectionChanged -= PackageFilter_SelectionChanged;
+                ConfigurationsView.SelectionChanged -= PackageFilter_SelectionChanged;
+                VersionsView.SelectionChanged -= PackageVersions_SelectionChanged;
+                try
+                {
+                    ConfigurationsView.SelectedIndex = -1;
+                    BranchesView.SelectedIndex = string.IsNullOrEmpty(_selectedItem.Used?.Branch) ? 0 : _selectedItem.Package?.Branches?.FindIndex(x => x == _selectedItem.Used?.Branch) ?? -1;
+                    TargetsView.SelectedIndex = string.IsNullOrEmpty(_selectedItem.Used?.Target) ? 0 : _selectedItem.Package?.Targets?.FindIndex(x => x == _selectedItem.Used?.Target) ?? -1;
+                    ConfigurationsView.SelectedIndex = string.IsNullOrEmpty(_selectedItem.Used?.Configuration) ? 0 : _selectedItem.Package?.Configurations?.FindIndex(x => x == _selectedItem.Used?.Configuration) ?? -1;
+
+                    if (_selectedItem.Package?.Name != null &&
+                        BranchesView.SelectedIndex >= 0 && TargetsView.SelectedIndex >= 0 && ConfigurationsView.SelectedIndex >= 0)
+                    {
+                        await LoadFirstPackageVersionsPageAsync(token);
+                        var index = -1;
+                        if (Versions?.Any(x => x.Version != null) == true)
+                        {
+                            index = Versions?.FindIndex(x => x.Version == _selectedItem?.Used?.Version) ?? -1;
+                            if (_selectedItem?.IsPlaceholder == true)
+                                index = 0;
+                            else if (index < 0 && _selectedItem?.Used != null)
+                                index = Versions.Count > 1 ? 1 : 0;
+                            else if (index == 0 && _selectedItem?.Used == null)
+                                index = 1;
+                        }
+
+                        VersionsView.IsEnabled = index >= 0;
+                        VersionsView.SelectedIndex = index;
+                    }
+                }
+                finally
+                {
+                    BranchesView.SelectionChanged += PackageFilter_SelectionChanged;
+                    TargetsView.SelectionChanged += PackageFilter_SelectionChanged;
+                    ConfigurationsView.SelectionChanged += PackageFilter_SelectionChanged;
+                    VersionsView.SelectionChanged += PackageVersions_SelectionChanged;
+                }
+
+                IsPackageLoading = false;
+                await _twinpack.LoadDependenciesAsync(_selectedItem, token);
 
             },
             () =>

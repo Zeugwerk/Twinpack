@@ -42,19 +42,25 @@ namespace Twinpack.Protocol
 
         public override async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
         {
-            // A PLC reference names the library (Tc3_Mc3Base). The feed id is not that name with a
-            // fixed prefix: Tc2_Standard is TwinCAT.XAE.PLC.Lib.Tc2_Standard, MC3 is
-            // TwinCAT.XAE.PLC.Lib.Motion.MC3.Tc3_Mc3Base. The library name is the id's last segment.
-            if (library != null && !IsPackageId(library.Name))
-            {
-                var id = await PackageIdForLibraryAsync(library.Name, cancellationToken);
-                if (id == null)
-                    return new PackageVersionGetResponse();
+            if (library == null || IsPackageId(library.Name))
+                return await base.GetPackageVersionAsync(library, branch, configuration, target, cancellationToken);
 
-                library = new PlcLibrary(library) { Name = id };
-            }
+            // Tc2_Standard is TwinCAT.XAE.PLC.Lib.Tc2_Standard. One lookup, no catalog search.
+            var prefixed = await base.GetPackageVersionAsync(
+                new PlcLibrary(library) { Name = "TwinCAT.XAE.PLC.Lib." + library.Name },
+                branch, configuration, target, cancellationToken);
+            if (!string.IsNullOrEmpty(prefixed?.Name) || !IsBeckhoffLibraryName(library.Name))
+                return prefixed;
 
-            return await base.GetPackageVersionAsync(library, branch, configuration, target, cancellationToken);
+            // MC3 is TwinCAT.XAE.PLC.Lib.Motion.MC3.Tc3_Mc3Base. Search only for those names.
+            // Zeugwerk dependencies must not each trigger a Beckhoff catalog search.
+            var id = await PackageIdForLibraryAsync(library.Name, cancellationToken);
+            if (id == null)
+                return prefixed;
+
+            return await base.GetPackageVersionAsync(
+                new PlcLibrary(library) { Name = id },
+                branch, configuration, target, cancellationToken);
         }
 
         static bool IsPackageId(string name)
@@ -62,11 +68,14 @@ namespace Twinpack.Protocol
             return name?.StartsWith("TwinCAT.XAE.PLC.Lib.", StringComparison.OrdinalIgnoreCase) == true;
         }
 
+        static bool IsBeckhoffLibraryName(string name)
+        {
+            return name.StartsWith("Tc2_", StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith("Tc3_", StringComparison.OrdinalIgnoreCase);
+        }
+
         async Task<string> PackageIdForLibraryAsync(string libraryName, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(libraryName))
-                return null;
-
             var matches = await SearchAsync("", libraryName, 0, 20, cancellationToken);
             return matches
                 .Select(x => x.Identity.Id)

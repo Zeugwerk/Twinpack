@@ -387,7 +387,9 @@ namespace Twinpack.Core
                     }
 
                     _availablePackagesCache.Clear();
-                    _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize, token).GetAsyncEnumerator(token);
+                    // The enumerator outlives this click. Load more continues it. Binding it to this
+                    // token cancels it as soon as the click ends, so the next page never arrives.
+                    _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize).GetAsyncEnumerator();
 
                     _searchTerm = searchTerm;
                 }
@@ -773,9 +775,9 @@ namespace Twinpack.Core
             return result;
         }
 
-        public async Task FetchPackageAsync(PackageItem packageItem, CancellationToken cancellationToken = default)
+        public async Task FetchPackageAsync(PackageItem packageItem, CancellationToken cancellationToken = default, bool includeDependencies = true)
         {
-            var resolvedPackage = await _packageServers.FetchPackageAsync(packageItem.PackageServer, packageItem.ProjectName, packageItem.PlcName, packageItem.Config ?? new ConfigPlcPackage(packageItem), includeMetadata: true, automationInterface: _automationInterface, cancellationToken: cancellationToken);
+            var resolvedPackage = await _packageServers.FetchPackageAsync(packageItem.PackageServer, packageItem.ProjectName, packageItem.PlcName, packageItem.Config ?? new ConfigPlcPackage(packageItem), includeMetadata: true, automationInterface: _automationInterface, resolveDependencies: includeDependencies, cancellationToken: cancellationToken);
             packageItem.Config ??= resolvedPackage.Config;
             packageItem.Package = resolvedPackage.Package;
             packageItem.PackageVersion = resolvedPackage.PackageVersion;
@@ -784,6 +786,14 @@ namespace Twinpack.Core
             packageItem.Update = resolvedPackage.Update;
             if (resolvedPackage.Used != null)
                 packageItem.Used = resolvedPackage.Used;
+        }
+
+        public async Task LoadDependenciesAsync(PackageItem packageItem, CancellationToken cancellationToken = default)
+        {
+            if (packageItem?.PackageVersion?.Name == null)
+                return;
+
+            await _packageServers.PopulateMetadataAndDependenciesAsync(packageItem, _automationInterface, cancellationToken);
         }
 
         public async Task<List<PackageItem>> AffectedPackagesAsync(List<PackageItem> packages, bool includeDependencies = true, CancellationToken cancellationToken = default)
