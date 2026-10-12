@@ -575,19 +575,61 @@ namespace Twinpack.Core
             await _synchronizationContext;
 
             var packageVersion = package.PackageVersion;
-
-            var suffix = package.PackageVersion.Compiled == 1 ? "compiled-library" : "library";
-            var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target, $"{packageVersion.Name}_{packageVersion.Version}.{suffix}"));
-
-            if (!File.Exists(path))
-                throw new FileNotFoundException(path);
-
-
-            Utils.Retry(() =>
+            var files = packageVersion.LibraryFiles?.ToList();
+            if (files == null || files.Count == 0)
             {
-                var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
-                libraryManager.InstallLibrary("System", path, bOverwrite: true);
-            }, maxRetries: 3, baseDelayMs: 500);
+                var suffix = package.PackageVersion.Compiled == 1 ? "compiled-library" : "library";
+                var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target, $"{packageVersion.Name}_{packageVersion.Version}.{suffix}"));
+                files = new List<string> { path };
+            }
+
+            foreach (var file in files)
+            {
+                if (!File.Exists(file))
+                    throw new FileNotFoundException(file);
+
+                Utils.Retry(() =>
+                {
+                    var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
+                    libraryManager.InstallLibrary("System", file, bOverwrite: true);
+                }, maxRetries: 3, baseDelayMs: 500);
+            }
+
+            InstallRepositoryFiles(packageVersion.RepositoryFiles);
+        }
+
+        /// <summary>
+        /// Copies <c>.tml</c>/<c>.tmx</c>/<c>.tme</c> into the TwinCAT module repository. The PLC
+        /// library manager only registers the <c>.library</c>; the MSI places these beside it so the
+        /// platform implementation is available when the project is built or activated.
+        /// </summary>
+        static void InstallRepositoryFiles(List<string> repositoryFiles)
+        {
+            if (repositoryFiles == null || repositoryFiles.Count == 0)
+                return;
+
+            const string marker = ".repository" + "\\";
+            var repositoryRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "Beckhoff", "TwinCAT", "3.1", "Repository");
+
+            foreach (var file in repositoryFiles)
+            {
+                if (!File.Exists(file))
+                    throw new FileNotFoundException(file);
+
+                var normalized = file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                var index = normalized.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                    throw new InvalidDataException($"Repository file '{file}' is not stored under a .repository folder");
+
+                var relative = normalized.Substring(index + marker.Length);
+                var destination = Path.Combine(repositoryRoot, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                File.Copy(file, destination, true);
+            }
+
+            _logger.Info("[install] {0} repository file(s) into {1}", repositoryFiles.Count, repositoryRoot);
         }
 
         public override async Task<bool> UninstallPackageAsync(PackageItem package)

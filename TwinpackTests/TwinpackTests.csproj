@@ -68,6 +68,7 @@
     <Compile Include="TwinpackServiceTest.cs" />
     <Compile Include="PackageServerCollectionTest.cs" />
     <Compile Include="LibraryReaderTest.cs" />
+    <Compile Include="PlcLibraryPackageTest.cs" />
     <Compile Include="TwincatInstallTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
