@@ -28,6 +28,16 @@ namespace Twinpack.Protocol
             _cache = MemoryCache.Default;
         }
 
+        static string CacheKey(HttpRequestMessage request)
+        {
+            var url = request.RequestUri?.ToString() ?? string.Empty;
+            var token = "";
+            if (request.Headers.TryGetValues("zgwk-token", out var values))
+                token = values.FirstOrDefault() ?? "";
+
+            return url + "\n" + token;
+        }
+
         static bool ShouldCacheRequest(HttpRequestMessage request)
         {
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
@@ -92,10 +102,12 @@ namespace Twinpack.Protocol
 
                 cacheDuration = cacheDuration ?? TimeSpan.FromHours(12);
 
-                var url = request.RequestUri.ToString();
-                if (_cache.Contains(url))
+                // Private configurations (Snapshot) depend on zgwk-token. Keying only on the
+                // URL replays an anonymous empty list after login.
+                var cacheKey = CacheKey(request);
+                if (_cache.Contains(cacheKey))
                 {
-                    var cached = _cache.Get(url) as CachedHttpEntry;
+                    var cached = _cache.Get(cacheKey) as CachedHttpEntry;
                     if (cached != null)
                         return ToResponse(cached, request);
                 }
@@ -114,7 +126,7 @@ namespace Twinpack.Protocol
                     {
                         AbsoluteExpiration = DateTimeOffset.Now.Add((TimeSpan)cacheDuration)
                     };
-                    _cache.Set(url, entry, cacheItemPolicy);
+                    _cache.Set(cacheKey, entry, cacheItemPolicy);
 
                     return ToResponse(entry, request);
                 }

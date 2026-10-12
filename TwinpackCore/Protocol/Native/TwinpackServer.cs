@@ -138,7 +138,11 @@ namespace Twinpack.Protocol
         private async Task<Tuple<IEnumerable<T>, bool>> QueryWithPaginationAsync<T>(string endpoint, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             var results = new List<T>();
-            var uri = new Uri(Url + $"/{endpoint}?page={page}&per_page={perPage}");
+            // Callers that already put a query string on the endpoint (package-versions?name=...)
+            // must not get a second '?'. That swallowed page/per_page and the response came back
+            // without a Link header, which then threw when pagination was read.
+            var separator = endpoint != null && endpoint.Contains("?") ? "&" : "?";
+            var uri = new Uri(Url + $"/{endpoint}{separator}page={page}&per_page={perPage}");
             PaginationHeader pagination = null;
 
             var hasNextPage = true;
@@ -191,10 +195,10 @@ namespace Twinpack.Protocol
                 }
 
                 if (results.Count() >= perPage)
-                    return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination.Next != null);
+                    return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination?.Next != null);
             }
 
-            return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination.Next != null);
+            return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination?.Next != null);
         }
 
         public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
