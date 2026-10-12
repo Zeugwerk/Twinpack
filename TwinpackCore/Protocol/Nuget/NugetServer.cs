@@ -384,10 +384,10 @@ namespace Twinpack.Protocol
                         var saved = new List<string>();
                         foreach (var library in extracted)
                         {
-                            var extension = library.Compiled ? "compiled-library" : "library";
+                            var suffix = PlcLibraryPackage.LibrarySuffix(library.Path);
                             var fileName = library == reference
-                                ? $"{packageVersion.Name}_{packageVersion.Version}.{extension}"
-                                : $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}_{SafeFileName(library.Title)}.{extension}";
+                                ? $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}{suffix}"
+                                : $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}_{SafeFileName(library.Title)}{suffix}";
                             var destination = Path.Combine(cacheDirectory, fileName);
                             File.Copy(library.Path, destination, true);
                             saved.Add(destination);

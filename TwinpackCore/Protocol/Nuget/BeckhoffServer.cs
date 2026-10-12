@@ -40,37 +40,37 @@ namespace Twinpack.Protocol
 
         }
 
-        public override async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
+        public override async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
         {
-            var libraryName = library?.Name ?? "";
-            var prefixed = libraryName.StartsWith("TwinCAT.XAE.PLC.Lib.", StringComparison.OrdinalIgnoreCase)
-                ? libraryName
-                : "TwinCAT.XAE.PLC.Lib." + libraryName;
+            // A PLC reference names the library (Tc3_Mc3Base). The feed id is not that name with a
+            // fixed prefix: Tc2_Standard is TwinCAT.XAE.PLC.Lib.Tc2_Standard, MC3 is
+            // TwinCAT.XAE.PLC.Lib.Motion.MC3.Tc3_Mc3Base. The library name is the id's last segment.
+            if (library != null && !IsPackageId(library.Name))
+            {
+                var id = await PackageIdForLibraryAsync(library.Name, cancellationToken);
+                if (id == null)
+                    return new PackageVersionGetResponse();
 
-            var resolved = await base.ResolvePackageVersionAsync(
-                new PlcLibrary(library) { Name = prefixed },
-                preferredTarget, preferredConfiguration, preferredBranch, cancellationToken);
+                library = new PlcLibrary(library) { Name = id };
+            }
 
-            // Tc2_Standard is TwinCAT.XAE.PLC.Lib.Tc2_Standard. MC3 is not: the feed id is
-            // TwinCAT.XAE.PLC.Lib.Motion.MC3.Tc3_Mc3Base, so the prefixed lookup misses and the
-            // reference is filed as a system library instead of a package.
-            if (!string.IsNullOrEmpty(resolved?.Name) || string.IsNullOrEmpty(libraryName) ||
-                libraryName.StartsWith("TwinCAT.XAE.PLC.Lib.", StringComparison.OrdinalIgnoreCase))
-                return resolved;
+            return await base.GetPackageVersionAsync(library, branch, configuration, target, cancellationToken);
+        }
+
+        static bool IsPackageId(string name)
+        {
+            return name?.StartsWith("TwinCAT.XAE.PLC.Lib.", StringComparison.OrdinalIgnoreCase) == true;
+        }
+
+        async Task<string> PackageIdForLibraryAsync(string libraryName, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(libraryName))
+                return null;
 
             var matches = await SearchAsync("", libraryName, 0, 20, cancellationToken);
-            var id = matches
+            return matches
                 .Select(x => x.Identity.Id)
-                .Where(x => x.EndsWith("." + libraryName, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(x => x.StartsWith("TwinCAT.XAE.PLC.Lib.", StringComparison.OrdinalIgnoreCase))
-                .FirstOrDefault();
-
-            if (id == null)
-                return resolved;
-
-            return await base.ResolvePackageVersionAsync(
-                new PlcLibrary(library) { Name = id },
-                preferredTarget, preferredConfiguration, preferredBranch, cancellationToken);
+                .FirstOrDefault(id => string.Equals(id.Split('.').Last(), libraryName, StringComparison.OrdinalIgnoreCase));
         }
 
 #if !TWINPACK_HEADLESS

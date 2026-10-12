@@ -72,6 +72,9 @@ namespace TwinpackTests
         {
             Assert.IsTrue(PlcLibraryPackage.IsLibraryFile("Tc3_Mc3Base.library"));
             Assert.IsTrue(PlcLibraryPackage.IsLibraryFile("Tc2_Standard.compiled-library"));
+            Assert.IsTrue(PlcLibraryPackage.IsLibraryFile("Tc2_Standard.compiled-library-ge33"));
+            Assert.AreEqual("Tc2_Standard", PlcLibraryPackage.LibraryTitle("Tc2_Standard.compiled-library-ge33"));
+            Assert.AreEqual(".compiled-library-ge33", PlcLibraryPackage.LibrarySuffix("Tc2_Standard.compiled-library-ge33"));
             Assert.IsFalse(PlcLibraryPackage.IsLibraryFile("Tc3_Mc3Base.tml"));
             Assert.IsFalse(PlcLibraryPackage.IsLibraryFile("Tc3_Mc3Base.tmx"));
             Assert.IsFalse(PlcLibraryPackage.IsLibraryFile("browsercache"));

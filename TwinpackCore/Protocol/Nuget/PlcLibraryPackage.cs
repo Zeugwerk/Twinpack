@@ -33,21 +33,42 @@ namespace Twinpack.Protocol
             @"TcLibraryId\s*([^|]{1,200})\|([^|]{1,200})\|(\d+\.\d+\.\d+(?:\.\d+)?)",
             RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+        const string CompiledMarker = ".compiled-library";
+        const string LibraryMarker = ".library";
+
         public static bool IsLibraryFile(string path)
         {
-            var extension = Path.GetExtension(path);
-            return extension.Equals(".library", StringComparison.OrdinalIgnoreCase)
-                || extension.Equals(".compiled-library", StringComparison.OrdinalIgnoreCase);
+            var name = Path.GetFileName(path ?? "");
+            // Beckhoff ships Tc2_Standard.compiled-library-ge33, not .compiled-library.
+            return name.IndexOf(CompiledMarker, StringComparison.OrdinalIgnoreCase) >= 0
+                || name.EndsWith(LibraryMarker, StringComparison.OrdinalIgnoreCase);
         }
 
         public static string LibraryTitle(string path)
         {
-            var name = Path.GetFileName(path);
-            const string compiled = ".compiled-library";
-            if (name.EndsWith(compiled, StringComparison.OrdinalIgnoreCase))
-                return name.Substring(0, name.Length - compiled.Length);
+            var name = Path.GetFileName(path ?? "");
+            var compiled = name.IndexOf(CompiledMarker, StringComparison.OrdinalIgnoreCase);
+            if (compiled >= 0)
+                return name.Substring(0, compiled);
+
+            if (name.EndsWith(LibraryMarker, StringComparison.OrdinalIgnoreCase))
+                return name.Substring(0, name.Length - LibraryMarker.Length);
 
             return Path.GetFileNameWithoutExtension(name);
+        }
+
+        /// <summary>Keeps a platform suffix such as <c>.compiled-library-ge33</c>.</summary>
+        public static string LibrarySuffix(string path)
+        {
+            var name = Path.GetFileName(path ?? "");
+            var compiled = name.IndexOf(CompiledMarker, StringComparison.OrdinalIgnoreCase);
+            if (compiled >= 0)
+                return name.Substring(compiled);
+
+            if (name.EndsWith(LibraryMarker, StringComparison.OrdinalIgnoreCase))
+                return name.Substring(name.Length - LibraryMarker.Length);
+
+            return Path.GetExtension(name);
         }
 
         public static ExtractedPlcLibrary Describe(string libraryPath)
@@ -56,7 +77,7 @@ namespace Twinpack.Protocol
             {
                 Path = libraryPath,
                 Title = LibraryTitle(libraryPath),
-                Compiled = libraryPath.EndsWith(".compiled-library", StringComparison.OrdinalIgnoreCase)
+                Compiled = Path.GetFileName(libraryPath).IndexOf(CompiledMarker, StringComparison.OrdinalIgnoreCase) >= 0
             };
 
             var directory = Path.GetDirectoryName(libraryPath);
