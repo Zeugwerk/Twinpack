@@ -386,6 +386,8 @@ namespace Twinpack.Core
                         catch (Exception ex) { _logger.Trace(ex); }
                     }
 
+                    // A new term is a new result set. Keeping the old hits pins the previous
+                    // match at the top of the catalog and scrambles the order.
                     _availablePackagesCache.Clear();
                     // The enumerator outlives this click. Load more continues it. Binding it to this
                     // token cancels it as soon as the click ends, so the next page never arrives.
