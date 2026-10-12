@@ -370,16 +370,24 @@ namespace Twinpack.Core
 
         public async Task<IEnumerable<PackageItem>> RetrieveAvailablePackagesAsync(string searchTerm = null, int? maxNewPackages = null, int batchSize = 5, CancellationToken token = default)
         {
+            var acquired = false;
             try
             {
                 await _availablePackagesMutex.WaitAsync(token);
+                acquired = true;
 
                 if (_availablePackagesIt == null || _searchTerm != searchTerm)
                 {
                     if (_availablePackagesIt != null)
-                        await _availablePackagesIt.DisposeAsync();
+                    {
+                        // A cancelled search leaves the enumerator mid-move. Disposing it then throws
+                        // "Specified method is not supported"; the next keystroke must still be able to search.
+                        try { await _availablePackagesIt.DisposeAsync(); }
+                        catch (Exception ex) { _logger.Trace(ex); }
+                    }
 
-                    _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize).GetAsyncEnumerator();
+                    _availablePackagesCache.Clear();
+                    _availablePackagesIt = _packageServers.SearchAsync(searchTerm, null, batchSize, token).GetAsyncEnumerator(token);
 
                     _searchTerm = searchTerm;
                 }
@@ -412,7 +420,10 @@ namespace Twinpack.Core
             }
             finally
             {
-                _availablePackagesMutex.Release();
+                // WaitAsync throws when the keystroke cancels the token before the lock is taken.
+                // Releasing then overflows the semaphore and every later search blocks forever.
+                if (acquired)
+                    _availablePackagesMutex.Release();
             }
         }
 
@@ -421,9 +432,11 @@ namespace Twinpack.Core
             if (_config.Modules?.Any() == true)
                 throw new NotSupportedException("Modules are not supported");
 
+            var acquired = false;
             try
             {
-                await _usedPackagesMutex.WaitAsync();
+                await _usedPackagesMutex.WaitAsync(token);
+                acquired = true;
 
                 if (refreshUsedPackageCache)
                     _usedPackagesCache.Clear();
@@ -459,7 +472,8 @@ namespace Twinpack.Core
             }
             finally
             {
-                _usedPackagesMutex.Release();
+                if (acquired)
+                    _usedPackagesMutex.Release();
             }
         }
 

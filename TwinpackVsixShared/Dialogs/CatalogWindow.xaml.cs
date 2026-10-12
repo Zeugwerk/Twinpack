@@ -836,7 +836,11 @@ namespace Twinpack.Dialogs
                     searchTerm = _searchTerm;
 
                 var installedPackages = await _twinpack.RetrieveUsedPackagesAsync(searchTerm, token: cancellationToken);
-                var availablePackages = await _twinpack.RetrieveAvailablePackagesAsync(searchTerm, maxNewPackages, 5, cancellationToken);
+                // Filtering the referenced list must not start a feed search. That search is what
+                // freezes the window: each keystroke cancels the previous Beckhoff query.
+                var availablePackages = IsBrowsingAvailablePackages
+                    ? await _twinpack.RetrieveAvailablePackagesAsync(searchTerm, maxNewPackages, 5, cancellationToken)
+                    : _twinpack.AvailablePackages;
 
                 // synchronize the list of installed packages with the list of available packages
                 var zipped =
