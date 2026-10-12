@@ -198,6 +198,8 @@ namespace Twinpack.Protocol.Api
             BinaryDownloadUrl = packageVersion?.BinaryDownloadUrl;
             BinarySha256 = packageVersion?.BinarySha256;
             Dependencies = packageVersion?.Dependencies == null ? new List<PackageVersionGetResponse>() : new List<PackageVersionGetResponse>(packageVersion?.Dependencies);
+            LibraryFiles = packageVersion?.LibraryFiles == null ? null : new List<string>(packageVersion.LibraryFiles);
+            RepositoryFiles = packageVersion?.RepositoryFiles == null ? null : new List<string>(packageVersion.RepositoryFiles);
         }
 
         [JsonPropertyName("package-version-id")]
@@ -224,6 +226,21 @@ namespace Twinpack.Protocol.Api
         public string BinarySha256 { get; set; }        
         [JsonPropertyName("dependencies")]
         public List<PackageVersionGetResponse> Dependencies { get; set; }
+
+        /// <summary>
+        /// Library files extracted from this package. All of them are installed; <see cref="PackageGetResponse.Title"/>
+        /// is the one added as a reference. Not part of the server payload.
+        /// </summary>
+        [JsonIgnore]
+        public List<string> LibraryFiles { get; set; }
+
+        /// <summary>
+        /// Platform images from the MSI (<c>.tml</c>, <c>.tmx</c>, <c>.tme</c>), stored under a
+        /// <c>.repository</c> folder that mirrors <c>TwinCAT\3.1\Repository</c>. Installed into
+        /// Common Application Data. Not part of the server payload.
+        /// </summary>
+        [JsonIgnore]
+        public List<string> RepositoryFiles { get; set; }
         [JsonPropertyName("type")]
         public string PackageType { get; set; }
 

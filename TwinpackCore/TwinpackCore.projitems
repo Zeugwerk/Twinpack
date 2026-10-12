@@ -29,6 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\BeckhoffServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetPackBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\PlcLibraryPackage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\CachedHttpClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DirectoryExtension.cs" />

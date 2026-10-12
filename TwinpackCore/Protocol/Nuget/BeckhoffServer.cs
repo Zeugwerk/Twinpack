@@ -1,4 +1,5 @@
 using NLog;
+using System;
 using System.Threading.Tasks;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
@@ -57,14 +58,21 @@ namespace Twinpack.Protocol
         protected override async Task<string> EvaluateTitleAsync(IPackageSearchMetadata package, CancellationToken cancellationToken)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            // heuristics for the actual title of the package, needed for Beckhoff, because there is no metadata, which gives the real name of the library
-            var title = package.Identity.Id;
-            var tags = package.Tags.Split(' ');
-            var libraryIdx = tags.ToList().IndexOf("Library");
-            if (libraryIdx > 0 && tags.Length > libraryIdx + 1 && title.Contains(tags[libraryIdx + 1]))
-                title = tags[libraryIdx + 1];
+            // The library TwinCAT installs is the last segment of the package id
+            // (TwinCAT.XAE.PLC.Lib.Motion.MC3.Tc3_Mc3Base -> Tc3_Mc3Base). The word after the
+            // "Library" tag is that name for the common packages, and a product family (MC3) when it is not.
+            var id = package.Identity?.Id ?? "";
+            var lastSegment = id.Split('.').LastOrDefault();
+            if (string.IsNullOrEmpty(lastSegment))
+                return id;
 
-            return title;
+            var tags = (package.Tags ?? "").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var libraryIdx = Array.IndexOf(tags, "Library");
+            if (libraryIdx >= 0 && libraryIdx + 1 < tags.Length &&
+                string.Equals(tags[libraryIdx + 1], lastSegment, StringComparison.OrdinalIgnoreCase))
+                return tags[libraryIdx + 1];
+
+            return lastSegment;
         }
 
         protected override string EvaluateVersion(NuGetVersion version)

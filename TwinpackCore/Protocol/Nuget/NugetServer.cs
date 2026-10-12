@@ -320,86 +320,99 @@ namespace Twinpack.Protocol
 
                 using (PackageArchiveReader packageReader = new PackageArchiveReader(packageStream))
                 {
-                    NuspecReader nuspecReader = await packageReader.GetNuspecReaderAsync(cancellationToken);
                     var packageFiles = await packageReader.GetPackageFilesAsync(PackageSaveMode.Files, cancellationToken);
 
-                    var msis = packageFiles.Where(x => x.EndsWith(".msi", StringComparison.InvariantCultureIgnoreCase));
-                    var libraries = packageFiles.Where(x => 
-                        (packageVersion.Compiled == 0 && x.EndsWith(".library", StringComparison.InvariantCultureIgnoreCase)) ||
-                        (packageVersion.Compiled == 1 && Path.GetExtension(x).StartsWith(".compiled-library")));
+                    var msis = packageFiles.Where(x => x.EndsWith(".msi", StringComparison.InvariantCultureIgnoreCase)).ToList();
+                    var packedLibraries = packageFiles.Where(PlcLibraryPackage.IsLibraryFile).ToList();
 
-                    if(libraries.Count() == 1)
+                    string tempFolderPath = null;
+                    string tempFilePath = null;
+                    try
                     {
-                        var library = libraries.First();
-                        var entry = packageReader.GetEntry(library);
-                        if (entry != null)
+                        if (packedLibraries.Count > 0)
                         {
-                            try
+                            tempFolderPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+                            Directory.CreateDirectory(tempFolderPath);
+                            foreach (var relativePath in packedLibraries)
                             {
-                                var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                                var filePath = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target);
-                                var fileName = Path.Combine(filePath, $"{packageVersion.Name}_{packageVersion.Version}.{extension}");
-                                Directory.CreateDirectory(filePath);
+                                var entry = packageReader.GetEntry(relativePath);
+                                if (entry == null)
+                                    continue;
 
-                                using (var file = File.OpenWrite(fileName))
-                                {
-                                    await entry.Open().CopyToAsync(file);
-                                }
-                            }
-                            finally
-                            {
+                                var destination = Path.Combine(tempFolderPath, Path.GetFileName(relativePath));
+                                using (var input = entry.Open())
+                                using (var output = File.Create(destination))
+                                    await input.CopyToAsync(output);
                             }
                         }
-                    }
-                    else if (msis.Count() == 1)
-                    {
-                        var entry = packageReader.GetEntry(msis.First());
-                        if (entry != null)
+                        else if (msis.Count == 1)
                         {
-                            string tempFilePath = Path.GetTempFileName();
-                            string tempFolderPath = Path.GetTempFileName().Replace(".tmp", "");
-                            try
+                            var entry = packageReader.GetEntry(msis[0]);
+                            if (entry == null)
+                                throw new Exceptions.ProtocolException("nupkg does not contain the expected .msi");
+
+                            tempFilePath = Path.GetTempFileName();
+                            tempFolderPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+                            Directory.CreateDirectory(tempFolderPath);
+                            using (var output = File.Create(tempFilePath))
+                            using (var input = entry.Open())
+                                await input.CopyToAsync(output);
+
+                            using (var pkg = new InstallPackage(tempFilePath, DatabaseOpenMode.ReadOnly))
                             {
-                                Directory.CreateDirectory(tempFolderPath);
-
-                                using (var file = File.OpenWrite(tempFilePath))
-                                {
-                                    await entry.Open().CopyToAsync(file);
-                                }
-                                using (var pkg = new InstallPackage(tempFilePath, DatabaseOpenMode.ReadOnly))
-                                {
-                                    pkg.WorkingDirectory = tempFolderPath;
-                                    pkg.ExtractFiles();
-                                }
-
-                                var files = Directory.GetFiles(tempFolderPath, "*", SearchOption.AllDirectories)
-                                    .Where(x => 
-                                    (packageVersion.Compiled == 0 && Path.GetExtension(x) == ".library") || 
-                                    (packageVersion.Compiled == 1 && Path.GetExtension(x).StartsWith(".compiled-library")));
-
-                                if(files.Count() != 1)
-                                {
-                                    throw new Exceptions.ProtocolException("nupkg contains a msi file that contains more than one library!");
-                                }
-                                foreach (var f in files)
-                                {
-                                    var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
-                                    var filePath = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target);
-                                    var fileName = Path.Combine(filePath, $"{packageVersion.Name}_{packageVersion.Version}.{extension}");
-                                    Directory.CreateDirectory(filePath);
-                                    File.Copy(f, fileName, true);
-                                }
-                            }
-                            finally
-                            {
-                                File.Delete(tempFilePath);
-                                Directory.Delete(tempFolderPath, true);
+                                pkg.WorkingDirectory = tempFolderPath;
+                                pkg.ExtractFiles();
                             }
                         }
+                        else
+                        {
+                            throw new Exceptions.ProtocolException("nupkg should contain PLC libraries or a single .msi");
+                        }
+
+                        var extracted = PlcLibraryPackage.DescribeAll(
+                            Directory.GetFiles(tempFolderPath, "*", SearchOption.AllDirectories));
+                        if (extracted.Count == 0)
+                            throw new Exceptions.ProtocolException("nupkg does not contain a PLC library (.library or .compiled-library)");
+
+                        var reference = PlcLibraryPackage.ChooseReference(extracted, packageVersion.Name, packageVersion.Title);
+                        if (reference == null)
+                            throw new Exceptions.ProtocolException(
+                                $"nupkg contains {extracted.Count} libraries ({string.Join(", ", extracted.Select(x => x.Title))}) and none matches '{packageVersion.Name}'");
+
+                        var cacheDirectory = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target ?? "");
+                        Directory.CreateDirectory(cacheDirectory);
+                        var saved = new List<string>();
+                        foreach (var library in extracted)
+                        {
+                            var extension = library.Compiled ? "compiled-library" : "library";
+                            var fileName = library == reference
+                                ? $"{packageVersion.Name}_{packageVersion.Version}.{extension}"
+                                : $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}_{SafeFileName(library.Title)}.{extension}";
+                            var destination = Path.Combine(cacheDirectory, fileName);
+                            File.Copy(library.Path, destination, true);
+                            saved.Add(destination);
+                        }
+
+                        packageVersion.LibraryFiles = saved;
+                        packageVersion.RepositoryFiles = CopyRepositoryFiles(tempFolderPath, cacheDirectory, packageVersion);
+                        packageVersion.Title = reference.Title;
+                        packageVersion.Compiled = reference.Compiled ? 1 : 0;
+                        if (!string.IsNullOrEmpty(reference.Version))
+                            packageVersion.Version = reference.Version;
+                        if (!string.IsNullOrEmpty(reference.Distributor))
+                            packageVersion.DistributorName = reference.Distributor;
+
+                        if (extracted.Count > 1)
+                            _logger.Info("[download] {0} ships {1} libraries; referencing {2}", packageVersion.Name, extracted.Count, reference.Title);
+                        if (packageVersion.RepositoryFiles?.Count > 0)
+                            _logger.Info("[download] {0} ships {1} repository file(s) (.tml/.tmx/.tme)", packageVersion.Name, packageVersion.RepositoryFiles.Count);
                     }
-                    else
+                    finally
                     {
-                        throw new Exceptions.ProtocolException($"nupkg should contain a single .msi or {(packageVersion.Compiled == 1 ? ".compiled-library" : ".library")} file!");
+                        if (!string.IsNullOrEmpty(tempFilePath))
+                            File.Delete(tempFilePath);
+                        if (!string.IsNullOrEmpty(tempFolderPath))
+                            Directory.Delete(tempFolderPath, true);
                     }
                 }
             }
@@ -792,6 +805,46 @@ namespace Twinpack.Protocol
             return NuGetVersion.TryParse(Core.AutomationInterface.FourPartVersion(candidate.OriginalVersion ?? candidate.ToString()), out var left)
                 && NuGetVersion.TryParse(Core.AutomationInterface.FourPartVersion(requested), out var right)
                 && VersionComparer.Default.Equals(left, right);
+        }
+
+        /// <summary>
+        /// The MSI installs platform images under CommonAppData\Beckhoff\TwinCAT\3.1\Repository.
+        /// InstallLibrary does not. Keep that tree, rooted at <c>3.1\Repository</c>, so install can
+        /// copy it to the same place.
+        /// </summary>
+        static List<string> CopyRepositoryFiles(string extractedRoot, string cacheDirectory, PackageVersionGetResponse packageVersion)
+        {
+            const string marker = @"\3.1\Repository\";
+            var saved = new List<string>();
+            if (string.IsNullOrEmpty(extractedRoot) || !Directory.Exists(extractedRoot))
+                return saved;
+
+            var repositoryRoot = Path.Combine(cacheDirectory, $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}.repository");
+            foreach (var file in Directory.GetFiles(extractedRoot, "*", SearchOption.AllDirectories))
+            {
+                var normalized = file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                var index = normalized.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                    continue;
+
+                var relative = normalized.Substring(index + marker.Length);
+                var destination = Path.Combine(repositoryRoot, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                File.Copy(file, destination, true);
+                saved.Add(destination);
+            }
+
+            return saved;
+        }
+
+        static string SafeFileName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return "library";
+
+            var invalid = Path.GetInvalidFileNameChars();
+            var cleaned = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+            return string.IsNullOrEmpty(cleaned) ? "library" : cleaned;
         }
 
         protected virtual int EvaluateCompiled(string tags)
