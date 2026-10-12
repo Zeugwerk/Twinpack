@@ -50,6 +50,41 @@ namespace Twinpack.Core
             return roots;
         }
 
+        /// <summary>
+        /// Folders that receive <c>.tml</c>/<c>.tmx</c>/<c>.tme</c> module libraries.
+        /// 4026 publishes <c>RepositoryDir</c> as <c>C:\ProgramData\Beckhoff\TwinCAT\3.1\Repository</c>.
+        /// 4024 has no such value and reads <c>C:\TwinCAT\3.1\Repository</c>. A machine with both
+        /// installs needs the files in each root that is actually present.
+        /// </summary>
+        public static IReadOnlyList<string> DiscoverRepositoryFolders()
+        {
+            return RepositoryFolders(DiscoverRoots(), ReadRegistryRepositoryDirs());
+        }
+
+        public static IReadOnlyList<string> RepositoryFolders(IEnumerable<string> roots, IEnumerable<string> registryDirs)
+        {
+            var folders = new List<string>();
+
+            if (registryDirs != null)
+            {
+                foreach (var dir in registryDirs)
+                    TryAddRepositoryFolder(folders, dir);
+            }
+
+            if (roots != null)
+            {
+                foreach (var root in roots)
+                {
+                    if (!IsUsableRoot(root))
+                        continue;
+
+                    TryAddRepositoryFolder(folders, Path.Combine(root, "Repository"));
+                }
+            }
+
+            return folders;
+        }
+
         public static IReadOnlyList<string> DiscoverLicenseFolders()
         {
             var roots = new List<string>();
@@ -191,25 +226,59 @@ namespace Twinpack.Core
 
         static IEnumerable<string> ReadRegistryBootDirs()
         {
+            return ReadRegistryValues("BootDir");
+        }
+
+        static IEnumerable<string> ReadRegistryRepositoryDirs()
+        {
+            return ReadRegistryValues("RepositoryDir");
+        }
+
+        static IEnumerable<string> ReadRegistryValues(string valueName)
+        {
 #if TWINPACK_HEADLESS
             yield break;
 #else
             foreach (var keyPath in RegistryBootDirKeys)
             {
-                string bootDir = null;
+                string value = null;
                 try
                 {
                     using (var key = Registry.LocalMachine.OpenSubKey(keyPath))
-                        bootDir = key?.GetValue("BootDir") as string;
+                        value = key?.GetValue(valueName) as string;
                 }
                 catch
                 {
                 }
 
-                if (!string.IsNullOrWhiteSpace(bootDir))
-                    yield return bootDir;
+                if (!string.IsNullOrWhiteSpace(value))
+                    yield return value;
             }
 #endif
+        }
+
+        static void TryAddRepositoryFolder(List<string> folders, string folder)
+        {
+            if (string.IsNullOrWhiteSpace(folder))
+                return;
+
+            string full;
+            try
+            {
+                full = Path.GetFullPath(folder.Trim());
+            }
+            catch
+            {
+                return;
+            }
+
+            if (!IsUsableRoot(Path.GetDirectoryName(full)))
+                return;
+
+            if (folders.Any(x => string.Equals(x, full, StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            folders.Add(full);
         }
     }
 }

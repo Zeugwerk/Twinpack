@@ -81,6 +81,30 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public void RepositoryFolders_Includes4024RootAndRegistryDir()
+        {
+            var fixture = Path.Combine(Path.GetTempPath(), "TwinpackTwincatInstallTest", Path.GetRandomFileName());
+            var legacy = Path.Combine(fixture, "TwinCAT", "3.1");
+            var programData = Path.Combine(fixture, "ProgramData", "Beckhoff", "TwinCAT", "3.1");
+            Directory.CreateDirectory(legacy);
+            Directory.CreateDirectory(programData);
+            try
+            {
+                var folders = TwincatInstall.RepositoryFolders(
+                    new[] { legacy, programData, @"C:\" },
+                    new[] { Path.Combine(programData, "Repository") });
+
+                CollectionAssert.Contains(new List<string>(folders), Path.Combine(legacy, "Repository"));
+                CollectionAssert.Contains(new List<string>(folders), Path.Combine(programData, "Repository"));
+                Assert.AreEqual(2, folders.Count);
+            }
+            finally
+            {
+                Directory.Delete(fixture, recursive: true);
+            }
+        }
+
+        [TestMethod]
         public void DiscoverLicenseFolders_DoesNotIncludeProgramFiles()
         {
             var folders = new List<string>(TwincatInstall.DiscoverLicenseFolders());

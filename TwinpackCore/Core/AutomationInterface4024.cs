@@ -644,9 +644,13 @@ namespace Twinpack.Core
                 return;
 
             const string marker = ".repository" + "\\";
-            var repositoryRoot = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                "Beckhoff", "TwinCAT", "3.1", "Repository");
+            var repositoryRoots = TwincatInstall.DiscoverRepositoryFolders().ToList();
+            if (repositoryRoots.Count == 0)
+            {
+                repositoryRoots.Add(Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    "Beckhoff", "TwinCAT", "3.1", "Repository"));
+            }
 
             foreach (var file in repositoryFiles)
             {
@@ -659,12 +663,14 @@ namespace Twinpack.Core
                     throw new InvalidDataException($"Repository file '{file}' is not stored under a .repository folder");
 
                 var relative = normalized.Substring(index + marker.Length);
-                var destination = Path.Combine(repositoryRoot, relative);
-                Directory.CreateDirectory(Path.GetDirectoryName(destination));
-                File.Copy(file, destination, true);
+                foreach (var repositoryRoot in repositoryRoots)
+                {
+                    var destination = Path.Combine(repositoryRoot, relative);
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                    File.Copy(file, destination, true);
+                    _logger.Info("[install] repository {0} -> {1}", Path.GetFileName(file), destination);
+                }
             }
-
-            _logger.Info("[install] {0} repository file(s) into {1}", repositoryFiles.Count, repositoryRoot);
         }
 
         public override async Task<bool> UninstallPackageAsync(PackageItem package)
