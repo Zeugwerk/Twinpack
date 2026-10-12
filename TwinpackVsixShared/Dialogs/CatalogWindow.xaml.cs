@@ -133,6 +133,30 @@ namespace Twinpack.Dialogs
 
         public bool IsBusy { get => _cancelableTask.Busy; }
 
+        public string SearchHint
+        {
+            get
+            {
+                return IsBrowsingAvailablePackages
+                    ? "Search package feeds"
+                    : "Filter libraries in this project";
+            }
+        }
+
+        string _statusMessage;
+        public string StatusMessage
+        {
+            get { return _statusMessage; }
+            set
+            {
+                _statusMessage = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StatusMessage)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasStatusMessage)));
+            }
+        }
+
+        public bool HasStatusMessage { get { return !string.IsNullOrEmpty(_statusMessage); } }
+
         AddPlcLibraryOptions _options;
         public AddPlcLibraryOptions Options
         {
@@ -366,6 +390,7 @@ namespace Twinpack.Dialogs
             {
                 _isBrowsingInstalledPackages = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBrowsingInstalledPackages)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SearchHint)));
             }
         }
 
@@ -376,6 +401,7 @@ namespace Twinpack.Dialogs
             {
                 _isBrowsingAvailablePackages = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBrowsingAvailablePackages)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SearchHint)));
             }
         }
 
@@ -386,6 +412,7 @@ namespace Twinpack.Dialogs
             {
                 _isBrowsingUpdatablePackages = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBrowsingUpdatablePackages)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SearchHint)));
             }
         }
 
@@ -669,7 +696,20 @@ namespace Twinpack.Dialogs
                 // show licenses and wait for accept
                 var affectedPackages = await _twinpack.AffectedPackagesAsync(new List<PackageItem> { _selectedItem }, includeDependencies: true, cancellationToken: token);
                 if (ConfirmLicensesIfNeeded(affectedPackages, true))
-                    await _twinpack.AddPackagesAsync(affectedPackages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, token);
+                {
+                    try
+                    {
+                        await _twinpack.AddPackagesAsync(affectedPackages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, token);
+                        StatusMessage = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Trace(ex);
+                        _logger.Error(ex.Message);
+                        StatusMessage = ex.Message;
+                        return;
+                    }
+                }
 
                 IsNewReference = false;
 
@@ -714,7 +754,18 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, cancellationToken: token);
+                try
+                {
+                    await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, cancellationToken: token);
+                    StatusMessage = null;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
+                    StatusMessage = ex.Message;
+                    return;
+                }
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully restored all references");
                 _logger.Info("Finished\n");
@@ -746,15 +797,26 @@ namespace Twinpack.Dialogs
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
-                await _twinpack.UpdatePackagesAsync(
-                    new TwinpackService.UpdatePackageFilters { },
-                    new TwinpackService.UpdatePackageOptions
-                    {
-                        ForceDownload = ForcePackageVersionDownload,
-                        IncludeDependencies = AddDependencies,
-                        IncludeProvidedPackages = true
-                    },
-                    token);
+                try
+                {
+                    await _twinpack.UpdatePackagesAsync(
+                        new TwinpackService.UpdatePackageFilters { },
+                        new TwinpackService.UpdatePackageOptions
+                        {
+                            ForceDownload = ForcePackageVersionDownload,
+                            IncludeDependencies = AddDependencies,
+                            IncludeProvidedPackages = true
+                        },
+                        token);
+                    StatusMessage = null;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Trace(ex);
+                    _logger.Error(ex.Message);
+                    StatusMessage = ex.Message;
+                    return;
+                }
 
                 _context.Dte.ExecuteCommand("File.SaveAll");
                 _logger.Info($"Successfully updated references to their latest version");

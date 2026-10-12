@@ -282,6 +282,8 @@ namespace Twinpack.Core
             catalogItem.ProjectName = projectName;
             catalogItem.PlcName = plcName;
             catalogItem.PackageServer = null;
+            if (catalogItem.Catalog != null && string.IsNullOrEmpty(catalogItem.Catalog.Description))
+                catalogItem.Catalog.Description = "Not found on any package server";
 
             if (includeMetadata)
                 _cache[cacheKey] = catalogItem;
