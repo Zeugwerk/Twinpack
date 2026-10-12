@@ -53,12 +53,18 @@ namespace Twinpack.Core
         /// <summary>
         /// Folders that receive <c>.tml</c>/<c>.tmx</c>/<c>.tme</c> module libraries.
         /// 4026 publishes <c>RepositoryDir</c> as <c>C:\ProgramData\Beckhoff\TwinCAT\3.1\Repository</c>.
-        /// 4024 has no such value and reads <c>C:\TwinCAT\3.1\Repository</c>. A machine with both
-        /// installs needs the files in each root that is actually present.
+        /// 4024 keeps them in <c>C:\TwinCAT\3.1\Repository</c>. <c>TWINCAT3DIR</c> is the Program Files
+        /// install tree and is not a repository.
         /// </summary>
         public static IReadOnlyList<string> DiscoverRepositoryFolders()
         {
-            return RepositoryFolders(DiscoverRoots(), ReadRegistryRepositoryDirs());
+            var roots = new List<string>();
+            foreach (var bootDir in ReadRegistryBootDirs())
+                TryAddRoot(roots, RootFromBootDir(bootDir));
+            foreach (var wellKnown in WellKnownRoots)
+                TryAddRoot(roots, wellKnown);
+
+            return RepositoryFolders(roots, ReadRegistryRepositoryDirs());
         }
 
         public static IReadOnlyList<string> RepositoryFolders(IEnumerable<string> roots, IEnumerable<string> registryDirs)
@@ -257,6 +263,16 @@ namespace Twinpack.Core
 #endif
         }
 
+        static bool IsUnderProgramFiles(string path)
+        {
+            var markers = new[]
+            {
+                $"{Path.DirectorySeparatorChar}Program Files{Path.DirectorySeparatorChar}",
+                $"{Path.DirectorySeparatorChar}Program Files (x86){Path.DirectorySeparatorChar}"
+            };
+            return markers.Any(marker => path.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
         static void TryAddRepositoryFolder(List<string> folders, string folder)
         {
             if (string.IsNullOrWhiteSpace(folder))
@@ -265,12 +281,17 @@ namespace Twinpack.Core
             string full;
             try
             {
-                full = Path.GetFullPath(folder.Trim());
+                full = Path.GetFullPath(folder.Trim()).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             }
             catch
             {
                 return;
             }
+
+            // Program Files is the product install. Writing a Repository folder there is denied
+            // and TwinCAT does not load module libraries from it.
+            if (IsUnderProgramFiles(full))
+                return;
 
             if (!IsUsableRoot(Path.GetDirectoryName(full)))
                 return;

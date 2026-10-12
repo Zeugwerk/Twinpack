@@ -86,16 +86,24 @@ namespace TwinpackTests
             var fixture = Path.Combine(Path.GetTempPath(), "TwinpackTwincatInstallTest", Path.GetRandomFileName());
             var legacy = Path.Combine(fixture, "TwinCAT", "3.1");
             var programData = Path.Combine(fixture, "ProgramData", "Beckhoff", "TwinCAT", "3.1");
+            var programFiles = Path.Combine(fixture, "Program Files (x86)", "Beckhoff", "TwinCAT", "3.1");
             Directory.CreateDirectory(legacy);
             Directory.CreateDirectory(programData);
+            Directory.CreateDirectory(programFiles);
             try
             {
+
                 var folders = TwincatInstall.RepositoryFolders(
-                    new[] { legacy, programData, @"C:\" },
-                    new[] { Path.Combine(programData, "Repository") });
+                    new[] { legacy, programData, programFiles, @"C:\" },
+                    new[]
+                    {
+                        Path.Combine(programData, "Repository") + Path.DirectorySeparatorChar,
+                        Path.Combine(programFiles, "Repository")
+                    });
 
                 CollectionAssert.Contains(new List<string>(folders), Path.Combine(legacy, "Repository"));
                 CollectionAssert.Contains(new List<string>(folders), Path.Combine(programData, "Repository"));
+                CollectionAssert.DoesNotContain(new List<string>(folders), Path.Combine(programFiles, "Repository"));
                 Assert.AreEqual(2, folders.Count);
             }
             finally
