@@ -102,7 +102,7 @@ namespace Twinpack.Protocol
             throw new NotImplementedException();
         }
 
-        private async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchPrefix, string search, int skip, int take, CancellationToken cancellationToken)
+        protected async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchPrefix, string search, int skip, int take, CancellationToken cancellationToken)
         {
             ILogger logger = NullLogger.Instance;
             PackageSearchResource resource = await _sourceRepository.GetResourceAsync<PackageSearchResource>(cancellationToken);
