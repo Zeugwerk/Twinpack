@@ -22,6 +22,7 @@ namespace Twinpack.Core
         public class DownloadPackageOptions
         { 
             public bool IncludeProvidedPackages = false;
+            public bool IncludeDependencies = true;
             public bool ForceDownload = false;
             public string? DownloadPath = null;
         }
@@ -35,6 +36,8 @@ namespace Twinpack.Core
                 SkipInstall = rhs?.SkipInstall ?? false;
                 ForceDownload = rhs?.ForceDownload ??false;
                 UpdatePlc = rhs?.UpdatePlc ?? true;
+                ReapplyReferences = rhs?.ReapplyReferences ?? true;
+                IncludeDependencies = rhs?.IncludeDependencies ?? true;
                 DownloadPath = rhs?.DownloadPath;
             }
 
@@ -42,6 +45,12 @@ namespace Twinpack.Core
             public bool SkipInstall = false;
             public bool ForceDownload = false;
             public bool UpdatePlc = true;
+            // Catalog and CLI always reference transitive libraries. zkmake's generated
+            // unit-test project sets this to false so those references stay out of that PLC.
+            public bool IncludeDependencies = true;
+            // Callers that do not know this flag keep the previous behavior and rewrite the reference.
+            // Catalog add and `twinpack add` set this to false so an identical config row is left alone.
+            public bool ReapplyReferences = true;
             public string? DownloadPath = null;
         }
         public class RestorePackageOptions : AddPackageOptions
@@ -539,6 +548,8 @@ namespace Twinpack.Core
             if (_config.Modules?.Any() == true)
                 throw new NotSupportedException("Modules are not supported");
 
+            options = options ?? new RestorePackageOptions();
+
             var usedPackages = await RetrieveUsedPackagesAsync(excludedPackages: options?.ExcludedPackages, token: cancellationToken);
 
             // download and add all packages, which are not self references to the provided packages
@@ -618,6 +629,8 @@ namespace Twinpack.Core
             if (_config.Modules?.Any() == true)
                 throw new NotSupportedException("Modules are not supported");
 
+            options = options ?? new UpdatePackageOptions();
+
             var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
             if (packages.Any(x => !usedPackages.Any(y => x.Config.Name == x.Config.Name)))
                 throw new ArgumentException("Package to be updated is not used in any project!");
@@ -646,6 +659,47 @@ namespace Twinpack.Core
             return await AddPackagesAsync(_config, _automationInterface, _packageServers, _usedPackagesCache, packages, options, cancellationToken);
         }
 
+        private static bool IsAlreadyReferenced(Config config, PackageItem package)
+        {
+            var name = package?.PackageVersion?.Name;
+            if (string.IsNullOrEmpty(name))
+                return false;
+
+            var plc = config?.Projects?.FirstOrDefault(x => x.Name == package.ProjectName)
+                ?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
+            if (plc?.Packages == null)
+                return false;
+
+            // This is the row Add would write. Latest stays null; a pin stores the package version.
+            var version = string.IsNullOrEmpty(package.Config?.Version) ? null : package.PackageVersion.Version;
+            return plc.Packages.Any(existing =>
+                string.Equals(existing.Name, name, StringComparison.OrdinalIgnoreCase) &&
+                SameConfiguredVersion(existing.Version, version) &&
+                SameConfiguredText(existing.Branch, package.PackageVersion.Branch, "main") &&
+                SameConfiguredText(existing.Target, package.PackageVersion.Target, "TC3.1") &&
+                SameConfiguredText(existing.Configuration, package.PackageVersion.Configuration, "Release") &&
+                SameConfiguredText(existing.DistributorName, package.PackageVersion.DistributorName, null) &&
+                SameConfiguredText(existing.Namespace, package.Config?.Namespace, null));
+        }
+
+        private static bool SameConfiguredVersion(string existing, string incoming)
+        {
+            if (string.IsNullOrEmpty(existing) && string.IsNullOrEmpty(incoming))
+                return true;
+            if (string.IsNullOrEmpty(existing) || string.IsNullOrEmpty(incoming))
+                return false;
+            return AutomationInterface.TwinCATLibraryVersionsEquivalent(existing, incoming);
+        }
+
+        private static bool SameConfiguredText(string existing, string incoming, string fallback)
+        {
+            var left = string.IsNullOrEmpty(existing) ? fallback : existing;
+            var right = string.IsNullOrEmpty(incoming) ? fallback : incoming;
+            if (string.IsNullOrEmpty(left) && string.IsNullOrEmpty(right))
+                return true;
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+
         private static async Task<List<PackageItem>> AddPackagesAsync(Config config, IAutomationInterface automationInterface, PackageServerCollection packageServers, List<PackageItem> cache, List<PackageItem> packages, AddPackageOptions options = default, CancellationToken cancellationToken = default)
         {
             if (config.Modules?.Any() == true)
@@ -655,7 +709,15 @@ namespace Twinpack.Core
             if (packages.Any(x => x.Config.Name == null) == true)
                 throw new Exception("Invalid package(s) should be added or updated!");
 
-            var affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, packages, includeDependencies: true, cache: new List<PackageItem>(), config: config, cancellationToken: cancellationToken);
+            var includeDependencies = options?.IncludeDependencies != false;
+            var affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, packages, includeDependencies: includeDependencies, cache: new List<PackageItem>(), config: config, cancellationToken: cancellationToken);
+            if (options?.ReapplyReferences == false)
+            {
+                var skipped = affectedPackages.Where(package => IsAlreadyReferenced(config, package)).ToList();
+                foreach (var package in skipped)
+                    _logger.Info("[add] {0} {1} already referenced on {2}/{3}", package.PackageVersion?.Name, package.Config?.Version ?? "*", package.ProjectName, package.PlcName);
+                affectedPackages = affectedPackages.Except(skipped).ToList();
+            }
             var downloadPath = options?.DownloadPath ?? Path.Combine(automationInterface?.SolutionPath ?? ".", ".Zeugwerk", "libraries");
 
             // copy runtime licenses
@@ -667,7 +729,10 @@ namespace Twinpack.Core
                 : DownloadPackagesAsync(config, automationInterface, packageServers, affectedPackages, 
                 new DownloadPackageOptions
                 {
-                    IncludeProvidedPackages = true, 
+                    IncludeProvidedPackages = true,
+                    // The list above is already the set to fetch. Expanding again would
+                    // download and install a library that was just left out as already referenced.
+                    IncludeDependencies = options?.ReapplyReferences != false && includeDependencies,
                     ForceDownload = options?.ForceDownload == true, 
                     DownloadPath = downloadPath
                 }, cancellationToken: cancellationToken);
@@ -888,7 +953,8 @@ namespace Twinpack.Core
         private static async Task<List<PackageItem>> DownloadPackagesAsync(Config config, IAutomationInterface automationInterface, PackageServerCollection packageServers, List<PackageItem> packages, DownloadPackageOptions options = default, CancellationToken cancellationToken = default)
         {            
             List<PackageItem> downloadedPackages = new List<PackageItem> { };
-            var affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, packages.ToList(), cache: new List<PackageItem>(), includeDependencies: true, config: config, cancellationToken: cancellationToken);
+            var includeDependencies = options?.IncludeDependencies != false;
+            var affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, packages.ToList(), cache: new List<PackageItem>(), includeDependencies: includeDependencies, config: config, cancellationToken: cancellationToken);
 
             // avoid downloading duplicates
             affectedPackages = affectedPackages.GroupBy(x => new
@@ -1093,7 +1159,7 @@ namespace Twinpack.Core
                     var automationInterface = artifact.Config == _config ? _automationInterface : new AutomationInterfaceHeadless(artifact.Config);
                     var cache = new List<PackageItem>();
                     await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesToAdd);
-                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true });
+                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
                     await automationInterface.SaveAllAsync();
                     ConfigFactory.Save(artifact.Config);
                 }

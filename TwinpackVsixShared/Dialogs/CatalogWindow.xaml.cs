@@ -687,7 +687,7 @@ namespace Twinpack.Dialogs
                 {
                     try
                     {
-                        await _twinpack.AddPackagesAsync(roots, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload }, token);
+                        await _twinpack.AddPackagesAsync(roots, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, ReapplyReferences = false }, token);
                         StatusMessage = null;
                     }
                     catch (Exception ex)
@@ -1175,7 +1175,7 @@ namespace Twinpack.Dialogs
             _selectedItem.ProjectName = packageItem?.ProjectName ?? _plcConfig?.ProjectName;
             _selectedItem.PlcName = packageItem?.PlcName ?? _plcConfig?.Name;
             _selectedItem.PackageServer = packageItem?.PackageServer;
-            _selectedItem.Config = packageItem?.Config;
+            _selectedItem.Config = packageItem?.Config == null ? new ConfigPlcPackage() : new ConfigPlcPackage(packageItem.Config);
             _selectedItem.Used = packageItem?.Used;
             _selectedItem.Update = packageItem?.Update;
             _selectedItem.Package = packageItem?.Package;

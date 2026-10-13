@@ -1,6 +1,8 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Caching;
 using System.Runtime.InteropServices;
@@ -87,6 +89,96 @@ namespace TwinpackTests
             foreach(var item in cache)
             {
                 cache.Remove(item.Key);
+            }
+        }
+
+        [TestMethod]
+        public async Task AddPackagesAsync_SkipsConfigRowWithTheSameIdentity()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-skip-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            try
+            {
+                var config = new Config
+                {
+                    FilePath = Path.Combine(directory, "config.json"),
+                    Projects = new List<ConfigProject>
+                    {
+                        new ConfigProject
+                        {
+                            Name = "P",
+                            Plcs = new List<ConfigPlcProject>
+                            {
+                                new ConfigPlcProject
+                                {
+                                    Name = "PLC",
+                                    Packages = new List<ConfigPlcPackage>
+                                    {
+                                        new ConfigPlcPackage { Name = "Tc2_Math", Version = "3.4.7", DistributorName = "Beckhoff" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                var twinpack = new TwinpackService(new PackageServerCollection(), config: config);
+                var server = new PackageServerMock { Connected = true };
+
+                PackageItem Reference(string name, string version, string ns)
+                {
+                    return new PackageItem
+                    {
+                        ProjectName = "P",
+                        PlcName = "PLC",
+                        PackageServer = server,
+                        Package = new PackageGetResponse { Name = name },
+                        PackageVersion = new PackageVersionGetResponse
+                        {
+                            Name = name,
+                            Version = version,
+                            Branch = "main",
+                            Target = "TC3.1",
+                            Configuration = "Release",
+                            DistributorName = "Beckhoff"
+                        },
+                        Config = new ConfigPlcPackage
+                        {
+                            Name = name,
+                            Version = version,
+                            Branch = "main",
+                            Target = "TC3.1",
+                            Configuration = "Release",
+                            DistributorName = "Beckhoff",
+                            Namespace = ns
+                        },
+                        Dependencies = new List<PackageItem>()
+                    };
+                }
+
+                var added = await twinpack.AddPackagesAsync(new List<PackageItem>
+                {
+                    Reference("Tc2_Math", "3.4.7.0", null),
+                    Reference("DswStep", "1.0.0.0", null)
+                }, new TwinpackService.AddPackageOptions { SkipDownload = true, ReapplyReferences = false });
+
+                var packages = config.Projects[0].Plcs[0].Packages;
+                Assert.AreEqual(1, added.Count);
+                Assert.AreEqual("DswStep", added[0].PackageVersion.Name);
+                Assert.AreEqual(2, packages.Count);
+                Assert.AreEqual("3.4.7", packages.First(x => x.Name == "Tc2_Math" && x.Namespace == null).Version);
+
+                added = await twinpack.AddPackagesAsync(new List<PackageItem> { Reference("Tc2_Math", "3.4.8.0", null) }, new TwinpackService.AddPackageOptions { SkipDownload = true, ReapplyReferences = false });
+                Assert.AreEqual(1, added.Count);
+                Assert.AreEqual("3.4.8.0", packages.First(x => x.Name == "Tc2_Math").Version);
+
+                added = await twinpack.AddPackagesAsync(new List<PackageItem> { Reference("Tc2_Math", "3.4.7.0", "MathV2") }, new TwinpackService.AddPackageOptions { SkipDownload = true, ReapplyReferences = false });
+                Assert.AreEqual(1, added.Count);
+                Assert.AreEqual("MathV2", packages.First(x => x.Name == "Tc2_Math").Namespace);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
             }
         }
 
@@ -1049,6 +1141,23 @@ namespace TwinpackTests
             Assert.AreEqual("1.2.3.4", packages.FirstOrDefault().PackageVersion.Version);
             Assert.AreEqual("ZPlatform Project", packages.FirstOrDefault().ProjectName);
             Assert.AreEqual("ZPlatform", packages.FirstOrDefault().PlcName);
+        }
+
+        [TestMethod]
+        public async Task RestoreAsync_IncludedProvidedPackages_WithoutDependencies()
+        {
+            var twinpack = BuildMultiProjectConfig(out _);
+
+            var packages = await twinpack.RestorePackagesAsync(
+                new TwinpackService.RestorePackageOptions
+                {
+                    IncludeProvidedPackages = true,
+                    IncludeDependencies = false,
+                    ForceDownload = false
+                });
+
+            Assert.AreEqual(4, packages.Count());
+            Assert.IsNull(packages.FirstOrDefault(x => x.PlcName == "ZAux" && x.Config.Name == "ExternalLib1"));
         }
 
         [TestMethod]
