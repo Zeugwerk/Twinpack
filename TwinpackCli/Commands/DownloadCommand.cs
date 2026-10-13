@@ -64,7 +64,6 @@ namespace Twinpack.Commands
                     new TwinpackService.DownloadPackageOptions
                     {
                         IncludeProvidedPackages = settings.IncludeProvidedPackages,
-                        IncludeDependencies = true,
                         ForceDownload = settings.ForceDownload,
                     }).GetAwaiter().GetResult();
 

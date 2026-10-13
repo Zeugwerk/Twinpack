@@ -86,8 +86,7 @@ namespace Twinpack.Commands
                     {
                         IncludeProvidedPackages = settings.IncludeProvidedPackages,
                         ForceDownload = settings.ForceDownload,
-                        SkipDownload = settings.SkipDownload,
-                        IncludeDependencies = true
+                        SkipDownload = settings.SkipDownload
                     }).GetAwaiter().GetResult();
 
                 _logger.Info("[update] {0} package(s) affected", updated.Count);

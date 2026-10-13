@@ -22,7 +22,6 @@ namespace Twinpack.Core
         public class DownloadPackageOptions
         { 
             public bool IncludeProvidedPackages = false;
-            public bool IncludeDependencies = true;
             public bool ForceDownload = false;
             public string? DownloadPath = null;
         }
@@ -36,7 +35,6 @@ namespace Twinpack.Core
                 SkipInstall = rhs?.SkipInstall ?? false;
                 ForceDownload = rhs?.ForceDownload ??false;
                 UpdatePlc = rhs?.UpdatePlc ?? true;
-                IncludeDependencies = rhs?.IncludeDependencies ?? true;
                 DownloadPath = rhs?.DownloadPath;
             }
 
@@ -44,7 +42,6 @@ namespace Twinpack.Core
             public bool SkipInstall = false;
             public bool ForceDownload = false;
             public bool UpdatePlc = true;
-            public bool IncludeDependencies = true;
             public string? DownloadPath = null;
         }
         public class RestorePackageOptions : AddPackageOptions
@@ -671,7 +668,6 @@ namespace Twinpack.Core
                 new DownloadPackageOptions
                 {
                     IncludeProvidedPackages = true, 
-                    IncludeDependencies = options?.IncludeDependencies == true, 
                     ForceDownload = options?.ForceDownload == true, 
                     DownloadPath = downloadPath
                 }, cancellationToken: cancellationToken);
@@ -692,7 +688,7 @@ namespace Twinpack.Core
             }
 
             // add affected packages as references
-            foreach (var package in (options?.IncludeDependencies == true ? affectedPackages : packages).Where(x => x.PackageVersion?.Name != null))
+            foreach (var package in affectedPackages.Where(x => x.PackageVersion?.Name != null))
             {
                 _logger.Info("[add] {0} {1} (distributor: {2}) to {3}/{4}", package.PackageVersion.Name, package.PackageVersion.Version, package.PackageVersion.DistributorName, package.ProjectName, package.PlcName);
 
@@ -892,10 +888,7 @@ namespace Twinpack.Core
         private static async Task<List<PackageItem>> DownloadPackagesAsync(Config config, IAutomationInterface automationInterface, PackageServerCollection packageServers, List<PackageItem> packages, DownloadPackageOptions options = default, CancellationToken cancellationToken = default)
         {            
             List<PackageItem> downloadedPackages = new List<PackageItem> { };
-            List<PackageItem> affectedPackages = packages.ToList();
-
-            if (options.IncludeDependencies)
-                affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, affectedPackages, cache: new List<PackageItem>(), includeDependencies: true, config: config, cancellationToken: cancellationToken);
+            var affectedPackages = await AffectedPackagesAsync(automationInterface, packageServers, packages.ToList(), cache: new List<PackageItem>(), includeDependencies: true, config: config, cancellationToken: cancellationToken);
 
             // avoid downloading duplicates
             affectedPackages = affectedPackages.GroupBy(x => new
@@ -1100,7 +1093,7 @@ namespace Twinpack.Core
                     var automationInterface = artifact.Config == _config ? _automationInterface : new AutomationInterfaceHeadless(artifact.Config);
                     var cache = new List<PackageItem>();
                     await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesToAdd);
-                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
+                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true });
                     await automationInterface.SaveAllAsync();
                     ConfigFactory.Save(artifact.Config);
                 }

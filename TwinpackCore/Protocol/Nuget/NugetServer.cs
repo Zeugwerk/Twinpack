@@ -519,7 +519,7 @@ namespace Twinpack.Protocol
 
             }
 
-            return new PackageVersionGetResponse()
+            var packageVersion = new PackageVersionGetResponse()
             {
                 PackageId = null,
                 Name = x.Identity.Id,
@@ -550,6 +550,13 @@ namespace Twinpack.Protocol
                 BinarySha256 = null,
                 Dependencies = dependencies
             };
+#if !TWINPACK_HEADLESS
+            // NuGet packages created by Twinpack store the logo in the nupkg (<icon>), not as an
+            // icon URL. Browse already unpacks it; the referenced list only had the URL.
+            if (string.IsNullOrEmpty(packageVersion.IconUrl))
+                packageVersion.Icon = await GetPackageIconAsync(x.Identity, cancellationToken);
+#endif
+            return packageVersion;
         }
 
         public async Task<PackageGetResponse> GetPackageAsync(string distributorName, string packageName, CancellationToken cancellationToken = default)

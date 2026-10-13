@@ -39,10 +39,6 @@ namespace Twinpack.Commands
             [Description("Specifies the configuration(s) for the package(s). If not specified, Twinpack will handle the configuration automatically, i.e. 'Release'")]
             public string[] Configurations { get; set; }
 
-            [CommandOption("--add-dependencies")]
-            [Description("If true, package dependencies will be added automatically to the PLC references.")]
-            public bool AddDependencies { get; set; }
-
             [CommandOption("--force-download")]
             [Description("Forces the download of package(s) even if they are already available on the system.")]
             public bool ForceDownload { get; set; }
@@ -63,7 +59,7 @@ namespace Twinpack.Commands
                 TwinpackRunLog.LogBanner(_logger, "add", "Download and add package references");
 
                 var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations, settings.ProjectName, settings.PlcName);
-                var added = _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload = settings.ForceDownload, IncludeDependencies = settings.AddDependencies }).GetAwaiter().GetResult();
+                var added = _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload = settings.ForceDownload }).GetAwaiter().GetResult();
 
                 _logger.Info("[add] {0} package(s) added", added.Count);
                 TwinpackRunLog.LogPhaseDone(_logger, "add", sw.Elapsed.TotalSeconds);

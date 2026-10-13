@@ -200,7 +200,15 @@ namespace Twinpack.Protocol.Api
             Dependencies = packageVersion?.Dependencies == null ? new List<PackageVersionGetResponse>() : new List<PackageVersionGetResponse>(packageVersion?.Dependencies);
             LibraryFiles = packageVersion?.LibraryFiles == null ? null : new List<string>(packageVersion.LibraryFiles);
             RepositoryFiles = packageVersion?.RepositoryFiles == null ? null : new List<string>(packageVersion.RepositoryFiles);
+#if !TWINPACK_HEADLESS
+            Icon = packageVersion?.Icon;
+#endif
         }
+
+#if !TWINPACK_HEADLESS
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public System.Windows.Media.Imaging.BitmapImage Icon { get; set; }
+#endif
 
         [JsonPropertyName("package-version-id")]
         public int? PackageVersionId { get; set; }

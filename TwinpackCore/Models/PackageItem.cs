@@ -36,7 +36,9 @@ namespace Twinpack.Models
                 RuntimeLicense = p.Catalog?.RuntimeLicense,
                 Downloads = p.Catalog?.Downloads,
             };
-
+#if !TWINPACK_HEADLESS
+            catalog.Icon = p.Catalog?.Icon;
+#endif
             Catalog = catalog;
             Used = p.Used;
             Config = p.Config;
@@ -69,7 +71,9 @@ namespace Twinpack.Models
                 RuntimeLicense = packageVersion?.LicenseTmcBinary != null ? 1 : 0,
                 Downloads = packageVersion?.Downloads
             };
-
+#if !TWINPACK_HEADLESS
+            catalog.Icon = packageVersion?.Icon;
+#endif
             Catalog = catalog;
         }
 

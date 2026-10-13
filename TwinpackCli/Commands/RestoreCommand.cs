@@ -49,8 +49,7 @@ namespace Twinpack.Commands
                     {
                         SkipDownload = settings.SkipDownload,
                         IncludeProvidedPackages = settings.IncludeProvidedPackages,
-                        ForceDownload = settings.ForceDownload,
-                        IncludeDependencies = true
+                        ForceDownload = settings.ForceDownload
                     }).GetAwaiter().GetResult();
 
                 _logger.Info("[restore] {0} package(s) affected", restored.Count);

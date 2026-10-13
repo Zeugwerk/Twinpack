@@ -196,17 +196,6 @@ namespace Twinpack.Dialogs
 
         public bool HasNamespace => !string.IsNullOrEmpty(_namespace);
 
-        private bool _addDependencies;
-        public bool AddDependencies
-        {
-            get { return _addDependencies; }
-            set
-            {
-                _addDependencies = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AddDependencies)));
-            }
-        }
-
         public List<PlcVersion> Versions
         {
             get { return _packageVersions; }
@@ -424,7 +413,6 @@ namespace Twinpack.Dialogs
 
             IsCatalogEnabled = true;
             ForcePackageVersionDownload = true;
-            AddDependencies = true;
 
             Catalog = new List<PackageItem>();
             DataContext = this;
@@ -693,13 +681,13 @@ namespace Twinpack.Dialogs
 
                 _selectedItem.Config.Options = Options;
 
-                // show licenses and wait for accept
-                var affectedPackages = await _twinpack.AffectedPackagesAsync(new List<PackageItem> { _selectedItem }, includeDependencies: true, cancellationToken: token);
+                var roots = new List<PackageItem> { _selectedItem };
+                var affectedPackages = await _twinpack.AffectedPackagesAsync(roots, includeDependencies: true, cancellationToken: token);
                 if (ConfirmLicensesIfNeeded(affectedPackages, true))
                 {
                     try
                     {
-                        await _twinpack.AddPackagesAsync(affectedPackages, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies }, token);
+                        await _twinpack.AddPackagesAsync(roots, new TwinpackService.AddPackageOptions { ForceDownload = ForcePackageVersionDownload }, token);
                         StatusMessage = null;
                     }
                     catch (Exception ex)
@@ -756,7 +744,7 @@ namespace Twinpack.Dialogs
 
                 try
                 {
-                    await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeDependencies = AddDependencies, IncludeProvidedPackages = true }, cancellationToken: token);
+                    await _twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions { ForceDownload = ForcePackageVersionDownload, IncludeProvidedPackages = true }, cancellationToken: token);
                     StatusMessage = null;
                 }
                 catch (Exception ex)
@@ -804,7 +792,6 @@ namespace Twinpack.Dialogs
                         new TwinpackService.UpdatePackageOptions
                         {
                             ForceDownload = ForcePackageVersionDownload,
-                            IncludeDependencies = AddDependencies,
                             IncludeProvidedPackages = true
                         },
                         token);
