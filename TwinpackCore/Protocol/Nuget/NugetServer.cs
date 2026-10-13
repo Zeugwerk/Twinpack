@@ -154,11 +154,37 @@ namespace Twinpack.Protocol
         }
 
 #if !TWINPACK_HEADLESS
+        // A missing icon is cached too, so a package with no <icon> is not downloaded again.
+        private sealed class CachedIcon
+        {
+            public System.Windows.Media.Imaging.BitmapImage Image { get; set; }
+        }
+
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, CachedIcon> IconCache =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, CachedIcon>(StringComparer.OrdinalIgnoreCase);
+
         protected virtual async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
         {
-            try
+            if (identity?.Version == null)
+                return null;
+
+            var key = (UrlBase ?? "") + "\n" + identity.Id + "\n" + identity.Version.ToNormalizedString();
+            if (IconCache.TryGetValue(key, out var cached))
+                return cached.Image;
+
+            var image = await ReadPackageIconAsync(identity, cancellationToken);
+            if (!cancellationToken.IsCancellationRequested)
+                IconCache[key] = new CachedIcon { Image = image };
+
+            return image;
+        }
+
+        private async Task<System.Windows.Media.Imaging.BitmapImage> ReadPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
+        {
+            // Prefer the NuGet on-disk cache. The direct download is only the fallback when that copy fails.
+            foreach (var cache in new[] { _cache, _noCache })
             {
-                foreach (var cache in new List<SourceCacheContext> { _cache, _noCache })
+                try
                 {
                     FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
                     using (MemoryStream packageStream = new MemoryStream())
@@ -168,49 +194,41 @@ namespace Twinpack.Protocol
                             identity.Id,
                             identity.Version,
                             packageStream,
-                            _noCache,
+                            cache,
                             NullLogger.Instance,
                             cancellationToken);
 
+                        packageStream.Position = 0;
                         using (PackageArchiveReader packageReader = new PackageArchiveReader(packageStream))
                         {
                             var iconPath = packageReader.NuspecReader.GetIcon();
                             if (iconPath == null)
-                            {
                                 return null;
-                            }
 
-                            try
-                            {
-                                var zipEntry = packageReader.GetEntry(iconPath);
-                                await zipEntry.Open().CopyToAsync(memoryStream);
-                                memoryStream.Position = 0;
-
-                                if (zipEntry != null)
-                                {
-                                    var image = new System.Windows.Media.Imaging.BitmapImage();
-                                    image.BeginInit();
-                                    image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                                    image.StreamSource = memoryStream;
-                                    image.EndInit();
-                                    image.Freeze();
-                                    return image;
-                                }
-
+                            var zipEntry = packageReader.GetEntry(iconPath);
+                            if (zipEntry == null)
                                 return null;
-                            }
-                            catch (Exception ex) { }
+
+                            await zipEntry.Open().CopyToAsync(memoryStream);
+                            memoryStream.Position = 0;
+
+                            var image = new System.Windows.Media.Imaging.BitmapImage();
+                            image.BeginInit();
+                            image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                            image.StreamSource = memoryStream;
+                            image.EndInit();
+                            image.Freeze();
+                            return image;
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.Trace(ex);
-                _logger.Error("Can't unpack package icon:" + ex);
+                catch (Exception ex) when (!(ex is OperationCanceledException))
+                {
+                    _logger.Trace(ex);
+                }
             }
 
-
+            _logger.Error("Can't unpack package icon: {0} {1}", identity.Id, identity.Version);
             return null;
         }
 #endif
