@@ -1164,6 +1164,17 @@ namespace Twinpack.Dialogs
                 PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(IsBusy)));
         }
 
+        private bool IsPackageReferenced(PackageItem item)
+        {
+            var name = item?.Catalog?.Name ?? item?.Config?.Name;
+            if (string.IsNullOrEmpty(name))
+                return false;
+
+            // FetchPackageAsync also writes Used for a resolved download, so that flag does not
+            // mean the library is referenced by the project.
+            return _twinpack.UsedPackages.Any(x => x.Catalog?.Name == name || x.Config?.Name == name);
+        }
+
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void Catalog_SelectionChanged(object sender, SelectionChangedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
@@ -1184,6 +1195,9 @@ namespace Twinpack.Dialogs
             _selectedItem.PackageVersion = packageItem?.PackageVersion;
             _selectedItem.Dependencies = packageItem?.Dependencies;
             InstalledPackageVersion = _selectedItem.IsPlaceholder ? _selectedItem.InstalledVersion + "*" : _selectedItem.InstalledVersion;
+            // Version changes used to be the only place this was set, so the previous
+            // library's Add/Remove/Update button stayed until Available was touched.
+            IsNewReference = !IsPackageReferenced(_selectedItem);
 
             await _cancelableTask.RunAsync(async token =>
             {
@@ -1323,8 +1337,7 @@ namespace Twinpack.Dialogs
                 if (plcVersion.IsWildcard && _selectedItem.PackageVersion != null)
                     _selectedItem.Config.Version = null;
 
-                IsNewReference = _selectedItem.PackageVersion?.Name == null ||
-                    !_twinpack.UsedPackages.Any(x => x.Catalog?.Name == _selectedItem.Package.Name);
+                IsNewReference = !IsPackageReferenced(_selectedItem);
             },
             () =>
             {
