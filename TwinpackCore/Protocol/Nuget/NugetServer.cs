@@ -414,16 +414,12 @@ namespace Twinpack.Protocol
                             throw new Exceptions.ProtocolException(
                                 $"nupkg contains {extracted.Count} libraries ({string.Join(", ", extracted.Select(x => x.Title))}) and none matches '{packageVersion.Name}'");
 
-                        var cacheDirectory = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target ?? "");
+                        var cacheDirectory = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target ?? "", $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}");
                         Directory.CreateDirectory(cacheDirectory);
                         var saved = new List<string>();
                         foreach (var library in extracted)
                         {
-                            var suffix = PlcLibraryPackage.LibrarySuffix(library.Path);
-                            var fileName = library == reference
-                                ? $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}{suffix}"
-                                : $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}_{SafeFileName(library.Title)}{suffix}";
-                            var destination = Path.Combine(cacheDirectory, fileName);
+                            var destination = Path.Combine(cacheDirectory, Path.GetFileName(library.Path));
                             File.Copy(library.Path, destination, true);
                             saved.Add(destination);
                         }
