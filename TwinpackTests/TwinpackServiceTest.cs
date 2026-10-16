@@ -987,7 +987,12 @@ namespace TwinpackTests
 
         private TwinpackService BuildMultiProjectConfig(out Config config)
         {
-            var packageServer = new PackageServerMock
+            return BuildMultiProjectConfig(out config, out _);
+        }
+
+        private TwinpackService BuildMultiProjectConfig(out Config config, out PackageServerMock packageServer)
+        {
+            packageServer = new PackageServerMock
             {
                 PackageVersionItems = new List<PackageVersionGetResponse>
                 {
@@ -1120,6 +1125,26 @@ namespace TwinpackTests
 
             var packageServers = new PackageServerCollection { packageServer };
             return new TwinpackService(packageServers, null, config);
+        }
+
+        [TestMethod]
+        public async Task RestoreAsync_IncludedProvidedPackages_DownloadsSharedDependenciesOnce()
+        {
+            PackageServerMock packageServer;
+            var twinpack = BuildMultiProjectConfig(out _, out packageServer);
+
+            await twinpack.RestorePackagesAsync(
+                new TwinpackService.RestorePackageOptions
+                {
+                    IncludeProvidedPackages = true,
+                    ForceDownload = false
+                });
+
+            // ZCore is a PLC in this solution and a reference of the others, so it used to be
+            // restored on its own and then again as a dependency of the remaining references.
+            Assert.AreEqual(1, packageServer.DownloadedPackageVersions.Count(x => x.Name == "ExternalLib1"));
+            Assert.AreEqual(1, packageServer.DownloadedPackageVersions.Count(x => x.Name == "ZCore"));
+            Assert.AreEqual(1, packageServer.DownloadedPackageVersions.Count(x => x.Name == "ZPlatform"));
         }
 
         [TestMethod]

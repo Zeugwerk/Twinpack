@@ -56,6 +56,9 @@ namespace Twinpack.Protocol.Api
             DistributorName = obj.DistributorName;
             Description = obj.Description;
             IconUrl = obj.IconUrl;
+#if !TWINPACK_HEADLESS
+            IconBytes = obj.IconBytes;
+#endif
             RuntimeLicense = obj.RuntimeLicense;
             DisplayName = obj.DisplayName;
             Downloads = obj.Downloads;
@@ -91,8 +94,19 @@ namespace Twinpack.Protocol.Api
         public bool HasRuntimeLicense { get { return RuntimeLicense > 0; } }
 
 #if !TWINPACK_HEADLESS
+        PackageIcon _icon = new PackageIcon();
+
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public System.Windows.Media.Imaging.BitmapImage Icon { get; set; }
+        public byte[] IconBytes
+        {
+            get => _icon.Bytes;
+            set => _icon = new PackageIcon { Bytes = value };
+        }
+
+        // Decoded on the UI thread. Creating the bitmap while a feed is queried throws,
+        // because that work does not stay on an STA thread.
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public System.Windows.Media.Imaging.BitmapImage Icon => _icon.Image;
 #endif
     }
     public class PackageGetResponse : Response
@@ -201,13 +215,22 @@ namespace Twinpack.Protocol.Api
             LibraryFiles = packageVersion?.LibraryFiles == null ? null : new List<string>(packageVersion.LibraryFiles);
             RepositoryFiles = packageVersion?.RepositoryFiles == null ? null : new List<string>(packageVersion.RepositoryFiles);
 #if !TWINPACK_HEADLESS
-            Icon = packageVersion?.Icon;
+            IconBytes = packageVersion?.IconBytes;
 #endif
         }
 
 #if !TWINPACK_HEADLESS
+        PackageIcon _packageIcon = new PackageIcon();
+
         [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-        public System.Windows.Media.Imaging.BitmapImage Icon { get; set; }
+        public byte[] IconBytes
+        {
+            get => _packageIcon.Bytes;
+            set => _packageIcon = new PackageIcon { Bytes = value };
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public System.Windows.Media.Imaging.BitmapImage Icon => _packageIcon.Image;
 #endif
 
         [JsonPropertyName("package-version-id")]
@@ -493,4 +516,52 @@ namespace Twinpack.Protocol.Api
         [JsonPropertyName("latest-version")]
         public string LatestVersion { get; set; }
     }
+
+#if !TWINPACK_HEADLESS
+    sealed class PackageIcon
+    {
+        System.Windows.Media.Imaging.BitmapImage _image;
+        bool _decoded;
+
+        public byte[] Bytes { get; set; }
+
+        public System.Windows.Media.Imaging.BitmapImage Image
+        {
+            get
+            {
+                if (_decoded)
+                    return _image;
+
+                if (Bytes == null || Bytes.Length == 0)
+                    return null;
+
+                // BitmapImage is a UI object. A feed query resumes on a thread-pool thread, and
+                // constructing it there throws. The catalog binding reads this on the UI thread.
+                if (System.Threading.Thread.CurrentThread.GetApartmentState() != System.Threading.ApartmentState.STA)
+                    return null;
+
+                _decoded = true;
+                try
+                {
+                    using (var stream = new System.IO.MemoryStream(Bytes))
+                    {
+                        var image = new System.Windows.Media.Imaging.BitmapImage();
+                        image.BeginInit();
+                        image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        image.StreamSource = stream;
+                        image.EndInit();
+                        image.Freeze();
+                        _image = image;
+                    }
+                }
+                catch
+                {
+                    _image = null;
+                }
+
+                return _image;
+            }
+        }
+    }
+#endif
 }

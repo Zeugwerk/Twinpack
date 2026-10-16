@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Protocol;
@@ -250,6 +251,44 @@ namespace TwinpackTests
         public void ResolveTargetFallsBackWhenNothingWasBuilt()
         {
             Assert.AreEqual(LibraryTargets.Default, LibraryTargets.Resolve(null, new[] { LibraryTargets.DirectoryOf(_output) }));
+        }
+
+        [TestMethod]
+        public async Task LocalFeedCatalogReadsTheEmbeddedIcon()
+        {
+            var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+            var icon = Path.Combine(_output, "icon.png");
+            File.WriteAllBytes(icon, png);
+
+            var feed = Path.Combine(_output, "feed");
+            Directory.CreateDirectory(feed);
+
+            var packed = NugetPackBuilder.Pack(new NugetPackRequest
+            {
+                Id = "Twinpack.IconSample",
+                Version = "1.0.0",
+                Title = "Twinpack Icon Sample",
+                Authors = "Zeugwerk",
+                Description = "Sample package with an embedded icon",
+                Tags = new[] { "library" },
+                IconFile = icon,
+                OutputDirectory = feed
+            });
+
+            using (var reader = new PackageArchiveReader(File.OpenRead(packed)))
+            {
+                Assert.AreEqual("icon.png", reader.NuspecReader.GetIcon());
+                var entry = reader.GetEntry(reader.NuspecReader.GetIcon());
+                Assert.IsNotNull(entry, "the icon file has to sit at the path the nuspec names");
+            }
+
+            var server = new NugetServer("Local NuGet", feed);
+            await server.LoginAsync();
+
+            var catalog = await server.GetCatalogAsync(null);
+
+            var package = catalog.Item1.Single();
+            CollectionAssert.AreEqual(png, package.IconBytes);
         }
     }
 }

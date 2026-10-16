@@ -1175,7 +1175,9 @@ namespace Twinpack.Dialogs
             _selectedItem.ProjectName = packageItem?.ProjectName ?? _plcConfig?.ProjectName;
             _selectedItem.PlcName = packageItem?.PlcName ?? _plcConfig?.Name;
             _selectedItem.PackageServer = packageItem?.PackageServer;
-            _selectedItem.Config = packageItem?.Config == null ? new ConfigPlcPackage() : new ConfigPlcPackage(packageItem.Config);
+            // Keep a referenced row's config intact. A browse row has none, and an empty stand-in
+            // has no name, so the detail lookup fails and the pane stays hidden.
+            _selectedItem.Config = packageItem?.Config == null ? null : new ConfigPlcPackage(packageItem.Config);
             _selectedItem.Used = packageItem?.Used;
             _selectedItem.Update = packageItem?.Update;
             _selectedItem.Package = packageItem?.Package;

@@ -148,7 +148,6 @@ namespace Twinpack.Core
                 PlcName = plcName
             };
 
-
             foreach (var ps in packageServer != null ? new List<IPackageServer> { packageServer } : this.Where(x => x.Connected))
             {
                 catalogItem.PackageServer = ps;

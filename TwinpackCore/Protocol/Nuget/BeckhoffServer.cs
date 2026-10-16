@@ -83,10 +83,10 @@ namespace Twinpack.Protocol
         }
 
 #if !TWINPACK_HEADLESS
-        protected override async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
+        protected override Task<byte[]> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
         {
-            // Beckhoff Packages come without Icons
-            return null;
+            // Beckhoff packages have no embedded icon. The catalog uses the Beckhoff logo URL instead.
+            return Task.FromResult<byte[]>(null);
         }
 #endif
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously

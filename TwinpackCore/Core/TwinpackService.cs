@@ -38,6 +38,7 @@ namespace Twinpack.Core
                 UpdatePlc = rhs?.UpdatePlc ?? true;
                 ReapplyReferences = rhs?.ReapplyReferences ?? true;
                 IncludeDependencies = rhs?.IncludeDependencies ?? true;
+                DownloadProvidedPackages = rhs?.DownloadProvidedPackages ?? true;
                 DownloadPath = rhs?.DownloadPath;
             }
 
@@ -48,6 +49,10 @@ namespace Twinpack.Core
             // Catalog and CLI always reference transitive libraries. zkmake's generated
             // unit-test project sets this to false so those references stay out of that PLC.
             public bool IncludeDependencies = true;
+            // Libraries this solution itself builds (a PLC whose name is the package name) are still
+            // referenced, but they are left out of the download when this is false. Their dependencies
+            // keep their own names, so those are still fetched.
+            public bool DownloadProvidedPackages = true;
             // Callers that do not know this flag keep the previous behavior and rewrite the reference.
             // Catalog add and `twinpack add` set this to false so an identical config row is left alone.
             public bool ReapplyReferences = true;
@@ -559,15 +564,7 @@ namespace Twinpack.Core
                 providedPackageNames = providedPackageNames.Concat(options?.ExcludedPackages).ToList();
 
             var packages = usedPackages.Select(x => new PackageItem(x) { Package = x.Used, PackageVersion = x.Used }).ToList();
-            var providedPackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == true).ToList(), new AddPackageOptions(options) { SkipDownload = !options.IncludeProvidedPackages }, cancellationToken: cancellationToken);
-
-            var installablePackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList(), options, cancellationToken: cancellationToken);
-            installablePackages = options.IncludeProvidedPackages ? providedPackages.Concat(installablePackages).ToList() : installablePackages;
-
-            return installablePackages.GroupBy(x => new { x.ProjectName, x.PlcName, x.PackageVersion.Name, x.PackageVersion.Version })
-                .Select(x => x.FirstOrDefault())
-                .Distinct()
-                .ToList();
+            return await AddResolvedPackagesAsync(packages, providedPackageNames, options, options.IncludeProvidedPackages, cancellationToken);
         }
 
         public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(UpdatePackageFilters filters = default, UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
@@ -635,17 +632,53 @@ namespace Twinpack.Core
             if (packages.Any(x => !usedPackages.Any(y => x.Config.Name == x.Config.Name)))
                 throw new ArgumentException("Package to be updated is not used in any project!");
 
-            // download and add all packages, which are not self references to the provided packages
             var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
-            var providedPackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == true).ToList(), new AddPackageOptions(options) { SkipDownload = !options.IncludeProvidedPackages }, cancellationToken: cancellationToken);
+            return await AddResolvedPackagesAsync(packages, providedPackageNames, options, options.IncludeProvidedPackages, cancellationToken);
+        }
 
-            var installablePackages = await AddPackagesAsync(packages.Where(x => providedPackageNames.Any(y => y == x.Config.Name) == false).ToList(), options, cancellationToken: cancellationToken);
-            installablePackages = options.IncludeProvidedPackages ? providedPackages.Concat(installablePackages).ToList() : installablePackages;
+        // Restore and update used to add "libraries this solution builds" and everything else as two
+        // separate operations. Each one downloads, installs, references and saves, so a dependency that
+        // belongs to both halves was done twice. One pass still leaves those libraries out of the
+        // download when the caller asked not to fetch them.
+        private async Task<List<PackageItem>> AddResolvedPackagesAsync(List<PackageItem> packages, List<string> providedPackageNames, AddPackageOptions options, bool includeProvidedPackages, CancellationToken cancellationToken)
+        {
+            var added = await AddPackagesAsync(packages, new AddPackageOptions(options)
+            {
+                DownloadProvidedPackages = includeProvidedPackages
+            }, cancellationToken);
 
-            return installablePackages.GroupBy(x => new { x.ProjectName, x.PlcName, x.PackageVersion.Name, x.PackageVersion.Version })
+            if (!includeProvidedPackages)
+            {
+                var reachable = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var package in packages.Where(x => providedPackageNames.Any(y => y == x.Config?.Name) == false))
+                    CollectReachable(package, reachable, options?.IncludeDependencies != false);
+
+                added = added.Where(x => reachable.Contains(PackageKey(x))).ToList();
+            }
+
+            return added.GroupBy(x => new { x.ProjectName, x.PlcName, x.PackageVersion.Name, x.PackageVersion.Version })
                 .Select(x => x.FirstOrDefault())
                 .Distinct()
                 .ToList();
+        }
+
+        private static void CollectReachable(PackageItem package, HashSet<string> keys, bool includeDependencies)
+        {
+            if (package == null)
+                return;
+
+            keys.Add(PackageKey(package));
+            if (!includeDependencies)
+                return;
+
+            foreach (var dependency in package.Dependencies ?? Enumerable.Empty<PackageItem>())
+                keys.Add(PackageKey(dependency));
+        }
+
+        private static string PackageKey(PackageItem package)
+        {
+            var name = package?.PackageVersion?.Name ?? package?.Config?.Name ?? "";
+            return (package?.ProjectName ?? "") + "\n" + (package?.PlcName ?? "") + "\n" + name;
         }
 
         public async Task<List<PackageItem>> AddPackageAsync(PackageItem package, AddPackageOptions options = default, CancellationToken cancellationToken = default)
@@ -723,22 +756,24 @@ namespace Twinpack.Core
             // copy runtime licenses
             CopyRuntimeLicenseIfNeeded(automationInterface, affectedPackages);
 
-            var closeAllPackageRelatedWindowsTask = automationInterface?.CloseAllPackageRelatedWindowsAsync(affectedPackages) ?? Task.Delay(new TimeSpan(0));
-            var downloadPackagesTask = options?.SkipDownload == true
-                ? Task.Run(() => new List<PackageItem>())
-                : DownloadPackagesAsync(config, automationInterface, packageServers, affectedPackages, 
+            // Save and close library windows before downloading. The two used to run together,
+            // so "Solution saved" showed up between download lines, and a library scan could
+            // run while Visual Studio was still saving.
+            if (automationInterface != null)
+                await automationInterface.CloseAllPackageRelatedWindowsAsync(affectedPackages);
+
+            var downloadedPackageVersions = options?.SkipDownload == true
+                ? new List<PackageItem>()
+                : await DownloadPackagesAsync(config, automationInterface, packageServers, affectedPackages,
                 new DownloadPackageOptions
                 {
-                    IncludeProvidedPackages = true,
                     // The list above is already the set to fetch. Expanding again would
                     // download and install a library that was just left out as already referenced.
+                    IncludeProvidedPackages = options?.DownloadProvidedPackages != false,
                     IncludeDependencies = options?.ReapplyReferences != false && includeDependencies,
-                    ForceDownload = options?.ForceDownload == true, 
+                    ForceDownload = options?.ForceDownload == true,
                     DownloadPath = downloadPath
                 }, cancellationToken: cancellationToken);
-            await Task.WhenAll(closeAllPackageRelatedWindowsTask, downloadPackagesTask);
-
-            var downloadedPackageVersions = await downloadPackagesTask;
 
             // install downloaded packages
             if(automationInterface != null && !(automationInterface is AutomationInterfaceHeadless) && 

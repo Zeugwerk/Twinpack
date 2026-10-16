@@ -37,7 +37,7 @@ namespace Twinpack.Models
                 Downloads = p.Catalog?.Downloads,
             };
 #if !TWINPACK_HEADLESS
-            catalog.Icon = p.Catalog?.Icon;
+            catalog.IconBytes = p.Catalog?.IconBytes;
 #endif
             Catalog = catalog;
             Used = p.Used;
@@ -72,7 +72,7 @@ namespace Twinpack.Models
                 Downloads = packageVersion?.Downloads
             };
 #if !TWINPACK_HEADLESS
-            catalog.Icon = packageVersion?.Icon;
+            catalog.IconBytes = packageVersion?.IconBytes;
 #endif
             Catalog = catalog;
         }

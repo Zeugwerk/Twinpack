@@ -140,7 +140,7 @@ namespace Twinpack.Protocol
                                 Created = x.Published?.ToString() ?? "Unknown",
                                 Modified = x.Published?.ToString() ?? "Unknown"
 #if !TWINPACK_HEADLESS
-                                ,Icon = await GetPackageIconAsync(x.Identity, cancellationToken),
+                                ,IconBytes = await GetPackageIconAsync(x.Identity, cancellationToken),
 #endif
                             }));
 
@@ -157,38 +157,39 @@ namespace Twinpack.Protocol
         // A missing icon is cached too, so a package with no <icon> is not downloaded again.
         private sealed class CachedIcon
         {
-            public System.Windows.Media.Imaging.BitmapImage Image { get; set; }
+            public byte[] Bytes { get; set; }
         }
 
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, CachedIcon> IconCache =
             new System.Collections.Concurrent.ConcurrentDictionary<string, CachedIcon>(StringComparer.OrdinalIgnoreCase);
 
-        protected virtual async Task<System.Windows.Media.Imaging.BitmapImage> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
+        protected virtual async Task<byte[]> GetPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
         {
             if (identity?.Version == null)
                 return null;
 
             var key = (UrlBase ?? "") + "\n" + identity.Id + "\n" + identity.Version.ToNormalizedString();
             if (IconCache.TryGetValue(key, out var cached))
-                return cached.Image;
+                return cached.Bytes;
 
-            var image = await ReadPackageIconAsync(identity, cancellationToken);
+            var bytes = await ReadPackageIconAsync(identity, cancellationToken);
             if (!cancellationToken.IsCancellationRequested)
-                IconCache[key] = new CachedIcon { Image = image };
+                IconCache[key] = new CachedIcon { Bytes = bytes };
 
-            return image;
+            return bytes;
         }
 
-        private async Task<System.Windows.Media.Imaging.BitmapImage> ReadPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
+        private async Task<byte[]> ReadPackageIconAsync(PackageIdentity identity, CancellationToken cancellationToken)
         {
-            // Prefer the NuGet on-disk cache. The direct download is only the fallback when that copy fails.
+            // Prefer the NuGet on-disk cache. A cached nupkg from before the package had an icon
+            // must not win, so a package that opens but has no <icon> is tried against the feed too.
+            var openedPackage = false;
             foreach (var cache in new[] { _cache, _noCache })
             {
                 try
                 {
                     FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>();
                     using (MemoryStream packageStream = new MemoryStream())
-                    using (var memoryStream = new MemoryStream())
                     {
                         await resource.CopyNupkgToStreamAsync(
                             identity.Id,
@@ -201,24 +202,11 @@ namespace Twinpack.Protocol
                         packageStream.Position = 0;
                         using (PackageArchiveReader packageReader = new PackageArchiveReader(packageStream))
                         {
-                            var iconPath = packageReader.NuspecReader.GetIcon();
-                            if (iconPath == null)
-                                return null;
+                            var bytes = ReadIconBytes(packageReader);
+                            if (bytes != null)
+                                return bytes;
 
-                            var zipEntry = packageReader.GetEntry(iconPath);
-                            if (zipEntry == null)
-                                return null;
-
-                            await zipEntry.Open().CopyToAsync(memoryStream);
-                            memoryStream.Position = 0;
-
-                            var image = new System.Windows.Media.Imaging.BitmapImage();
-                            image.BeginInit();
-                            image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                            image.StreamSource = memoryStream;
-                            image.EndInit();
-                            image.Freeze();
-                            return image;
+                            openedPackage = true;
                         }
                     }
                 }
@@ -228,8 +216,37 @@ namespace Twinpack.Protocol
                 }
             }
 
-            _logger.Error("Can't unpack package icon: {0} {1}", identity.Id, identity.Version);
+            if (!openedPackage)
+                _logger.Error("Can't unpack package icon: {0} {1}", identity.Id, identity.Version);
+
             return null;
+        }
+
+        static byte[] ReadIconBytes(PackageArchiveReader packageReader)
+        {
+            var iconPath = packageReader.NuspecReader.GetIcon();
+            if (string.IsNullOrWhiteSpace(iconPath))
+                return null;
+
+            var normalized = iconPath.Replace('\\', '/').TrimStart('/');
+            var entry = packageReader.GetEntry(normalized) ?? packageReader.GetEntry(iconPath);
+            if (entry == null)
+            {
+                var match = packageReader.GetFiles().FirstOrDefault(file =>
+                    string.Equals(file.Replace('\\', '/').TrimStart('/'), normalized, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                    entry = packageReader.GetEntry(match);
+            }
+
+            if (entry == null)
+                return null;
+
+            using (var entryStream = entry.Open())
+            using (var memory = new MemoryStream())
+            {
+                entryStream.CopyTo(memory);
+                return memory.ToArray();
+            }
         }
 #endif
 
@@ -570,9 +587,8 @@ namespace Twinpack.Protocol
             };
 #if !TWINPACK_HEADLESS
             // NuGet packages created by Twinpack store the logo in the nupkg (<icon>), not as an
-            // icon URL. Browse already unpacks it; the referenced list only had the URL.
-            if (string.IsNullOrEmpty(packageVersion.IconUrl))
-                packageVersion.Icon = await GetPackageIconAsync(x.Identity, cancellationToken);
+            // icon URL. An icon URL from the feed must not hide that file.
+            packageVersion.IconBytes = await GetPackageIconAsync(x.Identity, cancellationToken);
 #endif
             return packageVersion;
         }
