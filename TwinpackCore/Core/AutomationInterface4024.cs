@@ -16,6 +16,7 @@ using TCatSysManagerLib;
 using Twinpack.Configuration;
 using Twinpack.Exceptions;
 using Twinpack.Models;
+using Twinpack.Protocol;
 
 namespace Twinpack.Core
 {
@@ -623,14 +624,75 @@ namespace Twinpack.Core
                 if (!File.Exists(file))
                     throw new FileNotFoundException(file);
 
-                Utils.Retry(() =>
+                try
                 {
-                    var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
-                    libraryManager.InstallLibrary("System", file, bOverwrite: true);
-                }, maxRetries: 3, baseDelayMs: 500);
+                    InstallLibraryOnce(package, file);
+                }
+                catch (Exception ex) when (TryInstallCompiledLibraryAsSource(package, file))
+                {
+                    _logger.Trace(ex);
+                }
+                catch (Exception)
+                {
+                    InstallLibraryFile(package, file);
+                }
             }
 
             InstallRepositoryFiles(packageVersion.RepositoryFiles);
+        }
+
+        void InstallLibraryOnce(PackageItem package, string file)
+        {
+            var libraryManager = LibraryManager(package.ProjectName, package.PlcName);
+            libraryManager.InstallLibrary("System", file, bOverwrite: true);
+        }
+
+        void InstallLibraryFile(PackageItem package, string file)
+        {
+            Utils.Retry(() => InstallLibraryOnce(package, file), maxRetries: 3, baseDelayMs: 500);
+        }
+
+        bool TryInstallCompiledLibraryAsSource(PackageItem package, string file)
+        {
+            var suffix = PlcLibraryPackage.LibrarySuffix(file);
+            if (suffix == null || suffix.IndexOf(".compiled-library", StringComparison.OrdinalIgnoreCase) < 0)
+                return false;
+
+            // Some Beckhoff builds ship a source library under a compiled-library name.
+            // InstallLibrary refuses that file, and the same bytes with a .library name are accepted.
+            var fallback = LibraryFileWithExtension(file, ".library");
+            if (string.Equals(fallback, file, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            try
+            {
+                _logger.Info("[install] {0} could not be installed, trying {1}", Path.GetFileName(file), Path.GetFileName(fallback));
+                File.Copy(file, fallback, true);
+                InstallLibraryOnce(package, fallback);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Trace(ex);
+                return false;
+            }
+        }
+
+        static string LibraryFileWithExtension(string file, string extension)
+        {
+            if (string.IsNullOrEmpty(extension))
+                return file;
+
+            if (!extension.StartsWith("."))
+                extension = "." + extension;
+
+            var name = Path.GetFileName(file);
+            var suffix = PlcLibraryPackage.LibrarySuffix(file);
+            var stem = !string.IsNullOrEmpty(suffix) && name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)
+                ? name.Substring(0, name.Length - suffix.Length)
+                : Path.GetFileNameWithoutExtension(name);
+
+            return Path.Combine(Path.GetDirectoryName(file) ?? ".", stem + extension);
         }
 
         /// <summary>
