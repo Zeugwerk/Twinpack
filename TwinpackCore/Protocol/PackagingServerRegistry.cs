@@ -18,6 +18,7 @@ namespace Twinpack.Protocol
 
         static List<IPackagingServerFactory> _factories = new List<IPackagingServerFactory>();
         static PackageServerCollection _servers = new PackageServerCollection();
+        static readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
 
         private static IEnumerable<string> FilePaths
         {
@@ -52,19 +53,27 @@ namespace Twinpack.Protocol
 
         public static async Task InitializeAsync(bool useDefaults=false, bool login=true, bool fallbackToDefaults=false)
         {
-            _factories = new List<IPackagingServerFactory>() { new NativePackagingServerFactory(), new NugetPackagingServerFactory(), new BeckhoffPackagingServerFactory() };
-            _servers = new PackageServerCollection();
+            await _initLock.WaitAsync();
+            try
+            {
+                _factories = new List<IPackagingServerFactory>() { new NativePackagingServerFactory(), new NugetPackagingServerFactory(), new BeckhoffPackagingServerFactory() };
+                _servers = new PackageServerCollection();
 
-            if(useDefaults)
-            {
-                await AddDefaultsAsync();
-            }
-            else
-            {
+                if(useDefaults)
+                {
+                    await AddDefaultsAsync();
+                    return;
+                }
+
                 try
                 {
+                    // AddDefaultsAsync already puts the default servers into _servers and writes the file.
+                    // Drop that in-memory list so the load below does not append the same repositories again.
                     if (FilePath == null && fallbackToDefaults)
+                    {
                         await AddDefaultsAsync();
+                        _servers = new PackageServerCollection();
+                    }
 
                     if (FilePath == null)
                         throw new FileNotFoundException($"No configuration file not found (searched in {string.Join(",", FilePaths)})");
@@ -103,6 +112,10 @@ namespace Twinpack.Protocol
                         Save();
                     }
                 }
+            }
+            finally
+            {
+                _initLock.Release();
             }
         }
         public static IEnumerable<string> ServerTypes { get { return _factories.Select(x => x.ServerType); } }
