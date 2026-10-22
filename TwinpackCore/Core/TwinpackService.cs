@@ -444,6 +444,9 @@ namespace Twinpack.Core
 
         public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, List<string> excludedPackages = null, CancellationToken token = default, bool refreshUsedPackageCache = false)
         {
+            if (_config == null)
+                return new List<PackageItem>();
+
             if (_config.Modules?.Any() == true)
                 throw new NotSupportedException("Modules are not supported");
 

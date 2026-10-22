@@ -555,6 +555,15 @@ namespace Twinpack.Dialogs
                 if(config == null)
                 {
                     config = await ConfigFactory.CreateFromSolutionFileAsync(Path.GetDirectoryName(_context.Solution.FullName), continueWithoutSolution: false, packageServers: packageServers.Where(x => x.Connected), cancellationToken: cancellationToken);
+                    if (config == null)
+                    {
+                        _logger.Warn("[config] no PLC project found in the solution");
+                        IsCreateConfigVisible = true;
+                        IsMigrateConfigVisible = false;
+                        IsConfigured = false;
+                        _plcConfig = null;
+                        return null;
+                    }
                     _configFilePath = config.FilePath;
                     config.FilePath = null; // we don't want to save to a file
                 }

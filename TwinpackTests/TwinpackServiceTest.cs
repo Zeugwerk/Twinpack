@@ -183,6 +183,16 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task RetrieveUsedPackagesAsync_WithoutConfig_ReturnsEmpty()
+        {
+            var twinpack = new TwinpackService(_packageServers, config: null);
+
+            var packages = await twinpack.RetrieveUsedPackagesAsync();
+
+            Assert.IsFalse(packages.Any());
+        }
+
+        [TestMethod]
         public async Task RetrieveAvailablePackagesAsync_AllPackages()
         {
             var twinpack = new TwinpackService(_packageServers);
