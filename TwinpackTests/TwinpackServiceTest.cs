@@ -183,6 +183,74 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task AddPackagesAsync_EditingAddedItem_DoesNotChangeStoredReference()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-alias-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            try
+            {
+                var config = new Config
+                {
+                    FilePath = Path.Combine(directory, "config.json"),
+                    Projects = new List<ConfigProject>
+                    {
+                        new ConfigProject
+                        {
+                            Name = "MessagingDemo",
+                            Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { Name = "Plc", Packages = new List<ConfigPlcPackage>() } }
+                        }
+                    }
+                };
+                var twinpack = new TwinpackService(new PackageServerCollection(), config: config);
+                var server = new PackageServerMock { Connected = true };
+
+                PackageVersionGetResponse ZApplication(string configuration)
+                {
+                    return new PackageVersionGetResponse
+                    {
+                        Name = "ZApplication",
+                        Version = "1.6.0.28",
+                        Branch = "release/1.6",
+                        Target = "TC3.1",
+                        Configuration = configuration,
+                        DistributorName = "Zeugwerk GmbH"
+                    };
+                }
+
+                var item = new PackageItem
+                {
+                    ProjectName = "MessagingDemo",
+                    PlcName = "Plc",
+                    PackageServer = server,
+                    Package = new PackageGetResponse { Name = "ZApplication", DistributorName = "Zeugwerk GmbH" },
+                    PackageVersion = ZApplication("Distribution"),
+                    Config = new ConfigPlcPackage(ZApplication("Distribution")),
+                    Dependencies = new List<PackageItem>()
+                };
+                var options = new TwinpackService.AddPackageOptions { SkipDownload = true, ReapplyReferences = false };
+
+                var added = await twinpack.AddPackagesAsync(new List<PackageItem> { item }, options);
+                Assert.AreEqual(1, added.Count);
+
+                // The catalog writes the dropdown selection onto the selected item's Config.
+                item.Config.Configuration = "Debug";
+                item.PackageVersion = ZApplication("Debug");
+
+                var stored = config.Projects[0].Plcs[0].Packages.Single();
+                Assert.AreEqual("Distribution", stored.Configuration);
+
+                added = await twinpack.AddPackagesAsync(new List<PackageItem> { item }, options);
+                Assert.AreEqual(1, added.Count);
+                Assert.AreEqual("Debug", config.Projects[0].Plcs[0].Packages.Single().Configuration);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
+            }
+        }
+
+        [TestMethod]
         public async Task RetrieveUsedPackagesAsync_WithoutConfig_ReturnsEmpty()
         {
             var twinpack = new TwinpackService(_packageServers, config: null);

@@ -751,7 +751,19 @@ namespace Twinpack.Core
             {
                 var skipped = affectedPackages.Where(package => IsAlreadyReferenced(config, package)).ToList();
                 foreach (var package in skipped)
+                {
                     _logger.Info("[add] {0} {1} already referenced on {2}/{3}", package.PackageVersion?.Name, package.Config?.Version ?? "*", package.ProjectName, package.PlcName);
+
+                    var stored = config?.Projects?.FirstOrDefault(x => x.Name == package.ProjectName)
+                        ?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName)
+                        ?.Packages?.FirstOrDefault(x => string.Equals(x.Name, package.PackageVersion?.Name, StringComparison.OrdinalIgnoreCase));
+                    _logger.Debug("[add] {0} stored: version={1} branch={2} target={3} configuration={4}; selected: version={5} branch={6} target={7} configuration={8}; resolved: version={9} branch={10} target={11} configuration={12}; config file: {13}",
+                        package.PackageVersion?.Name,
+                        stored?.Version ?? "*", stored?.Branch, stored?.Target, stored?.Configuration,
+                        package.Config?.Version ?? "*", package.Config?.Branch, package.Config?.Target, package.Config?.Configuration,
+                        package.PackageVersion?.Version, package.PackageVersion?.Branch, package.PackageVersion?.Target, package.PackageVersion?.Configuration,
+                        config?.FilePath ?? "none");
+                }
                 affectedPackages = affectedPackages.Except(skipped).ToList();
             }
             var downloadPath = options?.DownloadPath ?? Path.Combine(automationInterface?.SolutionPath ?? ".", ".Zeugwerk", "libraries");
@@ -814,7 +826,9 @@ namespace Twinpack.Core
                     Namespace = package.Config?.Namespace
                 };
 
-                package.Config = newPackageConfig;
+                // Callers keep editing the returned item (the catalog writes its dropdown selection
+                // onto Config), so it must not share the instance stored in the config.
+                package.Config = new ConfigPlcPackage(newPackageConfig);
                 addedPackages.Add(package);
 
                 if (packageIndex.HasValue && packageIndex.Value >= 0)
