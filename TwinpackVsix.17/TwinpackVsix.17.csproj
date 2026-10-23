@@ -117,8 +117,9 @@
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
       <Version>6.0.0</Version>
     </PackageReference>
+    <!-- Must stay within TcXaeShell 64-bit's System.Text.Json binding redirect (4.0.0.0-8.0.0.0), see Twinpack.17.csproj -->
     <PackageReference Include="System.Text.Json">
-      <Version>8.0.6</Version>
+      <Version>8.0.0</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
