@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Threading;
 using NLog;
 using NuGet.Protocol.Plugins;
@@ -7,11 +8,14 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Models;
@@ -69,11 +73,27 @@ namespace Twinpack.Dialogs
         private bool _forceShowLicense;
         private bool _uninstallDeletes;
 
+        private ImageSource _brandLogo;
+        private readonly ThemeChangedEventHandler _themeChangedHandler;
+
         public string Version
         {
             get
             {
                 return _context?.Version;
+            }
+        }
+
+        public ImageSource BrandLogo
+        {
+            get { return _brandLogo; }
+            private set
+            {
+                if (_brandLogo != value)
+                {
+                    _brandLogo = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(BrandLogo)));
+                }
             }
         }
 
@@ -408,6 +428,7 @@ namespace Twinpack.Dialogs
         public CatalogWindow(PackageContext context)
         {
             _context = context;
+            _themeChangedHandler = OnVsThemeChanged;
 
             _packageServerSelectionChanged = new SelectionChangedEventHandler(PackageServers_SelectionChanged);
 
@@ -418,6 +439,7 @@ namespace Twinpack.Dialogs
             DataContext = this;
 
             InitializeComponent();
+            UpdateBrandLogo();
 
             _selectedItem.PropertyChanged += CatalogItemPackage_Changed;
             _cancelableTask.PropertyChanged += CancelableTask_Changed;
@@ -430,12 +452,17 @@ namespace Twinpack.Dialogs
             PackageServersComboBox.SelectionChanged += _packageServerSelectionChanged;
 
             Loaded += Dialog_Loaded;
+            Unloaded += Dialog_Unloaded;
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
         private async void Dialog_Loaded(object sender, RoutedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
+            VSColorTheme.ThemeChanged -= _themeChangedHandler;
+            VSColorTheme.ThemeChanged += _themeChangedHandler;
+            UpdateBrandLogo();
+
             await _cancelableTask.RunAsync(async token =>
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
@@ -443,6 +470,59 @@ namespace Twinpack.Dialogs
 
                 await EnsureInitializedAsync(cancellationToken: token);
             });
+        }
+
+        private void Dialog_Unloaded(object sender, RoutedEventArgs e)
+        {
+            VSColorTheme.ThemeChanged -= _themeChangedHandler;
+        }
+
+        private void OnVsThemeChanged(ThemeChangedEventArgs e)
+        {
+            UpdateBrandLogo();
+        }
+
+        private void UpdateBrandLogo()
+        {
+            var resourceName = IsDarkTheme()
+                ? "Resources/zeugwerk-logo-white.png"
+                : "Resources/zeugwerk-logo.png";
+            BrandLogo = LoadBrandLogo(resourceName);
+        }
+
+        private static bool IsDarkTheme()
+        {
+            try
+            {
+                var color = VSColorTheme.GetThemedColor(EnvironmentColors.ToolWindowBackgroundColorKey);
+                var luminance = (0.299 * color.R + 0.587 * color.G + 0.114 * color.B) / 255.0;
+                return luminance < 0.5;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static ImageSource LoadBrandLogo(string resourcePath)
+        {
+            try
+            {
+                var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
+                var uri = new Uri($"pack://application:,,,/{assemblyName};component/{resourcePath}", UriKind.Absolute);
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.UriSource = uri;
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.EndInit();
+                image.Freeze();
+                return image;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn(ex, $"Failed to load brand logo '{resourcePath}'");
+                return null;
+            }
         }
 
         public void Reset()
@@ -1431,6 +1511,11 @@ namespace Twinpack.Dialogs
         public void UpdateAvailableButton_Click(object sender, RoutedEventArgs e)
         {
             Process.Start("https://github.com/Zeugwerk/Twinpack");
+        }
+
+        public void BrandButton_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("https://zeugwerk.at/products/twinpack/");
         }
 
 #pragma warning disable VSTHRD100 // "async void"-Methoden vermeiden
