@@ -21,6 +21,8 @@ namespace Twinpack.Protocol
         public string Version { get; set; } = "";
         public string Distributor { get; set; } = "";
         public bool Compiled { get; set; }
+
+        public bool IdentityKnown { get; set; }
     }
 
     public static class PlcLibraryPackage
@@ -133,6 +135,7 @@ namespace Twinpack.Protocol
             library.Distributor = match.Groups[1].Value.Trim();
             library.Title = match.Groups[2].Value.Trim();
             library.Version = match.Groups[3].Value.Trim();
+            library.IdentityKnown = true;
             return true;
         }
 
@@ -162,6 +165,7 @@ namespace Twinpack.Protocol
             library.Title = match.Groups[1].Value.Trim();
             library.Version = match.Groups[2].Value.Trim();
             library.Distributor = match.Groups[3].Value.Trim();
+            library.IdentityKnown = true;
             return true;
         }
     }

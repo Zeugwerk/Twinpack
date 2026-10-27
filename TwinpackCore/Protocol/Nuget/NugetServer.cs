@@ -384,8 +384,9 @@ namespace Twinpack.Protocol
 
                         packageVersion.LibraryFiles = saved;
                         packageVersion.RepositoryFiles = CopyRepositoryFiles(tempFolderPath, cacheDirectory, packageVersion);
-                        packageVersion.Title = reference.Title;
                         packageVersion.Compiled = reference.Compiled ? 1 : 0;
+                        if (reference.IdentityKnown)
+                            packageVersion.Title = reference.Title;
                         if (!string.IsNullOrEmpty(reference.Version))
                             packageVersion.Version = reference.Version;
                         if (!string.IsNullOrEmpty(reference.Distributor))

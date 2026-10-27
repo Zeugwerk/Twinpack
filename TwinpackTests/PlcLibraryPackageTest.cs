@@ -35,6 +35,7 @@ namespace TwinpackTests
                 Assert.AreEqual("Tc3_Mc3Base", reference.Title);
                 Assert.AreEqual("4.0.17.0", reference.Version);
                 Assert.AreEqual("Beckhoff Automation GmbH", reference.Distributor);
+                Assert.IsTrue(reference.IdentityKnown);
                 Assert.IsFalse(reference.Compiled);
             }
             finally
@@ -59,6 +60,7 @@ namespace TwinpackTests
                 Assert.AreEqual("Tc2_BACnetRev12", library.Title);
                 Assert.AreEqual("2.6.6.0", library.Version);
                 Assert.AreEqual("Beckhoff Automation GmbH", library.Distributor);
+                Assert.IsTrue(library.IdentityKnown);
                 Assert.IsTrue(library.Compiled);
             }
             finally
@@ -75,6 +77,28 @@ namespace TwinpackTests
             Assert.IsFalse(PlcLibraryPackage.IsLibraryFile("Tc3_Mc3Base.tml"));
             Assert.IsFalse(PlcLibraryPackage.IsLibraryFile("Tc3_Mc3Base.tmx"));
             Assert.IsFalse(PlcLibraryPackage.IsLibraryFile("browsercache"));
+        }
+
+        [TestMethod]
+        public void FilenameVersionSuffixIsNotALibraryIdentity()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "plc-lib-" + Path.GetRandomFileName());
+            Directory.CreateDirectory(root);
+            try
+            {
+                var file = Path.Combine(root, "D_Library_1.1.998.1.library");
+                File.WriteAllBytes(file, new byte[] { 0 });
+
+                var library = PlcLibraryPackage.Describe(file);
+
+                Assert.IsFalse(library.IdentityKnown);
+                Assert.AreEqual("", library.Version);
+                Assert.AreEqual("", library.Distributor);
+            }
+            finally
+            {
+                Directory.Delete(root, true);
+            }
         }
     }
 }
