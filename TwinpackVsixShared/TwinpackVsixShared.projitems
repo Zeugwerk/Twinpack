@@ -73,4 +73,12 @@
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)app.config" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="$(MSBuildThisFileDirectory)Resources\zeugwerk-logo.png">
+      <Link>Resources\zeugwerk-logo.png</Link>
+    </Resource>
+    <Resource Include="$(MSBuildThisFileDirectory)Resources\zeugwerk-logo-white.png">
+      <Link>Resources\zeugwerk-logo-white.png</Link>
+    </Resource>
+  </ItemGroup>
 </Project>
