@@ -75,8 +75,9 @@ public class CancelableTask : INotifyPropertyChanged
             _cts?.Token.ThrowIfCancellationRequested();
             _task = null;
         }
-        catch (OperationCanceledException ex)
+        catch (Exception ex) when (IsCancellation(ex))
         {
+            // Clicking another library cancels the request that was already running.
             wasCanceled = true;
             _logger.Trace(ex);
         }
@@ -92,5 +93,28 @@ public class CancelableTask : INotifyPropertyChanged
 
             Busy = false;
         }
+    }
+
+    public static bool IsCancellation(Exception ex)
+    {
+        if (ex == null)
+            return false;
+
+        if (ex is OperationCanceledException)
+            return true;
+
+        var aggregate = ex as AggregateException;
+        if (aggregate != null)
+        {
+            foreach (var inner in aggregate.Flatten().InnerExceptions)
+            {
+                if (IsCancellation(inner))
+                    return true;
+            }
+
+            return false;
+        }
+
+        return IsCancellation(ex.InnerException);
     }
 }

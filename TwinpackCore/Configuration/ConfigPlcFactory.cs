@@ -225,7 +225,7 @@ namespace Twinpack.Configuration
                             });
                         }
                     }
-                    catch (OperationCanceledException)
+                    catch (Exception ex) when (CancelableTask.IsCancellation(ex))
                     {
                         throw;
                     }

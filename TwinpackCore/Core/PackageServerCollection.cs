@@ -41,8 +41,8 @@ namespace Twinpack.Core
         /// <summary>
         /// A single package server that is unreachable, misconfigured or rejects what we send it must
         /// not fail an operation the remaining servers can still satisfy, so its failure is logged and
-        /// the loop moves on to the next one. Cancellation is not a server failure and is rethrown by
-        /// the exception filters at the call sites rather than being handled here.
+        /// the loop moves on to the next one. Cancellation is not a server failure. The filters rethrow it,
+        /// including a cancellation NuGet has wrapped in another exception.
         /// </summary>
         private static void LogServerFailure(IPackageServer packageServer, string operation, string packageName, Exception ex)
         {
@@ -80,7 +80,7 @@ namespace Twinpack.Core
                     {
                         packages = await packageServer.GetCatalogAsync(filter, page, batchSize, token);
                     }
-                    catch (Exception ex) when (!(ex is OperationCanceledException))
+                    catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
                     {
                         LogServerFailure(packageServer, "search", filter, ex);
                         break;
@@ -113,7 +113,7 @@ namespace Twinpack.Core
                         options.PreferredBranch,
                         cancellationToken: cancellationToken);
                 }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
+                catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
                 {
                     LogServerFailure(packageServer, "resolve", name, ex);
                     continue;
@@ -266,7 +266,7 @@ namespace Twinpack.Core
                         return catalogItem;
                     }
                 }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
+                catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
                 {
                     LogServerFailure(ps, "resolve", item.Name, ex);
 
@@ -514,7 +514,7 @@ namespace Twinpack.Core
                         };
                     }
                 }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
+                catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
                 {
                     LogServerFailure(packageServer, "resolve", dependency?.Name, ex);
                 }
@@ -549,7 +549,7 @@ namespace Twinpack.Core
                     success = true;
                     break;
                 }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
+                catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
                 {
                     LogServerFailure(packageServer, "download", package.PackageVersion?.Title, ex);
                 }

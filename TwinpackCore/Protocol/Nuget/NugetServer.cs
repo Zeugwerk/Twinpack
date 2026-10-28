@@ -211,13 +211,13 @@ namespace Twinpack.Protocol
                         }
                     }
                 }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
+                catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
                 {
                     _logger.Trace(ex);
                 }
             }
 
-            if (!openedPackage)
+            if (!openedPackage && !cancellationToken.IsCancellationRequested)
                 _logger.Error("Can't unpack package icon: {0} {1}", identity.Id, identity.Version);
 
             return null;
@@ -734,7 +734,7 @@ namespace Twinpack.Protocol
             {
                 throw new LoginException(ex.InnerException?.Message ?? ex.Message);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (CancelableTask.IsCancellation(ex))
             {
                 throw;
             }
@@ -809,6 +809,13 @@ namespace Twinpack.Protocol
                             return packageReader.NuspecReader.GetTitle();
                     }
                 }
+            }
+            catch (Exception ex) when (CancelableTask.IsCancellation(ex) || cancellationToken.IsCancellationRequested)
+            {
+                if (ex is OperationCanceledException)
+                    throw;
+
+                throw new OperationCanceledException("The operation was canceled.", ex, cancellationToken);
             }
             catch (Exception ex)
             {
