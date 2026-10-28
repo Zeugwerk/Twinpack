@@ -2,7 +2,6 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.Json;
 using Spectre.Console.Cli;
 using Twinpack.Core;
 using Twinpack.Protocol;
@@ -30,7 +29,7 @@ namespace Twinpack.Commands
                 PackagingServerRegistry.Servers.Where(x => x.Connected)).GetAwaiter().GetResult();
 
             if (settings.UseJsonOutput)
-                Console.Write(JsonSerializer.Serialize(new { path = result.Path, created = result.Created }));
+                CliJson.Write(new { path = result.Path, created = result.Created });
 
             TwinpackRunLog.LogPhaseDone(_logger, "init", sw.Elapsed.TotalSeconds);
             return 0;

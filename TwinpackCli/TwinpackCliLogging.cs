@@ -128,7 +128,11 @@ namespace Twinpack.Commands
 
             if (!settings.Quiet)
             {
-                var minLevel = settings.Verbose ? LogLevel.Trace : LogLevel.Info;
+                var minLevel = settings.Verbose
+                    ? LogLevel.Trace
+                    : settings.UseJsonOutput
+                        ? LogLevel.Warn
+                        : LogLevel.Info;
                 config.AddRule(minLevel, LogLevel.Fatal, consoleTarget, "Twinpack.*");
             }
 
