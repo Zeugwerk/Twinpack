@@ -1603,5 +1603,75 @@ namespace TwinpackTests
             Assert.AreEqual("2.0.0.0", config.Projects[0].Plcs[0].Packages[0].Version);
             Assert.AreEqual(1, packageServer.DownloadedPackageVersions.Count(x => x.Name == "ExternalLib1" && x.Version == "2.0.0.0"));
         }
+
+        [TestMethod]
+        public async Task UpdateAsync_PackageAndPlcFiltersSkipOtherReferences()
+        {
+            var packageServer = new PackageServerMock
+            {
+                Connected = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "LibA", Version = "2.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse { Name = "LibB", Version = "3.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                    new PackageVersionGetResponse { Name = "LibC", Version = "4.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" }
+                }
+            };
+            var config = new Config
+            {
+                Projects = new List<ConfigProject>
+                {
+                    new ConfigProject
+                    {
+                        Name = "P",
+                        Plcs = new List<ConfigPlcProject>
+                        {
+                            new ConfigPlcProject
+                            {
+                                Name = "One",
+                                Packages = new List<ConfigPlcPackage>
+                                {
+                                    new ConfigPlcPackage { Name = "LibA", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" },
+                                    new ConfigPlcPackage { Name = "LibB", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" }
+                                }
+                            },
+                            new ConfigPlcProject
+                            {
+                                Name = "Two",
+                                Packages = new List<ConfigPlcPackage>
+                                {
+                                    new ConfigPlcPackage { Name = "LibC", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            var twinpack = new TwinpackService(new PackageServerCollection { packageServer }, config: config);
+
+            await twinpack.UpdatePackagesAsync(
+                new TwinpackService.UpdatePackageFilters
+                {
+                    ProjectName = "P",
+                    PlcName = "One",
+                    Packages = new[] { "LibA" },
+                    Versions = new[] { "2.0.0.0" }
+                },
+                new TwinpackService.UpdatePackageOptions { IncludeProvidedPackages = true, IncludeDependencies = false });
+
+            Assert.IsFalse(packageServer.ResolvedPackageNames.Any(x => x == "LibB" || x == "LibC"));
+            Assert.AreEqual("2.0.0.0", config.Projects[0].Plcs[0].Packages.First(x => x.Name == "LibA").Version);
+            Assert.AreEqual("1.0.0.0", config.Projects[0].Plcs[0].Packages.First(x => x.Name == "LibB").Version);
+            Assert.AreEqual("1.0.0.0", config.Projects[0].Plcs[1].Packages.First(x => x.Name == "LibC").Version);
+
+            packageServer.ResolvedPackageNames.Clear();
+            await twinpack.UpdatePackagesAsync(
+                new TwinpackService.UpdatePackageFilters { ProjectName = "P", PlcName = "Two" },
+                new TwinpackService.UpdatePackageOptions { IncludeProvidedPackages = true, IncludeDependencies = false });
+
+            Assert.IsFalse(packageServer.ResolvedPackageNames.Any(x => x == "LibA" || x == "LibB"));
+            Assert.AreEqual("4.0.0.0", config.Projects[0].Plcs[1].Packages.First(x => x.Name == "LibC").Version);
+            Assert.AreEqual("2.0.0.0", config.Projects[0].Plcs[0].Packages.First(x => x.Name == "LibA").Version);
+        }
     }
 }
