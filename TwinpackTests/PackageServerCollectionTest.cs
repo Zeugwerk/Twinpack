@@ -297,5 +297,65 @@ namespace TwinpackTests
             Assert.AreEqual(false, catalogItem.IsPlaceholder);
             Assert.AreEqual(null, catalogItem.PackageServer);
         }
+
+        [TestMethod]
+        public async Task FetchPackageAsync_RequestedVersionFoundWhenLatestLookupFails()
+        {
+            var server = new PackageServerMock
+            {
+                Connected = true,
+                FailUnversionedLookup = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "OnlyHere", Version = "1.2.3.4", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Dist" }
+                }
+            };
+
+            var catalogItem = await new PackageServerCollection { server }.FetchPackageAsync(new ConfigPlcPackage
+            {
+                Name = "OnlyHere",
+                Version = "1.2.3.4",
+                Branch = "main",
+                Configuration = "Release",
+                Target = "TC3.1",
+                DistributorName = "Dist"
+            });
+
+            Assert.AreEqual(server, catalogItem.PackageServer);
+            Assert.AreEqual("1.2.3.4", catalogItem.InstalledVersion);
+        }
+
+        [TestMethod]
+        public async Task FetchPackageAsync_RequestedVersionOnLaterServer()
+        {
+            var older = new PackageServerMock
+            {
+                Connected = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "Shared", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" }
+                }
+            };
+            var newer = new PackageServerMock
+            {
+                Connected = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "Shared", Version = "2.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1" }
+                }
+            };
+
+            var catalogItem = await new PackageServerCollection { older, newer }.FetchPackageAsync(new ConfigPlcPackage
+            {
+                Name = "Shared",
+                Version = "2.0.0.0",
+                Branch = "main",
+                Configuration = "Release",
+                Target = "TC3.1"
+            });
+
+            Assert.AreEqual(newer, catalogItem.PackageServer);
+            Assert.AreEqual("2.0.0.0", catalogItem.InstalledVersion);
+        }
     }
 }

@@ -148,8 +148,18 @@ namespace Twinpack.Core
                 PlcName = plcName
             };
 
+            // A server can know the package and still not have the requested version. Remember that
+            // and keep looking: twinpack resolve moves on until a server returns the version, and
+            // restore has to do the same. The first server is only the answer when none of them have it.
+            PackageItem knownPackage = null;
+
             foreach (var ps in packageServer != null ? new List<IPackageServer> { packageServer } : this.Where(x => x.Connected))
             {
+                var requestedBranch = item.Branch;
+                var requestedConfiguration = item.Configuration;
+                var requestedTarget = item.Target;
+                var requestedDistributor = item.DistributorName;
+
                 catalogItem.PackageServer = ps;
 
                 try
@@ -162,12 +172,16 @@ namespace Twinpack.Core
                             item.Branch,
                             cancellationToken: cancellationToken);
 
-                    if (resolvedPackageVersion?.Name != null && (item.Branch == null || item.Configuration == null || item.Target == null || item.DistributorName == null))
+                    if (resolvedPackageVersion?.Name != null)
                     {
-                        item.Branch = resolvedPackageVersion?.Branch;
-                        item.Configuration = resolvedPackageVersion?.Configuration;
-                        item.Target = resolvedPackageVersion?.Target;
-                        item.DistributorName = resolvedPackageVersion?.DistributorName;
+                        if (item.Branch == null)
+                            item.Branch = resolvedPackageVersion.Branch;
+                        if (item.Configuration == null)
+                            item.Configuration = resolvedPackageVersion.Configuration;
+                        if (item.Target == null)
+                            item.Target = resolvedPackageVersion.Target;
+                        if (item.DistributorName == null)
+                            item.DistributorName = resolvedPackageVersion.DistributorName;
                     }
 
                     if (resolvedPackageVersion == null)
@@ -219,9 +233,20 @@ namespace Twinpack.Core
                     var packageVersionLatest = resolvedPackageVersion.Latest;
                     if (packageVersionLatest == null)
                     {
-                        packageVersionLatest = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name },
-                                                                                      item.Branch, item.Configuration, item.Target,
-                                                                                      cancellationToken: cancellationToken);
+                        try
+                        {
+                            packageVersionLatest = await ps.GetPackageVersionAsync(new PlcLibrary { DistributorName = item.DistributorName, Name = item.Name },
+                                                                                          item.Branch, item.Configuration, item.Target,
+                                                                                          cancellationToken: cancellationToken);
+                        }
+                        catch (Exception ex) when (packageVersion?.Name != null && !CancelableTask.IsCancellation(ex))
+                        {
+                            // The requested version is already in hand. NuGet never fills Latest, so this
+                            // follow-up asks for the newest version and can fail (for example the newest
+                            // build has no library tag) without meaning the version restore asked for is missing.
+                            LogServerFailure(ps, "resolve", item.Name, ex);
+                            packageVersionLatest = null;
+                        }
                     }
 
                     // force the packageVersion references version even if the version was not found
@@ -246,7 +271,7 @@ namespace Twinpack.Core
                     }
 
                     // a package might be updateable but not available on Twinpack
-                    if (packageVersionLatest.Name != null)
+                    if (packageVersionLatest?.Name != null)
                     {
                         if (includeMetadata)
                         {
@@ -259,11 +284,34 @@ namespace Twinpack.Core
 
                     catalogItem.Config = item;
 
-                    if (packageVersionLatest.Name != null)
+                    // twinpack resolve succeeds on this. Restore used to require the latest-version
+                    // lookup as well, so a server that returned the requested version was reported as
+                    // "not found" when that second lookup came back empty or threw.
+                    if (packageVersion?.Name != null)
                     {
-                        if(includeMetadata)
+                        catalogItem.PackageServer = ps;
+                        if (includeMetadata)
                             _cache[cacheKey] = catalogItem;
                         return catalogItem;
+                    }
+
+                    item.Branch = requestedBranch;
+                    item.Configuration = requestedConfiguration;
+                    item.Target = requestedTarget;
+                    item.DistributorName = requestedDistributor;
+
+                    if (packageVersionLatest?.Name != null && knownPackage == null)
+                    {
+                        catalogItem.PackageServer = ps;
+                        catalogItem.Config = item;
+                        catalogItem.ProjectName = projectName;
+                        catalogItem.PlcName = plcName;
+                        knownPackage = catalogItem;
+                        catalogItem = new PackageItem(item)
+                        {
+                            ProjectName = projectName,
+                            PlcName = plcName
+                        };
                     }
                 }
                 catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
@@ -272,12 +320,53 @@ namespace Twinpack.Core
 
                     // the attempt above may have left a half filled item behind, and the servers after
                     // this one have to start from the same state as the first one did
+                    item.Branch = requestedBranch;
+                    item.Configuration = requestedConfiguration;
+                    item.Target = requestedTarget;
+                    item.DistributorName = requestedDistributor;
+
+                    // The pinned version can be rejected (it is not on the server) without the package
+                    // itself being unknown. Ask once without a version so update can move to one that exists.
+                    // Restore still ignores this, because the requested version was not found.
+                    if (knownPackage == null)
+                    {
+                        try
+                        {
+                            var latest = await ps.GetPackageVersionAsync(
+                                new PlcLibrary { Name = item.Name, DistributorName = requestedDistributor },
+                                requestedBranch, requestedConfiguration, requestedTarget,
+                                cancellationToken);
+                            if (latest?.Name != null)
+                            {
+                                knownPackage = new PackageItem(ps, latest)
+                                {
+                                    Update = latest,
+                                    Config = item,
+                                    ProjectName = projectName,
+                                    PlcName = plcName,
+                                    PackageServer = ps
+                                };
+                            }
+                        }
+                        catch (Exception latestEx) when (!CancelableTask.IsCancellation(latestEx))
+                        {
+                            LogServerFailure(ps, "resolve", item.Name, latestEx);
+                        }
+                    }
+
                     catalogItem = new PackageItem(item)
                     {
                         ProjectName = projectName,
                         PlcName = plcName
                     };
                 }
+            }
+
+            if (knownPackage != null)
+            {
+                if (includeMetadata)
+                    _cache[cacheKey] = knownPackage;
+                return knownPackage;
             }
 
             catalogItem.Config = item;
