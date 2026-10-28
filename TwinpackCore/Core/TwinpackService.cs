@@ -438,7 +438,7 @@ namespace Twinpack.Core
             }
         }
 
-        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, List<string> excludedPackages = null, CancellationToken token = default, bool refreshUsedPackageCache = false)
+        public async Task<IEnumerable<PackageItem>> RetrieveUsedPackagesAsync(string searchTerm = null, bool includeMetadata = false, List<string> excludedPackages = null, CancellationToken token = default, bool refreshUsedPackageCache = false, string projectName = null, string plcName = null, IEnumerable<string> packageNames = null)
         {
             if (_config == null)
                 return new List<PackageItem>();
@@ -457,10 +457,17 @@ namespace Twinpack.Core
 
                 foreach (var project in _config.Projects.Where(x => x.Name == _projectName || _projectName == null))
                 {
+                    if (projectName != null && !string.Equals(project.Name, projectName, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
                     foreach (var plc in project.Plcs.Where(x => x.Name == _plcName || _plcName == null))
                     {
+                        if (plcName != null && !string.Equals(plc.Name, plcName, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
                         foreach (var package in plc.Packages
                             .Where(x => excludedPackages == null || !excludedPackages.Contains(x.Name))
+                            .Where(x => packageNames == null || packageNames.Any(n => string.Equals(n, x.Name, StringComparison.OrdinalIgnoreCase)))
                             .Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
                         {
                             PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, preferEffectiveVersionForWildcard: true, cancellationToken: token);
@@ -477,6 +484,9 @@ namespace Twinpack.Core
                 }
 
                 return _usedPackagesCache
+                        .Where(x => projectName == null || string.Equals(x.ProjectName, projectName, StringComparison.OrdinalIgnoreCase))
+                        .Where(x => plcName == null || string.Equals(x.PlcName, plcName, StringComparison.OrdinalIgnoreCase))
+                        .Where(x => packageNames == null || packageNames.Any(n => string.Equals(n, x.Config?.Name ?? x.Catalog?.Name, StringComparison.OrdinalIgnoreCase)))
                         .Where(x =>
                             searchTerm == null ||
                             x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
@@ -577,23 +587,35 @@ namespace Twinpack.Core
 
         public async System.Threading.Tasks.Task<List<PackageItem>> UpdatePackagesAsync(UpdatePackageFilters filters = default, UpdatePackageOptions options = default, CancellationToken cancellationToken = default)
         {
-            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken, refreshUsedPackageCache: true);
+            // Project, PLC and package name are known from the configuration, so the server
+            // lookup is limited to those references. Framework is only known after that lookup.
+            var usedPackages = (await RetrieveUsedPackagesAsync(
+                token: cancellationToken,
+                refreshUsedPackageCache: true,
+                projectName: filters?.ProjectName,
+                plcName: filters?.PlcName,
+                packageNames: filters?.Packages)).ToList();
+
+            if (filters?.Frameworks != null)
+            {
+                usedPackages = usedPackages.Where(x =>
+                    filters.Frameworks.Any(y => string.Equals(y, x.Update?.Framework, StringComparison.OrdinalIgnoreCase))).ToList();
+            }
+
             List<PackageItem> packages;
             if (filters?.Packages != null || filters?.Frameworks != null)
             {
-                packages = usedPackages.Where(
-                x => (filters.ProjectName == null || filters.ProjectName == x.ProjectName) &&
-                (filters.ProjectName == null || filters.ProjectName == x.ProjectName) &&
-                (filters.Packages == null || filters.Packages.Any(y => y == x.Update?.Name)) &&
-                (filters.Frameworks == null || filters.Frameworks.Any(y => y == x.Update?.Framework)))
-                    .Select(x => new PackageItem(x) { 
-                        Package = new PackageGetResponse(x.Update), 
-                        PackageVersion = x.Update,
-                    }).ToList();
+                packages = usedPackages.Select(x => new PackageItem(x)
+                {
+                    Package = new PackageGetResponse(x.Update),
+                    PackageVersion = x.Update
+                }).ToList();
 
                 foreach (var package in packages)
                 {
-                    var i = filters.Packages != null && package.Package.Name != null ? Array.IndexOf(filters.Packages, package.Package.Name) : -1;
+                    var i = filters.Packages == null || package.Config?.Name == null
+                        ? -1
+                        : Array.FindIndex(filters.Packages, y => string.Equals(y, package.Config.Name, StringComparison.OrdinalIgnoreCase));
                     if (i >= 0)
                     {
                         package.Config.Version = string.IsNullOrEmpty(filters.Versions?.ElementAtOrDefault(i)) ? null : filters.Versions?.ElementAtOrDefault(i);
@@ -602,7 +624,7 @@ namespace Twinpack.Core
                         package.Config.Target = filters.Targets?.ElementAtOrDefault(i) ?? (string.IsNullOrEmpty(package.Config.Version) ? package.Config.Target : null);
                     }
 
-                    i = filters.Frameworks != null && package.PackageVersion.Framework != null ? Array.IndexOf(filters.Frameworks, package.PackageVersion.Framework) : -1;
+                    i = filters.Frameworks != null && package.PackageVersion?.Framework != null ? Array.FindIndex(filters.Frameworks, y => string.Equals(y, package.PackageVersion.Framework, StringComparison.OrdinalIgnoreCase)) : -1;
                     if (i >= 0)
                     {
                         package.Config.Version = filters.Versions?.ElementAtOrDefault(i);
@@ -635,10 +657,6 @@ namespace Twinpack.Core
                 throw new NotSupportedException("Modules are not supported");
 
             options = options ?? new UpdatePackageOptions();
-
-            var usedPackages = await RetrieveUsedPackagesAsync(token: cancellationToken);
-            if (packages.Any(x => !usedPackages.Any(y => x.Config.Name == x.Config.Name)))
-                throw new ArgumentException("Package to be updated is not used in any project!");
 
             var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
             return await AddResolvedPackagesAsync(packages, providedPackageNames, options, options.IncludeProvidedPackages, cancellationToken);

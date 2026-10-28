@@ -17,6 +17,7 @@ namespace TwinpackTests
         public List<CatalogItemGetResponse> CatalogItems { get; set; } = new List<CatalogItemGetResponse>();
         public List<PackageVersionGetResponse> PackageVersionItems { get; set; } = new List<PackageVersionGetResponse>();
         public List<PackageVersionGetResponse> DownloadedPackageVersions { get; set; } = new List<PackageVersionGetResponse>();
+        public List<string> ResolvedPackageNames { get; } = new List<string>();
 
         public string ServerType => throw new NotImplementedException();
         public string Name { get; set; }
@@ -90,6 +91,9 @@ namespace TwinpackTests
         public async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
+            if (!string.IsNullOrEmpty(library?.Name))
+                ResolvedPackageNames.Add(library.Name);
+
             if (FailUnversionedLookup && library.Version == null)
                 throw new InvalidOperationException("latest lookup failed");
 
@@ -145,6 +149,9 @@ namespace TwinpackTests
         public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
+            if (!string.IsNullOrEmpty(library?.Name))
+                ResolvedPackageNames.Add(library.Name);
+
             if (ThrowWhenVersionMissing && !HasRequestedVersion(library))
                 throw new InvalidOperationException($"version {library.Version} is not on the server");
 
