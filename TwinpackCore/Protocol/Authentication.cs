@@ -36,7 +36,7 @@ namespace Twinpack.Protocol
                 _logger.Warn("[login] timed out: {0}", _packageServer.UrlBase);
                 throw ex;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (CancelableTask.IsCancellation(ex))
             {
                 _logger.Warn("[login] cancelled: {0}", _packageServer.UrlBase);
                 throw;

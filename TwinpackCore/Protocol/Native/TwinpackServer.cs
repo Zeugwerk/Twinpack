@@ -332,7 +332,7 @@ namespace Twinpack.Protocol
                 await WriteResponseContentToFileAsync(responseDownload, fileName, cancellationToken);
                 VerifyDownloadedChecksum(packageVersion, fileName, checksumMode);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (CancelableTask.IsCancellation(ex))
             {
                 throw;
             }

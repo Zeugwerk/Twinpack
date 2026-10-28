@@ -429,10 +429,6 @@ namespace Twinpack.Core
                             rx?.Match(x.Catalog?.DistributorName).Success == true)
                         ;
             }
-            catch (OperationCanceledException ex)
-            {
-                throw;
-            }
             finally
             {
                 // WaitAsync throws when the keystroke cancels the token before the lock is taken.

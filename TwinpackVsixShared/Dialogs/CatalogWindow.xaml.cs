@@ -595,11 +595,7 @@ namespace Twinpack.Dialogs
                 CatalogView.SelectionChanged += Catalog_SelectionChanged;
                 await UpdateCatalogAsync(_searchTerm, maxNewPackages: 10, cancellationToken: cancellationToken);
             }
-            catch (OperationCanceledException ex)
-            {
-                throw;
-            }
-            catch (Exception ex)
+            catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
             {
                 IsBrowsingAvailablePackages = true;
                 throw;
@@ -658,20 +654,15 @@ namespace Twinpack.Dialogs
                 cancellationToken.ThrowIfCancellationRequested();
                 return config;
             }
-            catch (OperationCanceledException ex)
-            {
-                IsCreateConfigVisible = true;
-                IsMigrateConfigVisible = false;
-                IsConfigured = false;
-                _plcConfig = null;
-                throw;
-            }
             catch (Exception ex)
             {
                 IsCreateConfigVisible = true;
                 IsMigrateConfigVisible = false;
                 IsConfigured = false;
                 _plcConfig = null;
+                if (CancelableTask.IsCancellation(ex))
+                    throw;
+
                 _logger.Trace(ex);
                 _logger.Error(ex.Message);
             }
@@ -1181,9 +1172,12 @@ namespace Twinpack.Dialogs
                 Versions = Versions.Concat(results.Item1.Select(x => new PlcVersion { Version = x.Version, VersionDisplayText = x.Version })).ToList();
                 _currentPackageVersionsPage++;
             }
-            catch (OperationCanceledException ex)
+            catch (Exception ex) when (CancelableTask.IsCancellation(ex) || cancellationToken.IsCancellationRequested)
             {
-                throw;
+                if (ex is OperationCanceledException)
+                    throw;
+
+                throw new OperationCanceledException("The operation was canceled.", ex, cancellationToken);
             }
             catch (Exception ex)
             {
