@@ -1545,5 +1545,63 @@ namespace TwinpackTests
 
             Assert.AreEqual(0, packages.Count());
         }
+
+        [TestMethod]
+        public async Task UpdateAsync_PinnedVersionMissing_MovesToLatest()
+        {
+            var packageServer = new PackageServerMock
+            {
+                Connected = true,
+                ThrowWhenVersionMissing = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "ExternalLib1", Version = "2.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Dist" }
+                }
+            };
+            var config = new Config
+            {
+                Projects = new List<ConfigProject>
+                {
+                    new ConfigProject
+                    {
+                        Name = "P",
+                        Plcs = new List<ConfigPlcProject>
+                        {
+                            new ConfigPlcProject
+                            {
+                                Name = "PLC",
+                                Packages = new List<ConfigPlcPackage>
+                                {
+                                    new ConfigPlcPackage { Name = "ExternalLib1", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Dist" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            var twinpack = new TwinpackService(new PackageServerCollection { packageServer }, config: config);
+
+            var restored = await twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions
+            {
+                IncludeProvidedPackages = true,
+                IncludeDependencies = false
+            });
+            Assert.AreEqual(0, restored.Count);
+            Assert.AreEqual(0, packageServer.DownloadedPackageVersions.Count);
+            Assert.AreEqual("1.0.0.0", config.Projects[0].Plcs[0].Packages[0].Version);
+
+            var updated = await twinpack.UpdatePackagesAsync(
+                new TwinpackService.UpdatePackageFilters(),
+                new TwinpackService.UpdatePackageOptions
+                {
+                    IncludeProvidedPackages = true,
+                    IncludeDependencies = false
+                });
+
+            Assert.AreEqual(1, updated.Count);
+            Assert.AreEqual("2.0.0.0", updated[0].PackageVersion.Version);
+            Assert.AreEqual("2.0.0.0", config.Projects[0].Plcs[0].Packages[0].Version);
+            Assert.AreEqual(1, packageServer.DownloadedPackageVersions.Count(x => x.Name == "ExternalLib1" && x.Version == "2.0.0.0"));
+        }
     }
 }

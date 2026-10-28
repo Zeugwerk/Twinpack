@@ -556,6 +556,15 @@ namespace Twinpack.Core
 
             var usedPackages = await RetrieveUsedPackagesAsync(excludedPackages: options?.ExcludedPackages, token: cancellationToken);
 
+            foreach (var package in usedPackages)
+            {
+                if (package.Used != null || string.IsNullOrEmpty(package.Config?.Version) || package.Update?.Version == null)
+                    continue;
+
+                _logger.Warn("[restore] {0} {1} (distributor: {2}) is not on any server; latest available is {3}",
+                    package.Config.Name, package.Config.Version, package.Config.DistributorName, package.Update.Version);
+            }
+
             // download and add all packages, which are not self references to the provided packages
             var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
 
