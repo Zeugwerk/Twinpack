@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.Json;
 using Spectre.Console.Cli;
 using Twinpack.Configuration;
 using Twinpack.Core;
@@ -126,7 +125,7 @@ namespace Twinpack.Commands
             }
 
             if (settings.UseJsonOutput)
-                Console.Write(JsonSerializer.Serialize(packages));
+                CliJson.Write(packages);
 
             TwinpackRunLog.LogPhaseDone(_logger, "pack", sw.Elapsed.TotalSeconds);
             return 0;

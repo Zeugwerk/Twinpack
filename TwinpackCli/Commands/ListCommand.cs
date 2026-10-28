@@ -1,11 +1,8 @@
 #nullable enable
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.ComponentModel;
 using Spectre.Console.Cli;
 using Spectre.Console;
-using System.Text.Json;
 
 namespace Twinpack.Commands
 {
@@ -46,14 +43,15 @@ namespace Twinpack.Commands
 
                 if (settings.UseJsonOutput)
                 {
-                    Console.Write(JsonSerializer.Serialize(
-                        packages.Select(x => new { 
-                            Catalog = x.Catalog, 
-                            Package = x.Package,
-                            PackageVersion = x.PackageVersion, 
-                            Used = x.Used, 
-                            Config = x.Config } 
-                        )));
+                    CliJson.Write(packages.Select(x => new
+                    {
+                        project = x.ProjectName,
+                        plc = x.PlcName,
+                        package = x.Catalog?.Name,
+                        installedVersion = x.InstalledVersion,
+                        latestVersion = x.UpdateVersion,
+                        updatable = x.IsUpdateable
+                    }));
                 }
                 else
                 {

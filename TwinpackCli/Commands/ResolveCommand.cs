@@ -4,7 +4,6 @@ using Spectre.Console.Cli;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Text.Json;
 using Twinpack.Core;
 
 namespace Twinpack.Commands
@@ -81,31 +80,36 @@ namespace Twinpack.Commands
 
                 var success = found && mismatches.Count == 0;
 
+                if (!found)
+                    _logger.Warn("Package '{0}' could not be resolved.", settings.Package);
+
+                foreach (var mismatch in mismatches)
+                    _logger.Error("[resolve] strict mismatch -- {0}", mismatch);
+
                 if (settings.UseJsonOutput)
                 {
-                    Console.Write(JsonSerializer.Serialize(resolved));
+                    CliJson.Write(new
+                    {
+                        package = found ? resolved!.Name : settings.Package,
+                        version = found ? resolved!.Version : null,
+                        branch = found ? resolved!.Branch : null,
+                        target = found ? resolved!.Target : null,
+                        configuration = found ? resolved!.Configuration : null,
+                        found,
+                        mismatches = mismatches.Count > 0 ? mismatches : null
+                    });
                 }
-                else
+                else if (found)
                 {
-                    if (found)
-                    {
-                        var table = new Table();
-                        table.AddColumns("Package", "Version", "Branch", "Target", "Configuration");
-                        table.AddRow(
-                            resolved!.Name ?? string.Empty,
-                            resolved.Version ?? string.Empty,
-                            resolved.Branch ?? string.Empty,
-                            resolved.Target ?? string.Empty,
-                            resolved.Configuration ?? string.Empty);
-                        AnsiConsole.Write(table);
-                    }
-                    else
-                    {
-                        _logger.Warn("Package '{0}' could not be resolved.", settings.Package);
-                    }
-
-                    foreach (var mismatch in mismatches)
-                        _logger.Error("[resolve] strict mismatch -- {0}", mismatch);
+                    var table = new Table();
+                    table.AddColumns("Package", "Version", "Branch", "Target", "Configuration");
+                    table.AddRow(
+                        resolved!.Name ?? string.Empty,
+                        resolved.Version ?? string.Empty,
+                        resolved.Branch ?? string.Empty,
+                        resolved.Target ?? string.Empty,
+                        resolved.Configuration ?? string.Empty);
+                    AnsiConsole.Write(table);
                 }
 
                 return success ? 0 : 1;

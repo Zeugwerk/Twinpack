@@ -17,7 +17,7 @@ namespace Twinpack.Commands
     public class AbstractSettings : CommandSettings
     {
         [CommandOption("-o|--output <FORMAT>")]
-        [Description("Console output format: text (default, human-readable) or json (machine-readable on stdout; log messages use stderr).")]
+        [Description("Console output format: text (default) or json. json writes the result to stdout. Warnings and errors go to stderr; progress lines stay off unless --verbose is set.")]
         public string? Output { get; set; }
 
         [CommandOption("--json")]

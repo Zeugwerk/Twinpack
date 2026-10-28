@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using Spectre.Console.Cli;
 using Twinpack;
 using Twinpack.Exceptions;
@@ -102,7 +101,13 @@ namespace Twinpack.Commands
 
             if (settings.UseJsonOutput)
             {
-                Console.Write(JsonSerializer.Serialize(PackagingServerRegistry.Servers));
+                CliJson.Write(PackagingServerRegistry.Servers.Select(server => new
+                {
+                    name = server.Name,
+                    type = server.ServerType,
+                    url = server.UrlBase,
+                    enabled = server.Enabled
+                }));
             }
 
             TwinpackRunLog.LogPhaseDone(_logger, "config", sw.Elapsed.TotalSeconds);
