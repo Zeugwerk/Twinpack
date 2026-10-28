@@ -19,6 +19,7 @@ using WixToolset.Dtf.WindowsInstaller.Package;
 using NuGet.Packaging.Core;
 using Twinpack.Exceptions;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace Twinpack.Protocol
@@ -682,19 +683,17 @@ namespace Twinpack.Protocol
 
             try
             {
-                PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username, Password, true, null) : null };
-                _sourceRepository = Repository.Factory.GetCoreV3(packageSource);
+                PackageSource packageSource = new PackageSource(Url) { Credentials = !string.IsNullOrEmpty(Password) ? new PackageSourceCredential(Url, Username ?? "", Password, true, null) : null };
+                _sourceRepository = CreateSourceRepository(packageSource);
 
                 // No need to check if we can login to local repositories
                 if (!Path.IsPathRooted(Url))
                 {
                     using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
                     {
-                        if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
-                        {
-                            var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Username}:{Password}"));
-                            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
-                        }
+                        // A blank username with a password is an API key. The key is the Basic password, so the header is ":" + key.
+                        if (!string.IsNullOrEmpty(Password))
+                            httpClient.DefaultRequestHeaders.Authorization = BasicAuthorization(Username, Password);
 
                         var response = await httpClient.GetAsync(Url.EndsWith("/") ? Url : Url + "/", cancellationToken);
 
@@ -893,6 +892,62 @@ namespace Twinpack.Protocol
         {
             var tagList = tags.Split(' ').ToList();
             return tagList.IndexOf("tp-compiled-library") >= 0 ? 1 : 0;
+        }
+
+        // PackageSourceCredential.IsValid() is false when the username is empty, and NuGet.Protocol then
+        // ignores the credential. An API key is that case: blank username, key in the password field.
+        private static SourceRepository CreateSourceRepository(PackageSource packageSource)
+        {
+            var providers = Repository.Provider.GetCoreV3().ToList();
+            providers.Add(new Lazy<INuGetResourceProvider>(() => new ApiKeyHttpHandlerResourceProvider()));
+            return new SourceRepository(packageSource, providers);
+        }
+
+        private static AuthenticationHeaderValue BasicAuthorization(string username, string password)
+        {
+            var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username ?? ""}:{password}"));
+            return new AuthenticationHeaderValue("Basic", token);
+        }
+
+        private sealed class ApiKeyHttpHandlerResourceProvider : ResourceProvider
+        {
+            private readonly HttpHandlerResourceV3Provider _fallback = new HttpHandlerResourceV3Provider();
+
+            public ApiKeyHttpHandlerResourceProvider()
+                : base(typeof(HttpHandlerResource), nameof(ApiKeyHttpHandlerResourceProvider), nameof(HttpHandlerResourceV3Provider))
+            {
+            }
+
+            public override async Task<Tuple<bool, INuGetResource>> TryCreate(SourceRepository source, CancellationToken cancellationToken)
+            {
+                var credentials = source.PackageSource.Credentials;
+                if (credentials == null || credentials.IsValid() || string.IsNullOrEmpty(credentials.Password))
+                    return new Tuple<bool, INuGetResource>(false, null);
+
+                var created = await _fallback.TryCreate(source, cancellationToken);
+                if (created == null || !created.Item1 || !(created.Item2 is HttpHandlerResourceV3 http))
+                    return new Tuple<bool, INuGetResource>(false, null);
+
+                var handler = new PreemptiveBasicAuthHandler(http.MessageHandler, credentials.Username, credentials.Password);
+                return new Tuple<bool, INuGetResource>(true, new HttpHandlerResourceV3(http.ClientHandler, handler));
+            }
+        }
+
+        private sealed class PreemptiveBasicAuthHandler : DelegatingHandler
+        {
+            private readonly AuthenticationHeaderValue _authorization;
+
+            public PreemptiveBasicAuthHandler(HttpMessageHandler inner, string username, string password)
+                : base(inner)
+            {
+                _authorization = BasicAuthorization(username, password);
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                request.Headers.Authorization = _authorization;
+                return base.SendAsync(request, cancellationToken);
+            }
         }
     }
 }
