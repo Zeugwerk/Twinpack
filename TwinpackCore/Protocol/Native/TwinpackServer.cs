@@ -557,7 +557,7 @@ namespace Twinpack.Protocol
             return result;
         }
 
-        public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
+        public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default, bool persistCredentials = true)
         {
             _client.Invalidate(); // clear the cache
 
@@ -567,16 +567,24 @@ namespace Twinpack.Protocol
                 return UserInfo;
             }
 
-            try
+            if (persistCredentials)
             {
-                var credentials = CredentialManager.GetCredentials(UrlBase);
-                Username = username ?? credentials?.UserName;
-                Password = password ?? credentials?.Password;
+                try
+                {
+                    var credentials = CredentialManager.GetCredentials(UrlBase);
+                    Username = username ?? credentials?.UserName;
+                    Password = password ?? credentials?.Password;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn("[login] failed to load credentials from Windows Credential Storage");
+                    _logger.Trace(ex);
+                    Username = username;
+                    Password = password;
+                }
             }
-            catch (Exception ex)
+            else
             {
-                _logger.Warn("[login] failed to load credentials from Windows Credential Storage");
-                _logger.Trace(ex);
                 Username = username;
                 Password = password;
             }
@@ -611,7 +619,7 @@ namespace Twinpack.Protocol
 
                 UserInfo = result;
 
-                if (!string.IsNullOrEmpty(Password))
+                if (persistCredentials && !string.IsNullOrEmpty(Password))
                 {
                     try
                     {
@@ -638,7 +646,14 @@ namespace Twinpack.Protocol
             }
             catch
             {
-                DeleteCredential();
+                if (persistCredentials)
+                    DeleteCredential();
+                else
+                {
+                    UserInfo = new LoginPostResponse();
+                    Username = "";
+                    Password = "";
+                }
                 throw;
             }
         }

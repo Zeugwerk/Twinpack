@@ -653,9 +653,11 @@ namespace Twinpack.Protocol
 
         }
 
-        public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
+        public async Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default, bool persistCredentials = true)
         {
-            var storePassword = !string.IsNullOrEmpty(password);
+            // A caller that passes a password stores it unless persistCredentials is false. Credentials
+            // loaded from Credential Manager are not written back.
+            var storePassword = persistCredentials && !string.IsNullOrEmpty(password);
             InvalidateCache();
             UserInfo = new LoginPostResponse();
             if (!Enabled)
@@ -663,16 +665,24 @@ namespace Twinpack.Protocol
                 return UserInfo;
             }
 
-            try
+            if (persistCredentials)
             {
-                var credentials = CredentialManager.GetCredentials(UrlBase);
-                Username = username ?? credentials?.UserName ?? "";
-                Password = password ?? credentials?.Password ?? "";
+                try
+                {
+                    var credentials = CredentialManager.GetCredentials(UrlBase);
+                    Username = username ?? credentials?.UserName ?? "";
+                    Password = password ?? credentials?.Password ?? "";
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn("[login] failed to load credentials");
+                    _logger.Trace(ex);
+                    Username = username ?? "";
+                    Password = password ?? "";
+                }
             }
-            catch (Exception ex)
+            else
             {
-                _logger.Warn("[login] failed to load credentials");
-                _logger.Trace(ex);
                 Username = username ?? "";
                 Password = password ?? "";
             }
@@ -740,7 +750,14 @@ namespace Twinpack.Protocol
             }
             catch
             {
-                DeleteCredential();
+                if (persistCredentials)
+                    DeleteCredential();
+                else
+                {
+                    UserInfo = new LoginPostResponse();
+                    Username = "";
+                    Password = "";
+                }
                 throw;
             }
 

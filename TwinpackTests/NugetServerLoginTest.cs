@@ -49,6 +49,41 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task LoginWithoutPersistingLeavesCredentialManagerUntouchedAsync()
+        {
+            await UsingFeedAsync(async (feed, requests) =>
+            {
+                CredentialManager.SaveCredentials(feed, new NetworkCredential("stored-user", "stored-pass"));
+                var server = new NugetServer("ephemeral", feed);
+                try
+                {
+                    await server.LoginAsync("alice", "s3cret", persistCredentials: false);
+                    Assert.IsTrue(server.LoggedIn);
+                    Assert.AreEqual("alice", server.Username);
+                    Assert.AreEqual("s3cret", server.Password);
+
+                    var stored = CredentialManager.GetCredentials(feed);
+                    Assert.IsNotNull(stored);
+                    Assert.AreEqual("stored-user", stored.UserName);
+                    Assert.AreEqual("stored-pass", stored.Password);
+
+                    var blank = new NugetServer("ephemeral-blank", feed);
+                    await blank.LoginAsync(null, null, persistCredentials: false);
+                    Assert.AreEqual("", blank.Username);
+                    Assert.AreEqual("", blank.Password);
+                    stored = CredentialManager.GetCredentials(feed);
+                    Assert.AreEqual("stored-user", stored.UserName);
+                }
+                finally
+                {
+                    CredentialManager.RemoveCredentials(feed);
+                }
+
+                Assert.IsTrue(Snapshot(requests).Count > 0, "the feed received no requests");
+            });
+        }
+
+        [TestMethod]
         public async Task UsernameAndPasswordAreStillSentAsBasicAuthAsync()
         {
             var expected = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes("alice:s3cret"));

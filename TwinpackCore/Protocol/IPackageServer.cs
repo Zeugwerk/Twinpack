@@ -31,7 +31,7 @@ namespace Twinpack.Protocol
         Task<PackageGetResponse> PutPackageAsync(PackagePatchRequest package, CancellationToken cancellationToken = default);
         Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default);
         Task<PackageVersionGetResponse> PutPackageVersionAsync(PackageVersionPatchRequest package, CancellationToken cancellationToken = default);
-        Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default);
+        Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default, bool persistCredentials = true);
         string Username { get; set; }
         string Password { get; set; }
         LoginPostResponse UserInfo { get; }

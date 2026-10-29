@@ -65,6 +65,7 @@
     <Compile Include="ConfigFactoryTest.cs" />
     <Compile Include="mocks\PackageServerMock.cs" />
     <Compile Include="NugetPackBuilderTest.cs" />
+    <Compile Include="NugetFeedMirrorTest.cs" />
     <Compile Include="NugetServerLoginTest.cs" />
     <Compile Include="SystemTest.cs" />
     <Compile Include="TwinpackServiceTest.cs" />

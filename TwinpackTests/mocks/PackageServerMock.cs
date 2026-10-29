@@ -120,7 +120,7 @@ namespace TwinpackTests
         {
         }
 
-        public Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default)
+        public Task<LoginPostResponse> LoginAsync(string username = null, string password = null, CancellationToken cancellationToken = default, bool persistCredentials = true)
         {
             throw new NotImplementedException();
         }

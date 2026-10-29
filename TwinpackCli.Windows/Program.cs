@@ -32,6 +32,7 @@ namespace Twinpack
                 {
                     nuget.SetDescription("Work with NuGet packages of TwinCAT libraries");
                     nuget.AddCommand<NugetPackCommand>("pack");
+                    nuget.AddCommand<NugetMirrorCommand>("mirror");
                 });
                 configure.Settings.StrictParsing = true;
                 configure.Settings.ApplicationName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;

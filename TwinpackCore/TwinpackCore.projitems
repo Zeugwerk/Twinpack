@@ -27,6 +27,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Authentication.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\BeckhoffServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetV2FeedClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetFeedMirror.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetPackBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\NugetServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Nuget\PlcLibraryPackage.cs" />
