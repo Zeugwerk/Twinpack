@@ -47,7 +47,7 @@ namespace Twinpack.Commands
             [Description("Update packages, which are provided by the configuration (Plcs, which are also packages themselves)")]
             public bool IncludeProvidedPackages { get; set; }
             [CommandOption("--skip-download")]
-            [Description("Skips the download of package(s)")]
+            [Description("Does not download package(s). Libraries already present in the cache folder (.Zeugwerk/libraries) are installed from there.")]
             public bool SkipDownload { get; set; }
             [CommandOption("--force-download")]
             [Description("Forces the download of package(s) even if they are already available on the system.")]

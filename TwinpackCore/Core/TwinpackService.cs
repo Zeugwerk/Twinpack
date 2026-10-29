@@ -42,6 +42,8 @@ namespace Twinpack.Core
                 DownloadPath = rhs?.DownloadPath;
             }
 
+            // Skip the package-server download. A headed add still installs a library that is
+            // already present in the cache folder (.Zeugwerk/libraries).
             public bool SkipDownload = false;
             public bool SkipInstall = false;
             public bool ForceDownload = false;
@@ -813,11 +815,21 @@ namespace Twinpack.Core
                     DownloadPath = downloadPath
                 }, cancellationToken: cancellationToken);
 
-            // install downloaded packages
+            // Headless mode cannot install, and --skip-download used to skip install entirely
+            // because only freshly downloaded packages were installed. A library that is already
+            // in the cache folder is installed from there instead.
+            var installFromCache = options?.SkipDownload == true
+                && automationInterface != null
+                && !(automationInterface is AutomationInterfaceHeadless)
+                && options?.SkipInstall != true;
+            var packagesToInstall = installFromCache
+                ? PackagesFromCache(affectedPackages, downloadPath)
+                : downloadedPackageVersions;
+
             if(automationInterface != null && !(automationInterface is AutomationInterfaceHeadless) && 
                 (options?.SkipInstall == null || options?.SkipInstall == false))
             {
-                foreach (var package in downloadedPackageVersions)
+                foreach (var package in packagesToInstall)
                 {
                     _logger.Info("[install] {0} {1}", package.PackageVersion.Name, package.PackageVersion.Version);
                     await automationInterface.InstallPackageAsync(package, cachePath: downloadPath); 
@@ -1018,6 +1030,96 @@ namespace Twinpack.Core
             }
 
             return cache;
+        }
+
+        // A previous download writes {cache}/{target}/{name}_{version}.library, optional
+        // companion libraries {name}_{version}_{title}.library, and {name}_{version}.repository.
+        static List<PackageItem> PackagesFromCache(List<PackageItem> packages, string downloadPath)
+        {
+            var fromCache = new List<PackageItem>();
+            foreach (var package in packages.GroupBy(x => new
+            {
+                x.PackageVersion?.Name,
+                x.PackageVersion?.Version,
+                x.PackageVersion?.Branch,
+                x.PackageVersion?.Target,
+                x.PackageVersion?.Configuration
+            }).Select(x => x.First()))
+            {
+                if (TryUseCachedLibraries(package, downloadPath))
+                {
+                    _logger.Info("[install] {0} {1} from cache", package.PackageVersion.Name, package.PackageVersion.Version);
+                    fromCache.Add(package);
+                }
+                else if (package.PackageVersion?.Name != null)
+                {
+                    _logger.Warn("[install] {0} {1} is not in the cache at {2}", package.PackageVersion.Name, package.PackageVersion.Version, downloadPath);
+                }
+            }
+
+            return fromCache;
+        }
+
+        static bool TryUseCachedLibraries(PackageItem package, string downloadPath)
+        {
+            var version = package?.PackageVersion;
+            if (string.IsNullOrEmpty(version?.Name) || string.IsNullOrEmpty(version.Version))
+                return false;
+
+            var directory = Path.Combine(downloadPath ?? "", version.Target ?? "");
+            if (!Directory.Exists(directory))
+                return false;
+
+            var prefix = CacheFilePrefix(version.Name, version.Version);
+            var libraries = Directory.GetFiles(directory)
+                .Where(file => IsCacheLibraryForPrefix(Path.GetFileName(file), prefix))
+                .OrderBy(file => IsCompanionCacheLibrary(Path.GetFileName(file), prefix) ? 1 : 0)
+                .ThenBy(file => file, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (libraries.Count == 0)
+                return false;
+
+            version.LibraryFiles = libraries;
+            var repository = Path.Combine(directory, prefix + ".repository");
+            if (Directory.Exists(repository))
+                version.RepositoryFiles = Directory.GetFiles(repository, "*", SearchOption.AllDirectories).ToList();
+
+            return true;
+        }
+
+        static string CacheFilePrefix(string name, string version)
+        {
+            return SanitizeCacheFileName(name) + "_" + version;
+        }
+
+        static string SanitizeCacheFileName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return "library";
+
+            var invalid = Path.GetInvalidFileNameChars();
+            var cleaned = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+            return string.IsNullOrEmpty(cleaned) ? "library" : cleaned;
+        }
+
+        static bool IsCacheLibraryForPrefix(string fileName, string prefix)
+        {
+            if (string.IsNullOrEmpty(fileName) || fileName.Length <= prefix.Length)
+                return false;
+            if (!fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var separator = fileName[prefix.Length];
+            if (separator != '.' && separator != '_')
+                return false;
+
+            return PlcLibraryPackage.IsLibraryFile(fileName);
+        }
+
+        static bool IsCompanionCacheLibrary(string fileName, string prefix)
+        {
+            return fileName.Length > prefix.Length && fileName[prefix.Length] == '_';
         }
 
         public async Task<List<PackageItem>> DownloadPackagesAsync(List<PackageItem> packages, DownloadPackageOptions options = default, CancellationToken cancellationToken = default)

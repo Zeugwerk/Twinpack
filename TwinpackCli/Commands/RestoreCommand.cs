@@ -17,7 +17,7 @@ namespace Twinpack.Commands
             public bool IncludeProvidedPackages { get; set; }
             public string[] Configurations { get; set; }
             [CommandOption("--skip-download")]
-            [Description("Skips the download of package(s)")]
+            [Description("Does not download package(s). Libraries already present in the cache folder (.Zeugwerk/libraries) are installed from there.")]
             public bool SkipDownload { get; set; }
             [CommandOption("--skip-install")]
             [Description("Skips the installation of package(s)")]
