@@ -21,6 +21,7 @@ using Twinpack.Exceptions;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 
 namespace Twinpack.Protocol
 {
@@ -360,25 +361,22 @@ namespace Twinpack.Protocol
 
                     var msis = packageFiles.Where(x => x.EndsWith(".msi", StringComparison.InvariantCultureIgnoreCase)).ToList();
                     var packedLibraries = packageFiles.Where(PlcLibraryPackage.IsLibraryFile).ToList();
+                    var packedRepositoryFiles = packageFiles.Where(IsRepositoryFile).ToList();
 
                     string tempFolderPath = null;
                     string tempFilePath = null;
                     try
                     {
-                        if (packedLibraries.Count > 0)
+                        if (packedLibraries.Count > 0 || packedRepositoryFiles.Count > 0)
                         {
                             tempFolderPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
                             Directory.CreateDirectory(tempFolderPath);
                             foreach (var relativePath in packedLibraries)
+                                await ExtractPackageFileAsync(packageReader, relativePath, Path.Combine(tempFolderPath, Path.GetFileName(relativePath)));
+                            foreach (var relativePath in packedRepositoryFiles)
                             {
-                                var entry = packageReader.GetEntry(relativePath);
-                                if (entry == null)
-                                    continue;
-
-                                var destination = Path.Combine(tempFolderPath, Path.GetFileName(relativePath));
-                                using (var input = entry.Open())
-                                using (var output = File.Create(destination))
-                                    await input.CopyToAsync(output);
+                                var destination = Path.Combine(tempFolderPath, relativePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar));
+                                await ExtractPackageFileAsync(packageReader, relativePath, destination);
                             }
                         }
                         else if (msis.Count == 1)
@@ -402,47 +400,58 @@ namespace Twinpack.Protocol
                         }
                         else
                         {
-                            throw new Exceptions.ProtocolException("nupkg should contain PLC libraries or a single .msi");
+                            throw new Exceptions.ProtocolException("nupkg should contain PLC libraries, repository files (.tmx, .tml, .tme), or a single .msi");
                         }
 
                         var extracted = PlcLibraryPackage.DescribeAll(
                             Directory.GetFiles(tempFolderPath, "*", SearchOption.AllDirectories));
-                        if (extracted.Count == 0)
-                            throw new Exceptions.ProtocolException("nupkg does not contain a PLC library (.library or .compiled-library)");
-
-                        var reference = PlcLibraryPackage.ChooseReference(extracted, packageVersion.Name, packageVersion.Title);
-                        if (reference == null)
-                            throw new Exceptions.ProtocolException(
-                                $"nupkg contains {extracted.Count} libraries ({string.Join(", ", extracted.Select(x => x.Title))}) and none matches '{packageVersion.Name}'");
-
                         var cacheDirectory = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target ?? "");
                         Directory.CreateDirectory(cacheDirectory);
-                        var saved = new List<string>();
-                        foreach (var library in extracted)
+                        var repositoryFiles = CopyRepositoryFiles(tempFolderPath, cacheDirectory, packageVersion);
+
+                        if (extracted.Count == 0)
                         {
-                            var suffix = PlcLibraryPackage.LibrarySuffix(library.Path);
-                            var fileName = library == reference
-                                ? $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}{suffix}"
-                                : $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}_{SafeFileName(library.Title)}{suffix}";
-                            var destination = Path.Combine(cacheDirectory, fileName);
-                            File.Copy(library.Path, destination, true);
-                            saved.Add(destination);
+                            if (repositoryFiles.Count == 0)
+                                throw new Exceptions.ProtocolException("nupkg does not contain a PLC library (.library or .compiled-library)");
+
+                            packageVersion.LibraryFiles = new List<string>();
+                            packageVersion.RepositoryFiles = repositoryFiles;
+                            _logger.Info("[download] {0} ships {1} repository file(s) (.tml/.tmx/.tme)", packageVersion.Name, repositoryFiles.Count);
                         }
+                        else
+                        {
+                            var reference = PlcLibraryPackage.ChooseReference(extracted, packageVersion.Name, packageVersion.Title);
+                            if (reference == null)
+                                throw new Exceptions.ProtocolException(
+                                    $"nupkg contains {extracted.Count} libraries ({string.Join(", ", extracted.Select(x => x.Title))}) and none matches '{packageVersion.Name}'");
 
-                        packageVersion.LibraryFiles = saved;
-                        packageVersion.RepositoryFiles = CopyRepositoryFiles(tempFolderPath, cacheDirectory, packageVersion);
-                        packageVersion.Compiled = reference.Compiled ? 1 : 0;
-                        if (reference.IdentityKnown)
-                            packageVersion.Title = reference.Title;
-                        if (!string.IsNullOrEmpty(reference.Version))
-                            packageVersion.Version = reference.Version;
-                        if (!string.IsNullOrEmpty(reference.Distributor))
-                            packageVersion.DistributorName = reference.Distributor;
+                            var saved = new List<string>();
+                            foreach (var library in extracted)
+                            {
+                                var suffix = PlcLibraryPackage.LibrarySuffix(library.Path);
+                                var fileName = library == reference
+                                    ? $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}{suffix}"
+                                    : $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}_{SafeFileName(library.Title)}{suffix}";
+                                var destination = Path.Combine(cacheDirectory, fileName);
+                                File.Copy(library.Path, destination, true);
+                                saved.Add(destination);
+                            }
 
-                        if (extracted.Count > 1)
-                            _logger.Info("[download] {0} ships {1} libraries; referencing {2}", packageVersion.Name, extracted.Count, reference.Title);
-                        if (packageVersion.RepositoryFiles?.Count > 0)
-                            _logger.Info("[download] {0} ships {1} repository file(s) (.tml/.tmx/.tme)", packageVersion.Name, packageVersion.RepositoryFiles.Count);
+                            packageVersion.LibraryFiles = saved;
+                            packageVersion.RepositoryFiles = repositoryFiles;
+                            packageVersion.Compiled = reference.Compiled ? 1 : 0;
+                            if (reference.IdentityKnown)
+                                packageVersion.Title = reference.Title;
+                            if (!string.IsNullOrEmpty(reference.Version))
+                                packageVersion.Version = reference.Version;
+                            if (!string.IsNullOrEmpty(reference.Distributor))
+                                packageVersion.DistributorName = reference.Distributor;
+
+                            if (extracted.Count > 1)
+                                _logger.Info("[download] {0} ships {1} libraries; referencing {2}", packageVersion.Name, extracted.Count, reference.Title);
+                            if (packageVersion.RepositoryFiles?.Count > 0)
+                                _logger.Info("[download] {0} ships {1} repository file(s) (.tml/.tmx/.tme)", packageVersion.Name, packageVersion.RepositoryFiles.Count);
+                        }
                     }
                     finally
                     {
@@ -855,14 +864,43 @@ namespace Twinpack.Protocol
                 && VersionComparer.Default.Equals(left, right);
         }
 
+        static async Task ExtractPackageFileAsync(PackageArchiveReader packageReader, string relativePath, string destination)
+        {
+            var entry = packageReader.GetEntry(relativePath);
+            if (entry == null)
+                return;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(destination));
+            using (var input = entry.Open())
+            using (var output = File.Create(destination))
+                await input.CopyToAsync(output);
+        }
+
+        static bool IsRepositoryFile(string path)
+        {
+            var extension = Path.GetExtension(path ?? "");
+            return extension.Equals(".tmx", StringComparison.OrdinalIgnoreCase)
+                || extension.Equals(".tml", StringComparison.OrdinalIgnoreCase)
+                || extension.Equals(".tme", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Searches used when listing a feed for mirror. Beckhoff adds the TMX tag, because those
+        /// packages are not tagged as libraries.
+        /// </summary>
+        protected virtual IEnumerable<string> MirrorListPrefixes()
+        {
+            yield return SearchPrefix;
+        }
+
         /// <summary>
         /// The MSI installs platform images under CommonAppData\Beckhoff\TwinCAT\3.1\Repository.
         /// InstallLibrary does not. Keep that tree, rooted at <c>3.1\Repository</c>, so install can
-        /// copy it to the same place.
+        /// copy it to the same place. A mirrored package stores the same relative path under
+        /// <c>repository/</c>.
         /// </summary>
         static List<string> CopyRepositoryFiles(string extractedRoot, string cacheDirectory, PackageVersionGetResponse packageVersion)
         {
-            const string marker = @"\3.1\Repository\";
             var saved = new List<string>();
             if (string.IsNullOrEmpty(extractedRoot) || !Directory.Exists(extractedRoot))
                 return saved;
@@ -870,12 +908,14 @@ namespace Twinpack.Protocol
             var repositoryRoot = Path.Combine(cacheDirectory, $"{SafeFileName(packageVersion.Name)}_{packageVersion.Version}.repository");
             foreach (var file in Directory.GetFiles(extractedRoot, "*", SearchOption.AllDirectories))
             {
-                var normalized = file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-                var index = normalized.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-                if (index < 0)
+                if (!IsRepositoryFile(file))
                     continue;
 
-                var relative = normalized.Substring(index + marker.Length);
+                var normalized = file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                var relative = RepositoryRelativePath(normalized);
+                if (relative == null)
+                    continue;
+
                 var destination = Path.Combine(repositoryRoot, relative);
                 Directory.CreateDirectory(Path.GetDirectoryName(destination));
                 File.Copy(file, destination, true);
@@ -883,6 +923,19 @@ namespace Twinpack.Protocol
             }
 
             return saved;
+        }
+
+        static string RepositoryRelativePath(string normalizedPath)
+        {
+            var markers = new[] { @"\3.1\Repository\", @"\repository\" };
+            foreach (var marker in markers)
+            {
+                var index = normalizedPath.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                if (index >= 0)
+                    return normalizedPath.Substring(index + marker.Length);
+            }
+
+            return null;
         }
 
         static string SafeFileName(string name)
@@ -899,6 +952,284 @@ namespace Twinpack.Protocol
         {
             var tagList = tags.Split(' ').ToList();
             return tagList.IndexOf("tp-compiled-library") >= 0 ? 1 : 0;
+        }
+
+        const int MirrorSearchPageSize = 100;
+
+        /// <summary>
+        /// Every package id on this feed. A NuGet catalog (<c>Catalog/3.0.0</c>) is used when the
+        /// service index advertises one, because search stops after about 1000 hits. Otherwise the
+        /// ids come from search. Beckhoff keeps its <c>tags:library</c> prefix. Ids are not filtered
+        /// down to the library tag the catalog view uses.
+        /// </summary>
+        public async Task<IReadOnlyList<string>> ListPackageIdsAsync(CancellationToken cancellationToken = default)
+        {
+            EnsureRepository();
+
+            try
+            {
+                var fromCatalog = await ListPackageIdsFromCatalogAsync(cancellationToken);
+                if (fromCatalog != null)
+                    return fromCatalog;
+            }
+            catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
+            {
+                _logger.Warn("[mirror] catalog listing failed for {0}, falling back to search: {1}", UrlBase, ex.Message);
+                _logger.Trace(ex);
+            }
+
+            return await ListPackageIdsFromSearchAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Package ids for one requested name. An exact feed id is used when it exists. Otherwise
+        /// search matches the id or its last segment, so <c>Tc2_Standard</c> finds
+        /// <c>TwinCAT.XAE.PLC.Lib.Tc2_Standard</c>.
+        /// </summary>
+        public async Task<IReadOnlyList<string>> FindPackageIdsAsync(string name, CancellationToken cancellationToken = default)
+        {
+            EnsureRepository();
+            if (string.IsNullOrWhiteSpace(name))
+                return new List<string>();
+
+            var ids = new List<string>();
+            var exact = await ListPackageVersionsAsync(name, cancellationToken);
+            if (exact.Count > 0)
+                ids.Add(name);
+
+            foreach (var prefix in MirrorListPrefixes())
+            {
+                var page = (await SearchAsync(prefix, name, 0, 40, cancellationToken))?.ToList()
+                    ?? new List<IPackageSearchMetadata>();
+                foreach (var package in page)
+                {
+                    var id = package?.Identity?.Id;
+                    if (string.IsNullOrEmpty(id) || !PackageIdMatches(id, name))
+                        continue;
+                    if (ids.Any(existing => string.Equals(existing, id, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                    ids.Add(id);
+                }
+            }
+
+            return ids;
+        }
+
+        static bool PackageIdMatches(string id, string name)
+        {
+            if (string.Equals(id, name, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var last = id.LastIndexOf('.');
+            var segment = last >= 0 ? id.Substring(last + 1) : id;
+            return string.Equals(segment, name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>Every version of one package. An unknown id returns an empty list.</summary>
+        public async Task<IReadOnlyList<NuGetVersion>> ListPackageVersionsAsync(string packageId, CancellationToken cancellationToken = default)
+        {
+            EnsureRepository();
+            if (string.IsNullOrWhiteSpace(packageId))
+                return new List<NuGetVersion>();
+
+            FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>(cancellationToken);
+            var versions = await resource.GetAllVersionsAsync(packageId, _noCache, NullLogger.Instance, cancellationToken);
+            return versions?.ToList() ?? new List<NuGetVersion>();
+        }
+
+        /// <summary>Writes the .nupkg bytes for one version. The stream is left as the caller gave it.</summary>
+        public async Task DownloadNupkgAsync(string packageId, NuGetVersion version, Stream destination, CancellationToken cancellationToken = default)
+        {
+            EnsureRepository();
+            if (string.IsNullOrWhiteSpace(packageId) || version == null)
+                throw new ArgumentException("A package id and version are required to download a nupkg");
+            if (destination == null)
+                throw new ArgumentNullException(nameof(destination));
+
+            FindPackageByIdResource resource = await _sourceRepository.GetResourceAsync<FindPackageByIdResource>(cancellationToken);
+            await resource.CopyNupkgToStreamAsync(
+                packageId,
+                version,
+                destination,
+                _noCache,
+                NullLogger.Instance,
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Publishes one .nupkg. The stored password is sent as <c>X-NuGet-ApiKey</c>. A package the
+        /// target already has (HTTP 409) is not a failure.
+        /// </summary>
+        public async Task PushNupkgAsync(string nupkgPath, CancellationToken cancellationToken = default)
+        {
+            EnsureRepository();
+            if (string.IsNullOrWhiteSpace(nupkgPath))
+                throw new ArgumentException("A nupkg path is required to push");
+
+            var resource = await _sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
+            await resource.Push(
+                new List<string> { nupkgPath },
+                symbolSource: null,
+                timeoutInSecond: 600,
+                disableBuffering: false,
+                getApiKey: _ => Password ?? "",
+                getSymbolApiKey: _ => null,
+                noServiceEndpoint: false,
+                skipDuplicate: true,
+                symbolPackageUpdateResource: null,
+                log: NullLogger.Instance);
+        }
+
+        void EnsureRepository()
+        {
+            if (_sourceRepository == null)
+                throw new ProtocolException($"Package server '{Name}' is not logged in");
+        }
+
+        async Task<IReadOnlyList<string>> ListPackageIdsFromCatalogAsync(CancellationToken cancellationToken)
+        {
+            ServiceIndexResourceV3 index = null;
+            try
+            {
+                index = await _sourceRepository.GetResourceAsync<ServiceIndexResourceV3>(cancellationToken);
+            }
+            catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
+            {
+                _logger.Trace(ex);
+                return null;
+            }
+
+            // 6.11's ServiceTypes has no public Catalog field. The service index type is still this.
+            var catalogUri = index?.GetServiceEntryUri("Catalog/3.0.0");
+            if (catalogUri == null)
+                return null;
+
+            if (!catalogUri.IsAbsoluteUri && Uri.TryCreate(UrlBase, UriKind.Absolute, out var feed))
+                catalogUri = new Uri(feed, catalogUri);
+
+            _logger.Info("[mirror] {0}: listing package ids from the NuGet catalog", Name ?? UrlBase);
+
+            var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var pending = new Queue<Uri>();
+            var seenPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            pending.Enqueue(catalogUri);
+
+            using (var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) })
+            {
+                if (!string.IsNullOrEmpty(Password))
+                    http.DefaultRequestHeaders.Authorization = BasicAuthorization(Username, Password);
+
+                while (pending.Count > 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var page = pending.Dequeue();
+                    if (page == null || !seenPages.Add(page.AbsoluteUri))
+                        continue;
+
+                    using (var response = await http.GetAsync(page, cancellationToken))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        var json = await response.Content.ReadAsStringAsync();
+                        ReadCatalogPage(json, ids, pending);
+                    }
+                }
+            }
+
+            return ids.ToList();
+        }
+
+        static void ReadCatalogPage(string json, HashSet<string> ids, Queue<Uri> pending)
+        {
+            using (var document = JsonDocument.Parse(json))
+            {
+                if (!document.RootElement.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
+                    return;
+
+                foreach (var item in items.EnumerateArray())
+                {
+                    if (item.ValueKind != JsonValueKind.Object || IsCatalogDelete(item))
+                        continue;
+
+                    var packageId = JsonString(item, "nuget:id");
+                    if (!string.IsNullOrEmpty(packageId))
+                    {
+                        ids.Add(packageId);
+                        continue;
+                    }
+
+                    var next = JsonString(item, "@id");
+                    if (Uri.TryCreate(next, UriKind.Absolute, out var nextUri))
+                        pending.Enqueue(nextUri);
+                }
+            }
+        }
+
+        static bool IsCatalogDelete(JsonElement item)
+        {
+            if (!item.TryGetProperty("@type", out var type))
+                return false;
+
+            if (type.ValueKind == JsonValueKind.String)
+                return IsDeleteType(type.GetString());
+
+            if (type.ValueKind != JsonValueKind.Array)
+                return false;
+
+            foreach (var entry in type.EnumerateArray())
+            {
+                if (entry.ValueKind == JsonValueKind.String && IsDeleteType(entry.GetString()))
+                    return true;
+            }
+
+            return false;
+        }
+
+        static bool IsDeleteType(string type)
+        {
+            return type != null && type.IndexOf("PackageDelete", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        static string JsonString(JsonElement item, string name)
+        {
+            if (!item.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.String)
+                return null;
+
+            return value.GetString();
+        }
+
+        async Task<IReadOnlyList<string>> ListPackageIdsFromSearchAsync(CancellationToken cancellationToken)
+        {
+            _logger.Info("[mirror] {0}: listing package ids from search", Name ?? UrlBase);
+
+            var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var prefix in MirrorListPrefixes())
+            {
+                var skip = 0;
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var page = (await SearchAsync(prefix, "", skip, MirrorSearchPageSize, cancellationToken))?.ToList()
+                        ?? new List<IPackageSearchMetadata>();
+                    if (page.Count == 0)
+                        break;
+
+                    var added = 0;
+                    foreach (var package in page)
+                    {
+                        var id = package?.Identity?.Id;
+                        if (!string.IsNullOrEmpty(id) && ids.Add(id))
+                            added++;
+                    }
+
+                    // A feed that ignores skip would otherwise repeat the same page forever.
+                    if (added == 0 || page.Count < MirrorSearchPageSize)
+                        break;
+
+                    skip += MirrorSearchPageSize;
+                }
+            }
+
+            return ids.ToList();
         }
 
         // PackageSourceCredential.IsValid() is false when the username is empty, and NuGet.Protocol then

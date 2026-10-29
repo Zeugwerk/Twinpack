@@ -25,6 +25,7 @@ namespace Twinpack
                 configure.AddCommand<SetVersionCommand>("set-version");
                 configure.AddCommand<PullCommand>("pull");
                 configure.AddCommand<PushCommand>("push");
+                configure.AddCommand<MirrorCommand>("mirror");
                 // 'nuget' groups everything that produces/consumes NuGet-format packages, so
                 // `nuget pack` cannot be confused with `push`, which targets a Twinpack repository.
                 configure.AddBranch("nuget", nuget =>

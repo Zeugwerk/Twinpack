@@ -1,5 +1,6 @@
 using NLog;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Twinpack.Models;
 using Twinpack.Protocol.Api;
@@ -28,6 +29,12 @@ namespace Twinpack.Protocol
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         public new string ServerType { get; } = "Beckhoff Repository";
         protected override string SearchPrefix { get => "tags:library "; }
+
+        protected override IEnumerable<string> MirrorListPrefixes()
+        {
+            yield return SearchPrefix;
+            yield return "tags:TMX ";
+        }
         protected override bool ResolveForeignDependencies { get => false; }
         public override string UrlRegister
         {
