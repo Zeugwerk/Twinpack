@@ -832,7 +832,18 @@ namespace Twinpack.Core
                 foreach (var package in packagesToInstall)
                 {
                     _logger.Info("[install] {0} {1}", package.PackageVersion.Name, package.PackageVersion.Version);
-                    await automationInterface.InstallPackageAsync(package, cachePath: downloadPath); 
+                    try
+                    {
+                        await automationInterface.InstallPackageAsync(package, cachePath: downloadPath);
+                    }
+                    catch (Exception ex) when (!CancelableTask.IsCancellation(ex))
+                    {
+                        // One library must not cancel the rest of the batch. SwaBase and DswStep
+                        // are installed from the same cache, and a repository-file failure on the
+                        // first used to leave the second uninstalled.
+                        _logger.Error("[install] {0} {1} failed: {2}", package.PackageVersion.Name, package.PackageVersion.Version, ex.Message);
+                        _logger.Trace(ex);
+                    }
                     cancellationToken.ThrowIfCancellationRequested();
                 }
             }
@@ -1066,26 +1077,153 @@ namespace Twinpack.Core
             if (string.IsNullOrEmpty(version?.Name) || string.IsNullOrEmpty(version.Version))
                 return false;
 
-            var directory = Path.Combine(downloadPath ?? "", version.Target ?? "");
-            if (!Directory.Exists(directory))
-                return false;
-
-            var prefix = CacheFilePrefix(version.Name, version.Version);
-            var libraries = Directory.GetFiles(directory)
-                .Where(file => IsCacheLibraryForPrefix(Path.GetFileName(file), prefix))
-                .OrderBy(file => IsCompanionCacheLibrary(Path.GetFileName(file), prefix) ? 1 : 0)
-                .ThenBy(file => file, StringComparer.OrdinalIgnoreCase)
+            var names = new[] { version.Name, version.Title }
+                .Where(name => !string.IsNullOrEmpty(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            if (libraries.Count == 0)
+            List<string> libraries = null;
+            string matchedDirectory = null;
+            foreach (var directory in CacheSearchDirectories(downloadPath, version.Target))
+            {
+                var found = Directory.GetFiles(directory)
+                    .Where(file => names.Any(name => IsCachedLibraryForPackage(Path.GetFileName(file), name, version.Version)))
+                    .OrderBy(file => IsCompanionCacheLibrary(Path.GetFileName(file), CacheFilePrefix(version.Name, version.Version)) ? 1 : 0)
+                    .ThenBy(file => file, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (found.Count == 0)
+                    continue;
+
+                libraries = found;
+                matchedDirectory = directory;
+                break;
+            }
+
+            if (libraries == null)
                 return false;
 
             version.LibraryFiles = libraries;
-            var repository = Path.Combine(directory, prefix + ".repository");
-            if (Directory.Exists(repository))
+            var repository = RepositoryDirectory(matchedDirectory, version.Name, version.Version);
+            if (repository != null)
                 version.RepositoryFiles = Directory.GetFiles(repository, "*", SearchOption.AllDirectories).ToList();
 
             return true;
+        }
+
+        // Prefer the target folder the package was downloaded into, then the cache root and
+        // every other target folder. A headed update clears the configured target and the
+        // server may report a different one than the folder a previous download used.
+        static IEnumerable<string> CacheSearchDirectories(string downloadPath, string target)
+        {
+            if (string.IsNullOrEmpty(downloadPath) || !Directory.Exists(downloadPath))
+                yield break;
+
+            if (!string.IsNullOrEmpty(target))
+            {
+                var preferred = Path.Combine(downloadPath, target);
+                if (Directory.Exists(preferred))
+                    yield return preferred;
+            }
+
+            yield return downloadPath;
+
+            foreach (var sub in Directory.GetDirectories(downloadPath))
+            {
+                var folder = Path.GetFileName(sub);
+                if (string.Equals(folder, target, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (folder != null && folder.EndsWith(".repository", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                yield return sub;
+            }
+        }
+
+        static string RepositoryDirectory(string directory, string packageName, string version)
+        {
+            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                return null;
+
+            var prefix = SanitizeCacheFileName(packageName) + "_";
+            foreach (var sub in Directory.GetDirectories(directory))
+            {
+                var folder = Path.GetFileName(sub);
+                if (folder == null || !folder.EndsWith(".repository", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (!folder.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var fileVersion = folder.Substring(prefix.Length, folder.Length - prefix.Length - ".repository".Length);
+                if (AutomationInterface.TwinCATLibraryVersionsEquivalent(fileVersion, version))
+                    return sub;
+            }
+
+            return null;
+        }
+
+        static bool IsCachedLibraryForPackage(string fileName, string packageName, string version)
+        {
+            if (!PlcLibraryPackage.IsLibraryFile(fileName))
+                return false;
+
+            var sanitized = SanitizeCacheFileName(packageName);
+            if (TrySplitOwnedCacheFile(fileName, sanitized, out var fileVersion))
+                return AutomationInterface.TwinCATLibraryVersionsEquivalent(fileVersion, version);
+
+            return IsCompanionFromAnotherPackage(fileName, sanitized, version);
+        }
+
+        // {Name}_{Version}.library and {Name}_{Version}_{Title}.library
+        static bool TrySplitOwnedCacheFile(string fileName, string sanitizedName, out string fileVersion)
+        {
+            fileVersion = null;
+            var head = sanitizedName + "_";
+            if (!fileName.StartsWith(head, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var rest = fileName.Substring(head.Length);
+            var underscore = rest.IndexOf('_');
+            var suffix = LibrarySuffixIndex(rest);
+            if (suffix < 0)
+                return false;
+
+            var cut = underscore >= 0 && underscore < suffix ? underscore : suffix;
+            if (cut <= 0)
+                return false;
+
+            fileVersion = rest.Substring(0, cut);
+            return true;
+        }
+
+        // {OtherPackage}_{Version}_{ThisLibrary}.library, saved when one nupkg ships several libraries.
+        static bool IsCompanionFromAnotherPackage(string fileName, string sanitizedName, string version)
+        {
+            var suffix = LibrarySuffixIndex(fileName);
+            if (suffix < 0)
+                return false;
+
+            var stem = fileName.Substring(0, suffix);
+            var needle = "_" + sanitizedName;
+            if (!stem.EndsWith(needle, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var ownedBy = stem.Substring(0, stem.Length - needle.Length);
+            var split = ownedBy.LastIndexOf('_');
+            if (split <= 0 || split >= ownedBy.Length - 1)
+                return false;
+
+            return AutomationInterface.TwinCATLibraryVersionsEquivalent(ownedBy.Substring(split + 1), version);
+        }
+
+        static int LibrarySuffixIndex(string fileName)
+        {
+            var compiled = fileName.IndexOf(".compiled-library", StringComparison.OrdinalIgnoreCase);
+            if (compiled >= 0)
+                return compiled;
+
+            if (fileName.EndsWith(".library", StringComparison.OrdinalIgnoreCase))
+                return fileName.Length - ".library".Length;
+
+            return -1;
         }
 
         static string CacheFilePrefix(string name, string version)
@@ -1103,23 +1241,11 @@ namespace Twinpack.Core
             return string.IsNullOrEmpty(cleaned) ? "library" : cleaned;
         }
 
-        static bool IsCacheLibraryForPrefix(string fileName, string prefix)
-        {
-            if (string.IsNullOrEmpty(fileName) || fileName.Length <= prefix.Length)
-                return false;
-            if (!fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            var separator = fileName[prefix.Length];
-            if (separator != '.' && separator != '_')
-                return false;
-
-            return PlcLibraryPackage.IsLibraryFile(fileName);
-        }
-
         static bool IsCompanionCacheLibrary(string fileName, string prefix)
         {
-            return fileName.Length > prefix.Length && fileName[prefix.Length] == '_';
+            return fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                && fileName.Length > prefix.Length
+                && fileName[prefix.Length] == '_';
         }
 
         public async Task<List<PackageItem>> DownloadPackagesAsync(List<PackageItem> packages, DownloadPackageOptions options = default, CancellationToken cancellationToken = default)

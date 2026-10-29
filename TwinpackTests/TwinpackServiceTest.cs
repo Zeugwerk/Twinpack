@@ -340,6 +340,90 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task UpdatePackagesAsync_SkipDownload_InstallsEveryRequestedLibrary()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-update-cache-" + Guid.NewGuid().ToString("N"));
+            var cache = Path.Combine(directory, "libraries");
+            var target = Path.Combine(cache, "TC3.1");
+            Directory.CreateDirectory(target);
+            try
+            {
+                var swaBase = Path.Combine(target, "SwaBase_7.0.0.71.library");
+                var dswStep = Path.Combine(target, "SwaBase_7.0.0.71_DswStep.library");
+                File.WriteAllText(swaBase, "swabase");
+                File.WriteAllText(dswStep, "dswstep");
+
+                var config = new Config
+                {
+                    FilePath = Path.Combine(directory, "config.json"),
+                    Projects = new List<ConfigProject>
+                    {
+                        new ConfigProject
+                        {
+                            Name = "DswRobot",
+                            Plcs = new List<ConfigPlcProject>
+                            {
+                                new ConfigPlcProject
+                                {
+                                    Name = "DswRobot",
+                                    Packages = new List<ConfigPlcPackage>
+                                    {
+                                        new ConfigPlcPackage { Name = "SwaBase", Version = "1.0.0.0", Branch = "main", Target = "TC3.1", Configuration = "Release" },
+                                        new ConfigPlcPackage { Name = "DswStep", Version = "1.0.0.0", Branch = "main", Target = "TC3.1", Configuration = "Release" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                var server = new PackageServerMock
+                {
+                    Connected = true,
+                    PackageVersionItems = new List<PackageVersionGetResponse>
+                    {
+                        new PackageVersionGetResponse { Name = "SwaBase", Title = "SwaBase", Version = "7.0.0.71", Branch = "main", Target = "Other", Configuration = "Release" },
+                        new PackageVersionGetResponse { Name = "DswStep", Title = "DswStep", Version = "7.0.0.71", Branch = "main", Target = "Other", Configuration = "Release" }
+                    }
+                };
+                var installed = new List<PackageItem>();
+                var automation = new Mock<IAutomationInterface>();
+                automation.Setup(x => x.CloseAllPackageRelatedWindowsAsync(It.IsAny<List<PackageItem>>())).Returns(Task.CompletedTask);
+                automation.Setup(x => x.AddPackageAsync(It.IsAny<PackageItem>())).Returns(Task.CompletedTask);
+                automation.Setup(x => x.SaveAllAsync()).Returns(Task.CompletedTask);
+                automation.Setup(x => x.InstallPackageAsync(It.IsAny<PackageItem>(), It.IsAny<string>()))
+                    .Callback<PackageItem, string>((package, cachePath) => installed.Add(package))
+                    .Returns(Task.CompletedTask);
+
+                var twinpack = new TwinpackService(new PackageServerCollection { server }, automation.Object, config);
+                await twinpack.UpdatePackagesAsync(
+                    new TwinpackService.UpdatePackageFilters
+                    {
+                        ProjectName = "DswRobot",
+                        PlcName = "DswRobot",
+                        Packages = new[] { "SwaBase", "DswStep" },
+                        Versions = new[] { "7.0.0.71", "7.0.0.71" }
+                    },
+                    new TwinpackService.UpdatePackageOptions
+                    {
+                        SkipDownload = true,
+                        IncludeDependencies = false,
+                        DownloadPath = cache
+                    });
+
+                Assert.AreEqual(0, server.DownloadedPackageVersions.Count);
+                CollectionAssert.AreEquivalent(new[] { "SwaBase", "DswStep" }, installed.Select(x => x.PackageVersion.Name).ToList());
+                CollectionAssert.AreEqual(new[] { swaBase, dswStep }, installed.Single(x => x.PackageVersion.Name == "SwaBase").PackageVersion.LibraryFiles);
+                CollectionAssert.AreEqual(new[] { dswStep }, installed.Single(x => x.PackageVersion.Name == "DswStep").PackageVersion.LibraryFiles);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
+            }
+        }
+
+        [TestMethod]
         public async Task RetrieveUsedPackagesAsync_WithoutConfig_ReturnsEmpty()
         {
             var twinpack = new TwinpackService(_packageServers, config: null);
