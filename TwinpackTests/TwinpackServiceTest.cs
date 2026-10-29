@@ -251,6 +251,95 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task AddPackagesAsync_SkipDownload_InstallsLibrariesFromCache()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-cache-" + Guid.NewGuid().ToString("N"));
+            var cache = Path.Combine(directory, "libraries");
+            var target = Path.Combine(cache, "TC3.1");
+            Directory.CreateDirectory(target);
+            try
+            {
+                var library = Path.Combine(target, "CachedLib_1.2.3.4.library");
+                var companion = Path.Combine(target, "CachedLib_1.2.3.4_Helper.library");
+                var unrelated = Path.Combine(target, "CachedLib_1.2.3.40.library");
+                var repositoryFile = Path.Combine(target, "CachedLib_1.2.3.4.repository", "Beckhoff", "CachedLib", "1.2.3.4", "CachedLib.tml");
+                File.WriteAllText(library, "library");
+                File.WriteAllText(companion, "helper");
+                File.WriteAllText(unrelated, "other-version");
+                Directory.CreateDirectory(Path.GetDirectoryName(repositoryFile));
+                File.WriteAllText(repositoryFile, "tml");
+
+                var config = new Config
+                {
+                    FilePath = Path.Combine(directory, "config.json"),
+                    Projects = new List<ConfigProject>
+                    {
+                        new ConfigProject
+                        {
+                            Name = "P",
+                            Plcs = new List<ConfigPlcProject> { new ConfigPlcProject { Name = "PLC", Packages = new List<ConfigPlcPackage>() } }
+                        }
+                    }
+                };
+                var server = new PackageServerMock { Connected = true };
+                var installed = new List<PackageItem>();
+                var automation = new Mock<IAutomationInterface>();
+                automation.Setup(x => x.CloseAllPackageRelatedWindowsAsync(It.IsAny<List<PackageItem>>())).Returns(Task.CompletedTask);
+                automation.Setup(x => x.AddPackageAsync(It.IsAny<PackageItem>())).Returns(Task.CompletedTask);
+                automation.Setup(x => x.SaveAllAsync()).Returns(Task.CompletedTask);
+                automation.Setup(x => x.InstallPackageAsync(It.IsAny<PackageItem>(), It.IsAny<string>()))
+                    .Callback<PackageItem, string>((package, cachePath) => installed.Add(package))
+                    .Returns(Task.CompletedTask);
+
+                PackageItem Reference(string name, string version)
+                {
+                    return new PackageItem
+                    {
+                        ProjectName = "P",
+                        PlcName = "PLC",
+                        PackageServer = server,
+                        Package = new PackageGetResponse { Name = name },
+                        PackageVersion = new PackageVersionGetResponse
+                        {
+                            Name = name,
+                            Version = version,
+                            Branch = "main",
+                            Target = "TC3.1",
+                            Configuration = "Release",
+                            DistributorName = "Beckhoff"
+                        },
+                        Config = new ConfigPlcPackage
+                        {
+                            Name = name,
+                            Version = version,
+                            Branch = "main",
+                            Target = "TC3.1",
+                            Configuration = "Release",
+                            DistributorName = "Beckhoff"
+                        },
+                        Dependencies = new List<PackageItem>()
+                    };
+                }
+
+                var twinpack = new TwinpackService(new PackageServerCollection { server }, automation.Object, config);
+                var added = await twinpack.AddPackagesAsync(
+                    new List<PackageItem> { Reference("CachedLib", "1.2.3.4"), Reference("MissingLib", "9.9.9.9") },
+                    new TwinpackService.AddPackageOptions { SkipDownload = true, ReapplyReferences = false, DownloadPath = cache });
+
+                Assert.AreEqual(0, server.DownloadedPackageVersions.Count);
+                Assert.AreEqual(2, added.Count);
+                Assert.AreEqual(1, installed.Count);
+                CollectionAssert.AreEqual(new[] { library, companion }, installed[0].PackageVersion.LibraryFiles);
+                CollectionAssert.AreEqual(new[] { repositoryFile }, installed[0].PackageVersion.RepositoryFiles);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
+            }
+        }
+
+        [TestMethod]
         public async Task RetrieveUsedPackagesAsync_WithoutConfig_ReturnsEmpty()
         {
             var twinpack = new TwinpackService(_packageServers, config: null);
