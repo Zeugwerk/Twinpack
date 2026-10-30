@@ -1232,12 +1232,13 @@ namespace Twinpack.Protocol
             return ids.ToList();
         }
 
-        // PackageSourceCredential.IsValid() is false when the username is empty, and NuGet.Protocol then
-        // ignores the credential. An API key is that case: blank username, key in the password field.
+        // NuGet sends the first request without Authorization and retries after 401. Nexus counts that
+        // anonymous attempt against its auth rate limit. A password is sent as Basic on the first request:
+        // username:password, or :key when the username is blank.
         private static SourceRepository CreateSourceRepository(PackageSource packageSource)
         {
             var providers = Repository.Provider.GetCoreV3().ToList();
-            providers.Add(new Lazy<INuGetResourceProvider>(() => new ApiKeyHttpHandlerResourceProvider()));
+            providers.Add(new Lazy<INuGetResourceProvider>(() => new PreemptiveBasicAuthResourceProvider()));
             return new SourceRepository(packageSource, providers);
         }
 
@@ -1247,19 +1248,19 @@ namespace Twinpack.Protocol
             return new AuthenticationHeaderValue("Basic", token);
         }
 
-        private sealed class ApiKeyHttpHandlerResourceProvider : ResourceProvider
+        private sealed class PreemptiveBasicAuthResourceProvider : ResourceProvider
         {
             private readonly HttpHandlerResourceV3Provider _fallback = new HttpHandlerResourceV3Provider();
 
-            public ApiKeyHttpHandlerResourceProvider()
-                : base(typeof(HttpHandlerResource), nameof(ApiKeyHttpHandlerResourceProvider), nameof(HttpHandlerResourceV3Provider))
+            public PreemptiveBasicAuthResourceProvider()
+                : base(typeof(HttpHandlerResource), nameof(PreemptiveBasicAuthResourceProvider), nameof(HttpHandlerResourceV3Provider))
             {
             }
 
             public override async Task<Tuple<bool, INuGetResource>> TryCreate(SourceRepository source, CancellationToken cancellationToken)
             {
                 var credentials = source.PackageSource.Credentials;
-                if (credentials == null || credentials.IsValid() || string.IsNullOrEmpty(credentials.Password))
+                if (credentials == null || string.IsNullOrEmpty(credentials.Password))
                     return new Tuple<bool, INuGetResource>(false, null);
 
                 var created = await _fallback.TryCreate(source, cancellationToken);

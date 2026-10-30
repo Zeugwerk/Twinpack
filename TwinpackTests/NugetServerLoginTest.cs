@@ -55,11 +55,20 @@ namespace TwinpackTests
 
             await UsingFeedAsync(async (feed, requests) =>
             {
+                Exception catalogError = null;
                 var server = new NugetServer("User feed", feed);
                 try
                 {
                     await server.LoginAsync("alice", "s3cret");
                     Assert.IsTrue(server.LoggedIn);
+                    try
+                    {
+                        await server.GetCatalogAsync(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        catalogError = ex;
+                    }
                 }
                 finally
                 {
@@ -67,8 +76,10 @@ namespace TwinpackTests
                 }
 
                 var seen = Snapshot(requests);
-                Assert.IsTrue(seen.Count > 0, "the feed received no requests");
-                Assert.AreEqual(expected, seen[0].Authorization, seen[0].Path);
+                Assert.IsTrue(seen.Exists(request => request.Path.IndexOf("search", StringComparison.OrdinalIgnoreCase) >= 0),
+                    "the NuGet client never called the feed: " + Describe(seen) + (catalogError == null ? "" : " " + catalogError.GetType().Name));
+                foreach (var request in seen)
+                    Assert.AreEqual(expected, request.Authorization, request.Path);
             });
         }
 
