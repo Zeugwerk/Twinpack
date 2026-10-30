@@ -18,10 +18,13 @@ namespace TwinpackTests
     public class PackageMirrorTest
     {
         string _root;
+        TimeSpan _targetRequestDelay;
 
         [TestInitialize]
         public void TestInitialize()
         {
+            _targetRequestDelay = PackageMirror.TargetRequestDelay;
+            PackageMirror.TargetRequestDelay = TimeSpan.Zero;
             _root = Path.Combine(Path.GetTempPath(), "twinpack-mirror-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_root);
         }
@@ -29,6 +32,7 @@ namespace TwinpackTests
         [TestCleanup]
         public void TestCleanup()
         {
+            PackageMirror.TargetRequestDelay = _targetRequestDelay;
             if (Directory.Exists(_root))
                 Directory.Delete(_root, true);
         }

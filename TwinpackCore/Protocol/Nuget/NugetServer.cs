@@ -1077,7 +1077,7 @@ namespace Twinpack.Protocol
                 noServiceEndpoint: false,
                 skipDuplicate: true,
                 symbolPackageUpdateResource: null,
-                log: NullLogger.Instance);
+                log: new TraceNuGetLogger(_logger));
         }
 
         void EnsureRepository()
@@ -1268,6 +1268,40 @@ namespace Twinpack.Protocol
 
                 var handler = new PreemptiveBasicAuthHandler(http.MessageHandler, credentials.Username, credentials.Password);
                 return new Tuple<bool, INuGetResource>(true, new HttpHandlerResourceV3(http.ClientHandler, handler));
+            }
+        }
+
+        /// <summary>
+        /// NuGet push progress is trace, so it shows on the console only with --verbose.
+        /// Warnings and errors stay visible on a normal run.
+        /// </summary>
+        private sealed class TraceNuGetLogger : LoggerBase
+        {
+            private readonly NLog.Logger _log;
+
+            public TraceNuGetLogger(NLog.Logger log)
+            {
+                _log = log;
+            }
+
+            public override void Log(ILogMessage message)
+            {
+                var text = message?.Message;
+                if (string.IsNullOrEmpty(text))
+                    return;
+
+                if (message.Level == LogLevel.Warning)
+                    _log.Warn("[push] {0}", text);
+                else if (message.Level == LogLevel.Error)
+                    _log.Error("[push] {0}", text);
+                else
+                    _log.Trace("[push] {0}", text);
+            }
+
+            public override Task LogAsync(ILogMessage message)
+            {
+                Log(message);
+                return Task.CompletedTask;
             }
         }
 

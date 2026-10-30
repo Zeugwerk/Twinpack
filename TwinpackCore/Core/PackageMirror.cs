@@ -35,6 +35,12 @@ namespace Twinpack.Core
         static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         const int PageSize = 50;
 
+        /// <summary>
+        /// Quiet time before each request to a remote target. Version checks and the push
+        /// otherwise run back to back and the feed answers 429.
+        /// </summary>
+        internal static TimeSpan TargetRequestDelay = TimeSpan.FromSeconds(3);
+
         public static IPackageServer Resolve(string name)
         {
             return Resolve(name, PackagingServerRegistry.Servers);
@@ -74,6 +80,9 @@ namespace Twinpack.Core
 
             EnsureSupported(source, "source");
             EnsureSupported(target, "target");
+
+            if (TargetRequestDelay > TimeSpan.Zero && IsRemote(target))
+                _logger.Info("[mirror] pausing {0}s between requests to {1}", TargetRequestDelay.TotalSeconds, target.Name);
 
             var requested = (packages ?? Enumerable.Empty<string>())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -419,6 +428,8 @@ namespace Twinpack.Core
 
         static async Task<bool> TargetHasVersionAsync(IPackageServer target, PackageVersionGetResponse package, CancellationToken cancellationToken)
         {
+            await PauseBeforeTargetRequestAsync(target, "version check", package?.Name, package?.Version, cancellationToken);
+
             var nuget = target as NugetServer;
             if (nuget != null)
             {
@@ -441,6 +452,8 @@ namespace Twinpack.Core
 
         static async Task PushNugetAsync(NugetServer target, PackageVersionGetResponse package, string libraryFile, string tempRoot, CancellationToken cancellationToken)
         {
+            await PauseBeforeTargetRequestAsync(target, "push", package?.Name, package?.Version, cancellationToken);
+
             var output = Path.Combine(tempRoot, "nupkg");
             // The nuspec title is the name TwinCAT's library manager registers. A Beckhoff feed id
             // in DisplayName must not replace the library title (Tc2_XmlDataSrv, not the feed id).
@@ -522,6 +535,8 @@ namespace Twinpack.Core
 
         static async Task PushTwinpackAsync(TwinpackServer target, PackageVersionGetResponse package, string libraryFile, CancellationToken cancellationToken)
         {
+            await PauseBeforeTargetRequestAsync(target, "push", package?.Name, package?.Version, cancellationToken);
+
             var request = new PackageVersionPostRequest
             {
                 Name = package.Name,
@@ -642,6 +657,22 @@ namespace Twinpack.Core
         static string Normalize(string url)
         {
             return string.IsNullOrWhiteSpace(url) ? "" : url.Trim().TrimEnd('/', '\\');
+        }
+
+        static bool IsRemote(IPackageServer server)
+        {
+            return Uri.TryCreate(server?.UrlBase, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        }
+
+        static async Task PauseBeforeTargetRequestAsync(IPackageServer target, string action, string packageName, string packageVersion, CancellationToken cancellationToken)
+        {
+            if (TargetRequestDelay <= TimeSpan.Zero || !IsRemote(target))
+                return;
+
+            _logger.Trace("[mirror] waiting {0}s before {1} of {2} {3} on {4}",
+                TargetRequestDelay.TotalSeconds, action, packageName, packageVersion, target.Name);
+            await Task.Delay(TargetRequestDelay, cancellationToken);
         }
 
         static bool IsAlreadyPresent(Exception ex)
