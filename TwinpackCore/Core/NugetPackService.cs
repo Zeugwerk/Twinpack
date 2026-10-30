@@ -46,7 +46,8 @@ namespace Twinpack.Core
             string target,
             bool compiled,
             string outputDirectory,
-            PlcPublishMetadata metadata = null)
+            PlcPublishMetadata metadata = null,
+            IEnumerable<NugetPackFile> additionalFiles = null)
         {
             if (plc == null)
                 throw new ArgumentNullException(nameof(plc));
@@ -58,6 +59,10 @@ namespace Twinpack.Core
             var tags = new List<string> { LibraryTag };
             if (compiled)
                 tags.Add(CompiledLibraryTag);
+
+            var files = new List<NugetPackFile> { new NugetPackFile { Source = libraryFilePath, Target = target } };
+            if (additionalFiles != null)
+                files.AddRange(additionalFiles);
 
             return NugetPackBuilder.Pack(new NugetPackRequest
             {
@@ -73,7 +78,38 @@ namespace Twinpack.Core
                 IconFile = metadata.IconFile,
                 Tags = tags,
                 Dependencies = Dependencies(plc),
-                Files = new[] { new NugetPackFile { Source = libraryFilePath, Target = target } },
+                Files = files,
+                OutputDirectory = outputDirectory
+            });
+        }
+
+        /// <summary>
+        /// Packs a Beckhoff repository package (.tmx, .tml, .tme) that has no PLC library.
+        /// The files keep the path under <c>repository/</c> that download copies back out.
+        /// </summary>
+        public static string PackRepository(
+            ConfigPlcProject plc,
+            IEnumerable<NugetPackFile> files,
+            string outputDirectory,
+            PlcPublishMetadata metadata = null)
+        {
+            if (plc == null)
+                throw new ArgumentNullException(nameof(plc));
+
+            metadata = metadata ?? new PlcPublishMetadata();
+            return NugetPackBuilder.Pack(new NugetPackRequest
+            {
+                Id = plc.Name,
+                Version = plc.Version,
+                Title = FirstNonEmpty(metadata.DisplayName, plc.Title, plc.Name),
+                Authors = FirstNonEmpty(plc.DistributorName, metadata.Authors),
+                Description = FirstNonEmpty(metadata.Description, plc.Title, plc.Name),
+                Copyright = FirstNonEmpty(plc.DistributorName, metadata.Authors),
+                ProjectUrl = metadata.ProjectUrl,
+                License = metadata.License,
+                Tags = new[] { "tmx" },
+                Dependencies = Dependencies(plc),
+                Files = files,
                 OutputDirectory = outputDirectory
             });
         }
