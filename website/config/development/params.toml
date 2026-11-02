@@ -1,0 +1,4 @@
+# Used by `hugo server`. The site and the API are one origin on twinpack.dev, but locally there is no API,
+# so read from production (anonymous, read-only). Production builds are not affected.
+apiBase = "https://twinpack.dev/index.php"
+

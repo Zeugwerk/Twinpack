@@ -1,0 +1,28 @@
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <a href="{{ .Site.Params.company }}" rel="noopener"><img src="{{ "images/zeugwerk-logo-navy.svg" | relURL }}" alt="Zeugwerk" width="127" height="32" /></a>
+      <p>Twinpack is free and open source, developed by Zeugwerk.</p>
+    </div>
+    <div class="footer__col">
+      <h2>Twinpack</h2>
+      <a href="{{ "packages/" | relURL }}">Packages</a>
+      <a href="{{ .Site.Params.releases }}" rel="noopener">Download</a>
+      <a href="{{ .Site.Params.docs }}" rel="noopener">Documentation</a>
+      <a href="{{ .Site.Params.github }}" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer__col">
+      <h2>Publish</h2>
+      <a href="{{ .Site.Params.registry }}" rel="noopener">Twinpack Registry</a>
+      <a href="{{ .Site.Params.register }}" rel="noopener">Create an account</a>
+      <a href="{{ .Site.Params.quickstart }}" rel="noopener">Quickstart</a>
+    </div>
+    <div class="footer__col">
+      <h2>Legal</h2>
+      <a href="{{ .Site.Params.company }}/impressum/" rel="noopener">Impressum</a>
+      <a href="{{ .Site.Params.company }}/privacy/" rel="noopener">Privacy</a>
+      <a href="mailto:{{ .Site.Params.contact_email }}">Contact</a>
+    </div>
+  </div>
+  <div class="container footer__bottom">&copy; {{ now.Year }} Zeugwerk GmbH. Packages are provided by their publishers, use them at your own discretion.</div>
+</footer>

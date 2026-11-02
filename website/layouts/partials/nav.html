@@ -1,0 +1,17 @@
+<header class="nav">
+  <div class="container nav__inner">
+    <a class="nav__brand" href="{{ "/" | relURL }}">
+      <img src="{{ "images/favicon.svg" | relURL }}" alt="" width="28" height="28" />
+      <span>Twinpack</span>
+    </a>
+    <nav class="nav__links" aria-label="Main">
+      {{ range .Site.Menus.main }}<a href="{{ .URL | relURL }}">{{ .Name }}</a>{{ end }}
+      <a href="{{ .Site.Params.releases }}" rel="noopener">Download</a>
+      <a href="{{ .Site.Params.docs }}" rel="noopener">Docs</a>
+      <a href="{{ .Site.Params.github }}" rel="noopener">GitHub</a>
+    </nav>
+    <a class="nav__by" href="{{ .Site.Params.company }}" rel="noopener" aria-label="Twinpack is developed by Zeugwerk">
+      <span>by</span><img src="{{ "images/zeugwerk-logo-navy.svg" | relURL }}" alt="Zeugwerk" width="95" height="24" />
+    </a>
+  </div>
+</header>

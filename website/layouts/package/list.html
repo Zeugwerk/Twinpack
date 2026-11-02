@@ -1,0 +1,56 @@
+{{ define "head" }}
+{{ $js := resources.Get "js/package.js" | minify | fingerprint }}
+<script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" defer></script>
+{{ end }}
+
+{{ define "main" }}
+<section class="section">
+  <div class="container">
+    <p class="muted"><a href="{{ "packages/" | relURL }}">&larr; All packages</a></p>
+    <p id="state" class="status" role="status" aria-live="polite">Loading package...</p>
+
+    <div id="package" class="hidden">
+      <div class="detail__head" id="head"></div>
+      <div class="detail">
+        <div>
+          <div class="panel" id="install-panel">
+            <h2>Install</h2>
+            <div id="install"></div>
+            <p class="muted">Don't have Twinpack yet? <a href="{{ .Site.Params.releases }}" rel="noopener">Download it</a>.</p>
+          </div>
+
+          <div class="panel">
+            <h2>Versions</h2>
+            <div class="filters" id="filters"></div>
+            <p id="versions-state" class="status hidden" role="status"></p>
+            <div class="table-wrap">
+              <table id="versions" class="hidden">
+                <thead><tr><th>Version</th><th>Branch</th><th>Target</th><th>Configuration</th><th>Notes</th><th><span class="sr-only">Use this version</span></th></tr></thead>
+                <tbody id="versions-body"></tbody>
+              </table>
+            </div>
+            <nav id="versions-pager" class="pager hidden" aria-label="Version pagination">
+              <button type="button" class="btn btn--ghost btn--sm" id="versions-prev">Newer</button>
+              <span id="versions-page" class="muted"></span>
+              <button type="button" class="btn btn--ghost btn--sm" id="versions-next">Older</button>
+            </nav>
+          </div>
+
+          <div class="panel hidden" id="deps-panel">
+            <h2>Dependencies</h2>
+            <p class="muted" id="deps-intro"></p>
+            <ul class="deps" id="deps"></ul>
+          </div>
+        </div>
+
+        <aside>
+          <div class="panel">
+            <h2>Details</h2>
+            <dl class="facts" id="facts"></dl>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+{{ end }}
