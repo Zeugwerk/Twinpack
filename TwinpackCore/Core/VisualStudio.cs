@@ -122,7 +122,18 @@ namespace Twinpack.Core
             throw new NotSupportedException($"No supported Visual Studio ({string.Join(", ", shells)}) detected!");
         }
 
-        public IAutomationInterface Open(Config config, string tcversion="TC3.1")
+        /// <summary>Binary-compatible entry; same as <c>removeUnlistedProjects: true</c> (CI default).</summary>
+        public IAutomationInterface Open(Config config, string tcversion = "TC3.1")
+            => Open(config, tcversion, removeUnlistedProjects: true);
+
+        /// <param name="removeUnlistedProjects">
+        /// When true (CI / <c>--update-snapshots</c>), drop solution projects that are not in
+        /// <c>config.Projects</c> and not kept as TwinCAT <c>[Name]</c> project-library refs.
+        /// When false (local without <c>-U</c>), leave every solution project loaded so
+        /// <c>[D_Core]</c> placeholders resolve to the sibling PLC project; CI with <c>-U</c>
+        /// replaces those with Managed Libraries first.
+        /// </param>
+        public IAutomationInterface Open(Config config, string tcversion, bool removeUnlistedProjects)
         {
             ThrowIfNotMainThread();
 
@@ -135,31 +146,41 @@ namespace Twinpack.Core
                 throw new FileNotFoundException("Solution could not be found in " + filepath);
 
             _solution.Open(filepath);
-            CloseAllWindows();
+            // Local without -U: leave editor tabs alone (CheckAllObjects already opens
+            // method windows like CommandName/EventName; closing them here just fights
+            // the user's session). CI with -U still resets the shell for a clean snapshot run.
+            if (removeUnlistedProjects)
+                CloseAllWindows();
             var projects = WaitProjects();
 
-            // disable all projects that are not needed
-            var configProjectNames = config.Projects.Select(x => x.Name);
-            foreach (EnvDTE.Project project in projects)
+            if (removeUnlistedProjects)
             {
-                if (project == null)
+                var keep = ProjectNamesToKeep(config);
+                foreach (EnvDTE.Project project in projects)
                 {
-                    _logger.Trace("Project is null");
-                    continue;
-                }
+                    if (project == null)
+                    {
+                        _logger.Trace("Project is null");
+                        continue;
+                    }
 
-                if (!configProjectNames.Contains(project.Name))
-                {
-                    try
+                    if (!keep.Contains(project.Name))
                     {
-                        _logger.Info("[vs] removing project {0} (not in config)", project.Name);
-                        _solution.Remove(project);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Warn(ex.Message);
+                        try
+                        {
+                            _logger.Info("[vs] removing project {0} (not in config)", project.Name);
+                            _solution.Remove(project);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Warn(ex.Message);
+                        }
                     }
                 }
+            }
+            else
+            {
+                _logger.Info("[vs] keeping all solution projects (project-library refs available without --update-snapshots)");
             }
 
             // remote.Version is only set AFTER opening a _solution - weird but true
@@ -169,6 +190,44 @@ namespace Twinpack.Core
                 OutputTcVersion = CurrentTcVersion();
 
             return EnsureAutomationInterface();
+        }
+
+        /// <summary>
+        /// Config project names plus TwinCAT project-library placeholders (<c>[D_Core]=*</c>).
+        /// </summary>
+        static HashSet<string> ProjectNamesToKeep(Config config)
+        {
+            var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (config?.Projects == null)
+                return keep;
+
+            foreach (var project in config.Projects)
+            {
+                if (!string.IsNullOrEmpty(project?.Name))
+                    keep.Add(project.Name);
+
+                foreach (var plc in project.Plcs ?? Enumerable.Empty<ConfigPlcProject>())
+                {
+                    if (plc?.References == null)
+                        continue;
+                    foreach (var entries in plc.References.Values)
+                    {
+                        if (entries == null)
+                            continue;
+                        foreach (var entry in entries)
+                        {
+                            if (string.IsNullOrEmpty(entry))
+                                continue;
+                            var eq = entry.IndexOf('=');
+                            var name = eq >= 0 ? entry.Substring(0, eq) : entry;
+                            if (name.Length > 2 && name[0] == '[' && name[name.Length - 1] == ']')
+                                keep.Add(name.Substring(1, name.Length - 2));
+                        }
+                    }
+                }
+            }
+
+            return keep;
         }
 
         public IAutomationInterface EnsureAutomationInterface()
