@@ -323,7 +323,7 @@
                                    RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
                             <TextBlock VerticalAlignment="Center" FontSize="11"
                                        Foreground="{DynamicResource {x:Static platform:EnvironmentColors.ToolboxContentTextBrushKey}}">
-                                <Run Text="Twinpack v"/><Run Text="{Binding Version, Mode=OneTime}" d:Text="1.0.0.0"/><Run Text=" · made by Zeugwerk"/>
+                                <Run Text="Twinpack v"/><Run Text="{Binding Version, Mode=OneTime}" d:Text="1.0.0.0"/><Run Text=" · by Zeugwerk"/>
                             </TextBlock>
                         </StackPanel>
                     </Button>
