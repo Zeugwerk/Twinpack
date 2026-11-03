@@ -49,6 +49,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\TwinpackServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\LibraryTargets.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NugetPackService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\PackageMirror.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\PackageServerCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\PackagingServerRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\TwinpackService.cs" />

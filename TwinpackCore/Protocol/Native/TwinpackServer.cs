@@ -99,7 +99,7 @@ namespace Twinpack.Protocol
             request.Headers.Add("twinpack-client-version", ClientVersion.ToString());
         }
 
-        public async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
+        public virtual async Task<PackageVersionGetResponse> PostPackageVersionAsync(PackageVersionPostRequest packageVersion, CancellationToken cancellationToken = default)
         {
             _logger.Info("[upload] {0} {1} (branch: {2}, target: {3}, configuration: {4})", packageVersion.Name, packageVersion.Version, packageVersion.Branch, packageVersion.Target, packageVersion.Configuration);
 
@@ -201,13 +201,13 @@ namespace Twinpack.Protocol
             return new Tuple<IEnumerable<T>, bool>(results.Take(perPage), pagination?.Next != null);
         }
 
-        public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+        public virtual async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             return await QueryWithPaginationAsync<CatalogItemGetResponse>($"catalog" +
                                                 $"?search={HttpUtility.UrlEncode(search)}", page, perPage, cancellationToken);
         }
 
-        public async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch=null, string configuration=null, string target=null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
+        public virtual async Task<Tuple<IEnumerable<PackageVersionGetResponse>, bool>> GetPackageVersionsAsync(PlcLibrary library, string branch=null, string configuration=null, string target=null, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
         {
             return await QueryWithPaginationAsync<PackageVersionGetResponse>($"package-versions" +
                                             $"?distributor-name={HttpUtility.UrlEncode(library.DistributorName)}" +
@@ -370,7 +370,7 @@ namespace Twinpack.Protocol
             _logger.Info("[download] {0} {1} (distributor: {2}) (from {3})", packageVersion.Title, packageVersion.Version, packageVersion.DistributorName, UrlBase);
         }
 
-        public async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
+        public virtual async Task DownloadPackageVersionAsync(PackageVersionGetResponse packageVersion, ChecksumMode checksumMode, string cachePath = null, CancellationToken cancellationToken = default)
         {
             var extension = packageVersion.Compiled == 1 ? "compiled-library" : "library";
             var filePath = Path.Combine(cachePath ?? DefaultLibraryCachePath, packageVersion.Target);
@@ -396,7 +396,7 @@ namespace Twinpack.Protocol
             await DownloadPackageVersionFromTwinpackServerAsync(packageVersion, fileName, checksumMode, cancellationToken);
         }
 
-        public async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
+        public virtual async Task<PackageVersionGetResponse> GetPackageVersionAsync(PlcLibrary library, string branch, string configuration, string target, CancellationToken cancellationToken = default)
         {
             if (!IsServableVersion(library.Version))
                 return new PackageVersionGetResponse();
