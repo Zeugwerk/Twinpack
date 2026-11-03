@@ -90,7 +90,7 @@ namespace TwinpackTests
                     x.Name == packageName &&
                     x.DistributorName == distributorName)
                 .OrderByDescending(x => x.Version == null ? new Version(9, 9, 9, 9) : new Version(x.Version))
-                .Select(x => new PackageGetResponse { Name = packageName, DistributorName = distributorName, Branches = new List<string> { "main", "release/1.0" } }).FirstOrDefault() ?? new PackageGetResponse();
+                .Select(x => new PackageGetResponse { Name = packageName, DistributorName = distributorName, Branches = new List<string> { "main", "release/1.0" }, Targets = new List<string> { "TC3.1" }, Configurations = new List<string> { "Release" } }).FirstOrDefault() ?? new PackageGetResponse();
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously

@@ -101,13 +101,18 @@ namespace Twinpack.Core
 
         public async Task<PackageVersionGetResponse> ResolvePackageAsync(string name, TwinpackService.ResolvePackageOptions options = default, CancellationToken cancellationToken = default)
         {
+            return (await ResolvePackageItemAsync(name, options, cancellationToken)).PackageVersion;
+        }
+
+        public async Task<PackageItem> ResolvePackageItemAsync(string name, TwinpackService.ResolvePackageOptions options = default, CancellationToken cancellationToken = default)
+        {
             foreach (var packageServer in this.Where(x => x.Connected))
             {
                 PackageVersionGetResponse resolvedPackageVersion;
                 try
                 {
                     resolvedPackageVersion = await packageServer.ResolvePackageVersionAsync(
-                        new PlcLibrary { Name = name, Version = options.PreferredVersion },
+                        new PlcLibrary { Name = name, DistributorName = options.DistributorName, Version = options.PreferredVersion },
                         options.PreferredTarget,
                         options.PreferredConfiguration,
                         options.PreferredBranch,
@@ -120,10 +125,14 @@ namespace Twinpack.Core
                 }
 
                 if (resolvedPackageVersion?.Name != null)
-                    return resolvedPackageVersion;
+                    return new PackageItem(packageServer, resolvedPackageVersion)
+                    {
+                        Package = new PackageGetResponse(resolvedPackageVersion),
+                        PackageVersion = resolvedPackageVersion
+                    };
             }
 
-            return new PackageVersionGetResponse();
+            return new PackageItem { PackageVersion = new PackageVersionGetResponse() };
         }
 
         public async Task<PackageItem> FetchPackageAsync(ConfigPlcPackage item, bool includeMetadata = false, IAutomationInterface automationInterface = null, bool preferEffectiveVersionForWildcard = false, bool resolveDependencies = true, CancellationToken cancellationToken = default)

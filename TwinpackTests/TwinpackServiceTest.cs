@@ -1878,5 +1878,263 @@ namespace TwinpackTests
             Assert.AreEqual("4.0.0.0", config.Projects[0].Plcs[1].Packages.First(x => x.Name == "LibC").Version);
             Assert.AreEqual("2.0.0.0", config.Projects[0].Plcs[0].Packages.First(x => x.Name == "LibA").Version);
         }
+
+        private static PackageVersionGetResponse ZeugwerkFrameworkPackage(string name, string version)
+        {
+            return new PackageVersionGetResponse
+            {
+                Name = name,
+                Title = name,
+                Version = version,
+                Branch = "release/1.6",
+                Configuration = "Distribution",
+                Target = "TC3.1",
+                DistributorName = "Zeugwerk GmbH",
+                Framework = "Zeugwerk"
+            };
+        }
+
+        private static PackageServerMock BuildZeugwerkFrameworkServer()
+        {
+            return new PackageServerMock
+            {
+                Connected = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    ZeugwerkFrameworkPackage("ZCore", "1.6.0.1"),
+                    ZeugwerkFrameworkPackage("ZCore", "1.6.0.29"),
+                    ZeugwerkFrameworkPackage("ZPlatform", "1.6.0.29"),
+                    new PackageVersionGetResponse { Name = "Struckig", Title = "Struckig", Version = "0.11.0.0", Branch = "release/0.11", Configuration = "Snapshot", Target = "TC3.1", DistributorName = "Stefan Besler" },
+                    new PackageVersionGetResponse { Name = "Struckig", Title = "Struckig", Version = "0.12.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Stefan Besler" },
+                }
+            };
+        }
+
+        private static Config BuildZPlatformConfig(string directory)
+        {
+            var plcproj = Path.Combine(directory, "ZPlatform", "ZPlatform.plcproj");
+            Directory.CreateDirectory(Path.GetDirectoryName(plcproj));
+            File.WriteAllText(plcproj,
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
+                "<Project DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">" +
+                "<PropertyGroup><Name>ZPlatform</Name><Title>ZPlatform</Title><ProjectVersion>1.6.0.0</ProjectVersion><Company>Zeugwerk GmbH</Company></PropertyGroup>" +
+                "</Project>");
+
+            return new Config
+            {
+                FilePath = Path.Combine(directory, ".Zeugwerk", "config.json"),
+                WorkingDirectory = directory,
+                Projects = new List<ConfigProject>
+                {
+                    new ConfigProject
+                    {
+                        Name = "ZPlatform",
+                        Plcs = new List<ConfigPlcProject>
+                        {
+                            new ConfigPlcProject
+                            {
+                                Name = "ZPlatform",
+                                ProjectName = "ZPlatform",
+                                DistributorName = "Zeugwerk GmbH",
+                                Version = "1.6.0.0",
+                                FilePath = plcproj,
+                                Packages = new List<ConfigPlcPackage>
+                                {
+                                    new ConfigPlcPackage { Name = "ZCore", Version = "1.6.0.1", Branch = "release/1.6", Configuration = "Distribution", Target = "TC3.1", DistributorName = "Zeugwerk GmbH" },
+                                    new ConfigPlcPackage { Name = "Struckig", Version = "0.11.0.0", Branch = "release/0.11", Configuration = "Snapshot", Target = "TC3.1", DistributorName = "Stefan Besler" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        private static async Task<List<string>> SetPackageVersionWithLogAsync(TwinpackService twinpack, string version, TwinpackService.SetPackageVersionOptions options)
+        {
+            var log = new NLog.Targets.MemoryTarget { Layout = "${level:uppercase=true} ${message}" };
+            var previous = NLog.LogManager.Configuration;
+            var logConfig = new NLog.Config.LoggingConfiguration();
+            logConfig.AddRuleForAllLevels(log);
+            NLog.LogManager.Configuration = logConfig;
+            try
+            {
+                await twinpack.SetPackageVersionAsync(version, options);
+            }
+            finally
+            {
+                NLog.LogManager.Configuration = previous;
+            }
+
+            return log.Logs.ToList();
+        }
+
+        private static ConfigPlcPackage SavedPackage(Config config, string name)
+        {
+            var saved = System.Text.Json.JsonSerializer.Deserialize<Config>(File.ReadAllText(config.FilePath));
+            return saved.Projects.Single(x => x.Name == "ZPlatform").Plcs.Single(x => x.Name == "ZPlatform").Packages.Single(x => x.Name == name);
+        }
+
+        [DataTestMethod]
+        [DataRow("release/1.6", "release/1.6", "Distribution", DisplayName = "branch with Distribution builds only")]
+        [DataRow("release/1.7", "release/1.7", "Snapshot", DisplayName = "branch without any builds yet")]
+        public async Task SetPackageVersionAsync_SyncFrameworkPackages_RequestedBuildNotVisible(string branch, string configuredCoreBranch, string configuredCoreConfiguration)
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-set-version-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var config = BuildZPlatformConfig(directory);
+                var configuredCore = config.Projects[0].Plcs[0].Packages.Single(x => x.Name == "ZCore");
+                configuredCore.Branch = configuredCoreBranch;
+                configuredCore.Configuration = configuredCoreConfiguration;
+                var packageServer = BuildZeugwerkFrameworkServer();
+                var twinpack = new TwinpackService(new PackageServerCollection { packageServer }, new AutomationInterfaceHeadless(config), config);
+
+                var log = await SetPackageVersionWithLogAsync(twinpack, "1.6.0.30", new TwinpackService.SetPackageVersionOptions
+                {
+                    SyncFrameworkPackages = true,
+                    PurgePackages = true,
+                    PreferredFrameworkBranch = branch,
+                    PreferredFrameworkConfiguration = "Snapshot",
+                    PreferredFrameworkTarget = "TC3.1"
+                });
+
+                CollectionAssert.Contains(log, "INFO [set-version] synchronizing framework packages");
+                Assert.IsFalse(log.Any(x => x.StartsWith("WARN [set-version]")));
+
+                var plc = config.Projects[0].Plcs[0];
+                Assert.AreEqual("1.6.0.30", plc.Version);
+
+                foreach (var core in new[] { plc.Packages.Single(x => x.Name == "ZCore"), SavedPackage(config, "ZCore") })
+                {
+                    Assert.AreEqual("1.6.0.30", core.Version);
+                    Assert.AreEqual(branch, core.Branch);
+                    Assert.AreEqual("Snapshot", core.Configuration);
+                    Assert.AreEqual("TC3.1", core.Target);
+                    Assert.AreEqual("Zeugwerk GmbH", core.DistributorName);
+                }
+
+                var plcproj = File.ReadAllText(plc.FilePath);
+                StringAssert.Contains(plcproj, "ZCore, 1.6.0.30 (Zeugwerk GmbH)");
+                Assert.IsFalse(plcproj.Contains("ZCore, 1.6.0.1 "));
+                Assert.IsFalse(plcproj.Contains("ZCore, 1.6.0.29 "));
+                Assert.IsFalse(packageServer.DownloadedPackageVersions.Any(x => x.Name == "ZCore"));
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
+            }
+        }
+
+        [TestMethod]
+        public async Task SetPackageVersionAsync_SyncFrameworkPackages_NonFrameworkPackageKeepsItsConfiguration()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-set-version-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var config = BuildZPlatformConfig(directory);
+                var packageServer = BuildZeugwerkFrameworkServer();
+                var twinpack = new TwinpackService(new PackageServerCollection { packageServer }, new AutomationInterfaceHeadless(config), config);
+
+                await SetPackageVersionWithLogAsync(twinpack, "1.6.0.30", new TwinpackService.SetPackageVersionOptions
+                {
+                    SyncFrameworkPackages = true,
+                    PurgePackages = true,
+                    PreferredFrameworkBranch = "release/1.6",
+                    PreferredFrameworkConfiguration = "Snapshot",
+                    PreferredFrameworkTarget = "TC3.1"
+                });
+
+                var plc = config.Projects[0].Plcs[0];
+                foreach (var struckig in new[] { plc.Packages.Single(x => x.Name == "Struckig"), SavedPackage(config, "Struckig") })
+                {
+                    Assert.AreEqual("0.11.0.0", struckig.Version);
+                    Assert.AreEqual("release/0.11", struckig.Branch);
+                    Assert.AreEqual("Snapshot", struckig.Configuration);
+                    Assert.AreEqual("TC3.1", struckig.Target);
+                    Assert.AreEqual("Stefan Besler", struckig.DistributorName);
+                }
+
+                StringAssert.Contains(File.ReadAllText(plc.FilePath), "Struckig, 0.11.0.0 (Stefan Besler)");
+                Assert.AreEqual(1, packageServer.DownloadedPackageVersions.Count(x => x.Name == "Struckig" && x.Version == "0.11.0.0"));
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
+            }
+        }
+
+        [TestMethod]
+        public async Task SetPackageVersionAsync_SyncFrameworkPackages_DetectsFrameworkOfDefaultArtifactItem()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-set-version-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var config = BuildZPlatformConfig(directory);
+                var packageServer = BuildZeugwerkFrameworkServer();
+                var packageServers = new PackageServerCollection { packageServer };
+                var twinpack = new TwinpackService(packageServers, new AutomationInterfaceHeadless(config), config);
+
+                var artifactItem = new TwinpackService.Artifact(config, config.Projects[0].Plcs[0]).PackageItem;
+                Assert.AreEqual("main", artifactItem.Config.Branch);
+                Assert.AreEqual("TC3.1", artifactItem.Config.Target);
+                Assert.AreEqual("Release", artifactItem.Config.Configuration);
+                Assert.IsNull(artifactItem.Config.DistributorName);
+
+                var strict = await packageServers.FetchPackageAsync(artifactItem.ProjectName, artifactItem.PlcName, new ConfigPlcPackage(artifactItem.Config), includeMetadata: true);
+                Assert.IsNull(strict.PackageVersion?.Name);
+
+                var log = await SetPackageVersionWithLogAsync(twinpack, "1.6.0.29", new TwinpackService.SetPackageVersionOptions
+                {
+                    SyncFrameworkPackages = true
+                });
+
+                CollectionAssert.Contains(log, "INFO [set-version] synchronizing framework packages");
+
+                var core = config.Projects[0].Plcs[0].Packages.Single(x => x.Name == "ZCore");
+                Assert.AreEqual("1.6.0.29", core.Version);
+                Assert.AreEqual("release/1.6", core.Branch);
+                Assert.AreEqual("Distribution", core.Configuration);
+                Assert.AreEqual("TC3.1", core.Target);
+                Assert.AreEqual("0.11.0.0", config.Projects[0].Plcs[0].Packages.Single(x => x.Name == "Struckig").Version);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
+            }
+        }
+
+        [TestMethod]
+        public async Task SetPackageVersionAsync_SyncFrameworkPackages_WarnsWhenArtifactHasNoFramework()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-set-version-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var config = BuildZPlatformConfig(directory);
+                var packageServer = BuildZeugwerkFrameworkServer();
+                packageServer.PackageVersionItems.RemoveAll(x => x.Name == "ZPlatform");
+                var twinpack = new TwinpackService(new PackageServerCollection { packageServer }, new AutomationInterfaceHeadless(config), config);
+
+                var log = await SetPackageVersionWithLogAsync(twinpack, "1.6.0.30", new TwinpackService.SetPackageVersionOptions
+                {
+                    SyncFrameworkPackages = true,
+                    PreferredFrameworkBranch = "release/1.6",
+                    PreferredFrameworkConfiguration = "Snapshot",
+                    PreferredFrameworkTarget = "TC3.1"
+                });
+
+                Assert.IsTrue(log.Any(x => x.StartsWith("WARN [set-version] ZPlatform")));
+                Assert.IsFalse(log.Contains("INFO [set-version] synchronizing framework packages"));
+                Assert.AreEqual("1.6.0.1", config.Projects[0].Plcs[0].Packages.Single(x => x.Name == "ZCore").Version);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
+            }
+        }
     }
 }
