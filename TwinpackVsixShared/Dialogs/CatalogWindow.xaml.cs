@@ -953,6 +953,22 @@ namespace Twinpack.Dialogs
             });
         }
 
+        // Regex.Match throws ArgumentNullException when the text is null.
+        static bool MatchesCatalogSearch(Regex rx, PackageItem package)
+        {
+            if (rx == null)
+                return true;
+
+            return MatchesCatalogField(rx, package?.Catalog?.Name)
+                || MatchesCatalogField(rx, package?.Catalog?.DisplayName)
+                || MatchesCatalogField(rx, package?.Catalog?.DistributorName);
+        }
+
+        static bool MatchesCatalogField(Regex rx, string value)
+        {
+            return value != null && rx.IsMatch(value);
+        }
+
         public async Task UpdateCatalogAsync(string searchTerm=null, int maxNewPackages = 0, CancellationToken cancellationToken = default)
         {
             try
@@ -995,21 +1011,11 @@ namespace Twinpack.Dialogs
                 Regex rx = searchTerm != null ? new Regex(".*?" + searchTerm.Replace(" ", ".") + ".*?", RegexOptions.Compiled | RegexOptions.IgnoreCase) : null;
                 if (IsBrowsingAvailablePackages)
                 {
-                    Catalog = availablePackages.Where(x =>
-                            rx == null ||
-                            rx?.Match(x.Catalog?.Name).Success == true ||
-                            rx?.Match(x.Catalog?.DisplayName).Success == true ||
-                            rx?.Match(x.Catalog?.DistributorName).Success == true
-                         ).ToList();
+                    Catalog = availablePackages.Where(x => MatchesCatalogSearch(rx, x)).ToList();
                 }
                 else if (IsBrowsingInstalledPackages)
                 {
-                    Catalog = installedPackages.Where(x =>
-                            rx == null ||
-                            rx?.Match(x.Catalog?.Name).Success == true ||
-                            rx?.Match(x.Catalog?.DisplayName).Success == true ||
-                            rx?.Match(x.Catalog?.DistributorName).Success == true
-                         )
+                    Catalog = installedPackages.Where(x => MatchesCatalogSearch(rx, x))
                         .Where(x => PackageServersComboBox.SelectedIndex <= 0 || x.PackageServer != null) // if there is no explicit filter how all packages even if the can not be resolved
                         .ToList();
                 }
@@ -1017,12 +1023,7 @@ namespace Twinpack.Dialogs
                 {
                     Catalog = installedPackages
                         .Where(x => x.IsUpdateable)
-                        .Where(x =>
-                            rx == null ||
-                            rx?.Match(x.Catalog?.Name).Success == true ||
-                            rx?.Match(x.Catalog?.DisplayName).Success == true ||
-                            rx?.Match(x.Catalog?.DistributorName).Success == true
-                         )
+                        .Where(x => MatchesCatalogSearch(rx, x))
                         .Where(x => PackageServersComboBox.SelectedIndex <= 0 || x.PackageServer != null) // if there is no explicit filter how all packages even if the can not be resolved
                         .ToList();
                 }

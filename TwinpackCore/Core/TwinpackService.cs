@@ -381,6 +381,13 @@ namespace Twinpack.Core
             return await _packageServers.ResolvePackageAsync(name, options, cancellationToken);
         }
 
+        // Regex.Match throws ArgumentNullException when the text is null. A catalog row often has
+        // no display name or distributor, and that used to fail the search.
+        static bool MatchesSearch(Regex rx, string value)
+        {
+            return value != null && rx.IsMatch(value);
+        }
+
         public async Task<IEnumerable<PackageItem>> RetrieveAvailablePackagesAsync(string searchTerm = null, int? maxNewPackages = null, int batchSize = 5, CancellationToken token = default)
         {
             var acquired = false;
@@ -426,9 +433,9 @@ namespace Twinpack.Core
                 return _availablePackagesCache
                         .Where(x =>
                             rx == null ||
-                            rx?.Match(x.Catalog?.Name).Success == true ||
-                            rx?.Match(x.Catalog?.DisplayName).Success == true ||
-                            rx?.Match(x.Catalog?.DistributorName).Success == true)
+                            MatchesSearch(rx, x.Catalog?.Name) ||
+                            MatchesSearch(rx, x.Catalog?.DisplayName) ||
+                            MatchesSearch(rx, x.Catalog?.DistributorName))
                         ;
             }
             finally
@@ -493,7 +500,7 @@ namespace Twinpack.Core
                             searchTerm == null ||
                             x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
                             x.Catalog?.DistributorName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
-                            x.Catalog?.Name.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                            x.Catalog?.Name?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0)
                         ;
             }
             finally

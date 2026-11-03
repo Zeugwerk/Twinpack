@@ -507,6 +507,38 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task RetrieveAvailablePackagesAsync_NullCatalogFieldsDoNotThrow()
+        {
+            var server = new PackageServerMock
+            {
+                IgnoreCatalogSearch = true,
+                Connected = true,
+                CatalogItems = new List<CatalogItemGetResponse>
+                {
+                    new CatalogItemGetResponse { Name = "MotionLib", DisplayName = null, DistributorName = null },
+                    new CatalogItemGetResponse { Name = null, DisplayName = "Special Display", DistributorName = null },
+                    new CatalogItemGetResponse { Name = "Other", DisplayName = null, DistributorName = "Acme Motion" },
+                }
+            };
+            var twinpack = new TwinpackService(new PackageServerCollection { server });
+
+            var byName = (await twinpack.RetrieveAvailablePackagesAsync("MotionLib", maxNewPackages: 10)).ToList();
+            Assert.AreEqual(1, byName.Count);
+            Assert.AreEqual("MotionLib", byName[0].Catalog.Name);
+
+            var byDisplay = (await twinpack.RetrieveAvailablePackagesAsync("Special", maxNewPackages: 10)).ToList();
+            Assert.AreEqual(1, byDisplay.Count);
+            Assert.AreEqual("Special Display", byDisplay[0].Catalog.DisplayName);
+
+            var byDistributor = (await twinpack.RetrieveAvailablePackagesAsync("Acme", maxNewPackages: 10)).ToList();
+            Assert.AreEqual(1, byDistributor.Count);
+            Assert.AreEqual("Other", byDistributor[0].Catalog.Name);
+
+            var none = (await twinpack.RetrieveAvailablePackagesAsync("missing", maxNewPackages: 10)).ToList();
+            Assert.AreEqual(0, none.Count);
+        }
+
+        [TestMethod]
         public async Task RetrieveAvailablePackagesAsync_LoadMorePackages_WithSearchTerm()
         {
             var twinpack = new TwinpackService(_packageServers);
