@@ -100,6 +100,7 @@ namespace Twinpack.Core
             public string? PreferredBranch;
             public string? PreferredTarget;
             public string? PreferredConfiguration;
+            public string? DistributorName;
         }
 
         public class EnsureConfigFileResult
@@ -169,7 +170,14 @@ namespace Twinpack.Core
                     {
                         ProjectName = Plc.ProjectName,
                         PlcName = Plc.Name,
-                        Config = new ConfigPlcPackage { Name = y.Name }
+                        Config = new ConfigPlcPackage
+                        {
+                            Name = y.Name,
+                            DistributorName = y.DistributorName,
+                            Branch = y.Branch,
+                            Target = y.Target,
+                            Configuration = y.Configuration
+                        }
                     })
                     .Prepend(PackageItem)
                     .ToList();
@@ -1373,30 +1381,88 @@ namespace Twinpack.Core
                              .Select(x => x.FirstOrDefault())
                              .ToList();
 
-                // resolve plcs packages to get dependencies and the framework they are part of
+                // resolve plcs packages to get dependencies
                 affectedPackages = await AffectedPackagesAsync(affectedPackages, includeDependencies: false, cancellationToken);
 
-                var frameworks = affectedPackages
-                    .Where(x => x.PackageVersion?.Framework != null && artifacts.Any(y => y.ArtifactName == x.PackageVersion?.Name))
-                    .Select(x => x.PackageVersion?.Framework).Distinct().ToList();
+                // The lookup above is strict on branch, target and configuration and misses builds the caller cannot
+                // see (anonymous callers get neither Snapshot nor main), so the framework is taken from a resolve,
+                // which treats them as preferences. Being a framework library locally does not tell which framework.
+                var resolvedPackages = new Dictionary<string, PackageItem>();
+                async Task<PackageItem> ResolveFrameworkPackageAsync(string name, string distributorName, string branch, string target, string configuration)
+                {
+                    distributorName = string.IsNullOrEmpty(distributorName) ? null : distributorName;
+                    var key = $"{distributorName}|{name}|{branch}|{target}|{configuration}";
+                    if (!resolvedPackages.TryGetValue(key, out var resolvedPackage))
+                    {
+                        resolvedPackage = await _packageServers.ResolvePackageItemAsync(
+                            name,
+                            new ResolvePackageOptions
+                            {
+                                PreferredBranch = branch,
+                                PreferredTarget = target,
+                                PreferredConfiguration = configuration,
+                                DistributorName = distributorName
+                            },
+                            cancellationToken);
+                        resolvedPackages[key] = resolvedPackage;
+                    }
 
-                // now that we have all involved packages and know if they belong to a framework, seperate them by framework vs. non-framework packages
-                var allFrameworkPackages = affectedPackages.Where(x => frameworks.Contains(x.PackageVersion?.Framework)).ToList();
-                var allNonFrameworkPackages = affectedPackages.Where(x => !frameworks.Contains(x.PackageVersion?.Framework)).ToList();
+                    return resolvedPackage;
+                }
 
-                if (allFrameworkPackages.Any())
+                var frameworks = new List<string>();
+                foreach (var artifact in artifacts.GroupBy(x => x.ArtifactName).Select(x => x.First()))
+                {
+                    var resolvedArtifact = await ResolveFrameworkPackageAsync(
+                        artifact.ArtifactName,
+                        artifact.Plc.DistributorName,
+                        options.PreferredFrameworkBranch,
+                        options.PreferredFrameworkTarget,
+                        options.PreferredFrameworkConfiguration);
+
+                    var framework = resolvedArtifact.PackageVersion?.Framework;
+                    if (framework == null)
+                        _logger.Warn("[set-version] {0} is not part of a framework on any package server, its framework packages are not synchronized", artifact.ArtifactName);
+                    else if (!frameworks.Contains(framework))
+                        frameworks.Add(framework);
+                }
+
+                // now that we know the frameworks, seperate the packages of each plc by framework vs. non-framework packages
+                var frameworkPackages = new Dictionary<Artifact, List<(PackageItem Package, PackageItem Resolved)>>();
+                foreach (var artifact in artifacts)
+                {
+                    frameworkPackages[artifact] = new List<(PackageItem Package, PackageItem Resolved)>();
+                    if (!frameworks.Any())
+                        continue;
+
+                    foreach (var package in artifact.Packages)
+                    {
+                        var resolvedPackage = await ResolveFrameworkPackageAsync(
+                            package.Config.Name,
+                            package.Config.DistributorName,
+                            package.Config.Branch,
+                            package.Config.Target,
+                            package.Config.Configuration);
+
+                        if (frameworks.Contains(resolvedPackage.PackageVersion?.Framework))
+                            frameworkPackages[artifact].Add((package, resolvedPackage));
+                    }
+                }
+
+                if (frameworkPackages.Values.Any(x => x.Any()))
                     _logger.Info("[set-version] synchronizing framework packages");
 
                 foreach (var artifact in artifacts)
                 {
+                    var packagesWithFramework = frameworkPackages[artifact];
                     var packagesToAdd = options?.PurgePackages == true
                         ? artifact.Packages
-                        .Where(x => allFrameworkPackages.Any(y => x.Config.Name == y.Config.Name) == false)
+                        .Where(x => packagesWithFramework.Any(y => x.Config.Name == y.Package.Config.Name) == false)
                         .Select(
                             x => new PackageItem(x)
                             {
-                                Package = new PackageGetResponse(allNonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.Package),
-                                PackageVersion = new PackageVersionGetResponse(allNonFrameworkPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.PackageVersion)
+                                Package = new PackageGetResponse(affectedPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.Package),
+                                PackageVersion = new PackageVersionGetResponse(affectedPackages.FirstOrDefault(y => y.ProjectName == x.ProjectName && y.PlcName == x.PlcName && x.Config.Name == y.Config.Name)?.PackageVersion)
                                 {
                                     Title = x.PackageVersion?.Title ?? x.Config.Name,
                                     Name = x.Config.Name,
@@ -1412,11 +1478,10 @@ namespace Twinpack.Core
                       : new List<PackageItem>();
 
                     var packagesWithFrameworkToAdd = new List<PackageItem>();
-                    var packagesWithFramework = artifact.Packages.Where(x => allFrameworkPackages.Any(y => y.PackageVersion.Name == x.Config.Name)).ToList();
 
-                    foreach (var package in packagesWithFramework)
+                    foreach (var (package, resolvedPackage) in packagesWithFramework)
                     {
-                        var affectedPackage = allFrameworkPackages.First(y => y.PackageVersion.Name == package.Config.Name);
+                        var affectedPackage = affectedPackages.FirstOrDefault(y => y.PackageVersion?.Name == package.Config.Name) ?? resolvedPackage;
 
                         // check if the requested version is actually on a package server already
                         var requestedPackage =await _packageServers.ResolvePackageAsync(
