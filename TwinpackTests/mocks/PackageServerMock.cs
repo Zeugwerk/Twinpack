@@ -32,6 +32,12 @@ namespace TwinpackTests
         public bool Enabled { get; set; } = true;
 
         /// <summary>
+        /// When set, catalog search returns every item. The caller then applies its own filter,
+        /// including rows whose name, display name or distributor is null.
+        /// </summary>
+        public bool IgnoreCatalogSearch { get; set; }
+
+        /// <summary>
         /// When set, a lookup without a version throws. The requested version itself still resolves.
         /// </summary>
         public bool FailUnversionedLookup { get; set; }
@@ -64,7 +70,7 @@ namespace TwinpackTests
         public async Task<Tuple<IEnumerable<CatalogItemGetResponse>, bool>> GetCatalogAsync(string search, int page = 1, int perPage = 5, CancellationToken cancellationToken = default)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            var items = CatalogItems.Where(x => search == null || x.Name.Equals(search, StringComparison.OrdinalIgnoreCase)).ToList();
+            var items = CatalogItems.Where(x => IgnoreCatalogSearch || search == null || (x.Name != null && x.Name.Equals(search, StringComparison.OrdinalIgnoreCase))).ToList();
 
             page = page - 1;
             if (page * perPage + perPage < items.Count)

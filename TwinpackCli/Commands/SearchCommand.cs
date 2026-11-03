@@ -45,7 +45,7 @@ namespace Twinpack.Commands
                     table.AddColumns(new[] { "Package", "Distributor" });
 
                     foreach (var package in packages)
-                        table.AddRow(new[] { package.Name, package.DistributorName });
+                        table.AddRow(new[] { package.Name ?? "", package.DistributorName ?? "" });
 
                     AnsiConsole.Write(table);
                 }

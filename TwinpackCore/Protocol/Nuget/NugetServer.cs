@@ -123,36 +123,106 @@ namespace Twinpack.Protocol
             if(_sourceRepository == null)
                 return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(new List<CatalogItemGetResponse>(), false);
 
+            var pageResult = await SearchPageAsync(search, page, perPage, cancellationToken);
+            var packages = await Task.WhenAll(pageResult.Hits
+                    .Where(IsLibraryPackage)
+                    .Select(async x =>
+                        new CatalogItemGetResponse()
+                        {
+                            PackageId = null,
+                            Name = x.Identity.Id,
+                            DistributorName = x.Authors,
+                            Description = x.Description,
+                            IconUrl = x.IconUrl?.ToString() ?? IconUrl,
+                            RuntimeLicense = 0,
+                            DisplayName = x.Identity.Id,
+                            Downloads = x.DownloadCount.HasValue && x.DownloadCount.Value > 0 ? ((int?)x.DownloadCount.Value) : null,
+                            Created = x.Published?.ToString() ?? "Unknown",
+                            Modified = x.Published?.ToString() ?? "Unknown"
+#if !TWINPACK_HEADLESS
+                            ,IconBytes = await GetPackageIconAsync(x.Identity, cancellationToken),
+#endif
+                        }));
+
+            return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(packages, pageResult.HasMore);
+        }
+
+        // NuGet.Versioning.NuGetVersion.Parse throws ArgumentException (parameter name "value")
+        // when a hit's version is null or empty, and that fails the whole page. Read the page
+        // one hit at a time and leave the bad one out.
+        private async Task<SearchPage> SearchPageAsync(string search, int page, int perPage, CancellationToken cancellationToken)
+        {
+            var skip = perPage * (page - 1);
             try
             {
-                var results = await SearchAsync(SearchPrefix, search, perPage * (page - 1), perPage, cancellationToken);
-                var packages = await Task.WhenAll(results
-                        .Where(x => x.Tags.ToLower().Contains("library") || x.Tags.ToLower().Contains("plc-library"))
-                        .Select(async x =>
-                            new CatalogItemGetResponse()
-                            {
-                                PackageId = null,
-                                Name = x.Identity.Id,
-                                DistributorName = x.Authors,
-                                Description = x.Description,
-                                IconUrl = x.IconUrl?.ToString() ?? IconUrl,
-                                RuntimeLicense = 0,
-                                DisplayName = x.Identity.Id,
-                                Downloads = x.DownloadCount.HasValue && x.DownloadCount.Value > 0 ? ((int?)x.DownloadCount.Value) : null,
-                                Created = x.Published?.ToString() ?? "Unknown",
-                                Modified = x.Published?.ToString() ?? "Unknown"
-#if !TWINPACK_HEADLESS
-                                ,IconBytes = await GetPackageIconAsync(x.Identity, cancellationToken),
-#endif
-                            }));
-
-                return new Tuple<IEnumerable<CatalogItemGetResponse>, bool>(packages, results.Any());
+                var results = (await SearchAsync(SearchPrefix, search, skip, perPage, cancellationToken)).ToList();
+                return new SearchPage(results, results.Count > 0);
             }
-            catch(Exception)
+            catch (Exception ex) when (IsEmptyVersion(ex))
             {
-                throw;
+                _logger.Warn("[search] {0} returned a package with an empty version; that hit is skipped", UrlBase);
+                _logger.Trace(ex);
+
+                var kept = new List<IPackageSearchMetadata>();
+                var exhausted = false;
+                for (var index = 0; index < perPage; index++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    try
+                    {
+                        var one = (await SearchAsync(SearchPrefix, search, skip + index, 1, cancellationToken)).ToList();
+                        if (one.Count == 0)
+                        {
+                            exhausted = true;
+                            break;
+                        }
+
+                        kept.AddRange(one);
+                    }
+                    catch (Exception oneEx) when (IsEmptyVersion(oneEx))
+                    {
+                        _logger.Trace(oneEx);
+                    }
+                }
+
+                return new SearchPage(kept, !exhausted);
+            }
+        }
+
+        private sealed class SearchPage
+        {
+            public SearchPage(IReadOnlyList<IPackageSearchMetadata> hits, bool hasMore)
+            {
+                Hits = hits;
+                HasMore = hasMore;
             }
 
+            public IReadOnlyList<IPackageSearchMetadata> Hits { get; }
+            public bool HasMore { get; }
+        }
+
+        static bool IsLibraryPackage(IPackageSearchMetadata package)
+        {
+            if (package?.Identity?.Id == null)
+                return false;
+
+            var tags = package.Tags;
+            if (string.IsNullOrEmpty(tags))
+                return false;
+
+            return tags.IndexOf("library", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        static bool IsEmptyVersion(Exception ex)
+        {
+            for (var current = ex; current != null; current = current.InnerException)
+            {
+                var argument = current as ArgumentException;
+                if (argument != null && !(argument is ArgumentNullException) && argument.ParamName == "value")
+                    return true;
+            }
+
+            return false;
         }
 
 #if !TWINPACK_HEADLESS

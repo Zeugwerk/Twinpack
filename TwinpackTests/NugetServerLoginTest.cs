@@ -49,6 +49,33 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task CatalogSearchSkipsAHitWhoseVersionIsEmpty()
+        {
+            var untagged = "{\"id\":\"Untagged.Lib\",\"version\":\"1.0.0\",\"description\":\"no tags\",\"authors\":\"Zeugwerk\",\"totalDownloads\":1,\"versions\":[{\"version\":\"1.0.0\",\"downloads\":1}]}";
+            var emptyVersion = "{\"id\":\"Bad.Lib\",\"version\":\"\",\"description\":\"empty version\",\"authors\":\"Zeugwerk\",\"tags\":\"library\",\"totalDownloads\":1,\"versions\":[{\"version\":\"1.0.0\",\"downloads\":1}]}";
+            var good = "{\"id\":\"Good.Lib\",\"version\":\"1.2.3\",\"description\":\"good\",\"authors\":\"Zeugwerk\",\"tags\":\"library\",\"totalDownloads\":3,\"versions\":[{\"version\":\"1.2.3\",\"downloads\":3}]}";
+
+            await UsingFeedAsync(async (feed, requests) =>
+            {
+                var server = new NugetServer("Version feed", feed);
+                try
+                {
+                    await server.LoginAsync("", "secret-api-key");
+                    var catalog = await server.GetCatalogAsync("lib");
+                    var names = new List<string>();
+                    foreach (var item in catalog.Item1)
+                        names.Add(item.Name);
+                    CollectionAssert.AreEqual(new List<string> { "Good.Lib" }, names);
+                    Assert.IsFalse(catalog.Item2, "the page ended on the good package");
+                }
+                finally
+                {
+                    CredentialManager.RemoveCredentials(feed);
+                }
+            }, untagged, emptyVersion, good);
+        }
+
+        [TestMethod]
         public async Task UsernameAndPasswordAreStillSentAsBasicAuthAsync()
         {
             var expected = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes("alice:s3cret"));
@@ -83,7 +110,12 @@ namespace TwinpackTests
             });
         }
 
-        private static async Task UsingFeedAsync(Func<string, List<CapturedRequest>, Task> act)
+        private static Task UsingFeedAsync(Func<string, List<CapturedRequest>, Task> act)
+        {
+            return UsingFeedAsync(act, new string[0]);
+        }
+
+        private static async Task UsingFeedAsync(Func<string, List<CapturedRequest>, Task> act, params string[] searchHits)
         {
             HttpListener listener = null;
             var port = 0;
@@ -134,7 +166,7 @@ namespace TwinpackTests
                     }
 
                     var body = path.IndexOf("search", StringComparison.OrdinalIgnoreCase) >= 0
-                        ? "{\"totalHits\":0,\"data\":[]}"
+                        ? SearchBody(searchHits, context.Request.QueryString["skip"], context.Request.QueryString["take"])
                         : index;
                     var bytes = Encoding.UTF8.GetBytes(body);
                     context.Response.StatusCode = 200;
@@ -165,6 +197,30 @@ namespace TwinpackTests
                 try { listener.Close(); } catch { }
                 await Task.WhenAny(worker, Task.Delay(2000));
             }
+        }
+
+        private static string SearchBody(string[] hits, string skipText, string takeText)
+        {
+            var total = hits == null ? 0 : hits.Length;
+            var skip = 0;
+            var take = total;
+            if (!string.IsNullOrEmpty(skipText))
+                int.TryParse(skipText, out skip);
+            if (!string.IsNullOrEmpty(takeText))
+                int.TryParse(takeText, out take);
+            if (hits == null || skip < 0 || skip >= hits.Length || take <= 0)
+                return "{\"totalHits\":" + total + ",\"data\":[]}";
+
+            var count = Math.Min(take, hits.Length - skip);
+            var data = new StringBuilder();
+            for (var i = 0; i < count; i++)
+            {
+                if (i > 0)
+                    data.Append(',');
+                data.Append(hits[skip + i]);
+            }
+
+            return "{\"totalHits\":" + total + ",\"data\":[" + data + "]}";
         }
 
         private static List<CapturedRequest> Snapshot(List<CapturedRequest> requests)
