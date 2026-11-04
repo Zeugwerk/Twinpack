@@ -33,7 +33,7 @@ namespace Twinpack.Commands
             [Description("Forces the download of package(s) even if they are already available on the system.")]
             public bool ForceDownload { get; set; }
             [CommandOption("--include-provided-packages")]
-            [Description("Includes the download of packages that are provided by the configuration (e.g., PLCs that are also considered packages by being available on a configured package server).")]
+            [Description("Includes the download of packages that are provided by the configuration (e.g., PLCs that are also considered packages by being available on a configured package server). Packages named with --package are always included.")]
             public bool IncludeProvidedPackages { get; set; }
             [CommandOption("--headed")]
             [Description("Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
@@ -64,6 +64,7 @@ namespace Twinpack.Commands
                     new TwinpackService.DownloadPackageOptions
                     {
                         IncludeProvidedPackages = settings.IncludeProvidedPackages,
+                        ProvidedPackagesToDownload = settings.Packages?.ToList(),
                         ForceDownload = settings.ForceDownload,
                     }).GetAwaiter().GetResult();
 
