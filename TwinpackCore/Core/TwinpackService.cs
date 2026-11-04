@@ -22,6 +22,8 @@ namespace Twinpack.Core
         public class DownloadPackageOptions
         { 
             public bool IncludeProvidedPackages = false;
+            // Provided packages that are downloaded even when IncludeProvidedPackages is false.
+            public List<string>? ProvidedPackagesToDownload = null;
             public bool IncludeDependencies = true;
             public bool ForceDownload = false;
             public string? DownloadPath = null;
@@ -39,6 +41,7 @@ namespace Twinpack.Core
                 ReapplyReferences = rhs?.ReapplyReferences ?? true;
                 IncludeDependencies = rhs?.IncludeDependencies ?? true;
                 DownloadProvidedPackages = rhs?.DownloadProvidedPackages ?? true;
+                ProvidedPackagesToDownload = rhs?.ProvidedPackagesToDownload;
                 DownloadPath = rhs?.DownloadPath;
             }
 
@@ -55,6 +58,10 @@ namespace Twinpack.Core
             // referenced, but they are left out of the download when this is false. Their dependencies
             // keep their own names, so those are still fetched.
             public bool DownloadProvidedPackages = true;
+            // Named libraries are downloaded even when DownloadProvidedPackages is false. The CLI fills
+            // this from --package, because naming a package is a request for that package. zkmake leaves
+            // it empty, since it builds these libraries from source in the same run.
+            public List<string>? ProvidedPackagesToDownload = null;
             // Callers that do not know this flag keep the previous behavior and rewrite the reference.
             // Catalog add and `twinpack add` set this to false so an identical config row is left alone.
             public bool ReapplyReferences = true;
@@ -675,7 +682,9 @@ namespace Twinpack.Core
 
             options = options ?? new UpdatePackageOptions();
 
-            var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
+            var providedPackageNames = _config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name)
+                .Where(x => options.ProvidedPackagesToDownload?.Contains(x, StringComparer.OrdinalIgnoreCase) != true)
+                .ToList() ?? new List<string>();
             return await AddResolvedPackagesAsync(packages, providedPackageNames, options, options.IncludeProvidedPackages, cancellationToken);
         }
 
@@ -825,6 +834,7 @@ namespace Twinpack.Core
                     // The list above is already the set to fetch. Expanding again would
                     // download and install a library that was just left out as already referenced.
                     IncludeProvidedPackages = options?.DownloadProvidedPackages != false,
+                    ProvidedPackagesToDownload = options?.ProvidedPackagesToDownload,
                     IncludeDependencies = options?.ReapplyReferences != false && includeDependencies,
                     ForceDownload = options?.ForceDownload == true,
                     DownloadPath = downloadPath
@@ -1290,7 +1300,16 @@ namespace Twinpack.Core
             // ignore packages, which are provided by the loaded configuration
             if(!options.IncludeProvidedPackages)
             {
-                var providedPackageNames = config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name).ToList() ?? new List<string>();
+                var providedPackageNames = config?.Projects?.SelectMany(x => x.Plcs).Select(x => x.Name)
+                    .Where(x => options.ProvidedPackagesToDownload?.Contains(x, StringComparer.OrdinalIgnoreCase) != true)
+                    .ToList() ?? new List<string>();
+                foreach (var provided in affectedPackages.Where(x => providedPackageNames.Any(y => y == x.PackageVersion.Name)))
+                {
+                    var provider = config.Projects.First(x => x.Plcs.Any(y => y.Name == provided.PackageVersion.Name));
+                    _logger.Info("[download] skipping {0} {1}, provided by {2}/{3} of this solution",
+                        provided.PackageVersion.Name, provided.PackageVersion.Version, provider.Name, provided.PackageVersion.Name);
+                }
+
                 affectedPackages = affectedPackages.Where(x => providedPackageNames.Any(y => y == x.PackageVersion.Name) == false).ToList();
             }
 

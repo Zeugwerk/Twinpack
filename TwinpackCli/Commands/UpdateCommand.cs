@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using Spectre.Console.Cli;
 using Twinpack;
 using Twinpack.Core;
@@ -44,7 +45,7 @@ namespace Twinpack.Commands
             public string[] Configurations { get; set; }
 
             [CommandOption("--include-provided-packages")]
-            [Description("Update packages, which are provided by the configuration (Plcs, which are also packages themselves)")]
+            [Description("Update packages, which are provided by the configuration (Plcs, which are also packages themselves). Packages named with --package are always included")]
             public bool IncludeProvidedPackages { get; set; }
             [CommandOption("--skip-download")]
             [Description("Does not download package(s). Libraries already present in the cache folder (.Zeugwerk/libraries) are installed from there.")]
@@ -85,6 +86,7 @@ namespace Twinpack.Commands
                     new TwinpackService.UpdatePackageOptions
                     {
                         IncludeProvidedPackages = settings.IncludeProvidedPackages,
+                        ProvidedPackagesToDownload = settings.Packages?.ToList(),
                         ForceDownload = settings.ForceDownload,
                         SkipDownload = settings.SkipDownload
                     }).GetAwaiter().GetResult();
