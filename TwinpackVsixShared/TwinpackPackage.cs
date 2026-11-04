@@ -89,6 +89,11 @@ namespace Twinpack
         private List<Commands.ICommand> _commands;
         private uint _solutionEventsCookie;
 
+        static TwinpackPackage()
+        {
+            NewtonsoftJsonAssemblyResolver.EnsureRegistered();
+        }
+
         public TwinpackPackage() : base()
         {
             // all context information, which is needed in all classes in the extension
