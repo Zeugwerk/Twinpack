@@ -43,6 +43,7 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)IconCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger\VsOutputWindowTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NewtonsoftJsonAssemblyResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PackagingServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Panels\CatalogPane.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TwinpackPackage.cs" />
@@ -81,4 +82,25 @@
       <Link>Resources\zeugwerk-logo-white.png</Link>
     </Resource>
   </ItemGroup>
+  <!-- VSSDK lists Newtonsoft.Json.dll in SuppressFromVsix, so the reference copy never lands in the
+       package. NuGet V2 feeds need 13.0.0.0. Copy it in after that filter. Same file on 15 and 17:
+       NuGet.Packaging 6.11.2 depends on Newtonsoft.Json 13.0.3, whose assembly version is 13.0.0.0. -->
+  <Target Name="IncludeNewtonsoftJsonInVsix" AfterTargets="GetVsixSourceItems">
+    <PropertyGroup>
+      <_TwinpackNuGetPackageRoot Condition="'$(_TwinpackNuGetPackageRoot)' == ''">$(NuGetPackageRoot)</_TwinpackNuGetPackageRoot>
+      <_TwinpackNuGetPackageRoot Condition="'$(_TwinpackNuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</_TwinpackNuGetPackageRoot>
+      <_NewtonsoftJsonDll>$([System.IO.Path]::Combine('$(_TwinpackNuGetPackageRoot)', 'newtonsoft.json', '13.0.3', 'lib', 'net45', 'Newtonsoft.Json.dll'))</_NewtonsoftJsonDll>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_NewtonsoftJsonDll)')" Text="Newtonsoft.Json 13.0.3 was not found at $(_NewtonsoftJsonDll). Restore packages before building the VSIX." />
+    <Copy SourceFiles="$(_NewtonsoftJsonDll)" DestinationFiles="$(TargetDir)Newtonsoft.Json.dll" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <_ExistingNewtonsoft Include="@(VSIXSourceItem)" Condition="'%(Filename)' == 'Newtonsoft.Json'" />
+    </ItemGroup>
+    <ItemGroup Condition="'@(_ExistingNewtonsoft)' == ''">
+      <VSIXSourceItem Include="$(TargetDir)Newtonsoft.Json.dll">
+        <VSIXSubPath></VSIXSubPath>
+      </VSIXSourceItem>
+      <FileWrites Include="$(TargetDir)Newtonsoft.Json.dll" />
+    </ItemGroup>
+  </Target>
 </Project>
