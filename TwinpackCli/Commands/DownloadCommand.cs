@@ -15,7 +15,7 @@ namespace Twinpack.Commands
         public class Settings : AbstractSettings
         {
             [CommandOption("--package")]
-            [Description("Specifies the package(s) to be downloaded. If not provided, all relevant packages will be handled.")]
+            [Description("Package(s) to download. When set, no configuration file or solution is required, and the packages are downloaded even if they are already installed. When omitted, packages come from .Zeugwerk/config.json or the solution in the working directory.")]
             public string[] Packages { get; set; }
             [CommandOption("--version")]
             [Description("Specifies the version(s) of the package(s) to be downloaded. If not explicitly set, Twinpack downloads the latest version.")]
@@ -30,23 +30,27 @@ namespace Twinpack.Commands
             [Description("Specifies the configuration(s) of the package(s). If not set, Twinpack will automatically select the appropriate configuration.")]
             public string[] Configurations { get; set; }
             [CommandOption("--force-download")]
-            [Description("Forces the download of package(s) even if they are already available on the system.")]
+            [Description("Forces the download of package(s) even if they are already available on the system. Implied when --package is set.")]
             public bool ForceDownload { get; set; }
             [CommandOption("--include-provided-packages")]
             [Description("Includes the download of packages that are provided by the configuration (e.g., PLCs that are also considered packages by being available on a configured package server). Packages named with --package are always included.")]
             public bool IncludeProvidedPackages { get; set; }
             [CommandOption("--headed")]
-            [Description("Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
+            [Description("Opens XAE Shell and skips libraries that are already installed. Used only when --package is omitted. Defaults to false")]
             public bool Headed { get; set; }
         }
         public override int Execute(CommandContext context, Settings settings)
         {
             SetUpLogger(settings);
 
-            if (!settings.ForceDownload && !settings.Headed)
+            // Named packages are fetched as given. The installed-library check is the only reason
+            // download opens XAE, and it needs a solution, so both stay on the configuration path.
+            var explicitPackages = settings.Packages != null;
+
+            if (!explicitPackages && !settings.ForceDownload && !settings.Headed)
                 _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
 
-            Initialize(settings.Headed);
+            Initialize(headed: explicitPackages ? false : settings.Headed, requiresConfig: !explicitPackages);
 
             return RunWithAutomationTeardown(() =>
             {
@@ -65,7 +69,7 @@ namespace Twinpack.Commands
                     {
                         IncludeProvidedPackages = settings.IncludeProvidedPackages,
                         ProvidedPackagesToDownload = settings.Packages?.ToList(),
-                        ForceDownload = settings.ForceDownload,
+                        ForceDownload = explicitPackages || settings.ForceDownload,
                     }).GetAwaiter().GetResult();
 
                 _logger.Info("[download] {0} package(s) written to cache", downloaded.Count);
