@@ -1070,6 +1070,28 @@ namespace Twinpack.Core
 
         // A previous download writes {cache}/{target}/{name}_{version}.library, optional
         // companion libraries {name}_{version}_{title}.library, and {name}_{version}.repository.
+        // download --install uses this so only libraries fetched by that run are installed.
+        public static List<PackageItem> SelectDownloadedForInstall(IEnumerable<PackageItem> downloaded, string cacheRoot)
+        {
+            var selected = new List<PackageItem>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var package in downloaded ?? Enumerable.Empty<PackageItem>())
+            {
+                var version = package?.PackageVersion;
+                if (string.IsNullOrEmpty(version?.Name) || string.IsNullOrEmpty(version.Version))
+                    continue;
+
+                var key = version.Name + "\n" + version.Version + "\n" + (version.Target ?? "");
+                if (!seen.Add(key))
+                    continue;
+
+                if (TryUseCachedLibraries(package, cacheRoot))
+                    selected.Add(package);
+            }
+
+            return selected;
+        }
+
         static List<PackageItem> PackagesFromCache(List<PackageItem> packages, string downloadPath)
         {
             var fromCache = new List<PackageItem>();

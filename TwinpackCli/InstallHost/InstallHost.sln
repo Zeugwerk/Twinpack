@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# TcXaeShell Solution File, Format Version 11.00
+VisualStudioVersion = 15.0.33403.129
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{B1E792BE-AA5F-4E3C-8C82-674BF9C0715B}") = "InstallHost", "InstallHost\InstallHost.tsproj", "{4E8B1C72-6A0D-4F55-9B31-2C7D5E8A0194}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|TwinCAT RT (x64) = Debug|TwinCAT RT (x64)
+		Debug|TwinCAT RT (x86) = Debug|TwinCAT RT (x86)
+		Release|TwinCAT RT (x64) = Release|TwinCAT RT (x64)
+		Release|TwinCAT RT (x86) = Release|TwinCAT RT (x86)
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4E8B1C72-6A0D-4F55-9B31-2C7D5E8A0194}.Debug|TwinCAT RT (x64).ActiveCfg = Debug|TwinCAT RT (x64)
+		{4E8B1C72-6A0D-4F55-9B31-2C7D5E8A0194}.Debug|TwinCAT RT (x64).Build.0 = Debug|TwinCAT RT (x64)
+		{4E8B1C72-6A0D-4F55-9B31-2C7D5E8A0194}.Debug|TwinCAT RT (x86).ActiveCfg = Debug|TwinCAT RT (x86)
+		{4E8B1C72-6A0D-4F55-9B31-2C7D5E8A0194}.Debug|TwinCAT RT (x86).Build.0 = Debug|TwinCAT RT (x86)
+		{4E8B1C72-6A0D-4F55-9B31-2C7D5E8A0194}.Release|TwinCAT RT (x64).ActiveCfg = Release|TwinCAT RT (x64)
+		{4E8B1C72-6A0D-4F55-9B31-2C7D5E8A0194}.Release|TwinCAT RT (x64).Build.0 = Release|TwinCAT RT (x64)
+		{4E8B1C72-6A0D-4F55-9B31-2C7D5E8A0194}.Release|TwinCAT RT (x86).ActiveCfg = Release|TwinCAT RT (x86)
+		{4E8B1C72-6A0D-4F55-9B31-2C7D5E8A0194}.Release|TwinCAT RT (x86).Build.0 = Release|TwinCAT RT (x86)
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D17A4E90-2B58-4C6F-8E13-5A9B0D2F7461}
+	EndGlobalSection
+EndGlobal

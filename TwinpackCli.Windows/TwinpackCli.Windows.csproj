@@ -57,6 +57,28 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\TwinpackCli\InstallHost\InstallHost.sln">
+      <Link>InstallHost\InstallHost.sln</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\TwinpackCli\InstallHost\InstallHost\InstallHost.tsproj">
+      <Link>InstallHost\InstallHost\InstallHost.tsproj</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\TwinpackCli\InstallHost\InstallHost\Plc\Plc.plcproj">
+      <Link>InstallHost\InstallHost\Plc\Plc.plcproj</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\TwinpackCli\InstallHost\InstallHost\Plc\PlcTask.TcTTO">
+      <Link>InstallHost\InstallHost\Plc\PlcTask.TcTTO</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\TwinpackCli\InstallHost\InstallHost\Plc\POUs\MAIN.TcPOU">
+      <Link>InstallHost\InstallHost\Plc\POUs\MAIN.TcPOU</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Twinpack.15\Twinpack.15.csproj">
       <Project>{3d96f91e-afe2-4b62-bbcb-b2546aaa932e}</Project>
       <Name>Twinpack.15</Name>

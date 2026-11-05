@@ -14,6 +14,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Commands\ConfigCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\DownloadCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\InitCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\InstallCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commands\LibraryInstallSession.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\ListCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\MirrorCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Commands\Nuget\NugetPackCommand.cs" />
