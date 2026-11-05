@@ -1386,6 +1386,60 @@ namespace TwinpackTests
             Assert.IsTrue(downloadedPackageVersions.Any(x => x.PackageVersion.Name == "ExternalLib3"));
         }
 
+        [TestMethod]
+        public async Task DownloadPackagesAsync_SkipsLibraryThatIsAlreadyInstalled()
+        {
+            var packageServer = SampleLibraryServer();
+            var automation = new Mock<IAutomationInterface>();
+            automation.Setup(x => x.IsPackageInstalledAsync(It.IsAny<PackageItem>())).Returns(Task.FromResult(true));
+            var twinpack = new TwinpackService(new PackageServerCollection { packageServer }, automation.Object);
+
+            var downloaded = await twinpack.DownloadPackagesAsync(
+                new List<PackageItem> { new PackageItem { Config = new ConfigPlcPackage { Name = "SampleLib", Version = "1.0.0.0" } } },
+                new TwinpackService.DownloadPackageOptions { ForceDownload = false });
+
+            Assert.AreEqual(0, downloaded.Count);
+            Assert.AreEqual(0, packageServer.DownloadedPackageVersions.Count);
+        }
+
+        [TestMethod]
+        public async Task DownloadPackagesAsync_ForceDownloadFetchesLibraryThatIsAlreadyInstalled()
+        {
+            var packageServer = SampleLibraryServer();
+            var automation = new Mock<IAutomationInterface>();
+            automation.Setup(x => x.IsPackageInstalledAsync(It.IsAny<PackageItem>())).Returns(Task.FromResult(true));
+            var twinpack = new TwinpackService(new PackageServerCollection { packageServer }, automation.Object);
+
+            var downloaded = await twinpack.DownloadPackagesAsync(
+                new List<PackageItem> { new PackageItem { Config = new ConfigPlcPackage { Name = "SampleLib", Version = "1.0.0.0" } } },
+                new TwinpackService.DownloadPackageOptions { ForceDownload = true });
+
+            Assert.AreEqual(1, downloaded.Count);
+            Assert.AreEqual("SampleLib", downloaded[0].PackageVersion.Name);
+            Assert.AreEqual(1, packageServer.DownloadedPackageVersions.Count);
+        }
+
+        static PackageServerMock SampleLibraryServer()
+        {
+            return new PackageServerMock
+            {
+                Connected = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse
+                    {
+                        Name = "SampleLib",
+                        Version = "1.0.0.0",
+                        Branch = "main",
+                        Configuration = "Release",
+                        Target = "TC3.1",
+                        DistributorName = "Sample",
+                        Dependencies = new List<PackageVersionGetResponse>()
+                    }
+                }
+            };
+        }
+
         private TwinpackService BuildMultiProjectConfig(out Config config)
         {
             return BuildMultiProjectConfig(out config, out _);
