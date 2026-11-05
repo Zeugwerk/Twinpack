@@ -889,9 +889,24 @@ namespace Twinpack.Core
                 // update configuration
                 var plcConfig = config?.Projects.FirstOrDefault(x => x.Name == package.ProjectName)?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
                 var packageIndex = plcConfig?.Packages.FindIndex(x => x.Name == package.PackageVersion.Name);
+                var existingPackage = packageIndex.HasValue && packageIndex.Value >= 0
+                    ? plcConfig.Packages[packageIndex.Value]
+                    : null;
+                // A dependency carries no pin. Keep a version that is already configured.
+                // A library that was already unpinned (version null) stays unpinned. The resolved
+                // build is still added to the PLC above.
+                string configuredVersion;
+                if (package.Config?.Version == null)
+                {
+                    var pinnedVersion = existingPackage?.Version;
+                    configuredVersion = string.IsNullOrEmpty(pinnedVersion) ? null : pinnedVersion;
+                }
+                else
+                    configuredVersion = package.PackageVersion.Version;
+
                 var newPackageConfig = new ConfigPlcPackage(package.PackageVersion)
                 {
-                    Version = package.Config?.Version == null ? null : package.PackageVersion.Version,
+                    Version = configuredVersion,
                     Options = package.Config?.Options,
                     Parameters = package.Config?.Parameters,
                     Namespace = package.Config?.Namespace
@@ -992,8 +1007,16 @@ namespace Twinpack.Core
             return await AffectedPackagesAsync(_automationInterface, _packageServers, packages, cache, includeDependencies, config: _config, cancellationToken: cancellationToken);
         }
 
+        // Resolved rows are keyed by package version name. A direct row that did not resolve
+        // has no package version, and its configured name is what keeps the slot occupied.
+        static string CachedPackageName(PackageItem package)
+        {
+            return package?.PackageVersion?.Name ?? package?.Config?.Name;
+        }
+
         private static async Task<List<PackageItem>> AffectedPackagesAsync(IAutomationInterface automationInterface, PackageServerCollection packageServers, List<PackageItem> packages, List<PackageItem> cache, bool includeDependencies = true, Config config = null, CancellationToken cancellationToken = default)
         {
+            var unresolvedDirect = new List<PackageItem>();
             foreach (var package in packages)
             {
                 PackageItem resolvedPackage = null;
@@ -1021,11 +1044,20 @@ namespace Twinpack.Core
                 if (package.PackageVersion?.Name == null)
                 {
                     _logger.Trace("[resolve] package {0} {1} could not be found", package.Config.Name, package.Config.Version ?? "*");
+
+                    // Direct references are preferred over dependencies. A failed lookup still
+                    // claims the configured name, otherwise an unpinned transitive row takes the slot.
+                    if (!string.IsNullOrEmpty(package.Config?.Name) &&
+                        cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && CachedPackageName(x) == package.Config.Name) == false)
+                    {
+                        cache.Add(package);
+                        unresolvedDirect.Add(package);
+                    }
                     continue;
                 }
 
                 // Cache here to prefer the references packages instead of their dependencies
-                if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion.Name == package.PackageVersion.Name) == false)
+                if (cache.Any(x => x.ProjectName == package.ProjectName && x.PlcName == package.PlcName && x.PackageVersion?.Name == package.PackageVersion.Name) == false)
                     cache.Add(package);
             }
 
@@ -1057,13 +1089,18 @@ namespace Twinpack.Core
 
                         if (cache.Any(x => x.ProjectName == dependency.ProjectName &&
                                            x.PlcName == dependency.PlcName &&
-                                           x.PackageVersion?.Name == dependency.PackageVersion?.Name) == false)
+                                           CachedPackageName(x) == dependency.PackageVersion?.Name) == false)
                         {
                             cache.Add(dependency);
                         }
                     }
                 }
             }
+
+            // The claim only has to outlive dependency collection. Callers install and group
+            // by package version, so an unresolved direct row is not part of the result.
+            foreach (var claimed in unresolvedDirect)
+                cache.Remove(claimed);
 
             return cache;
         }

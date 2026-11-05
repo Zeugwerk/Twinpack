@@ -2306,6 +2306,107 @@ namespace TwinpackTests
             }
         }
 
+        // App -> Mid -> EtherCAT (version null). EtherCAT is also a direct config row pinned to 1.2.3.4.
+        // Restore must keep that pin. A second case drops the pinned build from the server so the
+        // direct row cannot resolve and the unpinned transitive reference is the one that gets written.
+        [TestMethod]
+        public async Task RestoreAsync_DirectPinSurvivesUnpinnedTransitiveDependency()
+        {
+            var config = EtherCatPinConfig();
+            var twinpack = new TwinpackService(new PackageServerCollection { EtherCatPinServer(includePinnedBuild: true) }, config: config);
+
+            await twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions
+            {
+                IncludeProvidedPackages = true,
+                ForceDownload = false
+            });
+
+            var packages = config.Projects[0].Plcs[0].Packages;
+            // Mid is not in the original config. Its presence shows the dependency walk ran.
+            Assert.IsNotNull(packages.Single(x => x.Name == "Mid"));
+            Assert.AreEqual("1.2.3.4", packages.Single(x => x.Name == "EtherCAT").Version);
+        }
+
+        [TestMethod]
+        public async Task RestoreAsync_UnresolvedDirectPinIsOverwrittenByUnpinnedTransitiveDependency()
+        {
+            var config = EtherCatPinConfig();
+            var twinpack = new TwinpackService(new PackageServerCollection { EtherCatPinServer(includePinnedBuild: false) }, config: config);
+
+            await twinpack.RestorePackagesAsync(new TwinpackService.RestorePackageOptions
+            {
+                IncludeProvidedPackages = true,
+                ForceDownload = false
+            });
+
+            Assert.AreEqual("1.2.3.4", config.Projects[0].Plcs[0].Packages.Single(x => x.Name == "EtherCAT").Version);
+        }
+
+        static Config EtherCatPinConfig()
+        {
+            return new Config
+            {
+                Projects = new List<ConfigProject>
+                {
+                    new ConfigProject
+                    {
+                        Name = "App Project",
+                        Plcs = new List<ConfigPlcProject>
+                        {
+                            new ConfigPlcProject
+                            {
+                                Name = "PLC",
+                                Packages = new List<ConfigPlcPackage>
+                                {
+                                    new ConfigPlcPackage { Name = "App", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Zeugwerk" },
+                                    new ConfigPlcPackage { Name = "EtherCAT", Version = "1.2.3.4", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Beckhoff" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        static PackageServerMock EtherCatPinServer(bool includePinnedBuild)
+        {
+            var versions = new List<PackageVersionGetResponse>
+            {
+                new PackageVersionGetResponse
+                {
+                    Name = "App", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Zeugwerk",
+                    Dependencies = new List<PackageVersionGetResponse>
+                    {
+                        new PackageVersionGetResponse { Name = "Mid", Version = "1.0.0.0", DistributorName = "Zeugwerk" }
+                    }
+                },
+                new PackageVersionGetResponse
+                {
+                    Name = "Mid", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Zeugwerk",
+                    Dependencies = new List<PackageVersionGetResponse>
+                    {
+                        new PackageVersionGetResponse { Name = "EtherCAT", Version = null, DistributorName = "Beckhoff" }
+                    }
+                },
+                new PackageVersionGetResponse
+                {
+                    Name = "EtherCAT", Version = "3.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Beckhoff",
+                    Dependencies = new List<PackageVersionGetResponse>()
+                }
+            };
+
+            if (includePinnedBuild)
+            {
+                versions.Add(new PackageVersionGetResponse
+                {
+                    Name = "EtherCAT", Version = "1.2.3.4", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Beckhoff",
+                    Dependencies = new List<PackageVersionGetResponse>()
+                });
+            }
+
+            return new PackageServerMock { Connected = true, PackageVersionItems = versions };
+        }
+
         [TestMethod]
         public async Task SetPackageVersionAsync_SyncFrameworkPackages_WarnsWhenArtifactHasNoFramework()
         {
