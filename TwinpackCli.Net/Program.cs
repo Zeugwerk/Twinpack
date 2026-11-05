@@ -18,6 +18,7 @@ namespace Twinpack
                 configure.AddCommand<ResolveCommand>("resolve");
                 configure.AddCommand<ListCommand>("list");
                 configure.AddCommand<DownloadCommand>("download");
+                configure.AddCommand<InstallCommand>("install");
                 configure.AddCommand<AddCommand>("add");
                 configure.AddCommand<RemoveCommand>("remove");
                 configure.AddCommand<RestoreCommand>("restore");

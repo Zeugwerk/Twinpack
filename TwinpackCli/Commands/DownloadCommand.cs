@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using Twinpack;
 using Twinpack.Core;
@@ -38,19 +39,28 @@ namespace Twinpack.Commands
             [CommandOption("--headed")]
             [Description("Opens XAE Shell and skips libraries that are already installed. Used only when --package is omitted. Defaults to false")]
             public bool Headed { get; set; }
+            [CommandOption("--install")]
+            [Description("After the download, installs the libraries fetched by this run into the TwinCAT system repository. One XAE Shell is opened for the whole set.")]
+            public bool Install { get; set; }
         }
         public override int Execute(CommandContext context, Settings settings)
         {
             SetUpLogger(settings);
 
             // Named packages are fetched as given. The installed-library check is the only reason
-            // download opens XAE, and it needs a solution, so both stay on the configuration path.
+            // download opens XAE during the fetch, and it needs a solution, so both stay on the
+            // configuration path. --install opens one shell after the fetch, for the whole set.
             var explicitPackages = settings.Packages != null;
 
-            if (!explicitPackages && !settings.ForceDownload && !settings.Headed)
+#if !TWINPACK_CLI_FRAMEWORK
+            if (settings.Install)
+                throw new NotSupportedException("Installing libraries requires TwinCAT XAE Shell.");
+#endif
+
+            if (!explicitPackages && !settings.ForceDownload && !settings.Headed && !settings.Install)
                 _logger.Warn("Using headless mode, downloading packages even if they are available on the system.");
 
-            Initialize(headed: explicitPackages ? false : settings.Headed, requiresConfig: !explicitPackages);
+            Initialize(headed: explicitPackages || settings.Install ? false : settings.Headed, requiresConfig: !explicitPackages);
 
             return RunWithAutomationTeardown(() =>
             {
@@ -73,6 +83,16 @@ namespace Twinpack.Commands
                     }).GetAwaiter().GetResult();
 
                 _logger.Info("[download] {0} package(s) written to cache", downloaded.Count);
+
+                if (settings.Install)
+                {
+#if TWINPACK_CLI_FRAMEWORK
+                    var cache = Path.Combine(Environment.CurrentDirectory, ".Zeugwerk", "libraries");
+                    var batch = LibraryInstallPlan.FromDownloaded(downloaded, cache);
+                    LibraryInstallSession.InstallAll(batch, cache);
+#endif
+                }
+
                 TwinpackRunLog.LogPhaseDone(_logger, "download", sw.Elapsed.TotalSeconds);
                 return 0;
             });

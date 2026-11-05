@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <FileVersion>1.0.0.0</FileVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{9C2F6A18-3E47-4B90-A1D6-7F04B8C25E63}</ProjectGuid>
+    <SubObjectsSortedByName>True</SubObjectsSortedByName>
+    <DownloadApplicationInfo>true</DownloadApplicationInfo>
+    <WriteProductVersion>true</WriteProductVersion>
+    <GenerateTpy>false</GenerateTpy>
+    <Name>Plc</Name>
+    <ProgramVersion>3.1.4024.0</ProgramVersion>
+    <Application>{B4E1A0C2-7D55-4A18-9F30-6C8D2E5B1A47}</Application>
+    <TypeSystem>{afb06401-f2ff-4a8a-bfd2-3f912b0c4c67}</TypeSystem>
+    <Implicit_Task_Info>{106329e5-859d-4a09-8fb7-78b83112d1d7}</Implicit_Task_Info>
+    <Implicit_KindOfTask>{bace41c1-6fbe-4c24-9cd0-348e272f3c2e}</Implicit_KindOfTask>
+    <Implicit_Jitter_Distribution>{9a94b6d0-ced2-4eed-93b1-c2925cc42927}</Implicit_Jitter_Distribution>
+    <LibraryReferences>{a912ab6d-5d52-42c5-b5e4-5af5bb524c5b}</LibraryReferences>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PlcTask.TcTTO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\MAIN.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="DUTs" />
+    <Folder Include="GVLs" />
+    <Folder Include="VISUs" />
+    <Folder Include="POUs" />
+  </ItemGroup>
+</Project>

@@ -47,6 +47,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\Solution.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\IPackageServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Protocol\Native\TwinpackServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\LibraryInstallPlan.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\LibraryTargets.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NugetPackService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\PackageMirror.cs" />
