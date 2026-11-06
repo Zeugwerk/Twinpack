@@ -183,6 +183,115 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public async Task AddPackagesAsync_KeepsNamespaceParametersAndOptionsWhenOmitted()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-keep-ref-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            try
+            {
+                var storedOptions = new AddPlcLibraryOptions { QualifiedOnly = true };
+                var storedParameters = new Dictionary<string, string> { { "LOG.DIRECTORY", "/var/log/plc/" } };
+                var config = new Config
+                {
+                    FilePath = Path.Combine(directory, "config.json"),
+                    Projects = new List<ConfigProject>
+                    {
+                        new ConfigProject
+                        {
+                            Name = "P",
+                            Plcs = new List<ConfigPlcProject>
+                            {
+                                new ConfigPlcProject
+                                {
+                                    Name = "PLC",
+                                    Packages = new List<ConfigPlcPackage>
+                                    {
+                                        new ConfigPlcPackage
+                                        {
+                                            Name = "Tc2_Math",
+                                            Version = "3.4.7",
+                                            DistributorName = "Beckhoff",
+                                            Namespace = "MathV2",
+                                            Parameters = storedParameters,
+                                            Options = storedOptions
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                var twinpack = new TwinpackService(new PackageServerCollection(), config: config);
+                var server = new PackageServerMock { Connected = true };
+
+                PackageItem Reference(string version, string ns, Dictionary<string, string> parameters, AddPlcLibraryOptions options)
+                {
+                    return new PackageItem
+                    {
+                        ProjectName = "P",
+                        PlcName = "PLC",
+                        PackageServer = server,
+                        Package = new PackageGetResponse { Name = "Tc2_Math" },
+                        PackageVersion = new PackageVersionGetResponse
+                        {
+                            Name = "Tc2_Math",
+                            Version = version,
+                            Branch = "main",
+                            Target = "TC3.1",
+                            Configuration = "Release",
+                            DistributorName = "Beckhoff"
+                        },
+                        Config = new ConfigPlcPackage
+                        {
+                            Name = "Tc2_Math",
+                            Version = version,
+                            Branch = "main",
+                            Target = "TC3.1",
+                            Configuration = "Release",
+                            DistributorName = "Beckhoff",
+                            Namespace = ns,
+                            Parameters = parameters,
+                            Options = options
+                        },
+                        Dependencies = new List<PackageItem>()
+                    };
+                }
+
+                var options = new TwinpackService.AddPackageOptions { SkipDownload = true, ReapplyReferences = false };
+                var packages = config.Projects[0].Plcs[0].Packages;
+
+                var added = await twinpack.AddPackagesAsync(new List<PackageItem> { Reference("3.4.7.0", null, null, null) }, options);
+                Assert.AreEqual(0, added.Count);
+                Assert.AreEqual("MathV2", packages.Single().Namespace);
+                Assert.AreEqual("/var/log/plc/", packages.Single().Parameters["LOG.DIRECTORY"]);
+                Assert.IsTrue(packages.Single().Options.QualifiedOnly);
+
+                added = await twinpack.AddPackagesAsync(new List<PackageItem> { Reference("3.4.8.0", null, null, null) }, options);
+                Assert.AreEqual(1, added.Count);
+                var stored = packages.Single();
+                Assert.AreEqual("3.4.8.0", stored.Version);
+                Assert.AreEqual("MathV2", stored.Namespace);
+                Assert.AreEqual("/var/log/plc/", stored.Parameters["LOG.DIRECTORY"]);
+                Assert.IsTrue(stored.Options.QualifiedOnly);
+
+                added = await twinpack.AddPackagesAsync(new List<PackageItem>
+                {
+                    Reference("3.4.9.0", "MathV3", new Dictionary<string, string> { { "LOG.DIRECTORY", "/tmp/" } }, new AddPlcLibraryOptions())
+                }, options);
+                stored = packages.Single();
+                Assert.AreEqual("3.4.9.0", stored.Version);
+                Assert.AreEqual("MathV3", stored.Namespace);
+                Assert.AreEqual("/tmp/", stored.Parameters["LOG.DIRECTORY"]);
+                Assert.IsFalse(stored.Options.QualifiedOnly);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
+            }
+        }
+
+        [TestMethod]
         public async Task AddPackagesAsync_EditingAddedItem_DoesNotChangeStoredReference()
         {
             var directory = Path.Combine(Path.GetTempPath(), "twinpack-alias-" + Guid.NewGuid().ToString("N"));

@@ -1007,6 +1007,33 @@ namespace Twinpack.Core
             return await AffectedPackagesAsync(_automationInterface, _packageServers, packages, cache, includeDependencies, config: _config, cancellationToken: cancellationToken);
         }
 
+        // Empty means the caller did not specify the field. A non-null options object is explicit
+        // even when every flag is false, so clearing a checkbox in the catalog is kept.
+        static void PreserveUnsetReferenceSettings(Config config, PackageItem package)
+        {
+            if (package?.Config == null)
+                return;
+
+            var name = package.PackageVersion?.Name ?? package.Config.Name;
+            if (string.IsNullOrEmpty(name))
+                return;
+
+            var existing = config?.Projects?.FirstOrDefault(x => x.Name == package.ProjectName)
+                ?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName)
+                ?.Packages?.FirstOrDefault(x => x.Name == name);
+            if (existing == null)
+                return;
+
+            if (string.IsNullOrEmpty(package.Config.Namespace) && !string.IsNullOrEmpty(existing.Namespace))
+                package.Config.Namespace = existing.Namespace;
+
+            if ((package.Config.Parameters == null || package.Config.Parameters.Count == 0) && existing.Parameters?.Count > 0)
+                package.Config.Parameters = existing.Parameters;
+
+            if (package.Config.Options == null && existing.Options != null)
+                package.Config.Options = existing.Options;
+        }
+
         // Resolved rows are keyed by package version name. A direct row that did not resolve
         // has no package version, and its configured name is what keeps the slot occupied.
         static string CachedPackageName(PackageItem package)
@@ -1040,6 +1067,10 @@ namespace Twinpack.Core
                 }
                 else
                     package.Dependencies ??= new List<PackageItem>();
+
+                // A caller that did not set namespace, parameters, or options (twinpack add) must not
+                // wipe the stored row. An explicit value still wins, which is how the catalog edits options.
+                PreserveUnsetReferenceSettings(config, package);
 
                 if (package.PackageVersion?.Name == null)
                 {
