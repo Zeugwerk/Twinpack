@@ -75,6 +75,7 @@
     <Compile Include="SystemTest.cs" />
     <Compile Include="TwinpackServiceTest.cs" />
     <Compile Include="PackageServerCollectionTest.cs" />
+    <Compile Include="PlcProjectFileTest.cs" />
     <Compile Include="LibraryReaderTest.cs" />
     <Compile Include="PlcLibraryPackageTest.cs" />
     <Compile Include="TwincatInstallTest.cs" />
