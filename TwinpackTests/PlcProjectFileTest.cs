@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Twinpack.Configuration;
 using Twinpack.Core;
 using Twinpack.Models;
@@ -20,6 +21,7 @@ namespace TwinpackTests
             "            <DefaultResolution>Tc3_Module, * (Beckhoff Automation GmbH)</DefaultResolution>\n" +
             "            <Namespace>Tc3_Module</Namespace>\n" +
             "            <SystemLibrary>true</SystemLibrary>\n" +
+            "            <RepositoryId>abc</RepositoryId>\n" +
             "        </PlaceholderReference>";
 
         const string ProjectXml =
@@ -33,6 +35,11 @@ namespace TwinpackTests
             "    </ItemGroup>\n" +
             "    <ItemGroup>\n" +
             ModuleReference + "\n" +
+            "        <PlaceholderReference Include=\"Tc2_System\">\n" +
+            "            <DefaultResolution>Tc2_System, * (Beckhoff Automation GmbH)</DefaultResolution>\n" +
+            "            <Namespace>Tc2_System</Namespace>\n" +
+            "            <SystemLibrary>true</SystemLibrary>\n" +
+            "        </PlaceholderReference>\n" +
             "    </ItemGroup>\n" +
             "    <ItemGroup>\n" +
             "        <PlaceholderResolution Include=\"Tc3_Module\">\n" +
@@ -65,6 +72,36 @@ namespace TwinpackTests
 
                 CollectionAssert.AreEqual(before, File.ReadAllBytes(path));
                 Assert.IsTrue(File.ReadAllBytes(path).Take(3).SequenceEqual(Encoding.UTF8.GetPreamble()));
+            });
+        }
+
+        [TestMethod]
+        public async Task Rewrite_KeepsUnmanagedChildren()
+        {
+            await WithProject(utf8Bom: false, newline: "\r\n", async (automation, path) =>
+            {
+                await automation.AddPackageAsync(Library("Tc3_Module", "3.3.24.0", "Beckhoff Automation GmbH"));
+
+                var text = File.ReadAllText(path);
+                var reference = ReferenceElement(text, "Tc3_Module");
+                Assert.AreEqual("true", reference.Element(ConfigPlcProjectFactory.TcNs + "SystemLibrary")?.Value);
+                Assert.AreEqual("abc", reference.Element(ConfigPlcProjectFactory.TcNs + "RepositoryId")?.Value);
+                Assert.AreEqual("3.3.24.0", VersionOf(reference));
+                StringAssert.Contains(text, "        <PlaceholderReference Include=\"Tc2_System\">");
+                StringAssert.Contains(text, "            <SystemLibrary>true</SystemLibrary>\n".Replace("\n", "\r\n") +
+                    "        </PlaceholderReference>");
+            });
+        }
+
+        [TestMethod]
+        public async Task NewReference_DoesNotInventSystemLibrary()
+        {
+            await WithProject(utf8Bom: false, newline: "\r\n", async (automation, path) =>
+            {
+                await automation.AddPackageAsync(Library("TwinpackIssue183", "0.0.3"));
+
+                var reference = ReferenceElement(File.ReadAllText(path), "TwinpackIssue183");
+                Assert.IsNull(reference.Element(ConfigPlcProjectFactory.TcNs + "SystemLibrary"));
             });
         }
 
@@ -120,7 +157,7 @@ namespace TwinpackTests
             }
         }
 
-        static PackageItem Library(string title, string version)
+        static PackageItem Library(string title, string version, string distributor = "Vendor")
         {
             return new PackageItem
             {
@@ -131,15 +168,32 @@ namespace TwinpackTests
                     Name = title,
                     Title = title,
                     Version = version,
-                    DistributorName = "Vendor"
+                    DistributorName = distributor
                 },
                 Config = new ConfigPlcPackage
                 {
                     Name = title,
                     Version = version,
-                    DistributorName = "Vendor"
+                    DistributorName = distributor
                 }
             };
+        }
+
+        static XElement ReferenceElement(string plcproj, string title)
+        {
+            return XDocument.Parse(plcproj)
+                .Descendants(ConfigPlcProjectFactory.TcNs + "PlaceholderReference")
+                .Single(element => element.Attribute("Include")?.Value == title);
+        }
+
+        static string VersionOf(XElement reference)
+        {
+            var resolution = reference.Element(ConfigPlcProjectFactory.TcNs + "DefaultResolution")?.Value ?? "";
+            var comma = resolution.IndexOf(',');
+            var open = resolution.IndexOf('(');
+            if (comma < 0 || open < 0)
+                return null;
+            return resolution.Substring(comma + 1, open - comma - 1).Trim();
         }
 
         static bool HasUtf8Bom(string path)

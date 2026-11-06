@@ -194,7 +194,10 @@ namespace Twinpack.Core
             ns = string.IsNullOrEmpty(namespaceOverride) ? ns : namespaceOverride;
 
             // make sure the package is not present before adding it, we have to
-            // force, because the package might not even be installed
+            // force, because the package might not even be installed.
+            // Children this writer does not own (SystemLibrary, and whatever Beckhoff adds next)
+            // are copied off the old element first. The add API cannot set them.
+            var preservedChildren = UnmanagedReferenceChildren(package);
             await RemovePackageAsync(package, forceRemoval: true);
 
             var plcConfig = _config.Projects.FirstOrDefault(x => x.Name == package.ProjectName).Plcs.FirstOrDefault(x => x.Name == package.PlcName);
@@ -226,6 +229,8 @@ namespace Twinpack.Core
                         });
 
                 AddOptions(library, package.Config?.Options);
+                foreach (var child in preservedChildren)
+                    library.Add(new XElement(child));
                 FormatLike(libraryGroup.Elements(TcNs + "LibraryReference").FirstOrDefault()
                     ?? referencesGroup?.Elements(TcNs + "PlaceholderReference").FirstOrDefault(), library);
                 AppendPlcItem(referencesGroup, library);
@@ -254,6 +259,8 @@ namespace Twinpack.Core
 
                 AddOptions(reference, package.Config?.Options);
                 AddParameters(reference, package.Config?.Parameters);
+                foreach (var child in preservedChildren)
+                    reference.Add(new XElement(child));
                 FormatLike(referencesGroup.Elements(TcNs + "PlaceholderReference").FirstOrDefault(), reference);
                 AppendPlcItem(referencesGroup, reference);
 
@@ -466,6 +473,59 @@ namespace Twinpack.Core
             }
 
             SavePlcProject(xdoc, plc.FilePath);
+        }
+
+        static readonly HashSet<string> ManagedReferenceChildren = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "DefaultResolution",
+            "Namespace",
+            "Parameters",
+            "Optional",
+            "HideWhenReferencedAsDependency",
+            "PublishSymbolsInContainer",
+            "QualifiedOnly"
+        };
+
+        // The library-manager API cannot recreate a flag a TwinCAT plug-in wrote, such as SystemLibrary.
+        // Copy every child this writer does not emit itself, and leave a brand new reference without them.
+        List<XElement> UnmanagedReferenceChildren(PackageItem package)
+        {
+            var plcConfig = _config?.Projects?.FirstOrDefault(x => x.Name == package.ProjectName)
+                ?.Plcs?.FirstOrDefault(x => x.Name == package.PlcName);
+            if (plcConfig?.FilePath == null || !File.Exists(plcConfig.FilePath))
+                return new List<XElement>();
+
+            var title = package.PackageVersion?.Title;
+            if (string.IsNullOrEmpty(title))
+                return new List<XElement>();
+
+            var document = LoadPlcProject(plcConfig.FilePath);
+            XElement existing;
+            if (package.Config?.Options?.LibraryReference == true)
+            {
+                existing = document.Descendants(TcNs + "LibraryReference")
+                    .FirstOrDefault(element => LibraryReferenceTitle(element) == title);
+            }
+            else
+            {
+                existing = document.Descendants(TcNs + "PlaceholderReference")
+                    .FirstOrDefault(element => element.Attribute("Include")?.Value == title);
+            }
+
+            if (existing == null)
+                return new List<XElement>();
+
+            return existing.Elements()
+                .Where(element => !ManagedReferenceChildren.Contains(element.Name.LocalName))
+                .Select(element => new XElement(element))
+                .ToList();
+        }
+
+        static string LibraryReferenceTitle(XElement reference)
+        {
+            var include = reference.Attribute("Include")?.Value ?? "";
+            var comma = include.IndexOf(',');
+            return (comma < 0 ? include : include.Substring(0, comma)).Trim();
         }
 
         // XDocument.Save writes a UTF-8 BOM and re-indents. A plcproj is compared in git, so a
