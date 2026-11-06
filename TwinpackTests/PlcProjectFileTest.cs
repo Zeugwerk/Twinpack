@@ -86,7 +86,8 @@ namespace TwinpackTests
                 var reference = ReferenceElement(text, "Tc3_Module");
                 Assert.AreEqual("true", reference.Element(ConfigPlcProjectFactory.TcNs + "SystemLibrary")?.Value);
                 Assert.AreEqual("abc", reference.Element(ConfigPlcProjectFactory.TcNs + "RepositoryId")?.Value);
-                Assert.AreEqual("3.3.24.0", VersionOf(reference));
+                Assert.AreEqual("*", VersionOf(reference));
+                StringAssert.Contains(ResolutionOf(text, "Tc3_Module"), "3.3.24.0");
                 StringAssert.Contains(text, "        <PlaceholderReference Include=\"Tc2_System\">");
                 StringAssert.Contains(text, "            <SystemLibrary>true</SystemLibrary>\n".Replace("\n", "\r\n") +
                     "        </PlaceholderReference>");
@@ -100,8 +101,11 @@ namespace TwinpackTests
             {
                 await automation.AddPackageAsync(Library("TwinpackIssue183", "0.0.3"));
 
-                var reference = ReferenceElement(File.ReadAllText(path), "TwinpackIssue183");
+                var text = File.ReadAllText(path);
+                var reference = ReferenceElement(text, "TwinpackIssue183");
                 Assert.IsNull(reference.Element(ConfigPlcProjectFactory.TcNs + "SystemLibrary"));
+                Assert.AreEqual("*", VersionOf(reference));
+                StringAssert.Contains(ResolutionOf(text, "TwinpackIssue183"), "0.0.3");
             });
         }
 
@@ -184,6 +188,14 @@ namespace TwinpackTests
             return XDocument.Parse(plcproj)
                 .Descendants(ConfigPlcProjectFactory.TcNs + "PlaceholderReference")
                 .Single(element => element.Attribute("Include")?.Value == title);
+        }
+
+        static string ResolutionOf(string plcproj, string title)
+        {
+            return XDocument.Parse(plcproj)
+                .Descendants(ConfigPlcProjectFactory.TcNs + "PlaceholderResolution")
+                .Single(element => element.Attribute("Include")?.Value == title)
+                .Element(ConfigPlcProjectFactory.TcNs + "Resolution")?.Value ?? "";
         }
 
         static string VersionOf(XElement reference)

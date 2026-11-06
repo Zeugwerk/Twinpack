@@ -252,7 +252,9 @@ namespace Twinpack.Core
                 var reference = new XElement(TcNs + "PlaceholderReference",
                         new XAttribute("Include", package.PackageVersion.Title),
                         new List<XElement> {
-                            new XElement(TcNs + "DefaultResolution", $"{package.PackageVersion.Title}, {(TwinCATLibraryVersion(package.Config.Version) ?? "*")} ({distributorName})"),
+                            // The placeholder default stays "*". A version in the config is the project pin
+                            // and is written into Resolution below, not into the default.
+                            new XElement(TcNs + "DefaultResolution", $"{package.PackageVersion.Title}, * ({distributorName})"),
                             new XElement(TcNs + "Namespace", ns),
                         }
                     );
