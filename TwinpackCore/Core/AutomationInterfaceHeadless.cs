@@ -272,6 +272,14 @@ namespace Twinpack.Core
                 AppendPlcItem(resolutionsGroup, resolution);
             }
 
+            if (preservedChildren.Count > 0)
+            {
+                _logger.Info("[reference] keeping {0} existing element(s) on {1}: {2}",
+                    preservedChildren.Count,
+                    package.PackageVersion.Title,
+                    string.Join(", ", preservedChildren.Select(DescribePreservedChild)));
+            }
+
             SavePlcProject(xdoc, plcConfig.FilePath);
         }
 
@@ -519,6 +527,14 @@ namespace Twinpack.Core
                 .Where(element => !ManagedReferenceChildren.Contains(element.Name.LocalName))
                 .Select(element => new XElement(element))
                 .ToList();
+        }
+
+        static string DescribePreservedChild(XElement element)
+        {
+            if (!element.HasElements)
+                return element.Name.LocalName + "=" + element.Value;
+
+            return element.Name.LocalName;
         }
 
         static string LibraryReferenceTitle(XElement reference)
