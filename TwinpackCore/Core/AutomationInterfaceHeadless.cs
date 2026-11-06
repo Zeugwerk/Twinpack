@@ -307,7 +307,7 @@ namespace Twinpack.Core
                 {
                     var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
                     if (library.Name == package.PackageVersion.Title)
-                        g.Parent.Remove();
+                        RemovePlcItem(g.Parent);
                 }
             }
 
@@ -318,7 +318,7 @@ namespace Twinpack.Core
                 {
                     var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
                     if (library.Name == package.PackageVersion.Title)
-                        g.Parent.Remove();
+                        RemovePlcItem(g.Parent);
                 }
             }
 
@@ -334,7 +334,7 @@ namespace Twinpack.Core
                 {
                     var library = new PlcLibrary { Name = match.Groups[1].Value.Trim(), Version = match.Groups[2].Value.Trim() == "*" ? null : match.Groups[2].Value.Trim(), DistributorName = match.Groups[3].Value.Trim() };
                     if (library.Name == package.PackageVersion.Title)
-                        g.Remove();
+                        RemovePlcItem(g);
                 }
             }
 
@@ -355,16 +355,16 @@ namespace Twinpack.Core
 
             XElement element = null;
             while ((element = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "PlaceholderResolution")?.Any() == true)?.FirstOrDefault()) != null)
-                element.Remove();
+                RemovePlcItem(element);
 
             while ((element = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "PlaceholderReference")?.Any() == true)?.FirstOrDefault()) != null)
-                element.Remove();
+                RemovePlcItem(element);
 
             while ((element = project.Elements(TcNs + "ItemGroup")?.Where(x => x.Elements(TcNs + "LibraryReference")?.Any() == true)?.FirstOrDefault()) != null)
-                element.Remove();
+                RemovePlcItem(element);
 
             while ((element = project.Elements(TcNs + "ItemGroup")?.Where(e => !e.HasElements).FirstOrDefault()) != null)
-                element.Remove();
+                RemovePlcItem(element);
 
             SavePlcProject(xdoc, plcConfig.FilePath);
         }
@@ -618,8 +618,25 @@ namespace Twinpack.Core
             return "\r\n";
         }
 
+        // Removing an element leaves its indent behind. The next load joins that indent with the
+        // next one, and copying the whole run on the following edit doubles the blank lines.
+        static void RemovePlcItem(XElement element)
+        {
+            if (element == null)
+                return;
+
+            var group = element.Parent;
+            var previous = element.PreviousNode as XText;
+            element.Remove();
+            if (previous != null && string.IsNullOrWhiteSpace(previous.Value))
+                previous.Remove();
+
+            if (group != null && !group.Elements().Any())
+                RemovePlcItem(group);
+        }
+
         // A loaded plcproj stores its indentation as whitespace text nodes. New elements are inserted
-        // with the same indent as their siblings, ahead of the closing tag's whitespace.
+        // with one indent, matching their siblings, ahead of the closing tag's whitespace.
         static void AppendPlcItem(XElement parent, XElement child)
         {
             if (parent == null)
@@ -631,22 +648,41 @@ namespace Twinpack.Core
                 .FirstOrDefault(text => string.IsNullOrWhiteSpace(text.Value));
             var trailing = parent.LastNode as XText;
             var hasTrailing = trailing != null && string.IsNullOrWhiteSpace(trailing.Value);
+            var indentText = OneIndent(indent?.Value);
 
-            if (indent != null && hasTrailing)
+            if (indentText != null && hasTrailing)
             {
-                trailing.AddBeforeSelf(new XText(indent.Value));
+                trailing.AddBeforeSelf(new XText(indentText));
                 trailing.AddBeforeSelf(child);
                 return;
             }
 
-            if (indent != null)
+            if (indentText != null)
             {
-                parent.Add(new XText(indent.Value));
+                parent.Add(new XText(indentText));
                 parent.Add(child);
                 return;
             }
 
             parent.Add(child);
+        }
+
+        // The text node in front of an element can be several joined indents. Only the last line is the indent.
+        static string OneIndent(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            var lastNewLine = value.LastIndexOf('\n');
+            if (lastNewLine < 0)
+                lastNewLine = value.LastIndexOf('\r');
+            if (lastNewLine <= 0)
+                return value;
+
+            var start = lastNewLine;
+            if (value[start] == '\n' && start > 0 && value[start - 1] == '\r')
+                start--;
+            return value.Substring(start);
         }
 
         static void FormatLike(XElement template, XElement created)
@@ -666,9 +702,10 @@ namespace Twinpack.Core
             foreach (var child in children)
                 child.Remove();
 
+            var indentText = OneIndent(innerIndent.Value);
             foreach (var child in children)
             {
-                created.Add(new XText(innerIndent.Value));
+                created.Add(new XText(indentText));
                 created.Add(child);
             }
 
