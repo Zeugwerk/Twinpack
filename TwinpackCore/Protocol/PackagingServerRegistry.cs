@@ -44,14 +44,20 @@ namespace Twinpack.Protocol
             }
         }
 
-        private static async Task AddDefaultsAsync()
+        private static async Task AddDefaultsAsync(bool save)
         {
             await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase, login: false);
             await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable", login: false);
-            Save();
+            if (save)
+                Save();
         }
 
-        public static async Task InitializeAsync(bool useDefaults=false, bool login=true, bool fallbackToDefaults=false)
+        /// <summary>Loads sourceRepositories.json into <see cref="Servers"/>.</summary>
+        /// <param name="useDefaults">Replace the source list with the built-in feeds. <c>twinpack config --reset</c> uses this and saves the result.</param>
+        /// <param name="login">Log in to each enabled server with its stored credentials.</param>
+        /// <param name="fallbackToDefaults">When no sourceRepositories.json exists, use the built-in feeds.</param>
+        /// <param name="saveDefaults">When the built-in feeds are used because no file exists, write them. Read-only commands pass false. Loading an existing file does not write it.</param>
+        public static async Task InitializeAsync(bool useDefaults=false, bool login=true, bool fallbackToDefaults=false, bool saveDefaults=true)
         {
             await _initLock.WaitAsync();
             try
@@ -61,17 +67,21 @@ namespace Twinpack.Protocol
 
                 if(useDefaults)
                 {
-                    await AddDefaultsAsync();
+                    await AddDefaultsAsync(save: saveDefaults);
                     return;
                 }
 
                 try
                 {
-                    // AddDefaultsAsync already puts the default servers into _servers and writes the file.
-                    // Drop that in-memory list so the load below does not append the same repositories again.
                     if (FilePath == null && fallbackToDefaults)
                     {
-                        await AddDefaultsAsync();
+                        // Nothing on disk. Read-only callers keep the built-in feeds in memory.
+                        // A caller that wants a file (first launch of the extension) saves it,
+                        // then the load below reads it back so login follows the same path.
+                        await AddDefaultsAsync(save: saveDefaults);
+                        if (!saveDefaults)
+                            return;
+
                         _servers = new PackageServerCollection();
                     }
 
@@ -105,12 +115,10 @@ namespace Twinpack.Protocol
                     _logger.Trace(ex);
                     _logger.Warn("[config] failed to load sourceRepositories.json, using defaults");
 
-                    if(useDefaults)
-                    {
-                        await AddServerAsync("Twinpack Repository", "twinpack.dev", TwinpackServer.DefaultUrlBase);
-                        await AddServerAsync("Beckhoff Repository", "public.tcpkg.beckhoff-cloud.com (stable)", "https://public.tcpkg.beckhoff-cloud.com/api/v1/feeds/stable");
-                        Save();
-                    }
+                    // useDefaults already returned above, so this is a file that exists but
+                    // could not be read. Keep the built-in feeds in memory and leave the file alone.
+                    if (fallbackToDefaults)
+                        await AddDefaultsAsync(save: false);
                 }
             }
             finally

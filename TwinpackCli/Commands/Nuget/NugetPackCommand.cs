@@ -79,8 +79,10 @@ namespace Twinpack.Commands
             {
                 // --library-path says where the libraries are, so the target is only the folder
                 // they end up in inside the package and there is no build output to read it from.
+                // Load the saved sources when a file exists. A missing file uses the built-in
+                // feeds in memory; this command does not write sourceRepositories.json.
                 target = settings.Target ?? LibraryTargets.Default;
-                PackagingServerRegistry.InitializeAsync(useDefaults: true, login: false).GetAwaiter().GetResult();
+                PackagingServerRegistry.InitializeAsync(fallbackToDefaults: true, login: false, saveDefaults: false).GetAwaiter().GetResult();
                 plcs = ConfigPlcProjectFactory.PlcProjectsFromPath(settings.LibraryPath, PackagingServerRegistry.Servers).ToList();
             }
             else
