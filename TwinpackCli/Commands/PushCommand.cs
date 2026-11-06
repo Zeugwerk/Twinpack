@@ -15,14 +15,6 @@ namespace Twinpack.Commands
     {
         public class Settings : AbstractSettings
         {
-            [CommandOption("-u|--username")]
-            [Description("Username for Twinpack Server")]
-            public string Username { get; set; }
-
-            [CommandOption("-p|--password")]
-            [Description("Password for Twinpack Server")]
-            public string Password { get; set; }
-
             [CommandOption("--configuration")]
             [Description("Package Configuration (Release, Debug, ...)")]
             public string Configuration { get; set; }
@@ -100,10 +92,12 @@ namespace Twinpack.Commands
         {
             SetUpLogger(settings);
 
-            PackagingServerRegistry.InitializeAsync(useDefaults: true, login: false).GetAwaiter().GetResult();
+            // Read the saved sources. Credentials come from `twinpack config` (or the
+            // Twinpack environment variables), and this command does not write the file.
+            PackagingServerRegistry.InitializeAsync(fallbackToDefaults: true, login: false, saveDefaults: false).GetAwaiter().GetResult();
             _twinpack = new TwinpackService(PackagingServerRegistry.Servers);
 
-            _twinpack.LoginAsync(settings.Username, settings.Password).GetAwaiter().GetResult();
+            _twinpack.LoginAsync().GetAwaiter().GetResult();
 
             var plcs = (settings.WithoutConfig ?
                         ConfigPlcProjectFactory.PlcProjectsFromPath(settings.LibraryPath, PackagingServerRegistry.Servers) :

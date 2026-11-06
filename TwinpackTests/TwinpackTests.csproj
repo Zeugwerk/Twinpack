@@ -64,6 +64,7 @@
   <ItemGroup>
     <Compile Include="AddPlcLibraryOptionsTest.cs" />
     <Compile Include="DownloadCommandTest.cs" />
+    <Compile Include="SourceRepositoriesCommandTest.cs" />
     <Compile Include="LibraryInstallPlanTest.cs" />
     <Compile Include="AutomationInterfaceVersionTest.cs" />
     <Compile Include="ConfigFactoryTest.cs" />
