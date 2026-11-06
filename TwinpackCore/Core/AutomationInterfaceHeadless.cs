@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 using Twinpack.Configuration;
 using Twinpack.Models;
@@ -199,7 +201,7 @@ namespace Twinpack.Core
             if (plcConfig.FilePath == null || !File.Exists(plcConfig.FilePath))
                 throw new FileNotFoundException($"Plc '{plcConfig.Name}' can not be found {(plcConfig.FilePath == null ? "" : "in " + plcConfig.FilePath)}");
 
-            var xdoc = XDocument.Load(plcConfig.FilePath);
+            var xdoc = LoadPlcProject(plcConfig.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
             if (project == null)
                 throw new InvalidDataException($"{plcConfig.FilePath} is not a valid plcproj file");
@@ -214,7 +216,7 @@ namespace Twinpack.Core
                 if (libraryGroup == null)
                 {
                     libraryGroup = new XElement(TcNs + "ItemGroup");
-                    project.Add(libraryGroup);
+                    AppendPlcItem(project, libraryGroup);
                 }
 
                 var library = new XElement(TcNs + "LibraryReference",
@@ -224,20 +226,22 @@ namespace Twinpack.Core
                         });
 
                 AddOptions(library, package.Config?.Options);
-                referencesGroup.Add(library);
+                FormatLike(libraryGroup.Elements(TcNs + "LibraryReference").FirstOrDefault()
+                    ?? referencesGroup?.Elements(TcNs + "PlaceholderReference").FirstOrDefault(), library);
+                AppendPlcItem(referencesGroup, library);
             }
             else
             {
                 if (resolutionsGroup == null)
                 {
                     resolutionsGroup = new XElement(TcNs + "ItemGroup");
-                    project.Add(resolutionsGroup);
+                    AppendPlcItem(project, resolutionsGroup);
                 }
 
                 if (referencesGroup == null)
                 {
                     referencesGroup = new XElement(TcNs + "ItemGroup");
-                    project.Add(referencesGroup);
+                    AppendPlcItem(project, referencesGroup);
                 }
 
                 var reference = new XElement(TcNs + "PlaceholderReference",
@@ -250,17 +254,18 @@ namespace Twinpack.Core
 
                 AddOptions(reference, package.Config?.Options);
                 AddParameters(reference, package.Config?.Parameters);
-                referencesGroup.Add(reference);
+                FormatLike(referencesGroup.Elements(TcNs + "PlaceholderReference").FirstOrDefault(), reference);
+                AppendPlcItem(referencesGroup, reference);
 
-                resolutionsGroup.Add(
-                    new XElement(TcNs + "PlaceholderResolution",
+                var resolution = new XElement(TcNs + "PlaceholderResolution",
                         new XAttribute("Include", package.PackageVersion.Title),
                         new XElement(TcNs + "Resolution", $"{package.PackageVersion.Title}, {(TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*")} ({distributorName})")
-                     )
-                );
+                     );
+                FormatLike(resolutionsGroup.Elements(TcNs + "PlaceholderResolution").FirstOrDefault(), resolution);
+                AppendPlcItem(resolutionsGroup, resolution);
             }
 
-            xdoc.Save(plcConfig.FilePath);
+            SavePlcProject(xdoc, plcConfig.FilePath);
         }
 
         public override async System.Threading.Tasks.Task RemovePackageAsync(PackageItem package, bool uninstall = false, bool forceRemoval = false)
@@ -272,7 +277,7 @@ namespace Twinpack.Core
             if (plcConfig.FilePath == null || !File.Exists(plcConfig.FilePath))
                 throw new FileNotFoundException($"Plc '{plcConfig.Name}' can not be found {(plcConfig.FilePath == null ? "" : "in " + plcConfig.FilePath)}");
 
-            var xdoc = XDocument.Load(plcConfig.FilePath);
+            var xdoc = LoadPlcProject(plcConfig.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
             if (project == null)
                 throw new InvalidDataException($"{plcConfig.FilePath} is not a valid plcproj file");
@@ -316,7 +321,7 @@ namespace Twinpack.Core
                 }
             }
 
-            xdoc.Save(plcConfig.FilePath);
+            SavePlcProject(xdoc, plcConfig.FilePath);
         }
 
         public override async System.Threading.Tasks.Task RemoveAllPackagesAsync(string projectName, string plcName)
@@ -326,7 +331,7 @@ namespace Twinpack.Core
             if (plcConfig.FilePath == null || !File.Exists(plcConfig.FilePath))
                 throw new FileNotFoundException($"Plc '{plcConfig.Name}' can not be found {(plcConfig.FilePath == null ? "" : "in " + plcConfig.FilePath)}");
 
-            var xdoc = XDocument.Load(plcConfig.FilePath);
+            var xdoc = LoadPlcProject(plcConfig.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
             if (project == null)
                 throw new InvalidDataException($"{plcConfig.FilePath} is not a valid plcproj file");
@@ -344,7 +349,7 @@ namespace Twinpack.Core
             while ((element = project.Elements(TcNs + "ItemGroup")?.Where(e => !e.HasElements).FirstOrDefault()) != null)
                 element.Remove();
 
-            xdoc.Save(plcConfig.FilePath);
+            SavePlcProject(xdoc, plcConfig.FilePath);
         }
 
         public override async System.Threading.Tasks.Task InstallPackageAsync(PackageItem package, string cachePath = null)
@@ -363,7 +368,7 @@ namespace Twinpack.Core
             if (plc.FilePath == null || !File.Exists(plc.FilePath))
                 throw new FileNotFoundException($"Plc '{plc.Name}' can not be found {(plc.FilePath == null ? "" : "in " + plc.FilePath)}");
 
-            var xdoc = XDocument.Load(plc.FilePath);
+            var xdoc = LoadPlcProject(plc.FilePath);
             var project = xdoc.Elements(TcNs + "Project").FirstOrDefault();
             if (project == null)
                 throw new InvalidDataException($"{plc.FilePath} is not a valid plcproj file");
@@ -460,7 +465,137 @@ namespace Twinpack.Core
                 }
             }
 
-            xdoc.Save(plc.FilePath);
+            SavePlcProject(xdoc, plc.FilePath);
+        }
+
+        // XDocument.Save writes a UTF-8 BOM and re-indents. A plcproj is compared in git, so a
+        // one-reference edit has to keep the bytes of everything it did not change.
+        static XDocument LoadPlcProject(string path)
+        {
+            var settings = new XmlReaderSettings
+            {
+                IgnoreWhitespace = false,
+                IgnoreComments = false,
+                DtdProcessing = DtdProcessing.Prohibit,
+                XmlResolver = null
+            };
+
+            using (var stream = File.OpenRead(path))
+            using (var reader = XmlReader.Create(stream, settings))
+                return XDocument.Load(reader, LoadOptions.PreserveWhitespace);
+        }
+
+        static void SavePlcProject(XDocument document, string path)
+        {
+            var hasWhitespace = document.DescendantNodes().OfType<XText>()
+                .Any(text => text.Value.Length > 0 && string.IsNullOrWhiteSpace(text.Value));
+            var settings = new XmlWriterSettings
+            {
+                Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: FileStartsWithUtf8Bom(path)),
+                OmitXmlDeclaration = document.Declaration == null,
+                Indent = !hasWhitespace,
+                NewLineHandling = NewLineHandling.Replace,
+                NewLineChars = DetectNewLine(path)
+            };
+
+            using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
+            using (var writer = XmlWriter.Create(stream, settings))
+                document.Save(writer);
+        }
+
+        static bool FileStartsWithUtf8Bom(string path)
+        {
+            var preamble = Encoding.UTF8.GetPreamble();
+            var buffer = new byte[preamble.Length];
+            using (var stream = File.OpenRead(path))
+            {
+                var read = stream.Read(buffer, 0, buffer.Length);
+                if (read < preamble.Length)
+                    return false;
+
+                for (var i = 0; i < preamble.Length; i++)
+                {
+                    if (buffer[i] != preamble[i])
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        static string DetectNewLine(string path)
+        {
+            using (var reader = new StreamReader(path, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
+            {
+                while (reader.Peek() >= 0)
+                {
+                    var ch = (char)reader.Read();
+                    if (ch == '\r')
+                        return "\r\n";
+                    if (ch == '\n')
+                        return "\n";
+                }
+            }
+
+            return "\r\n";
+        }
+
+        // A loaded plcproj stores its indentation as whitespace text nodes. New elements are inserted
+        // with the same indent as their siblings, ahead of the closing tag's whitespace.
+        static void AppendPlcItem(XElement parent, XElement child)
+        {
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent));
+
+            var indent = parent.Elements()
+                .Select(element => element.PreviousNode)
+                .OfType<XText>()
+                .FirstOrDefault(text => string.IsNullOrWhiteSpace(text.Value));
+            var trailing = parent.LastNode as XText;
+            var hasTrailing = trailing != null && string.IsNullOrWhiteSpace(trailing.Value);
+
+            if (indent != null && hasTrailing)
+            {
+                trailing.AddBeforeSelf(new XText(indent.Value));
+                trailing.AddBeforeSelf(child);
+                return;
+            }
+
+            if (indent != null)
+            {
+                parent.Add(new XText(indent.Value));
+                parent.Add(child);
+                return;
+            }
+
+            parent.Add(child);
+        }
+
+        static void FormatLike(XElement template, XElement created)
+        {
+            if (template == null || created == null)
+                return;
+
+            var innerIndent = template.Elements()
+                .Select(element => element.PreviousNode)
+                .OfType<XText>()
+                .FirstOrDefault(text => string.IsNullOrWhiteSpace(text.Value));
+            if (innerIndent == null)
+                return;
+
+            var closing = template.LastNode as XText;
+            var children = created.Elements().ToList();
+            foreach (var child in children)
+                child.Remove();
+
+            foreach (var child in children)
+            {
+                created.Add(new XText(innerIndent.Value));
+                created.Add(child);
+            }
+
+            if (closing != null && string.IsNullOrWhiteSpace(closing.Value))
+                created.Add(new XText(closing.Value));
         }
 
         public override void SaveAsLibrary(ConfigPlcProject plc, string filePath) { }
