@@ -386,10 +386,17 @@ namespace Twinpack.Core
                     if (options?.LibraryReference == true)
                         libraryManager.AddLibrary(libraryName, version, distributorName);
                     else
-                        libraryManager.AddPlaceholder(libraryName, libraryName, version, distributorName);
+                    {
+                        // AddPlaceholder's version is the default resolution. Keep that at "*".
+                        // The build that was resolved is the effective resolution, set below.
+                        libraryManager.AddPlaceholder(libraryName, libraryName, "*", distributorName);
+                    }
                 },
                 maxRetries: 3,
                 baseDelayMs: 500);
+
+                if (options?.LibraryReference != true && !string.IsNullOrEmpty(version) && version != "*")
+                    libraryManager.SetEffectiveResolution(libraryName, libraryName, version, distributorName);
             }
             catch(Exception ex)
             {
