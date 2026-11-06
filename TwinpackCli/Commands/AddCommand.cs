@@ -47,6 +47,10 @@ namespace Twinpack.Commands
             [Description("Does not download package(s). Libraries already present in the cache folder (.Zeugwerk/libraries) are installed from there.")]
             public bool SkipDownload { get; set; }
 
+            [CommandOption("--no-dependencies")]
+            [Description("Does not add dependencies of the selected packages as direct references.")]
+            public bool NoDependencies { get; set; }
+
             [CommandOption("--headed")]
             [Description("Enables the use of the Beckhoff Automation Interface, which is required for installing and/or uninstalling packages on the target. In 'headless' mode, install operations have to be performed by Beckhoff's 'RepTool.exe'. Defaults to false")]
             public bool Headed { get; set; }
@@ -63,7 +67,13 @@ namespace Twinpack.Commands
                 TwinpackRunLog.LogBanner(_logger, "add", "Download and add package references");
 
                 var packages = CreatePackageItems(settings.Packages, settings.Versions, settings.Branches, settings.Targets, settings.Configurations, settings.ProjectName, settings.PlcName);
-                var added = _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions { ForceDownload = settings.ForceDownload, SkipDownload = settings.SkipDownload, ReapplyReferences = false }).GetAwaiter().GetResult();
+                var added = _twinpack.AddPackagesAsync(packages, new TwinpackService.AddPackageOptions
+                {
+                    ForceDownload = settings.ForceDownload,
+                    SkipDownload = settings.SkipDownload,
+                    ReapplyReferences = false,
+                    IncludeDependencies = !settings.NoDependencies
+                }).GetAwaiter().GetResult();
 
                 _logger.Info("[add] {0} package(s) added", added.Count);
                 TwinpackRunLog.LogPhaseDone(_logger, "add", sw.Elapsed.TotalSeconds);
