@@ -397,7 +397,21 @@ namespace Twinpack.Core
                 baseDelayMs: 500);
 
                 if (options?.LibraryReference != true && !string.IsNullOrEmpty(version) && version != "*")
-                    libraryManager.SetEffectiveResolution(libraryName, libraryName, version, distributorName);
+                {
+                    try
+                    {
+                        libraryManager.SetEffectiveResolution(libraryName, libraryName, version, distributorName);
+                    }
+                    catch (InvalidCastException ex)
+                    {
+                        // TwinCAT 4026 resolves a fixed library reference (ManagedLibManItem) before the
+                        // placeholder and casts it to IPlaceholderLibManItem4. The placeholder is still
+                        // added. The version is stored as its default resolution until that cast is fixed.
+                        _logger.Warn("[add] {0} {1}: SetEffectiveResolution failed ({2}). Pinning the default resolution instead.", libraryName, version, ex.Message);
+                        libraryManager.RemoveReference(libraryName);
+                        libraryManager.AddPlaceholder(libraryName, libraryName, version, distributorName);
+                    }
+                }
             }
             catch(Exception ex)
             {
