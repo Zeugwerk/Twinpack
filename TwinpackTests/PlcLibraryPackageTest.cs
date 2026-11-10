@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
+using System.Linq;
 using Twinpack.Protocol;
 
 namespace TwinpackTests
@@ -80,6 +81,39 @@ namespace TwinpackTests
             Assert.IsFalse(PlcLibraryPackage.IsLibraryFile("Tc3_Mc3Base.tml"));
             Assert.IsFalse(PlcLibraryPackage.IsLibraryFile("Tc3_Mc3Base.tmx"));
             Assert.IsFalse(PlcLibraryPackage.IsLibraryFile("browsercache"));
+        }
+
+        [TestMethod]
+        public void FixedLibraryReferenceIsNotAPlaceholder()
+        {
+            var names = PlcLibraryPackage.FixedLibraryReferences(
+                "#Tc2_Utilities\r\n" +
+                "#Tc3_GlobalTypes#9502eb1f-c858-410f-a431-cf1e6abed6ff\r\n" +
+                "Tc3_Mc3Base, 4.0.19.0 (Beckhoff Automation GmbH)\r\n" +
+                "Tc2_System, * (Beckhoff Automation GmbH)\r\n");
+
+            CollectionAssert.AreEqual(new[] { "Tc3_Mc3Base", "Tc2_System" }, names.ToList());
+        }
+
+        [TestMethod]
+        public void InstalledDependenciesFileReadsTheFixedReference()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "plc-lib-" + Path.GetRandomFileName());
+            var versionDir = Path.Combine(root, "Beckhoff Automation GmbH", "Tc3_Mc3Ptp", "4.0.19.0");
+            Directory.CreateDirectory(versionDir);
+            try
+            {
+                File.WriteAllText(Path.Combine(versionDir, "dependencies"),
+                    "Tc3_Mc3Base, 4.0.19.0 (Beckhoff Automation GmbH)\r\n#Tc3_GlobalTypes#9502eb1f-c858-410f-a431-cf1e6abed6ff\r\n");
+
+                var names = PlcLibraryPackage.ReadInstalledFixedLibraryReferences("Tc3_Mc3Ptp", "4.0.19", root);
+
+                CollectionAssert.AreEqual(new[] { "Tc3_Mc3Base" }, names.ToList());
+            }
+            finally
+            {
+                Directory.Delete(root, true);
+            }
         }
 
         [TestMethod]

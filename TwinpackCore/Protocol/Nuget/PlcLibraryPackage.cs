@@ -31,6 +31,11 @@ namespace Twinpack.Protocol
             @"^(.+),\s*(\d+(?:\.\d+){1,3})\s*\((.+)\)\s*$",
             RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+        // A dependencies-file line without a leading # is a library reference, including version "*".
+        static readonly Regex FixedLibraryReference = new Regex(
+            @"^(.+),\s*(?:\*|\d+(?:\.\d+){1,3})\s*\((.+)\)\s*$",
+            RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
         static readonly Regex TcLibraryId = new Regex(
             @"TcLibraryId\s*([^|]{1,200})\|([^|]{1,200})\|(\d+\.\d+\.\d+(?:\.\d+)?)",
             RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -92,6 +97,98 @@ namespace Twinpack.Protocol
             }
 
             return library;
+        }
+
+        /// <summary>
+        /// Library names referenced with a fixed version in a TwinCAT <c>dependencies</c> file.
+        /// Lines that start with <c>#</c> are placeholders and are ignored.
+        /// </summary>
+        public static IReadOnlyList<string> FixedLibraryReferences(string dependenciesText)
+        {
+            var names = new List<string>();
+            if (string.IsNullOrEmpty(dependenciesText))
+                return names;
+
+            foreach (var raw in dependenciesText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var line = raw.Trim();
+                if (line.Length == 0 || line[0] == '#')
+                    continue;
+
+                var match = FixedLibraryReference.Match(line);
+                if (!match.Success)
+                    continue;
+
+                var name = match.Groups[1].Value.Trim();
+                if (name.Length > 0 && !names.Exists(existing => string.Equals(existing, name, StringComparison.OrdinalIgnoreCase)))
+                    names.Add(name);
+            }
+
+            return names;
+        }
+
+        /// <summary>
+        /// Reads <c>dependencies</c> for an installed PLC library under TwinCAT's Managed Libraries folder.
+        /// </summary>
+        public static IReadOnlyList<string> ReadInstalledFixedLibraryReferences(string title, string version, string managedLibrariesRoot = null)
+        {
+            var file = InstalledDependenciesFile(title, version, managedLibrariesRoot);
+            if (file == null)
+                return new List<string>();
+
+            return FixedLibraryReferences(File.ReadAllText(file));
+        }
+
+        public static string InstalledDependenciesFile(string title, string version, string managedLibrariesRoot = null)
+        {
+            if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(version))
+                return null;
+
+            var root = managedLibrariesRoot;
+            if (string.IsNullOrEmpty(root))
+            {
+                root = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    "Beckhoff", "TwinCAT", "PlcEngineering", "Managed Libraries");
+            }
+
+            if (!Directory.Exists(root))
+                return null;
+
+            foreach (var company in Directory.EnumerateDirectories(root))
+            {
+                var titleDir = Path.Combine(company, title);
+                if (!Directory.Exists(titleDir))
+                    continue;
+
+                var exact = Path.Combine(titleDir, version, "dependencies");
+                if (File.Exists(exact))
+                    return exact;
+
+                foreach (var versionDir in Directory.EnumerateDirectories(titleDir))
+                {
+                    if (!VersionFolderMatches(Path.GetFileName(versionDir), version))
+                        continue;
+
+                    var candidate = Path.Combine(versionDir, "dependencies");
+                    if (File.Exists(candidate))
+                        return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        static bool VersionFolderMatches(string folder, string version)
+        {
+            if (string.Equals(folder, version, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (string.IsNullOrEmpty(folder) || string.IsNullOrEmpty(version))
+                return false;
+
+            return folder.StartsWith(version + ".", StringComparison.OrdinalIgnoreCase)
+                || version.StartsWith(folder + ".", StringComparison.OrdinalIgnoreCase);
         }
 
         public static IReadOnlyList<ExtractedPlcLibrary> DescribeAll(IEnumerable<string> libraryPaths)
