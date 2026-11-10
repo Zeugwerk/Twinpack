@@ -873,21 +873,9 @@ namespace Twinpack.Core
                 }
             }
 
-            // A fixed library reference (no leading # in the parent's dependencies file) is already
-            // bound to a version. Adding it again as a placeholder makes SetEffectiveResolution cast
-            // that managed library to a placeholder.
-            var fixedReferences = FixedLibraryReferencesInBatch(affectedPackages);
-
             // add affected packages as references
             foreach (var package in affectedPackages.Where(x => x.PackageVersion?.Name != null))
             {
-                var libraryTitle = LibraryTitle(package);
-                if (!string.IsNullOrEmpty(libraryTitle) && fixedReferences.Contains(libraryTitle))
-                {
-                    _logger.Info("[add] {0} is a fixed library reference of another library in this update, placeholder is not added", libraryTitle);
-                    continue;
-                }
-
                 _logger.Info("[add] {0} {1} (distributor: {2}) to {3}/{4}", package.PackageVersion.Name, package.PackageVersion.Version, package.PackageVersion.DistributorName, package.ProjectName, package.PlcName);
 
                 if (automationInterface != null && (options?.UpdatePlc == null || options?.UpdatePlc == true))
@@ -1051,32 +1039,6 @@ namespace Twinpack.Core
         static string CachedPackageName(PackageItem package)
         {
             return package?.PackageVersion?.Name ?? package?.Config?.Name;
-        }
-
-        static string LibraryTitle(PackageItem package)
-        {
-            var title = package?.PackageVersion?.Title;
-            if (!string.IsNullOrEmpty(title))
-                return title;
-
-            var name = package?.PackageVersion?.Name;
-            if (string.IsNullOrEmpty(name))
-                return null;
-
-            var last = name.Split('.').LastOrDefault();
-            return string.IsNullOrEmpty(last) ? name : last;
-        }
-
-        static HashSet<string> FixedLibraryReferencesInBatch(IEnumerable<PackageItem> packages)
-        {
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var package in packages ?? Enumerable.Empty<PackageItem>())
-            {
-                foreach (var reference in PlcLibraryPackage.ReadInstalledFixedLibraryReferences(LibraryTitle(package), package?.PackageVersion?.Version))
-                    names.Add(reference);
-            }
-
-            return names;
         }
 
         private static async Task<List<PackageItem>> AffectedPackagesAsync(IAutomationInterface automationInterface, PackageServerCollection packageServers, List<PackageItem> packages, List<PackageItem> cache, bool includeDependencies = true, Config config = null, CancellationToken cancellationToken = default)
