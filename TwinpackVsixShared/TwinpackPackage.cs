@@ -92,6 +92,7 @@ namespace Twinpack
         static TwinpackPackage()
         {
             NewtonsoftJsonAssemblyResolver.EnsureRegistered();
+            LibAssemblyResolver.EnsureRegistered();
         }
 
         public TwinpackPackage() : base()

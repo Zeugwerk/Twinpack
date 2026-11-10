@@ -1,0 +1,112 @@
+<Project>
+  <!--
+    System.Text.Json and the assemblies it needs to load live under lib, not the extension root.
+    The root is on the fusion probe path, so a JSON DLL there is loaded for every request,
+    including Beckhoff's in-shell test client. Assemblies the extension itself references stay
+    in the root and are copied into lib as well.
+  -->
+  <Target Name="StageLibAssemblies" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <_LibMoved Include="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'System.Text.Json' or '%(Filename)' == 'System.Text.Encodings.Web' or '%(Filename)' == 'Microsoft.Bcl.AsyncInterfaces'" />
+      <_LibKept Include="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'System.Runtime.CompilerServices.Unsafe' or '%(Filename)' == 'System.Buffers' or '%(Filename)' == 'System.Numerics.Vectors' or '%(Filename)' == 'System.Threading.Tasks.Extensions' or '%(Filename)' == 'System.ValueTuple' or '%(Filename)' == 'System.Memory'" />
+      <_MemoryRef Include="@(ReferencePath)" Condition="'%(Filename)' == 'System.Memory'" />
+      <ReferenceCopyLocalPaths Remove="@(_LibMoved)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_MemoryLibPath>$([System.String]::Copy('%(_MemoryRef.Identity)').Replace('\ref\', '\lib\'))</_MemoryLibPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <_MemoryAlready Include="@(_LibKept)" Condition="'%(Filename)' == 'System.Memory'" />
+    </ItemGroup>
+    <ItemGroup>
+      <_LibKept Include="$(_MemoryLibPath)" Condition="'@(_MemoryAlready)' == '' and '$(_MemoryLibPath)' != '' and Exists('$(_MemoryLibPath)')" />
+    </ItemGroup>
+    <MakeDir Directories="$(OutputPath)lib" Condition="'@(_LibMoved)' != '' or '@(_LibKept)' != ''" />
+    <Copy SourceFiles="@(_LibMoved);@(_LibKept)" DestinationFolder="$(OutputPath)lib\" SkipUnchangedFiles="true" Condition="'@(_LibMoved)' != '' or '@(_LibKept)' != ''" />
+    <Delete Files="$(OutputPath)System.Text.Json.dll;$(OutputPath)System.Text.Encodings.Web.dll;$(OutputPath)Microsoft.Bcl.AsyncInterfaces.dll;$(OutputPath)System.IO.Pipelines.dll" />
+  </Target>
+
+  <Target Name="EnsureLibOverlayPackages" BeforeTargets="StageLibJsonSideBySide;OverlayLibJson" Condition="'$(PrivateLibJsonVersion)' != '' or '$(PrivateLibJsonSideVersion)' != ''">
+    <PropertyGroup>
+      <_JsonPkgVersion Condition="'$(PrivateLibJsonVersion)' != ''">$(PrivateLibJsonVersion)</_JsonPkgVersion>
+      <_JsonPkgVersion Condition="'$(_JsonPkgVersion)' == ''">$(PrivateLibJsonSideVersion)</_JsonPkgVersion>
+      <_AsyncPkg>$(NuGetPackageRoot)microsoft.bcl.asyncinterfaces\$(_JsonPkgVersion)</_AsyncPkg>
+      <_AsyncNupkg>$(IntermediateOutputPath)microsoft.bcl.asyncinterfaces.$(_JsonPkgVersion).nupkg</_AsyncNupkg>
+    </PropertyGroup>
+    <DownloadFile SourceUrl="https://api.nuget.org/v3-flatcontainer/microsoft.bcl.asyncinterfaces/$(_JsonPkgVersion)/microsoft.bcl.asyncinterfaces.$(_JsonPkgVersion).nupkg" DestinationFolder="$(IntermediateOutputPath)" Condition="!Exists('$(_AsyncPkg)\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll')" />
+    <Exec Command="powershell -NoProfile -Command &quot;Add-Type -AssemblyName System.IO.Compression.FileSystem; New-Item -ItemType Directory -Force -Path '$(_AsyncPkg)' | Out-Null; [IO.Compression.ZipFile]::ExtractToDirectory('$(_AsyncNupkg)', '$(_AsyncPkg)')&quot;" Condition="Exists('$(_AsyncNupkg)') and !Exists('$(_AsyncPkg)\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll')" />
+  </Target>
+
+  <!--
+    The 64-bit shell redirects System.Text.Json only through 8.0.0.5. A request for 9 has to
+    come from lib, and only the 17 projects set PrivateLibJsonVersion. The 15 projects keep
+    the 6.x file their shell can load.
+  -->
+  <Target Name="OverlayLibJson" AfterTargets="StageLibAssemblies" Condition="'$(PrivateLibJsonVersion)' != ''">
+    <ItemGroup>
+      <_OverlayTry Include="$(NuGetPackageRoot)system.text.json\$(PrivateLibJsonVersion)\lib\net462\System.Text.Json.dll" />
+      <_OverlayTry Include="$(NuGetPackageRoot)system.text.encodings.web\$(PrivateLibJsonVersion)\lib\net462\System.Text.Encodings.Web.dll" />
+      <_OverlayTry Include="$(NuGetPackageRoot)microsoft.bcl.asyncinterfaces\$(PrivateLibJsonVersion)\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll" />
+      <_OverlayTry Include="$(NuGetPackageRoot)microsoft.bcl.asyncinterfaces\$(PrivateLibJsonVersion)\lib\netstandard2.1\Microsoft.Bcl.AsyncInterfaces.dll" />
+      <_OverlayTry Include="$(NuGetPackageRoot)microsoft.bcl.asyncinterfaces\$(PrivateLibJsonVersion)\lib\netstandard2.0\Microsoft.Bcl.AsyncInterfaces.dll" />
+      <_OverlayTry Include="$(NuGetPackageRoot)system.io.pipelines\$(PrivateLibJsonVersion)\lib\net462\System.IO.Pipelines.dll" />
+      <_OverlayFile Include="@(_OverlayTry)" Condition="Exists('%(Identity)')" />
+      <_OverlayNet462 Include="@(_OverlayFile)" Condition="$([System.String]::Copy('%(Identity)').Contains('\net462\'))" />
+      <_OverlayFile Remove="@(_OverlayFile)" Condition="!$([System.String]::Copy('%(Identity)').Contains('\net462\')) and '@(_OverlayNet462)' != '' and $([System.String]::Copy('%(_OverlayNet462.Filename)').Contains('%(Filename)'))" />
+    </ItemGroup>
+    <Warning Text="lib overlay was not found for $(PrivateLibJsonVersion). Restore the PackageDownload items." Condition="'@(_OverlayFile)' == ''" />
+    <Copy SourceFiles="@(_OverlayFile)" DestinationFolder="$(OutputPath)lib\" SkipUnchangedFiles="false" Condition="'@(_OverlayFile)' != ''" />
+  </Target>
+
+  <!--
+    32-bit shells have no System.Text.Json redirect, and the extension itself is compiled
+    against 6. Keep that DLL in lib, and put 9 beside it under lib\v9 for Beckhoff's client.
+  -->
+  <Target Name="StageLibJsonSideBySide" AfterTargets="StageLibAssemblies" Condition="'$(PrivateLibJsonSideVersion)' != ''">
+    <PropertyGroup>
+      <_SideDir>$(OutputPath)lib\v$([System.Version]::Parse('$(PrivateLibJsonSideVersion)').Major)</_SideDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_SideTry Include="$(NuGetPackageRoot)system.text.json\$(PrivateLibJsonSideVersion)\lib\net462\System.Text.Json.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)system.text.encodings.web\$(PrivateLibJsonSideVersion)\lib\net462\System.Text.Encodings.Web.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)microsoft.bcl.asyncinterfaces\$(PrivateLibJsonSideVersion)\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)microsoft.bcl.asyncinterfaces\$(PrivateLibJsonSideVersion)\lib\netstandard2.1\Microsoft.Bcl.AsyncInterfaces.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)microsoft.bcl.asyncinterfaces\$(PrivateLibJsonSideVersion)\lib\netstandard2.0\Microsoft.Bcl.AsyncInterfaces.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)system.io.pipelines\$(PrivateLibJsonSideVersion)\lib\net462\System.IO.Pipelines.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)system.memory\4.5.5\lib\net461\System.Memory.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)system.runtime.compilerservices.unsafe\6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)system.buffers\4.5.1\lib\net461\System.Buffers.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)system.threading.tasks.extensions\4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)system.valuetuple\4.5.0\lib\net461\System.ValueTuple.dll" />
+      <_SideTry Include="$(NuGetPackageRoot)system.numerics.vectors\4.5.0\lib\net46\System.Numerics.Vectors.dll" />
+      <_SideFile Include="@(_SideTry)" Condition="Exists('%(Identity)')" />
+      <_SideNet462 Include="@(_SideFile)" Condition="$([System.String]::Copy('%(Identity)').Contains('\net462\'))" />
+      <_SideFile Remove="@(_SideFile)" Condition="!$([System.String]::Copy('%(Identity)').Contains('\net462\')) and '@(_SideNet462)' != '' and $([System.String]::Copy('%(_SideNet462.Filename)').Contains('%(Filename)'))" />
+    </ItemGroup>
+    <Warning Text="lib\v9 was not found for $(PrivateLibJsonSideVersion)." Condition="!Exists('$(NuGetPackageRoot)system.text.json\$(PrivateLibJsonSideVersion)\lib\net462\System.Text.Json.dll')" />
+    <MakeDir Directories="$(_SideDir)" Condition="'@(_SideFile)' != ''" />
+    <Copy SourceFiles="@(_SideFile)" DestinationFolder="$(_SideDir)\" SkipUnchangedFiles="false" Condition="'@(_SideFile)' != ''" />
+  </Target>
+
+  <Target Name="RemoveProbedAssembliesFromOutput" BeforeTargets="GetVsixSourceItems">
+    <Delete Files="$(OutputPath)System.Text.Json.dll;$(OutputPath)System.Text.Encodings.Web.dll;$(OutputPath)Microsoft.Bcl.AsyncInterfaces.dll;$(OutputPath)System.IO.Pipelines.dll" />
+  </Target>
+
+  <Target Name="AddLibAssembliesToVsix" AfterTargets="GetVsixSourceItems">
+    <ItemGroup>
+      <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'System.Text.Json' and !$([System.String]::Copy('%(Identity)').Contains('\lib\System.Text.Json.dll')) and !$([System.String]::Copy('%(Identity)').Contains('\lib\v'))" />
+      <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'System.Text.Encodings.Web' and !$([System.String]::Copy('%(Identity)').Contains('\lib\System.Text.Encodings.Web.dll')) and !$([System.String]::Copy('%(Identity)').Contains('\lib\v'))" />
+      <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'Microsoft.Bcl.AsyncInterfaces' and !$([System.String]::Copy('%(Identity)').Contains('\lib\Microsoft.Bcl.AsyncInterfaces.dll')) and !$([System.String]::Copy('%(Identity)').Contains('\lib\v'))" />
+      <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'System.IO.Pipelines' and !$([System.String]::Copy('%(Identity)').Contains('\lib\System.IO.Pipelines.dll')) and !$([System.String]::Copy('%(Identity)').Contains('\lib\v'))" />
+      <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'System.Memory' and !$([System.String]::Copy('%(Identity)').Contains('\lib\'))" />
+      <_LibVsix Include="$(OutputPath)lib\*.dll" />
+      <VSIXSourceItem Include="@(_LibVsix)">
+        <VSIXSubPath>lib</VSIXSubPath>
+      </VSIXSourceItem>
+      <_LibSide Include="$(OutputPath)lib\v9\*.dll" />
+      <VSIXSourceItem Include="@(_LibSide)">
+        <VSIXSubPath>lib\v9</VSIXSubPath>
+      </VSIXSourceItem>
+    </ItemGroup>
+  </Target>
+</Project>
