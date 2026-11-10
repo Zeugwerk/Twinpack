@@ -93,6 +93,8 @@ namespace Twinpack
 
         public TwinpackPackage() : base()
         {
+            LibAssemblyResolver.EnsureRegistered();
+
             // all context information, which is needed in all classes in the extension
             Context = new PackageContext
             {

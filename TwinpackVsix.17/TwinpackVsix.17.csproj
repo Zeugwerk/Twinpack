@@ -175,4 +175,14 @@
     </PropertyGroup>
     <XmlPoke XmlInputPath="source.extension.vsixmanifest" Value="$(Version)" Query="/d:PackageManifest/d:Metadata/d:Identity/@Version" Namespaces="$(Namespace)" />
   </Target>
+  <Import Project="..\PrivateLibAssemblies.targets" />
+  <ItemGroup>
+    <PackageDownload Include="System.Text.Json" Version="[9.0.2]" />
+    <PackageDownload Include="System.Text.Encodings.Web" Version="[9.0.2]" />
+    <PackageDownload Include="Microsoft.Bcl.AsyncInterfaces" Version="[9.0.2]" />
+    <PackageDownload Include="System.IO.Pipelines" Version="[9.0.2]" />
+  </ItemGroup>
+  <PropertyGroup>
+    <PrivateLibJsonVersion>9.0.2</PrivateLibJsonVersion>
+  </PropertyGroup>
 </Project>

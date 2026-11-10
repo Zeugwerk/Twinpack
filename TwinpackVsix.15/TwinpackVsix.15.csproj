@@ -167,4 +167,8 @@
     </PropertyGroup>
     <XmlPoke XmlInputPath="source.extension.vsixmanifest" Value="$(Version)" Query="/d:PackageManifest/d:Metadata/d:Identity/@Version" Namespaces="$(Namespace)" />
   </Target>
+  <Import Project="..\PrivateLibAssemblies.targets" />
+  <PropertyGroup>
+    <PrivateLibJsonSideVersion>9.0.2</PrivateLibJsonSideVersion>
+  </PropertyGroup>
 </Project>
