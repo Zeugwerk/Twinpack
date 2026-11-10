@@ -43,6 +43,7 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)IconCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger\VsOutputWindowTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LibAssemblyResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NewtonsoftJsonAssemblyResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PackagingServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Panels\CatalogPane.cs" />
