@@ -162,6 +162,7 @@ namespace Twinpack.Core
                 }
                 catch(Exception ex)
                 {
+                    _logger.Trace("[automation] SystemManager on thread {0}, owner {1}, apartment {2}", System.Threading.Thread.CurrentThread.ManagedThreadId, _thread.ManagedThreadId, System.Threading.Thread.CurrentThread.GetApartmentState());
                     _logger.Trace(ex);
                 }
 
