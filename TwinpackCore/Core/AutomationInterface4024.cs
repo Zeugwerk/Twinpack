@@ -45,6 +45,8 @@ namespace Twinpack.Core
 
         public override string SolutionPath { get => System.IO.Path.GetFullPath(System.IO.Path.GetDirectoryName(_visualStudio.Solution.FullName)); }
 
+        public override string SolutionProductLine => TwinCatTargets.ProductLine(_visualStudio?.UsedTcVersion);
+
         public override async Task SaveAllAsync()
         {
             await _synchronizationContext;

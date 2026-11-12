@@ -33,6 +33,7 @@ namespace Twinpack.Dialogs
         SelectionChangedEventHandler _packageServerSelectionChanged;
 
         private PackageContext _context;
+        private bool _userPickedTarget;
 
         private string _configFilePath;
         private ConfigPlcProject _plcConfig;
@@ -1255,6 +1256,8 @@ namespace Twinpack.Dialogs
             if (packageItem?.Catalog == null)
                 return;
 
+            _userPickedTarget = false;
+
             _selectedItem.Catalog = packageItem?.Catalog;
             _selectedItem.ProjectName = packageItem?.ProjectName ?? _plcConfig?.ProjectName;
             _selectedItem.PlcName = packageItem?.PlcName ?? _plcConfig?.Name;
@@ -1348,6 +1351,9 @@ namespace Twinpack.Dialogs
         private async void PackageFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
 #pragma warning restore VSTHRD100 // "async void"-Methoden vermeiden
         {
+            if (sender == TargetsView)
+                _userPickedTarget = true;
+
             if (_selectedItem.Package?.Name == null ||
                 BranchesView.SelectedIndex < 0 || TargetsView.SelectedIndex < 0 || ConfigurationsView.SelectedIndex < 0)
                 return;
@@ -1403,7 +1409,10 @@ namespace Twinpack.Dialogs
                     _selectedItem.Config.Version = item?.Version;
                     _selectedItem.Config.Branch = BranchesView.SelectedItem as string;
                     _selectedItem.Config.Configuration = ConfigurationsView.SelectedItem as string;
-                    _selectedItem.Config.Target = TargetsView.SelectedItem as string;
+                    _selectedItem.Config.Target = TwinCatTargets.TargetToStore(
+                        _selectedItem.Config.Target,
+                        TargetsView.SelectedItem as string,
+                        _userPickedTarget);
                     await _twinpack.FetchPackageAsync(_selectedItem, cancellationToken: token);
                 }
 

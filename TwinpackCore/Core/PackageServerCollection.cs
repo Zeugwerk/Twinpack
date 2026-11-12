@@ -161,9 +161,15 @@ namespace Twinpack.Core
             // and keep looking: twinpack resolve moves on until a server returns the version, and
             // restore has to do the same. The first server is only the answer when none of them have it.
             PackageItem knownPackage = null;
+            var configuredTarget = item.Target;
+            var targetCandidates = TwinCatTargets.ResolveOrder(configuredTarget, automationInterface?.SolutionProductLine);
 
             foreach (var ps in packageServer != null ? new List<IPackageServer> { packageServer } : this.Where(x => x.Connected))
             {
+                for (var targetIndex = 0; targetIndex < targetCandidates.Count; targetIndex++)
+                {
+                var candidate = targetCandidates[targetIndex];
+                item.Target = candidate;
                 var requestedBranch = item.Branch;
                 var requestedConfiguration = item.Configuration;
                 var requestedTarget = item.Target;
@@ -193,8 +199,17 @@ namespace Twinpack.Core
                             item.DistributorName = resolvedPackageVersion.DistributorName;
                     }
 
-                    if (resolvedPackageVersion == null)
-                        continue;
+                    // package-resolve answers a miss with {}. The version and latest lookups
+                    // would only repeat that miss, so try the next target before doing them.
+                    // The last target still runs those lookups, so a missing version can move
+                    // to one that exists.
+                    if (string.IsNullOrEmpty(resolvedPackageVersion?.Name)
+                        && (resolvedPackageVersion == null || targetIndex < targetCandidates.Count - 1))
+                    {
+                        var last = ps.GetType().GetProperty("LastResolved")?.GetValue(ps);
+                        var lastName = last?.GetType().GetProperty("Name")?.GetValue(last);
+                        throw new OperationCanceledException($"cont awaitNull={resolvedPackageVersion == null} lastNull={last == null} lastName={lastName} idx={targetIndex} count={targetCandidates.Count}");
+                    }
 
                     // try to get the installed package, if we can't find it at least try to resolve it
                     PackageVersionGetResponse packageVersion = resolvedPackageVersion;
@@ -261,6 +276,8 @@ namespace Twinpack.Core
                     // force the packageVersion references version even if the version was not found
                     if (packageVersion?.Name != null)
                     {
+                        // The request may have used the solution line. config.json keeps TC3.1 until the user picks a line.
+                        item.Target = TwinCatTargets.TargetToStore(configuredTarget, null, false);
                         catalogItem = new PackageItem(ps, packageVersion);
                         catalogItem.Used = packageVersion;
                         catalogItem.Config = item;
@@ -369,15 +386,18 @@ namespace Twinpack.Core
                         PlcName = plcName
                     };
                 }
+                }
             }
 
             if (knownPackage != null)
             {
+                item.Target = configuredTarget;
                 if (includeMetadata)
                     _cache[cacheKey] = knownPackage;
                 return knownPackage;
             }
 
+            item.Target = configuredTarget;
             catalogItem.Config = item;
             catalogItem.ProjectName = projectName;
             catalogItem.PlcName = plcName;

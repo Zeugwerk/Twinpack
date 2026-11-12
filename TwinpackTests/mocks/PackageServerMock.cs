@@ -18,6 +18,14 @@ namespace TwinpackTests
         public List<PackageVersionGetResponse> PackageVersionItems { get; set; } = new List<PackageVersionGetResponse>();
         public List<PackageVersionGetResponse> DownloadedPackageVersions { get; set; } = new List<PackageVersionGetResponse>();
         public List<string> ResolvedPackageNames { get; } = new List<string>();
+        public List<string> ResolvedTargets { get; } = new List<string>();
+        public List<string> VersionLookupTargets { get; } = new List<string>();
+
+        /// <summary>
+        /// package-resolve answers a miss with an empty object, not null.
+        /// </summary>
+        public bool EmptyResolveIsEmptyObject { get; set; }
+        public PackageVersionGetResponse LastResolved { get; private set; }
 
         public string ServerType => throw new NotImplementedException();
         public string Name { get; set; }
@@ -99,6 +107,7 @@ namespace TwinpackTests
         {
             if (!string.IsNullOrEmpty(library?.Name))
                 ResolvedPackageNames.Add(library.Name);
+            VersionLookupTargets.Add(target);
 
             if (FailUnversionedLookup && library.Version == null)
                 throw new InvalidOperationException("latest lookup failed");
@@ -151,28 +160,37 @@ namespace TwinpackTests
             throw new NotImplementedException();
         }
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public async Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        public Task<PackageVersionGetResponse> ResolvePackageVersionAsync(PlcLibrary library, string preferredTarget = null, string preferredConfiguration = null, string preferredBranch = null, CancellationToken cancellationToken = default)
         {
             if (!string.IsNullOrEmpty(library?.Name))
                 ResolvedPackageNames.Add(library.Name);
+            ResolvedTargets.Add(preferredTarget);
 
             if (ThrowWhenVersionMissing && !HasRequestedVersion(library))
                 throw new InvalidOperationException($"version {library.Version} is not on the server");
 
+            PackageVersionGetResponse match;
             if(string.IsNullOrEmpty(library.Version))
-                return PackageVersionItems.Where(x => x.Name == library.Name)
+                match = PackageVersionItems.Where(x => x.Name == library.Name && (string.IsNullOrEmpty(preferredTarget) || x.Target == preferredTarget))
                 .OrderByDescending(x => preferredBranch == x.Branch)
                 .ThenByDescending(x => (string.IsNullOrEmpty(library.Version) || new Version(library.Version) == new Version(x.Version)))
                 .ThenByDescending(x => x.Version == null ? new Version(9, 9, 9, 9) : new Version(x.Version))
                 .FirstOrDefault();
             else
-                return PackageVersionItems.Where(x => x.Name == library.Name)
+                match = PackageVersionItems.Where(x => x.Name == library.Name && (string.IsNullOrEmpty(preferredTarget) || x.Target == preferredTarget))
                 .OrderByDescending(x => preferredBranch == x.Branch)
                 .ThenByDescending(x => (string.IsNullOrEmpty(library.Version) || new Version(library.Version) == new Version(x.Version)))
                 .ThenByDescending(x => x.Version == null ? new Version(9,9,9,9) : new Version(x.Version))
                 .FirstOrDefault();
+
+            if (match == null && EmptyResolveIsEmptyObject)
+            {
+                LastResolved = new PackageVersionGetResponse { Name = "empty-object" };
+                ResolvedTargets.Add("empty");
+                return Task.FromResult(LastResolved);
+            }
+            ResolvedTargets.Add(match == null ? "null-result" : "hit");
+            return Task.FromResult(match);
         }
 
         bool HasRequestedVersion(PlcLibrary library)

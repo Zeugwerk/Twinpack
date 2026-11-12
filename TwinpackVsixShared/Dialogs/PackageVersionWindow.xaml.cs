@@ -51,6 +51,7 @@ namespace Twinpack.Dialogs
         private Protocol.Authentication _auth;
 
         private List<string> _branches;
+        private string _solutionProductLine;
         private IEnumerable<Protocol.Api.PackageVersionGetResponse> _dependencies;
         private Protocol.Api.PackageGetResponse _package = new Protocol.Api.PackageGetResponse();
         private Protocol.Api.PackageVersionGetResponse _packageVersion = new Protocol.Api.PackageVersionGetResponse();
@@ -106,6 +107,14 @@ namespace Twinpack.Dialogs
             try
             {
                 await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Token);
+                try
+                {
+                    _solutionProductLine = _context.VisualStudio?.AutomationInterface?.SolutionProductLine;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn("[publish] solution target is unknown: {0}", ex.Message);
+                }
                 _context.Dte.ExecuteCommand("File.SaveAll");
 
                 IsEnabled = false;
@@ -273,7 +282,9 @@ namespace Twinpack.Dialogs
                 var branch = Branches.FirstOrDefault(x => x == _packageVersion?.Branch);
                 var entitlement = UserInfo?.Entitlements.FirstOrDefault(x => x.Name == _package?.Entitlement) ?? UserInfo?.Entitlements.FirstOrDefault(x => x.IsPublic);
                 var configuration = UserInfo?.Configurations.FirstOrDefault(x => x.Name == _packageVersion?.Configuration) ?? UserInfo?.Configurations.FirstOrDefault(x => x.IsPublic);
-                var target = UserInfo?.Targets.FirstOrDefault(x => x.Name == _packageVersion?.Target) ?? UserInfo?.Targets.FirstOrDefault(x => x.IsPublic);
+                var target = UserInfo?.Targets.FirstOrDefault(x => string.Equals(x.Name, _solutionProductLine, StringComparison.OrdinalIgnoreCase))
+                    ?? UserInfo?.Targets.FirstOrDefault(x => x.Name == _packageVersion?.Target)
+                    ?? UserInfo?.Targets.FirstOrDefault(x => x.IsPublic);
 
                 BranchesView.SelectedIndex = branch != null ? Branches.IndexOf(branch) : 0;
                 EntitlementView.SelectedIndex = entitlement != null ? UserInfo.Entitlements.IndexOf(entitlement) : 0;
