@@ -760,9 +760,9 @@ namespace Twinpack.Core
             return plc.Packages.Any(existing =>
                 string.Equals(existing.Name, name, StringComparison.OrdinalIgnoreCase) &&
                 SameConfiguredVersion(existing.Version, version) &&
-                SameConfiguredText(existing.Branch, package.PackageVersion.Branch, "main") &&
-                SameConfiguredText(existing.Target, package.PackageVersion.Target, "TC3.1") &&
-                SameConfiguredText(existing.Configuration, package.PackageVersion.Configuration, "Release") &&
+                SameConfiguredText(existing.Branch, package.PackageVersion.Branch, ConfigPlcPackage.DefaultBranch) &&
+                SameConfiguredText(existing.Target, package.PackageVersion.Target, ConfigPlcPackage.DefaultTarget) &&
+                SameConfiguredText(existing.Configuration, package.PackageVersion.Configuration, ConfigPlcPackage.DefaultConfiguration) &&
                 SameConfiguredText(existing.DistributorName, package.PackageVersion.DistributorName, null) &&
                 SameConfiguredText(existing.Namespace, package.Config?.Namespace, null));
         }
