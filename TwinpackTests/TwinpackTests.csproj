@@ -73,6 +73,7 @@
     <Compile Include="PackageMirrorTest.cs" />
     <Compile Include="NugetServerLoginTest.cs" />
     <Compile Include="SystemTest.cs" />
+    <Compile Include="TwinCatTargetsTest.cs" />
     <Compile Include="TwinpackServiceTest.cs" />
     <Compile Include="PackageServerCollectionTest.cs" />
     <Compile Include="PlcProjectFileTest.cs" />

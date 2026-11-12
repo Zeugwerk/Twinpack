@@ -18,6 +18,12 @@ namespace Twinpack.Core
         public IReadOnlyList<string> LicensesPaths { get; }
         public string BootFolderPath { get; }
         public string SolutionPath { get; }
+
+        /// <summary>
+        /// Product line of the open solution, for example <c>TC3.1.4024</c>.
+        /// Null when the solution line is not known.
+        /// </summary>
+        public string SolutionProductLine { get; }
         public Task<string> ResolveEffectiveVersionAsync(string projectName, string plcName, string placeholderName);
         public Task SetPackageVersionAsync(ConfigPlcProject package, CancellationToken cancellationToken = default);
         public Task<bool> IsPackageInstalledAsync(PackageItem package);

@@ -491,8 +491,8 @@ namespace TwinpackTests
                     Connected = true,
                     PackageVersionItems = new List<PackageVersionGetResponse>
                     {
-                        new PackageVersionGetResponse { Name = "SwaBase", Title = "SwaBase", Version = "7.0.0.71", Branch = "main", Target = "Other", Configuration = "Release" },
-                        new PackageVersionGetResponse { Name = "DswStep", Title = "DswStep", Version = "7.0.0.71", Branch = "main", Target = "Other", Configuration = "Release" }
+                        new PackageVersionGetResponse { Name = "SwaBase", Title = "SwaBase", Version = "7.0.0.71", Branch = "main", Target = "TC3.1", Configuration = "Release" },
+                        new PackageVersionGetResponse { Name = "DswStep", Title = "DswStep", Version = "7.0.0.71", Branch = "main", Target = "TC3.1", Configuration = "Release" }
                     }
                 };
                 var installed = new List<PackageItem>();

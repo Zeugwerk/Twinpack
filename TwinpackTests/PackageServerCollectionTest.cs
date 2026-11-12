@@ -357,5 +357,175 @@ namespace TwinpackTests
             Assert.AreEqual(newer, catalogItem.PackageServer);
             Assert.AreEqual("2.0.0.0", catalogItem.InstalledVersion);
         }
+
+        [TestMethod]
+        public async Task FetchPackageAsync_UnpinnedReferenceUsesSolutionLine()
+        {
+            var server = new PackageServerMock
+            {
+                Connected = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "LineLib", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1.4024", DistributorName = "Dist" },
+                    new PackageVersionGetResponse { Name = "LineLib", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Dist" }
+                }
+            };
+
+            var package = new ConfigPlcPackage
+            {
+                Name = "LineLib",
+                Version = "1.0.0.0",
+                Branch = "main",
+                Configuration = "Release",
+                Target = "TC3.1",
+                DistributorName = "Dist"
+            };
+
+            var catalogItem = await new PackageServerCollection { server }.FetchPackageAsync(
+                package,
+                automationInterface: new SolutionLineDouble("TC3.1.4024.59"));
+
+            Assert.AreEqual("TC3.1.4024", catalogItem.Used?.Target);
+            Assert.AreEqual("TC3.1", package.Target);
+            CollectionAssert.AreEqual(new[] { "TC3.1.4024" }, server.ResolvedTargets);
+        }
+
+        [TestMethod]
+        public async Task FetchPackageAsync_UnpinnedReferenceFallsBackToUniversal()
+        {
+            var server = new PackageServerMock
+            {
+                Connected = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "UniversalLib", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Dist" },
+                    new PackageVersionGetResponse { Name = "UniversalLib", Version = "2.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1.4026", DistributorName = "Dist" }
+                }
+            };
+
+            var package = new ConfigPlcPackage
+            {
+                Name = "UniversalLib",
+                Version = "1.0.0.0",
+                Branch = "main",
+                Configuration = "Release",
+                Target = "TC3.1",
+                DistributorName = "Dist"
+            };
+
+            var catalogItem = await new PackageServerCollection { server }.FetchPackageAsync(
+                package,
+                automationInterface: new SolutionLineDouble("TC3.1.4024.12"));
+
+            Assert.AreEqual("TC3.1", catalogItem.Used?.Target);
+            Assert.AreEqual("TC3.1", package.Target);
+            CollectionAssert.AreEqual(new[] { "TC3.1.4024", "TC3.1" }, server.ResolvedTargets);
+        }
+
+        [TestMethod]
+        public async Task FetchPackageAsync_PinnedReferenceStaysOnThatLine()
+        {
+            var server = new PackageServerMock
+            {
+                Connected = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "PinnedLib", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Dist" },
+                    new PackageVersionGetResponse { Name = "PinnedLib", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1.4026", DistributorName = "Dist" }
+                }
+            };
+
+            var package = new ConfigPlcPackage
+            {
+                Name = "PinnedLib",
+                Version = "1.0.0.0",
+                Branch = "main",
+                Configuration = "Release",
+                Target = "TC3.1.4026",
+                DistributorName = "Dist"
+            };
+
+            var catalogItem = await new PackageServerCollection { server }.FetchPackageAsync(
+                package,
+                automationInterface: new SolutionLineDouble("TC3.1.4024.59"));
+
+            Assert.AreEqual("TC3.1.4026", catalogItem.Used?.Target);
+            Assert.AreEqual("TC3.1.4026", package.Target);
+            CollectionAssert.AreEqual(new[] { "TC3.1.4026" }, server.ResolvedTargets);
+        }
+
+        [TestMethod]
+        public async Task FetchPackageAsync_EmptyResolveTriesTheNextTargetWithoutFollowUpLookups()
+        {
+            var server = new PackageServerMock
+            {
+                Connected = true,
+                EmptyResolveIsEmptyObject = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "MissLib", Version = "1.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Dist" }
+                }
+            };
+
+            var package = new ConfigPlcPackage
+            {
+                Name = "MissLib",
+                Version = "1.0.0.0",
+                Branch = "main",
+                Configuration = "Release",
+                Target = "TC3.1",
+                DistributorName = "Dist"
+            };
+
+            var catalogItem = await new PackageServerCollection { server }.FetchPackageAsync(
+                package,
+                automationInterface: new SolutionLineDouble("TC3.1.4024.59"));
+
+            Assert.AreEqual("TC3.1", catalogItem.Used?.Target);
+            Assert.AreEqual("TC3.1", package.Target);
+            CollectionAssert.AreEqual(new[] { "TC3.1.4024", "TC3.1" }, server.ResolvedTargets);
+            Assert.IsFalse(server.VersionLookupTargets.Contains("TC3.1.4024"));
+        }
+
+        [TestMethod]
+        public async Task FetchPackageAsync_EmptyResolveOnTheOnlyTargetStillLooksForAnotherVersion()
+        {
+            var server = new PackageServerMock
+            {
+                Connected = true,
+                EmptyResolveIsEmptyObject = true,
+                PackageVersionItems = new List<PackageVersionGetResponse>
+                {
+                    new PackageVersionGetResponse { Name = "PinnedMiss", Version = "2.0.0.0", Branch = "main", Configuration = "Release", Target = "TC3.1", DistributorName = "Dist" }
+                }
+            };
+
+            var package = new ConfigPlcPackage
+            {
+                Name = "PinnedMiss",
+                Version = "1.0.0.0",
+                Branch = "main",
+                Configuration = "Release",
+                Target = "TC3.1.4026",
+                DistributorName = "Dist"
+            };
+
+            await new PackageServerCollection { server }.FetchPackageAsync(
+                package,
+                automationInterface: new SolutionLineDouble("TC3.1.4024.59"));
+
+            Assert.AreEqual("TC3.1.4026", string.Join("|", server.ResolvedTargets) + " // " + string.Join("|", server.VersionLookupTargets));
+        }
+
+        class SolutionLineDouble : AutomationInterfaceHeadless
+        {
+            public SolutionLineDouble(string line) : base(new Config { WorkingDirectory = System.IO.Path.GetTempPath() })
+            {
+                Line = line;
+            }
+
+            public string Line { get; }
+            public override string SolutionProductLine => Line;
+        }
     }
 }
