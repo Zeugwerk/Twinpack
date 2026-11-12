@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Twinpack.Models;
@@ -78,6 +81,7 @@ namespace Twinpack.Configuration
         public string ServerInstance { get; set; }
     }
 
+    [JsonConverter(typeof(ConfigPlcPackageConverter))]
     public class ConfigPlcPackage
     {
         /// <summary>
@@ -133,12 +137,16 @@ namespace Twinpack.Configuration
             Options = pv.Options;
         }
 
+        public const string DefaultBranch = "main";
+        public const string DefaultTarget = "TC3.1";
+        public const string DefaultConfiguration = "Release";
+
         public ConfigPlcPackage()
         {
             Name = "";
-            Branch = "main";
-            Target = "TC3.1";
-            Configuration = "Release";
+            Branch = DefaultBranch;
+            Target = DefaultTarget;
+            Configuration = DefaultConfiguration;
             Version = null;
             DistributorName = null;
             Namespace = null;
@@ -154,17 +162,17 @@ namespace Twinpack.Configuration
         [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [DefaultValue("main")]
+        [DefaultValue(DefaultBranch)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("branch")]
         public string Branch { get; set; }
 
-        [DefaultValue("TC3.1")]
+        [DefaultValue(DefaultTarget)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("target")]
         public string Target { get; set; }
         
-        [DefaultValue("Release")]
+        [DefaultValue(DefaultConfiguration)]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("configuration")]
         public string Configuration { get; set; }
@@ -189,6 +197,150 @@ namespace Twinpack.Configuration
         [JsonPropertyName("options")]
         public AddPlcLibraryOptions Options { get; set; }
         
+    }
+
+    /// <summary>
+    /// System.Text.Json ignores <see cref="DefaultValueAttribute"/> and only skips the CLR
+    /// default, so branch "main", target "TC3.1" and configuration "Release" would always be
+    /// written. This converter omits those configured defaults from config.json and still
+    /// restores them when a file leaves the fields out.
+    /// </summary>
+    public sealed class ConfigPlcPackageConverter : JsonConverter<ConfigPlcPackage>
+    {
+        private sealed class Member
+        {
+            public PropertyInfo Property;
+            public string Name;
+            public JsonIgnoreCondition? Condition;
+            public object DefaultValue;
+            public bool HasDefaultValue;
+        }
+
+        private static readonly Member[] Members = typeof(ConfigPlcPackage)
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+            .Where(property => property.CanRead && property.CanWrite && property.GetIndexParameters().Length == 0)
+            .OrderBy(property => property.MetadataToken)
+            .Select(property =>
+            {
+                var ignore = property.GetCustomAttribute<JsonIgnoreAttribute>();
+                var configuredDefault = property.GetCustomAttribute<DefaultValueAttribute>();
+                return new Member
+                {
+                    Property = property,
+                    Name = property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? property.Name,
+                    Condition = ignore == null ? (JsonIgnoreCondition?)null : ignore.Condition,
+                    DefaultValue = configuredDefault == null ? null : configuredDefault.Value,
+                    HasDefaultValue = configuredDefault != null
+                };
+            })
+            .ToArray();
+
+        public override ConfigPlcPackage Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            using (var document = JsonDocument.ParseValue(ref reader))
+            {
+                if (document.RootElement.ValueKind != JsonValueKind.Object)
+                    throw new JsonException("A package entry must be a JSON object.");
+
+                var package = new ConfigPlcPackage();
+                var ignoreCase = options.PropertyNameCaseInsensitive;
+                foreach (var member in Members)
+                {
+                    JsonElement element;
+                    if (!TryGetProperty(document.RootElement, member.Name, ignoreCase, out element))
+                        continue;
+
+                    member.Property.SetValue(package, JsonSerializer.Deserialize(element.GetRawText(), member.Property.PropertyType, options));
+                }
+
+                return package;
+            }
+        }
+
+        public override void Write(Utf8JsonWriter writer, ConfigPlcPackage value, JsonSerializerOptions options)
+        {
+            writer.WriteStartObject();
+            foreach (var member in Members)
+            {
+                var current = member.Property.GetValue(value);
+                if (member.HasDefaultValue
+                    && member.Condition == JsonIgnoreCondition.WhenWritingDefault
+                    && ValuesEqual(member.DefaultValue, current))
+                {
+                    current = null;
+                }
+
+                var condition = member.Condition ?? options.DefaultIgnoreCondition;
+                if (ShouldSkip(condition, current, member.Property.PropertyType))
+                    continue;
+
+                writer.WritePropertyName(member.Name);
+                JsonSerializer.Serialize(writer, current, member.Property.PropertyType, options);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        private static bool TryGetProperty(JsonElement obj, string name, bool ignoreCase, out JsonElement value)
+        {
+            if (!ignoreCase)
+                return obj.TryGetProperty(name, out value);
+
+            foreach (var property in obj.EnumerateObject())
+            {
+                if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = property.Value;
+                    return true;
+                }
+            }
+
+            value = default(JsonElement);
+            return false;
+        }
+
+        private static bool ValuesEqual(object expected, object actual)
+        {
+            if (expected == null)
+                return actual == null;
+            if (actual == null)
+                return false;
+
+            var expectedText = expected as string;
+            var actualText = actual as string;
+            if (expectedText != null && actualText != null)
+                return string.Equals(actualText, expectedText, StringComparison.OrdinalIgnoreCase);
+
+            return expected.Equals(actual);
+        }
+
+        private static bool ShouldSkip(JsonIgnoreCondition condition, object value, Type type)
+        {
+            switch (condition)
+            {
+                case JsonIgnoreCondition.Always:
+                    return true;
+                case JsonIgnoreCondition.Never:
+                    return false;
+                case JsonIgnoreCondition.WhenWritingNull:
+                    return value == null;
+                case JsonIgnoreCondition.WhenWritingDefault:
+                    return IsClrDefault(value, type);
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsClrDefault(object value, Type type)
+        {
+            if (value == null)
+                return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
+            if (!type.IsValueType)
+                return false;
+
+            var underlying = Nullable.GetUnderlyingType(type) ?? type;
+            return value.Equals(Activator.CreateInstance(underlying));
+        }
     }
 
     // This class is used for deserializing a json config file

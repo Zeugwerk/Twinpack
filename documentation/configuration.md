@@ -10,7 +10,7 @@ To generate the config file, navigate to the [Twinpack Catalog](#using-a-package
 - Integration with [zkbuild](https://github.com/Zeugwerk/zkbuild-action) for automatically building your project and optionally creating a TwinCAT library whenever you commit to GitHub
 - Your TwinCAT Solution can directly be used with [zkdoc](https://github.com/Zeugwerk/zkdoc-action) to create a documentation for your PLC right on GitHub (or any other target), for instance see [here](https://stefanbesler.github.io/struckig/).
 
-A typcial configuration file for a solution with 1 PLC looks like this (Twinpack generates this for you automatically)
+A typcial configuration file for a solution with 1 PLC looks like this (Twinpack generates this for you automatically). `branch`, `target` and `configuration` are left out when they are the defaults (`main`, `TC3.1` and `Release`).
 
 ```json
 {
@@ -30,7 +30,6 @@ A typcial configuration file for a solution with 1 PLC looks like this (Twinpack
               "repository": "bot",
               "name": "ZCore",
               "branch": "release/1.2",
-              "target": "TC3.1",
               "configuration": "Distribution",
               "distributor-name": "Zeugwerk GmbH"
             }

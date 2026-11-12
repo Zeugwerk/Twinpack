@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Twinpack.Configuration;
 using Twinpack.Models;
@@ -227,6 +228,111 @@ namespace TwinpackTests
             Assert.AreEqual("My Company", plc.DistributorName);
             Assert.AreEqual(1, plc.Packages.Count);
             Assert.AreEqual("ZCore", plc.Packages.Single().Name);
+        }
+
+        [TestMethod]
+        public void Save_OmitsDefaultBranchTargetAndConfiguration()
+        {
+            var dir = Path.Combine(Path.GetTempPath(), "twinpack-config-defaults-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var defaults = new ConfigPlcPackage
+                {
+                    Name = "ZCore",
+                    Version = "1.2.0.0",
+                    Branch = "Main",
+                    Target = "tc3.1",
+                    Configuration = "release",
+                    DistributorName = "Zeugwerk GmbH"
+                };
+                var pinned = new ConfigPlcPackage
+                {
+                    Name = "Struckig",
+                    Version = "0.12.0.0",
+                    Branch = "release/0.12",
+                    Target = "TC3.1.4024.56",
+                    Configuration = "Snapshot",
+                    DistributorName = "Stefan Besler",
+                    Namespace = "Struckig",
+                    Parameters = new Dictionary<string, string> { { "gain", "1" } },
+                    Options = new AddPlcLibraryOptions { QualifiedOnly = true }
+                };
+                var unset = new ConfigPlcPackage { Name = "Unset" };
+                var config = new Config
+                {
+                    FilePath = Path.Combine(dir, "config.json"),
+                    Solution = "Demo.sln",
+                    Projects = new List<ConfigProject>
+                    {
+                        new ConfigProject
+                        {
+                            Name = "Demo",
+                            Plcs = new List<ConfigPlcProject>
+                            {
+                                new ConfigPlcProject
+                                {
+                                    Name = "Plc",
+                                    Version = "1.0.0.0",
+                                    Type = "Application",
+                                    DistributorName = "Zeugwerk GmbH",
+                                    Packages = new List<ConfigPlcPackage> { defaults, pinned, unset }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                ConfigFactory.Save(config);
+                var json = File.ReadAllText(config.FilePath);
+
+                Assert.IsFalse(json.Contains("\"branch\": \"main\""));
+                Assert.IsFalse(json.Contains("\"branch\": \"Main\""));
+                Assert.IsFalse(json.Contains("\"target\": \"TC3.1\""));
+                Assert.IsFalse(json.Contains("\"target\": \"tc3.1\""));
+                Assert.IsFalse(json.Contains("\"configuration\": \"Release\""));
+                Assert.IsFalse(json.Contains("\"configuration\": \"release\""));
+                StringAssert.Contains(json, "\"branch\": \"release/0.12\"");
+                StringAssert.Contains(json, "\"target\": \"TC3.1.4024.56\"");
+                StringAssert.Contains(json, "\"configuration\": \"Snapshot\"");
+                StringAssert.Contains(json, "\"namespace\": \"Struckig\"");
+                StringAssert.Contains(json, "\"gain\": \"1\"");
+                StringAssert.Contains(json, "\"qualified-only\": true");
+                StringAssert.Contains(json, "\"version\": null");
+
+                Assert.AreEqual("Main", defaults.Branch);
+                Assert.AreEqual("tc3.1", defaults.Target);
+                Assert.AreEqual("release", defaults.Configuration);
+
+                var loaded = JsonSerializer.Deserialize<Config>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var packages = loaded.Projects.Single().Plcs.Single().Packages;
+
+                var loadedDefaults = packages.Single(x => x.Name == "ZCore");
+                Assert.AreEqual("1.2.0.0", loadedDefaults.Version);
+                Assert.AreEqual(ConfigPlcPackage.DefaultBranch, loadedDefaults.Branch);
+                Assert.AreEqual(ConfigPlcPackage.DefaultTarget, loadedDefaults.Target);
+                Assert.AreEqual(ConfigPlcPackage.DefaultConfiguration, loadedDefaults.Configuration);
+                Assert.AreEqual("Zeugwerk GmbH", loadedDefaults.DistributorName);
+
+                var loadedPinned = packages.Single(x => x.Name == "Struckig");
+                Assert.AreEqual("release/0.12", loadedPinned.Branch);
+                Assert.AreEqual("TC3.1.4024.56", loadedPinned.Target);
+                Assert.AreEqual("Snapshot", loadedPinned.Configuration);
+                Assert.AreEqual("Struckig", loadedPinned.Namespace);
+                Assert.AreEqual("1", loadedPinned.Parameters["gain"]);
+                Assert.IsTrue(loadedPinned.Options.QualifiedOnly);
+                Assert.IsFalse(loadedPinned.Options.Optional);
+
+                var loadedUnset = packages.Single(x => x.Name == "Unset");
+                Assert.IsNull(loadedUnset.Version);
+                Assert.AreEqual(ConfigPlcPackage.DefaultBranch, loadedUnset.Branch);
+                Assert.IsNull(loadedUnset.DistributorName);
+            }
+            finally
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
+            }
         }
 
         [TestMethod]
