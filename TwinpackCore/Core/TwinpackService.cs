@@ -479,6 +479,7 @@ namespace Twinpack.Core
                 if (refreshUsedPackageCache)
                     _usedPackagesCache.Clear();
 
+                var solutionLine = _automationInterface?.SolutionProductLine;
                 foreach (var project in _config.Projects.Where(x => x.Name == _projectName || _projectName == null))
                 {
                     if (projectName != null && !string.Equals(project.Name, projectName, StringComparison.OrdinalIgnoreCase))
@@ -494,6 +495,12 @@ namespace Twinpack.Core
                             .Where(x => packageNames == null || packageNames.Any(n => string.Equals(n, x.Name, StringComparison.OrdinalIgnoreCase)))
                             .Where(x => _usedPackagesCache.Any(y => y.ProjectName == project.Name && y.PlcName == plc.Name && y.Catalog?.Name == x.Name) == false))
                         {
+                            if (!ConfigWhen.Applies(package.When, solutionLine))
+                            {
+                                _logger.Debug("[resolve] package {0} skipped, when.target does not match {1}", package.Name, solutionLine ?? "unknown");
+                                continue;
+                            }
+
                             PackageItem catalogItem = await _packageServers.FetchPackageAsync(project.Name, plc.Name, package, includeMetadata, _automationInterface, preferEffectiveVersionForWildcard: true, cancellationToken: token);
 
                             _usedPackagesCache.RemoveAll(x => x.ProjectName == project.Name && x.PlcName == plc.Name && !string.IsNullOrEmpty(x.Catalog?.Name) && x.Catalog?.Name == catalogItem.Catalog?.Name);
@@ -511,6 +518,7 @@ namespace Twinpack.Core
                         .Where(x => projectName == null || string.Equals(x.ProjectName, projectName, StringComparison.OrdinalIgnoreCase))
                         .Where(x => plcName == null || string.Equals(x.PlcName, plcName, StringComparison.OrdinalIgnoreCase))
                         .Where(x => packageNames == null || packageNames.Any(n => string.Equals(n, x.Config?.Name ?? x.Catalog?.Name, StringComparison.OrdinalIgnoreCase)))
+                        .Where(x => ConfigWhen.Applies(x.Config?.When, solutionLine))
                         .Where(x =>
                             searchTerm == null ||
                             x.Catalog?.DisplayName?.IndexOf(searchTerm, StringComparison.InvariantCultureIgnoreCase) >= 0 ||
@@ -909,7 +917,8 @@ namespace Twinpack.Core
                     Version = configuredVersion,
                     Options = package.Config?.Options,
                     Parameters = package.Config?.Parameters,
-                    Namespace = package.Config?.Namespace
+                    Namespace = package.Config?.Namespace,
+                    When = existingPackage?.When ?? package.Config?.When
                 };
 
                 // Callers keep editing the returned item (the catalog writes its dropdown selection

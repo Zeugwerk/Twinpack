@@ -109,6 +109,7 @@ namespace Twinpack.Configuration
             Namespace = pv.Config?.Namespace;
             Parameters = pv.Config?.Parameters;
             Options = pv.Config?.Options;
+            When = pv.Config?.When;
         }
 
         public ConfigPlcPackage(PackageVersionGetResponse pv)
@@ -122,6 +123,7 @@ namespace Twinpack.Configuration
             Namespace = null;
             Parameters = null;
             Options = null;
+            When = null;
         }
 
         public ConfigPlcPackage(ConfigPlcPackage pv)
@@ -135,6 +137,7 @@ namespace Twinpack.Configuration
             Namespace = pv.Namespace;
             Parameters = pv.Parameters;
             Options = pv.Options;
+            When = pv.When;
         }
 
         public const string DefaultBranch = "main";
@@ -152,6 +155,7 @@ namespace Twinpack.Configuration
             Namespace = null;
             Parameters = null;
             Options = null;
+            When = null;
         }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
@@ -196,7 +200,255 @@ namespace Twinpack.Configuration
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("options")]
         public AddPlcLibraryOptions Options { get; set; }
+
+        /// <summary>
+        /// Product-line filter. The <see cref="Target"/> pin is unchanged.
+        /// Omitted when there is nothing to filter.
+        /// </summary>
+        [DefaultValue(null)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("when")]
+        public ConfigWhen When { get; set; }
         
+    }
+
+    /// <summary>
+    /// Allow-list of TwinCAT targets. Each entry is an exact product line or a NuGet-style range
+    /// over the product-line build, such as <c>[TC3.1.4026,)</c>.
+    /// </summary>
+    public class ConfigWhen
+    {
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("target")]
+        public List<string> Target { get; set; }
+
+        /// <summary>
+        /// No <paramref name="when"/>, or an empty target list, matches every solution.
+        /// A restriction does not match when the solution line is unknown.
+        /// </summary>
+        public static bool Applies(ConfigWhen when, string solutionProductLine)
+        {
+            return when == null || when.Matches(solutionProductLine);
+        }
+
+        public bool Matches(string solutionProductLine)
+        {
+            if (Target == null || Target.Count == 0)
+                return true;
+
+            var line = Twinpack.Core.TwinCatTargets.ProductLine(solutionProductLine);
+            if (string.IsNullOrEmpty(line))
+                return false;
+
+            foreach (var entry in Target)
+            {
+                if (EntryMatches(entry, line))
+                    return true;
+            }
+
+            return false;
+        }
+
+        static bool EntryMatches(string entry, string solutionLine)
+        {
+            if (string.IsNullOrWhiteSpace(entry))
+                return false;
+
+            var spec = entry.Trim();
+            if (spec.Length >= 2
+                && (spec[0] == '[' || spec[0] == '(')
+                && (spec[spec.Length - 1] == ']' || spec[spec.Length - 1] == ')'))
+            {
+                return RangeMatches(spec, solutionLine);
+            }
+
+            return string.Equals(Twinpack.Core.TwinCatTargets.ProductLine(spec), solutionLine, StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool RangeMatches(string spec, string solutionLine)
+        {
+            var minInclusive = spec[0] == '[';
+            var maxInclusive = spec[spec.Length - 1] == ']';
+            var inner = spec.Substring(1, spec.Length - 2);
+            var comma = inner.IndexOf(',');
+            if (comma < 0)
+                return false;
+
+            var minText = inner.Substring(0, comma).Trim();
+            var maxText = inner.Substring(comma + 1).Trim();
+            if (minText.Length == 0 && maxText.Length == 0)
+                return false;
+
+            if (!TryGetBuild(solutionLine, out var family, out var build))
+                return false;
+
+            if (minText.Length != 0)
+            {
+                if (!TryGetBuild(Twinpack.Core.TwinCatTargets.ProductLine(minText), out var minFamily, out var minBuild))
+                    return false;
+                if (!string.Equals(family, minFamily, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                if (build < minBuild || (build == minBuild && !minInclusive))
+                    return false;
+            }
+
+            if (maxText.Length != 0)
+            {
+                if (!TryGetBuild(Twinpack.Core.TwinCatTargets.ProductLine(maxText), out var maxFamily, out var maxBuild))
+                    return false;
+                if (!string.Equals(family, maxFamily, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                if (build > maxBuild || (build == maxBuild && !maxInclusive))
+                    return false;
+            }
+
+            return true;
+        }
+
+        static bool TryGetBuild(string productLine, out string family, out int build)
+        {
+            family = null;
+            build = 0;
+            if (string.IsNullOrWhiteSpace(productLine))
+                return false;
+
+            var body = productLine.Trim();
+            if (body.StartsWith("TC", StringComparison.OrdinalIgnoreCase))
+                body = body.Substring(2);
+
+            var parts = body.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 3 || !int.TryParse(parts[2], out build))
+                return false;
+
+            family = parts[0] + "." + parts[1];
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// A TwinCAT system library stored in <c>system-references</c>.
+    /// <see cref="DistributorName"/> is omitted when empty. The legacy <c>Name=Version</c> map has no distributor.
+    /// </summary>
+    public class ConfigSystemReference
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("version")]
+        public string Version { get; set; }
+
+        [DefaultValue(null)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("distributor-name")]
+        public string DistributorName { get; set; }
+
+        [DefaultValue(null)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("when")]
+        public ConfigWhen When { get; set; }
+
+        /// <summary>
+        /// Turns a legacy <c>references</c> map into <see cref="ConfigPlcProject.SystemReferences"/>
+        /// and clears the map so the next save writes only <c>system-references</c>.
+        /// A project that already has <c>system-references</c> keeps that list and drops the map.
+        /// </summary>
+        public static void AdoptLegacyReferences(ConfigPlcProject plc)
+        {
+            if (plc == null)
+                return;
+
+            if (plc.SystemReferences != null)
+            {
+                plc.References = null;
+                return;
+            }
+
+            var legacy = plc.References;
+            plc.References = null;
+            if (legacy == null || legacy.Count == 0)
+                return;
+
+            var converted = ConvertLegacyReferences(legacy);
+            plc.SystemReferences = converted.Count == 0 ? null : converted;
+        }
+
+        static List<ConfigSystemReference> ConvertLegacyReferences(Dictionary<string, List<string>> legacy)
+        {
+            var parsed = new List<LegacyReference>();
+            foreach (var pair in legacy)
+            {
+                var key = pair.Key ?? "";
+                var everyLine = AppliesToEveryLine(key);
+                var fromStar = key.Trim() == "*";
+                var line = everyLine ? null : Twinpack.Core.TwinCatTargets.ProductLine(key);
+                if (!everyLine && string.IsNullOrEmpty(line))
+                    everyLine = true;
+
+                foreach (var entry in pair.Value ?? Enumerable.Empty<string>())
+                {
+                    if (string.IsNullOrWhiteSpace(entry))
+                        continue;
+
+                    var eq = entry.IndexOf('=');
+                    var name = (eq >= 0 ? entry.Substring(0, eq) : entry).Trim();
+                    var version = eq >= 0 ? entry.Substring(eq + 1).Trim() : "*";
+                    if (name.Length == 0)
+                        continue;
+                    if (version.Length == 0)
+                        version = "*";
+
+                    parsed.Add(new LegacyReference
+                    {
+                        Name = name,
+                        Version = version,
+                        EveryLine = everyLine,
+                        FromStar = fromStar,
+                        Line = line
+                    });
+                }
+            }
+
+            var adopted = new List<ConfigSystemReference>();
+            foreach (var group in parsed.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                var star = group.FirstOrDefault(x => x.FromStar);
+                var universal = group.FirstOrDefault(x => x.EveryLine);
+                var chosen = star ?? universal ?? group.First();
+                ConfigWhen when = null;
+                if (star == null && universal == null && !string.IsNullOrEmpty(chosen.Line))
+                {
+                    when = new ConfigWhen { Target = new List<string> { chosen.Line } };
+                }
+
+                adopted.Add(new ConfigSystemReference
+                {
+                    Name = chosen.Name,
+                    Version = chosen.Version,
+                    When = when
+                });
+            }
+
+            return adopted;
+        }
+
+        static bool AppliesToEveryLine(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return true;
+
+            var trimmed = key.Trim();
+            return trimmed == "*"
+                || string.Equals(trimmed, ConfigPlcPackage.DefaultTarget, StringComparison.OrdinalIgnoreCase);
+        }
+
+        sealed class LegacyReference
+        {
+            public string Name;
+            public string Version;
+            public bool EveryLine;
+            public bool FromStar;
+            public string Line;
+        }
     }
 
     /// <summary>
@@ -422,6 +674,14 @@ namespace Twinpack.Configuration
         public List<ConfigPlcPackage> Packages { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("system-references")]
+        public List<ConfigSystemReference> SystemReferences { get; set; }
+
+        /// <summary>
+        /// Legacy <c>Name=Version</c> map. Deserialization only. Cleared once
+        /// <see cref="SystemReferences"/> has been filled, so the next save omits it.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("references")]
         public Dictionary<String, List<String>> References { get; set; }
 
@@ -433,6 +693,123 @@ namespace Twinpack.Configuration
         [JsonPropertyName("patches")]
         public ConfigPatches Patches { get; set; }
 
+        public IEnumerable<ConfigSystemReference> ApplicableSystemReferences(string solutionProductLine)
+        {
+            return (SystemReferences ?? Enumerable.Empty<ConfigSystemReference>())
+                .Where(reference => reference != null && ConfigWhen.Applies(reference.When, solutionProductLine));
+        }
+
+    }
+
+    /// <summary>
+    /// One file applied for a TwinCAT target. <see cref="When"/> is omitted when the file applies to every line.
+    /// </summary>
+    public class ConfigTargetPatch
+    {
+        [JsonPropertyName("path")]
+        public string Path { get; set; }
+
+        [DefaultValue(null)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("when")]
+        public ConfigWhen When { get; set; }
+
+        /// <summary>
+        /// Turns a legacy <c>patches.platform</c> map into <see cref="ConfigPatches.Target"/>
+        /// and clears the map so the next save writes <c>target</c>.
+        /// A <c>target</c> list that is already present is kept, and the map is dropped.
+        /// </summary>
+        public static void AdoptLegacyPlatform(ConfigPatches patches)
+        {
+            if (patches == null)
+                return;
+
+            if (patches.Target != null)
+            {
+                patches.Platform = null;
+                return;
+            }
+
+            var legacy = patches.Platform;
+            patches.Platform = null;
+            if (legacy == null || legacy.Count == 0)
+                return;
+
+            var converted = ConvertLegacyPlatform(legacy);
+            patches.Target = converted.Count == 0 ? null : converted;
+        }
+
+        static List<ConfigTargetPatch> ConvertLegacyPlatform(IDictionary<string, List<string>> legacy)
+        {
+            var parsed = new List<LegacyPlatformPatch>();
+            foreach (var pair in legacy)
+            {
+                var key = pair.Key ?? "";
+                var everyLine = AppliesToEveryLine(key);
+                var fromStar = key.Trim() == "*";
+                var line = everyLine ? null : Twinpack.Core.TwinCatTargets.ProductLine(key);
+                if (!everyLine && string.IsNullOrEmpty(line))
+                    everyLine = true;
+
+                foreach (var entry in pair.Value ?? Enumerable.Empty<string>())
+                {
+                    if (string.IsNullOrWhiteSpace(entry))
+                        continue;
+
+                    parsed.Add(new LegacyPlatformPatch
+                    {
+                        Path = entry.Trim(),
+                        EveryLine = everyLine,
+                        FromStar = fromStar,
+                        Line = line
+                    });
+                }
+            }
+
+            var adopted = new List<ConfigTargetPatch>();
+            foreach (var group in parsed.GroupBy(x => x.Path, StringComparer.OrdinalIgnoreCase))
+            {
+                var star = group.FirstOrDefault(x => x.FromStar);
+                var universal = group.FirstOrDefault(x => x.EveryLine);
+                ConfigWhen when = null;
+                if (star == null && universal == null)
+                {
+                    var lines = group
+                        .Select(x => x.Line)
+                        .Where(x => !string.IsNullOrEmpty(x))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    if (lines.Count > 0)
+                        when = new ConfigWhen { Target = lines };
+                }
+
+                adopted.Add(new ConfigTargetPatch
+                {
+                    Path = (star ?? universal ?? group.First()).Path,
+                    When = when
+                });
+            }
+
+            return adopted;
+        }
+
+        static bool AppliesToEveryLine(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return true;
+
+            var trimmed = key.Trim();
+            return trimmed == "*"
+                || string.Equals(trimmed, ConfigPlcPackage.DefaultTarget, StringComparison.OrdinalIgnoreCase);
+        }
+
+        sealed class LegacyPlatformPatch
+        {
+            public string Path;
+            public bool EveryLine;
+            public bool FromStar;
+            public string Line;
+        }
     }
 
     public class ConfigPatches
@@ -444,6 +821,14 @@ namespace Twinpack.Configuration
             License = new ConfigLicensePatches();
         }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonPropertyName("target")]
+        public List<ConfigTargetPatch> Target { get; set; }
+
+        /// <summary>
+        /// Legacy platform map. Deserialization only. Cleared once <see cref="Target"/> has been filled.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("platform")]
         public ConfigPlatformPatches Platform { get; set; }
 

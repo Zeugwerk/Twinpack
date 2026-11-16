@@ -155,7 +155,7 @@ namespace Twinpack.Core
 
             if (removeUnlistedProjects)
             {
-                var keep = ProjectNamesToKeep(config);
+                var keep = ProjectNamesToKeep(config, tcversion);
                 foreach (EnvDTE.Project project in projects)
                 {
                     if (project == null)
@@ -193,9 +193,10 @@ namespace Twinpack.Core
         }
 
         /// <summary>
-        /// Config project names plus TwinCAT project-library placeholders (<c>[D_Core]=*</c>).
+        /// Config project names plus TwinCAT project-library placeholders (<c>[D_Core]</c>).
+        /// A system reference whose <c>when.target</c> does not match <paramref name="solutionProductLine"/> is skipped.
         /// </summary>
-        static HashSet<string> ProjectNamesToKeep(Config config)
+        static HashSet<string> ProjectNamesToKeep(Config config, string solutionProductLine)
         {
             var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (config?.Projects == null)
@@ -208,21 +209,11 @@ namespace Twinpack.Core
 
                 foreach (var plc in project.Plcs ?? Enumerable.Empty<ConfigPlcProject>())
                 {
-                    if (plc?.References == null)
-                        continue;
-                    foreach (var entries in plc.References.Values)
+                    foreach (var reference in plc?.ApplicableSystemReferences(solutionProductLine) ?? Enumerable.Empty<ConfigSystemReference>())
                     {
-                        if (entries == null)
-                            continue;
-                        foreach (var entry in entries)
-                        {
-                            if (string.IsNullOrEmpty(entry))
-                                continue;
-                            var eq = entry.IndexOf('=');
-                            var name = eq >= 0 ? entry.Substring(0, eq) : entry;
-                            if (name.Length > 2 && name[0] == '[' && name[name.Length - 1] == ']')
-                                keep.Add(name.Substring(1, name.Length - 2));
-                        }
+                        var name = reference.Name;
+                        if (name != null && name.Length > 2 && name[0] == '[' && name[name.Length - 1] == ']')
+                            keep.Add(name.Substring(1, name.Length - 2));
                     }
                 }
             }
