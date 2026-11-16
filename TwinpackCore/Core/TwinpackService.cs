@@ -1496,6 +1496,9 @@ namespace Twinpack.Core
                 // The lookup above is strict on branch, target and configuration and misses builds the caller cannot
                 // see (anonymous callers get neither Snapshot nor main), so the framework is taken from a resolve,
                 // which treats them as preferences. Being a framework library locally does not tell which framework.
+                // A build number such as TC3.1.4024.59 is not a package target: published libraries are stored as
+                // TC3.1, and package-resolve returns an empty object for the build number. Ask for the requested
+                // target, then its product line, then TC3.1, and keep the first answer that names a package.
                 var resolvedPackages = new Dictionary<string, PackageItem>();
                 async Task<PackageItem> ResolveFrameworkPackageAsync(string name, string distributorName, string branch, string target, string configuration)
                 {
@@ -1503,16 +1506,26 @@ namespace Twinpack.Core
                     var key = $"{distributorName}|{name}|{branch}|{target}|{configuration}";
                     if (!resolvedPackages.TryGetValue(key, out var resolvedPackage))
                     {
-                        resolvedPackage = await _packageServers.ResolvePackageItemAsync(
-                            name,
-                            new ResolvePackageOptions
+                        resolvedPackage = new PackageItem { PackageVersion = new PackageVersionGetResponse() };
+                        foreach (var candidate in FrameworkResolveTargets(target))
+                        {
+                            var attempt = await _packageServers.ResolvePackageItemAsync(
+                                name,
+                                new ResolvePackageOptions
+                                {
+                                    PreferredBranch = branch,
+                                    PreferredTarget = candidate,
+                                    PreferredConfiguration = configuration,
+                                    DistributorName = distributorName
+                                },
+                                cancellationToken);
+                            if (!string.IsNullOrEmpty(attempt.PackageVersion?.Name))
                             {
-                                PreferredBranch = branch,
-                                PreferredTarget = target,
-                                PreferredConfiguration = configuration,
-                                DistributorName = distributorName
-                            },
-                            cancellationToken);
+                                resolvedPackage = attempt;
+                                break;
+                            }
+                        }
+
                         resolvedPackages[key] = resolvedPackage;
                     }
 
@@ -1648,6 +1661,40 @@ namespace Twinpack.Core
                     ConfigFactory.Save(artifact.Config);
                 }
             }
+        }
+
+        /// <summary>
+        /// Targets to ask package-resolve for. <c>TC3.1.4024.59</c> becomes that value, then
+        /// <c>TC3.1.4024</c>, then <c>TC3.1</c>. An empty target is asked for once.
+        /// </summary>
+        static IEnumerable<string> FrameworkResolveTargets(string target)
+        {
+            var yielded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool Accept(string candidate)
+            {
+                return yielded.Add(candidate ?? "");
+            }
+
+            if (Accept(target))
+                yield return target;
+
+            if (string.IsNullOrEmpty(target))
+                yield break;
+
+            var body = target.Trim();
+            if (body.StartsWith("TC", StringComparison.OrdinalIgnoreCase))
+                body = body.Substring(2);
+
+            var parts = body.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 3)
+            {
+                var line = "TC" + parts[0] + "." + parts[1] + "." + parts[2];
+                if (Accept(line))
+                    yield return line;
+            }
+
+            if (Accept("TC3.1"))
+                yield return "TC3.1";
         }
     }
 }
