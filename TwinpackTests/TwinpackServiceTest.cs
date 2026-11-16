@@ -2545,5 +2545,43 @@ namespace TwinpackTests
                     Directory.Delete(directory, true);
             }
         }
+
+        [TestMethod]
+        public async Task SetPackageVersionAsync_SyncFrameworkPackages_BuildTargetFallsBackToPackageTarget()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "twinpack-set-version-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var config = BuildZPlatformConfig(directory);
+                var packageServer = BuildZeugwerkFrameworkServer();
+                var twinpack = new TwinpackService(new PackageServerCollection { packageServer }, new AutomationInterfaceHeadless(config), config);
+
+                var log = await SetPackageVersionWithLogAsync(twinpack, "1.6.0.30", new TwinpackService.SetPackageVersionOptions
+                {
+                    SyncFrameworkPackages = true,
+                    PurgePackages = true,
+                    PreferredFrameworkBranch = "release/1.6",
+                    PreferredFrameworkConfiguration = "Snapshot",
+                    PreferredFrameworkTarget = "TC3.1.4024.59"
+                });
+
+                CollectionAssert.Contains(log, "INFO [set-version] synchronizing framework packages");
+                Assert.IsFalse(log.Any(x => x.StartsWith("WARN [set-version]")));
+
+                var plc = config.Projects[0].Plcs[0];
+                Assert.AreEqual("1.6.0.30", plc.Version);
+                Assert.AreEqual("1.6.0.30", plc.Packages.Single(x => x.Name == "ZCore").Version);
+                Assert.AreEqual("0.11.0.0", plc.Packages.Single(x => x.Name == "Struckig").Version);
+
+                var plcproj = File.ReadAllText(plc.FilePath);
+                StringAssert.Contains(plcproj, "ZCore, 1.6.0.30 (Zeugwerk GmbH)");
+                Assert.IsFalse(plcproj.Contains("ZCore, 1.6.0.1 "));
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
+            }
+        }
     }
 }
