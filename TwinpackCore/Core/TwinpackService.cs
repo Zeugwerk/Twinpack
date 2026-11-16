@@ -497,7 +497,7 @@ namespace Twinpack.Core
                         {
                             if (!ConfigWhen.Applies(package.When, solutionLine))
                             {
-                                _logger.Debug("[resolve] package {0} skipped, when.target does not match {1}", package.Name, solutionLine ?? "unknown");
+                                _logger.Info("[resolve] package {0} skipped, when.target does not match {1}", package.Name, solutionLine ?? "unknown");
                                 continue;
                             }
 
@@ -918,7 +918,10 @@ namespace Twinpack.Core
                     Options = package.Config?.Options,
                     Parameters = package.Config?.Parameters,
                     Namespace = package.Config?.Namespace,
-                    When = existingPackage?.When ?? package.Config?.When
+                    When = package.Config != null && package.Config.WhenResolved
+                        ? package.Config.When
+                        : existingPackage?.When ?? package.Config?.When,
+                    WhenResolved = package.Config != null && package.Config.WhenResolved
                 };
 
                 // Callers keep editing the returned item (the catalog writes its dropdown selection
@@ -1103,6 +1106,9 @@ namespace Twinpack.Core
 
             if (includeDependencies)
             {
+                var inheritedWhen = new Dictionary<string, ConfigWhen>(StringComparer.OrdinalIgnoreCase);
+                var inheritedOpen = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
                 foreach (var package in packages)
                 {
                     foreach (var dependency in package.Dependencies ?? new List<PackageItem>())
@@ -1127,11 +1133,34 @@ namespace Twinpack.Core
                         if (existingDependencyConfig?.Parameters?.Any() == true)
                             dependency.Config.Parameters = existingDependencyConfig.Parameters;
 
-                        if (cache.Any(x => x.ProjectName == dependency.ProjectName &&
-                                           x.PlcName == dependency.PlcName &&
-                                           CachedPackageName(x) == dependency.PackageVersion?.Name) == false)
+                        var cached = cache.FirstOrDefault(x => x.ProjectName == dependency.ProjectName &&
+                                                               x.PlcName == dependency.PlcName &&
+                                                               CachedPackageName(x) == dependency.PackageVersion?.Name);
+                        // A direct reference keeps the when written on its own row.
+                        if (cached != null && packages.Contains(cached))
+                            continue;
+
+                        var key = (dependency.ProjectName ?? "") + "\n" + (dependency.PlcName ?? "") + "\n" + dependency.PackageVersion.Name;
+                        if (!inheritedOpen.ContainsKey(key))
                         {
+                            inheritedWhen[key] = ConfigWhen.Copy(existingDependencyConfig?.When);
+                            inheritedOpen[key] = false;
+                        }
+
+                        var open = inheritedOpen[key];
+                        inheritedWhen[key] = ConfigWhen.Inherit(inheritedWhen[key], package.Config?.When, ref open);
+                        inheritedOpen[key] = open;
+
+                        dependency.Config.When = inheritedWhen[key];
+                        dependency.Config.WhenResolved = true;
+
+                        if (cached == null)
                             cache.Add(dependency);
+                        else
+                        {
+                            cached.Config ??= dependency.Config;
+                            cached.Config.When = dependency.Config.When;
+                            cached.Config.WhenResolved = true;
                         }
                     }
                 }

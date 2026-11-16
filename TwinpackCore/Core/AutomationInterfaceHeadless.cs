@@ -35,12 +35,15 @@ namespace Twinpack.Core
 
         /// <summary>
         /// <paramref name="requestedTcVersion"/> is the build's <c>--tcversion</c>.
-        /// <c>TC3.1</c> leaves the choice to the XAE default, which is the latest installed
-        /// build when that setting is empty.
+        /// <c>TC3.1.4024</c> and <c>TC3.1.4026</c> select that product line.
+        /// <c>TC3.1</c> does not, because it names neither build.
         /// </summary>
         public void UseProductLine(string requestedTcVersion)
         {
-            _productLine = TwincatInstall.ResolveProductLine(requestedTcVersion);
+            ConfigWhen.EnsureCheckable(_config, requestedTcVersion);
+
+            var line = TwinCatTargets.ProductLine(requestedTcVersion);
+            _productLine = string.IsNullOrEmpty(line) || TwinCatTargets.IsUnpinned(line) ? null : line;
             if (!string.IsNullOrEmpty(_productLine))
                 _logger.Info("[target] product line {0}", _productLine);
         }

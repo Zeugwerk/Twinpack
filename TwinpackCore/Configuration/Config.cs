@@ -239,6 +239,101 @@ namespace Twinpack.Configuration
             return when == null || when.Matches(solutionProductLine);
         }
 
+        /// <summary>
+        /// A <c>when.target</c> that names a build, such as <c>[TC3.1.4026,)</c>, cannot be
+        /// checked against <c>TC3.1</c>. Returns the spec that needs more parts, or null.
+        /// The patch (a fourth part) is ignored. <c>TC3.1.4024.56</c> is specific enough.
+        /// </summary>
+        public string UnevaluableSpec(string requestedTcVersion)
+        {
+            if (Target == null || Target.Count == 0)
+                return null;
+
+            var have = VersionDepth(requestedTcVersion);
+            foreach (var entry in Target)
+            {
+                if (SpecDepth(entry) > have)
+                    return entry;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Throws when <paramref name="config"/> has a restriction the requested version cannot decide.
+        /// </summary>
+        public static void EnsureCheckable(Config config, string requestedTcVersion)
+        {
+            if (config?.Projects == null)
+                return;
+
+            foreach (var plc in config.Projects.SelectMany(project => project?.Plcs ?? Enumerable.Empty<ConfigPlcProject>()))
+            {
+                foreach (var package in plc?.Packages ?? Enumerable.Empty<ConfigPlcPackage>())
+                    Reject(requestedTcVersion, package?.Name, package?.When);
+                foreach (var reference in plc?.SystemReferences ?? Enumerable.Empty<ConfigSystemReference>())
+                    Reject(requestedTcVersion, reference?.Name, reference?.When);
+                foreach (var patch in plc?.Patches?.Target ?? Enumerable.Empty<ConfigTargetPatch>())
+                    Reject(requestedTcVersion, patch?.Path, patch?.When);
+            }
+        }
+
+        static void Reject(string requestedTcVersion, string owner, ConfigWhen when)
+        {
+            var spec = when?.UnevaluableSpec(requestedTcVersion);
+            if (spec == null)
+                return;
+
+            var passed = string.IsNullOrWhiteSpace(requestedTcVersion) ? "(none)" : requestedTcVersion.Trim();
+            var where = string.IsNullOrWhiteSpace(owner) ? "" : " on " + owner.Trim();
+            throw new InvalidOperationException(
+                "Cannot check when.target \"" + spec + "\"" + where + " with --tcversion " + passed + ". Pass TC3.1.4024 or TC3.1.4026.");
+        }
+
+        static int SpecDepth(string entry)
+        {
+            if (string.IsNullOrWhiteSpace(entry))
+                return 0;
+
+            var spec = entry.Trim();
+            if (spec.Length >= 2
+                && (spec[0] == '[' || spec[0] == '(')
+                && (spec[spec.Length - 1] == ']' || spec[spec.Length - 1] == ')'))
+            {
+                var inner = spec.Substring(1, spec.Length - 2);
+                var comma = inner.IndexOf(',');
+                if (comma < 0)
+                    return 0;
+
+                return Math.Max(VersionDepth(inner.Substring(0, comma)), VersionDepth(inner.Substring(comma + 1)));
+            }
+
+            return VersionDepth(spec);
+        }
+
+        /// <summary>Counts <c>3.1.4024</c> as 3. A patch does not add depth.</summary>
+        static int VersionDepth(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return 0;
+
+            var body = text.Trim();
+            if (body.StartsWith("TC", StringComparison.OrdinalIgnoreCase))
+                body = body.Substring(2);
+
+            var depth = 0;
+            foreach (var part in body.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (!int.TryParse(part, out _))
+                    break;
+                depth++;
+                if (depth == 3)
+                    break;
+            }
+
+            return depth;
+        }
+
         public bool Matches(string solutionProductLine)
         {
             if (Target == null || Target.Count == 0)

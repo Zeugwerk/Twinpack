@@ -1,6 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using Twinpack.Configuration;
 using Twinpack.Core;
 
 namespace TwinpackTests
@@ -153,6 +155,89 @@ namespace TwinpackTests
             {
                 Directory.Delete(fixture, recursive: true);
             }
+        }
+
+        [TestMethod]
+        public void Inherit_CopiesTheParentUnlessAnotherParentIsUnrestricted()
+        {
+            var only4026 = new ConfigWhen { Target = new List<string> { "[TC3.1.4026,)" } };
+            var open = false;
+            var inherited = ConfigWhen.Inherit(null, only4026, ref open);
+            CollectionAssert.AreEqual(new[] { "[TC3.1.4026,)" }, inherited.Target.ToArray());
+            Assert.IsFalse(open);
+
+            var also4024 = new ConfigWhen { Target = new List<string> { "TC3.1.4024" } };
+            inherited = ConfigWhen.Inherit(inherited, also4024, ref open);
+            CollectionAssert.AreEqual(new[] { "[TC3.1.4026,)", "TC3.1.4024" }, inherited.Target.ToArray());
+
+            inherited = ConfigWhen.Inherit(inherited, null, ref open);
+            Assert.IsNull(inherited);
+            Assert.IsTrue(open);
+
+            inherited = ConfigWhen.Inherit(inherited, only4026, ref open);
+            Assert.IsNull(inherited);
+            Assert.IsTrue(open);
+        }
+
+        static Config RestrictedMc3()
+        {
+            return new Config
+            {
+                Projects = new List<ConfigProject>
+                {
+                    new ConfigProject
+                    {
+                        Plcs = new List<ConfigPlcProject>
+                        {
+                            new ConfigPlcProject
+                            {
+                                Packages = new List<ConfigPlcPackage>
+                                {
+                                    new ConfigPlcPackage
+                                    {
+                                        Name = "Tc3_Mc3Ptp",
+                                        When = new ConfigWhen { Target = new List<string> { "[TC3.1.4026,)" } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        [TestMethod]
+        public void UseProductLine_RejectsTc31WhenABuildRestrictionCannotBeChecked()
+        {
+            var headless = new AutomationInterfaceHeadless(RestrictedMc3());
+
+            var error = Assert.ThrowsException<InvalidOperationException>(() => headless.UseProductLine("TC3.1"));
+
+            StringAssert.Contains(error.Message, "TC3.1");
+            StringAssert.Contains(error.Message, "[TC3.1.4026,)");
+            StringAssert.Contains(error.Message, "Tc3_Mc3Ptp");
+        }
+
+        [TestMethod]
+        public void UseProductLine_AcceptsAProductLineAgainstABuildRestriction()
+        {
+            var headless = new AutomationInterfaceHeadless(RestrictedMc3());
+
+            headless.UseProductLine("TC3.1.4024");
+            Assert.AreEqual("TC3.1.4024", headless.SolutionProductLine);
+
+            headless.UseProductLine("TC3.1.4026.14");
+            Assert.AreEqual("TC3.1.4026", headless.SolutionProductLine);
+        }
+
+        [TestMethod]
+        public void UseProductLine_AllowsTc31WhenNothingIsRestricted()
+        {
+            var headless = new AutomationInterfaceHeadless(new Config());
+
+            headless.UseProductLine("TC3.1");
+
+            Assert.IsNull(headless.SolutionProductLine);
         }
     }
 }
