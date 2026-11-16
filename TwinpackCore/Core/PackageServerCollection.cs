@@ -205,11 +205,7 @@ namespace Twinpack.Core
                     // to one that exists.
                     if (string.IsNullOrEmpty(resolvedPackageVersion?.Name)
                         && (resolvedPackageVersion == null || targetIndex < targetCandidates.Count - 1))
-                    {
-                        var last = ps.GetType().GetProperty("LastResolved")?.GetValue(ps);
-                        var lastName = last?.GetType().GetProperty("Name")?.GetValue(last);
-                        throw new OperationCanceledException($"cont awaitNull={resolvedPackageVersion == null} lastNull={last == null} lastName={lastName} idx={targetIndex} count={targetCandidates.Count}");
-                    }
+                        continue;
 
                     // try to get the installed package, if we can't find it at least try to resolve it
                     PackageVersionGetResponse packageVersion = resolvedPackageVersion;
