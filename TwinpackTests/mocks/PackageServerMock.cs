@@ -19,6 +19,13 @@ namespace TwinpackTests
         public List<PackageVersionGetResponse> DownloadedPackageVersions { get; set; } = new List<PackageVersionGetResponse>();
         public List<string> ResolvedPackageNames { get; } = new List<string>();
         public List<string> ResolvedTargets { get; } = new List<string>();
+        public List<string> VersionLookupTargets { get; } = new List<string>();
+
+        /// <summary>
+        /// When set, a resolve that finds nothing returns an object with an empty name.
+        /// A real package-resolve answers a miss with <c>{}</c>, which is not the same as no response.
+        /// </summary>
+        public bool EmptyResolveIsEmptyObject { get; set; }
 
         public string ServerType => throw new NotImplementedException();
         public string Name { get; set; }
@@ -104,6 +111,8 @@ namespace TwinpackTests
             if (FailUnversionedLookup && library.Version == null)
                 throw new InvalidOperationException("latest lookup failed");
 
+            VersionLookupTargets.Add(target);
+
             if (ThrowWhenVersionMissing && !HasRequestedVersion(library))
                 throw new InvalidOperationException($"version {library.Version} is not on the server");
 
@@ -163,27 +172,18 @@ namespace TwinpackTests
             if (ThrowWhenVersionMissing && !HasRequestedVersion(library))
                 throw new InvalidOperationException($"version {library.Version} is not on the server");
 
-            if(string.IsNullOrEmpty(library.Version))
-                return PackageVersionItems.Where(x => x.Name == library.Name && (string.IsNullOrEmpty(preferredTarget) || x.Target == preferredTarget))
+            var match = PackageVersionItems.Where(x => x.Name == library.Name && (string.IsNullOrEmpty(preferredTarget) || x.Target == preferredTarget))
                 .OrderByDescending(x => preferredBranch == x.Branch)
                 .ThenByDescending(x => (string.IsNullOrEmpty(library.Version) || new Version(library.Version) == new Version(x.Version)))
                 .ThenByDescending(x => x.Version == null ? new Version(9, 9, 9, 9) : new Version(x.Version))
                 .FirstOrDefault();
-            else
-                return PackageVersionItems.Where(x => x.Name == library.Name && (string.IsNullOrEmpty(preferredTarget) || x.Target == preferredTarget))
-                .OrderByDescending(x => preferredBranch == x.Branch)
-                .ThenByDescending(x => (string.IsNullOrEmpty(library.Version) || new Version(library.Version) == new Version(x.Version)))
-                .ThenByDescending(x => x.Version == null ? new Version(9,9,9,9) : new Version(x.Version))
-                .FirstOrDefault();
 
             // package-resolve answers a miss with {}, whose name is empty. An empty string
             // keeps that object in a Release build; a parameterless construction does not.
-            // ResolvedTargets records only the target that was asked.
             if (match == null && EmptyResolveIsEmptyObject)
                 match = new PackageVersionGetResponse { Name = "" };
 
-            LastResolved = match;
-            return Task.FromResult(match);
+            return match;
         }
 
         bool HasRequestedVersion(PlcLibrary library)
