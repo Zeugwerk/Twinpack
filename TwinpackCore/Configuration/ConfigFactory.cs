@@ -214,6 +214,8 @@ namespace Twinpack.Configuration
                             plc.RootPath = config.WorkingDirectory;
                             plc.ProjectName = project.Name;
                             plc.FilePath = plcpath ?? ConfigPlcProjectFactory.GuessFilePath(plc);
+                            ConfigSystemReference.AdoptLegacyReferences(plc);
+                            ConfigTargetPatch.AdoptLegacyPlatform(plc.Patches);
                         }
                     }
 
@@ -388,6 +390,15 @@ namespace Twinpack.Configuration
         {
             if (config.FilePath == null)
                 return null;
+
+            foreach (var project in config.Projects ?? Enumerable.Empty<ConfigProject>())
+            {
+                foreach (var plc in project.Plcs ?? Enumerable.Empty<ConfigPlcProject>())
+                {
+                    ConfigSystemReference.AdoptLegacyReferences(plc);
+                    ConfigTargetPatch.AdoptLegacyPlatform(plc.Patches);
+                }
+            }
 
             var options = new JsonSerializerOptions
             {

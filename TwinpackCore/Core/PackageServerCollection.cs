@@ -166,9 +166,10 @@ namespace Twinpack.Core
 
             foreach (var ps in packageServer != null ? new List<IPackageServer> { packageServer } : this.Where(x => x.Connected))
             {
-                for (var targetIndex = 0; targetIndex < targetCandidates.Count; targetIndex++)
+                var targetIndex = -1;
+                foreach (var candidate in targetCandidates)
                 {
-                var candidate = targetCandidates[targetIndex];
+                targetIndex++;
                 item.Target = candidate;
                 var requestedBranch = item.Branch;
                 var requestedConfiguration = item.Configuration;

@@ -237,7 +237,7 @@ namespace Twinpack.Configuration
 
 
                 // Every reference that is not resolvable as a Twinpack package is emitted as a system
-                // reference through References, with brackets/version preserved (e.g. [ZComponents]=*).
+                // reference, with brackets/version/distributor preserved (e.g. [ZComponents]=*).
                 // The obsolete Frameworks.Zeugwerk config node is no longer produced.
                 if (!isPackage)
                     systemReferences.Add(r);
@@ -247,14 +247,19 @@ namespace Twinpack.Configuration
 
             plc.Bindings = plc.Bindings ?? new Dictionary<string, List<string>>();
             plc.Patches = plc.Patches ?? new ConfigPatches();
-            plc.References = new Dictionary<string, List<string>>();
-            plc.References["*"] = new List<string>();
-            foreach (var r in systemReferences.Distinct())
-            {
-                plc.References["*"].Add($"{r.Name}={r.Version ?? "*"}");
-            }
+            plc.References = null;
+            var distinctReferences = systemReferences.Distinct().ToList();
+            plc.SystemReferences = distinctReferences.Count == 0
+                ? null
+                : distinctReferences.Select(r => new ConfigSystemReference
+                {
+                    Name = r.Name,
+                    Version = string.IsNullOrEmpty(r.Version) ? "*" : r.Version,
+                    DistributorName = string.IsNullOrWhiteSpace(r.DistributorName) ? null : r.DistributorName
+                }).ToList();
 
-            plc.Type = GuessPlcType(plc).ToString();return plc;
+            plc.Type = GuessPlcType(plc).ToString();
+            return plc;
         }
 
         public static ConfigPlcProject.PlcProjectType GuessPlcType(ConfigPlcProject plc)
@@ -268,7 +273,7 @@ namespace Twinpack.Configuration
 
             if (tasks.Count() > 0)
             {
-                return (plc.Packages.Any(x => x.Name == "TcUnit") || plc.References["*"].Any(x => x.StartsWith("TcUnit=")))
+                return (plc.Packages.Any(x => x.Name == "TcUnit") || HasTcUnitReference(plc))
                     ? ConfigPlcProject.PlcProjectType.UnitTestApplication
                     : ConfigPlcProject.PlcProjectType.Application;
             }
@@ -280,6 +285,11 @@ namespace Twinpack.Configuration
             {
                 return ConfigPlcProject.PlcProjectType.Library;
             }
+        }
+
+        static bool HasTcUnitReference(ConfigPlcProject plc)
+        {
+            return plc.SystemReferences?.Any(x => x?.Name != null && x.Name.StartsWith("TcUnit", StringComparison.OrdinalIgnoreCase)) == true;
         }
 
         public static string GuessFilePath(ConfigPlcProject plc)
