@@ -1605,18 +1605,33 @@ namespace Twinpack.Core
                     {
                         var affectedPackage = affectedPackages.FirstOrDefault(y => y.PackageVersion?.Name == package.Config.Name) ?? resolvedPackage;
 
-                        // check if the requested version is actually on a package server already
-                        var requestedPackage =await _packageServers.ResolvePackageAsync(
-                            package.Config.Name,
-                            new ResolvePackageOptions
-                            {
-                                PreferredVersion = version,
-                                PreferredBranch = options?.PreferredFrameworkBranch,
-                                PreferredTarget = options?.PreferredFrameworkTarget,
-                                PreferredConfiguration = options?.PreferredFrameworkConfiguration
-                            });
+                        // Same target fallback as framework detection. A build number is not a package
+                        // target, and package-resolve returns an empty object for it. When the version
+                        // exists under the product line or TC3.1, that published package decides the
+                        // branch, target and configuration. The preference is only for a version that
+                        // is not published yet.
+                        PackageVersionGetResponse requestedPackage = null;
+                        foreach (var candidate in FrameworkResolveTargets(options?.PreferredFrameworkTarget))
+                        {
+                            var attempt = await _packageServers.ResolvePackageAsync(
+                                package.Config.Name,
+                                new ResolvePackageOptions
+                                {
+                                    PreferredVersion = version,
+                                    PreferredBranch = options?.PreferredFrameworkBranch,
+                                    PreferredTarget = candidate,
+                                    PreferredConfiguration = options?.PreferredFrameworkConfiguration
+                                },
+                                cancellationToken);
 
-                        if (requestedPackage?.Version == version)
+                            if (attempt?.Version == version)
+                            {
+                                requestedPackage = attempt;
+                                break;
+                            }
+                        }
+
+                        if (requestedPackage != null)
                         {
                             package.Config.Version = version;
                             package.Config.Branch = requestedPackage?.Branch;

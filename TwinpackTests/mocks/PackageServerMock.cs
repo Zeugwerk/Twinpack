@@ -183,14 +183,22 @@ namespace TwinpackTests
                 .ThenByDescending(x => x.Version == null ? new Version(9,9,9,9) : new Version(x.Version))
                 .FirstOrDefault();
 
+            // package-resolve answers a miss with {}, whose name is empty. The empty object
+            // is built in a helper so this Release build does not drop it. ResolvedTargets
+            // records only the target that was asked.
             if (match == null && EmptyResolveIsEmptyObject)
-            {
-                LastResolved = new PackageVersionGetResponse { Name = "empty-object" };
-                ResolvedTargets.Add("empty");
-                return Task.FromResult(LastResolved);
-            }
-            ResolvedTargets.Add(match == null ? "null-result" : "hit");
+                match = EmptyPackageVersion();
+
+            LastResolved = match;
             return Task.FromResult(match);
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining
+            | System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        static PackageVersionGetResponse EmptyPackageVersion()
+        {
+            return new PackageVersionGetResponse();
         }
 
         bool HasRequestedVersion(PlcLibrary library)

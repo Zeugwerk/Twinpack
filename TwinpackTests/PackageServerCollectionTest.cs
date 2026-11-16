@@ -514,7 +514,8 @@ namespace TwinpackTests
                 package,
                 automationInterface: new SolutionLineDouble("TC3.1.4024.59"));
 
-            Assert.AreEqual("TC3.1.4026", string.Join("|", server.ResolvedTargets) + " // " + string.Join("|", server.VersionLookupTargets));
+            CollectionAssert.AreEqual(new[] { "TC3.1.4026" }, server.ResolvedTargets);
+            CollectionAssert.AreEqual(new[] { "TC3.1.4026", "TC3.1.4026" }, server.VersionLookupTargets);
         }
 
         class SolutionLineDouble : AutomationInterfaceHeadless
