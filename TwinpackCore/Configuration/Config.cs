@@ -138,6 +138,7 @@ namespace Twinpack.Configuration
             Parameters = pv.Parameters;
             Options = pv.Options;
             When = pv.When;
+            WhenResolved = pv.WhenResolved;
         }
 
         public const string DefaultBranch = "main";
@@ -209,6 +210,13 @@ namespace Twinpack.Configuration
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("when")]
         public ConfigWhen When { get; set; }
+
+        /// <summary>
+        /// The dependency walk decided <see cref="When"/>, including clearing it because another
+        /// parent has no restriction. Not stored in config.json.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public bool WhenResolved { get; set; }
         
     }
 
@@ -303,6 +311,43 @@ namespace Twinpack.Configuration
             }
 
             return true;
+        }
+
+        public static ConfigWhen Copy(ConfigWhen when)
+        {
+            if (when?.Target == null || when.Target.Count == 0)
+                return null;
+
+            return new ConfigWhen { Target = new List<string>(when.Target) };
+        }
+
+        /// <summary>
+        /// <paramref name="current"/> is the when gathered from earlier parents.
+        /// An unrestricted parent clears it for good (<paramref name="unrestricted"/>).
+        /// A restricted parent unions its allow-list.
+        /// </summary>
+        public static ConfigWhen Inherit(ConfigWhen current, ConfigWhen parent, ref bool unrestricted)
+        {
+            if (unrestricted)
+                return null;
+
+            if (parent?.Target == null || parent.Target.Count == 0)
+            {
+                unrestricted = true;
+                return null;
+            }
+
+            if (current?.Target == null || current.Target.Count == 0)
+                return Copy(parent);
+
+            var targets = new List<string>(current.Target);
+            foreach (var entry in parent.Target)
+            {
+                if (!targets.Any(x => string.Equals(x, entry, StringComparison.OrdinalIgnoreCase)))
+                    targets.Add(entry);
+            }
+
+            return new ConfigWhen { Target = targets };
         }
 
         static bool TryGetBuild(string productLine, out string family, out int build)

@@ -24,10 +24,25 @@ namespace Twinpack.Core
         protected static List<XElement> LocalRepository;
 
         protected Config _config;
+        string _productLine;
 
         public AutomationInterfaceHeadless(Config config)
         {
             _config = config;
+        }
+
+        public override string SolutionProductLine => _productLine;
+
+        /// <summary>
+        /// <paramref name="requestedTcVersion"/> is the build's <c>--tcversion</c>.
+        /// <c>TC3.1</c> leaves the choice to the XAE default, which is the latest installed
+        /// build when that setting is empty.
+        /// </summary>
+        public void UseProductLine(string requestedTcVersion)
+        {
+            _productLine = TwincatInstall.ResolveProductLine(requestedTcVersion);
+            if (!string.IsNullOrEmpty(_productLine))
+                _logger.Info("[target] product line {0}", _productLine);
         }
 
         protected override Version MinVersion => new Version(3, 1, 4024, 0);
