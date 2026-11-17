@@ -240,6 +240,27 @@ namespace Twinpack.Configuration
         }
 
         /// <summary>
+        /// Product line of a build's <c>--tcversion</c>. <c>TC3.1.4024.59</c> is <c>TC3.1.4024</c>.
+        /// <c>TC3.1</c> names no build, so the result is null and a restriction does not match.
+        /// </summary>
+        public static string BuildProductLine(string requestedTcVersion)
+        {
+            var line = Twinpack.Core.TwinCatTargets.ProductLine(requestedTcVersion);
+            if (string.IsNullOrEmpty(line) || Twinpack.Core.TwinCatTargets.IsUnpinned(line))
+                return null;
+            return line;
+        }
+
+        /// <summary>
+        /// Same rule as <see cref="Applies(ConfigWhen, string)"/> for a version that may still
+        /// carry a patch, such as <c>TC3.1.4024.59</c>.
+        /// </summary>
+        public static bool AppliesToBuild(ConfigWhen when, string requestedTcVersion)
+        {
+            return Applies(when, BuildProductLine(requestedTcVersion));
+        }
+
+        /// <summary>
         /// A <c>when.target</c> that names a build, such as <c>[TC3.1.4026,)</c>, cannot be
         /// checked against <c>TC3.1</c>. Returns the spec that needs more parts, or null.
         /// The patch (a fourth part) is ignored. <c>TC3.1.4024.56</c> is specific enough.

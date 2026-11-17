@@ -198,6 +198,18 @@ namespace Twinpack.Core
         public abstract string SolutionPath { get; }
 
         public virtual string SolutionProductLine => null;
+
+        /// <summary>
+        /// True when TwinCAT reports that the placeholder or library reference is already in the PLC.
+        /// <c>An item with the same key has already been added</c> is not this case: that throw can
+        /// happen before the reference exists, and the next attempt has to add it again.
+        /// </summary>
+        public static bool ReferenceAlreadyPresent(Exception ex)
+        {
+            var message = ex?.Message;
+            return message != null
+                && message.IndexOf("already contained", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
         public abstract Task<string> ResolveEffectiveVersionAsync(string projectName, string plcName, string placeholderName);
         public abstract Task SetPackageVersionAsync(ConfigPlcProject plc, CancellationToken cancellationToken = default);
         public abstract Task<bool> IsPackageInstalledAsync(PackageItem package);

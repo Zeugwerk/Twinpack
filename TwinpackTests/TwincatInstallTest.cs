@@ -239,5 +239,13 @@ namespace TwinpackTests
 
             Assert.IsNull(headless.SolutionProductLine);
         }
+
+        [TestMethod]
+        public void ReferenceAlreadyPresent_MatchesThePlaceholderMessageOnly()
+        {
+            Assert.IsTrue(AutomationInterface.ReferenceAlreadyPresent(new ArgumentException("Placeholder 'ZCore' already contained!")));
+            Assert.IsFalse(AutomationInterface.ReferenceAlreadyPresent(new ArgumentException("An item with the same key has already been added.")));
+            Assert.IsFalse(AutomationInterface.ReferenceAlreadyPresent(null));
+        }
     }
 }

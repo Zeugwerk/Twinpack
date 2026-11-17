@@ -580,6 +580,46 @@ namespace TwinpackTests
         }
 
         [TestMethod]
+        public void WhenTarget_Mc3LibrariesStartAt4026()
+        {
+            var excludeBefore4026 = new ConfigWhen { Target = new List<string> { "(,TC3.1.4026)" } };
+            Assert.IsTrue(excludeBefore4026.Matches("TC3.1.4022.29"));
+            Assert.IsTrue(excludeBefore4026.Matches("TC3.1.4024.12"));
+            Assert.IsFalse(excludeBefore4026.Matches("TC3.1.4026"));
+            Assert.IsFalse(excludeBefore4026.Matches("TC3.1.4026.10"));
+            Assert.IsFalse(excludeBefore4026.Matches("TC3.1.4028.1"));
+
+            var useFrom4026 = new ConfigWhen { Target = new List<string> { "[TC3.1.4026,)" } };
+            Assert.IsFalse(useFrom4026.Matches("TC3.1.4024.12"));
+            Assert.IsTrue(useFrom4026.Matches("TC3.1.4026"));
+            Assert.IsTrue(useFrom4026.Matches("TC3.1.4028.1"));
+
+            var before = new ConfigWhen { Target = new List<string> { "(,TC3.1.4026)" } };
+            var from = new ConfigWhen { Target = new List<string> { "[TC3.1.4026,)" } };
+            var platform = new ConfigTargetPatch { Path = "patches/exclude-mc3-before-4026.patch", When = before };
+            var equipment = new ConfigTargetPatch { Path = "patches/exclude-mc3-before-4026.patch", When = before };
+            Assert.IsTrue(ConfigWhen.Applies(platform.When, "TC3.1.4024.12"));
+            Assert.IsFalse(ConfigWhen.Applies(platform.When, "TC3.1.4026.14"));
+            Assert.IsTrue(ConfigWhen.Applies(equipment.When, "TC3.1.4024"));
+            Assert.IsFalse(ConfigWhen.Applies(from, "TC3.1.4024.12"));
+            Assert.IsTrue(ConfigWhen.Applies(from, "TC3.1.4026.14"));
+        }
+
+        [TestMethod]
+        public void BuildProductLine_DropsThePatchAndRejectsTc31()
+        {
+            Assert.AreEqual("TC3.1.4024", ConfigWhen.BuildProductLine("TC3.1.4024.59"));
+            Assert.AreEqual("TC3.1.4026", ConfigWhen.BuildProductLine("TC3.1.4026"));
+            Assert.IsNull(ConfigWhen.BuildProductLine("TC3.1"));
+            Assert.IsNull(ConfigWhen.BuildProductLine(null));
+
+            var only4024 = new ConfigWhen { Target = new List<string> { "TC3.1.4024" } };
+            Assert.IsTrue(ConfigWhen.AppliesToBuild(only4024, "TC3.1.4024.59"));
+            Assert.IsFalse(ConfigWhen.AppliesToBuild(only4024, "TC3.1"));
+            Assert.IsTrue(ConfigWhen.AppliesToBuild(null, "TC3.1"));
+        }
+
+        [TestMethod]
         public void Load_MigratesPlatformPatchesToTarget_SaveOmitsPlatform()
         {
             var dir = Path.Combine(Path.GetTempPath(), "twinpack-platform-patches-" + Guid.NewGuid().ToString("N"));

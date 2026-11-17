@@ -386,13 +386,30 @@ namespace Twinpack.Core
             {
                 Utils.Retry(() =>
                 {
-                    if (options?.LibraryReference == true)
-                        libraryManager.AddLibrary(libraryName, version, distributorName);
-                    else
+                    // A failed AddPlaceholder can leave the reference behind. The next attempt then
+                    // reports "already contained" unless this remove runs again.
+                    try
                     {
-                        // AddPlaceholder's version is the default resolution. Keep that at "*".
-                        // The build that was resolved is the effective resolution, set below.
-                        libraryManager.AddPlaceholder(libraryName, libraryName, "*", distributorName);
+                        libraryManager.RemoveReference(libraryName);
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        if (options?.LibraryReference == true)
+                            libraryManager.AddLibrary(libraryName, version, distributorName);
+                        else
+                        {
+                            // AddPlaceholder's version is the default resolution. Keep that at "*".
+                            // The build that was resolved is the effective resolution, set below.
+                            libraryManager.AddPlaceholder(libraryName, libraryName, "*", distributorName);
+                        }
+                    }
+                    catch (Exception ex) when (ReferenceAlreadyPresent(ex))
+                    {
+                        _logger.Info("[add] {0} is already referenced", libraryName);
                     }
                 },
                 maxRetries: 3,
