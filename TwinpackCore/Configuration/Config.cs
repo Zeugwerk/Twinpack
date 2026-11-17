@@ -512,6 +512,9 @@ namespace Twinpack.Configuration
         /// Turns a legacy <c>references</c> map into <see cref="ConfigPlcProject.SystemReferences"/>
         /// and clears the map so the next save writes only <c>system-references</c>.
         /// A project that already has <c>system-references</c> keeps that list and drops the map.
+        /// The map is resolved the way a build used to pick one key: exact version, then a shorter
+        /// prefix, then <c>*</c>. <c>TC3.1</c> becomes the unconditional list. A 3-part key adds
+        /// libraries for that product line. A patch key such as <c>TC3.1.4024.55</c> is left out.
         /// </summary>
         public static void AdoptLegacyReferences(ConfigPlcProject plc)
         {
@@ -535,80 +538,149 @@ namespace Twinpack.Configuration
 
         static List<ConfigSystemReference> ConvertLegacyReferences(Dictionary<string, List<string>> legacy)
         {
-            var parsed = new List<LegacyReference>();
+            var baselineKey = MatchLegacyKey(legacy, ConfigPlcPackage.DefaultTarget);
+            var baseline = ReadLegacyList(legacy, baselineKey);
+            var baselineNames = new HashSet<string>(baseline.Select(x => x.Name), StringComparer.OrdinalIgnoreCase);
+
+            var adopted = new List<ConfigSystemReference>();
+            foreach (var entry in baseline)
+            {
+                adopted.Add(new ConfigSystemReference
+                {
+                    Name = entry.Name,
+                    Version = entry.Version
+                });
+            }
+
+            var extras = new List<LegacyExtra>();
             foreach (var pair in legacy)
             {
-                var key = pair.Key ?? "";
-                var everyLine = AppliesToEveryLine(key);
-                var fromStar = key.Trim() == "*";
-                var line = everyLine ? null : Twinpack.Core.TwinCatTargets.ProductLine(key);
-                if (!everyLine && string.IsNullOrEmpty(line))
-                    everyLine = true;
+                if (!Twinpack.Core.TwinCatTargets.IsProductLineKey(pair.Key))
+                    continue;
 
-                foreach (var entry in pair.Value ?? Enumerable.Empty<string>())
+                var line = Twinpack.Core.TwinCatTargets.ProductLine(pair.Key);
+                foreach (var entry in ReadLegacyList(legacy, pair.Key))
                 {
-                    if (string.IsNullOrWhiteSpace(entry))
+                    if (baselineNames.Contains(entry.Name))
                         continue;
 
-                    var eq = entry.IndexOf('=');
-                    var name = (eq >= 0 ? entry.Substring(0, eq) : entry).Trim();
-                    var version = eq >= 0 ? entry.Substring(eq + 1).Trim() : "*";
-                    if (name.Length == 0)
-                        continue;
-                    if (version.Length == 0)
-                        version = "*";
-
-                    parsed.Add(new LegacyReference
+                    var extra = extras.FirstOrDefault(x => string.Equals(x.Name, entry.Name, StringComparison.OrdinalIgnoreCase));
+                    if (extra == null)
                     {
-                        Name = name,
-                        Version = version,
-                        EveryLine = everyLine,
-                        FromStar = fromStar,
-                        Line = line
-                    });
+                        extras.Add(new LegacyExtra
+                        {
+                            Name = entry.Name,
+                            Version = entry.Version,
+                            Lines = new List<string> { line }
+                        });
+                        continue;
+                    }
+
+                    if (!extra.Lines.Any(x => string.Equals(x, line, StringComparison.OrdinalIgnoreCase)))
+                        extra.Lines.Add(line);
                 }
             }
 
-            var adopted = new List<ConfigSystemReference>();
-            foreach (var group in parsed.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+            foreach (var extra in extras)
             {
-                var star = group.FirstOrDefault(x => x.FromStar);
-                var universal = group.FirstOrDefault(x => x.EveryLine);
-                var chosen = star ?? universal ?? group.First();
-                ConfigWhen when = null;
-                if (star == null && universal == null && !string.IsNullOrEmpty(chosen.Line))
-                {
-                    when = new ConfigWhen { Target = new List<string> { chosen.Line } };
-                }
-
                 adopted.Add(new ConfigSystemReference
                 {
-                    Name = chosen.Name,
-                    Version = chosen.Version,
-                    When = when
+                    Name = extra.Name,
+                    Version = extra.Version,
+                    When = new ConfigWhen { Target = extra.Lines }
                 });
             }
 
             return adopted;
         }
 
-        static bool AppliesToEveryLine(string key)
+        /// <summary>
+        /// Exact key, then each shorter prefix, then <c>*</c>. The same walk the legacy map used.
+        /// </summary>
+        static string MatchLegacyKey(IDictionary<string, List<string>> references, string tcversion)
         {
-            if (string.IsNullOrWhiteSpace(key))
-                return true;
+            if (references == null || references.Count == 0)
+                return null;
 
-            var trimmed = key.Trim();
-            return trimmed == "*"
-                || string.Equals(trimmed, ConfigPlcPackage.DefaultTarget, StringComparison.OrdinalIgnoreCase);
+            string found;
+            if (TryFindKey(references, tcversion, out found))
+                return found;
+
+            var parts = (tcversion ?? "").Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            while (parts.Count > 1)
+            {
+                parts.RemoveAt(parts.Count - 1);
+                if (TryFindKey(references, string.Join(".", parts), out found))
+                    return found;
+            }
+
+            if (TryFindKey(references, "*", out found))
+                return found;
+
+            return null;
         }
 
-        sealed class LegacyReference
+        static bool TryFindKey(IDictionary<string, List<string>> references, string key, out string actual)
+        {
+            actual = null;
+            if (references == null || string.IsNullOrEmpty(key))
+                return false;
+
+            if (references.ContainsKey(key))
+            {
+                actual = key;
+                return true;
+            }
+
+            foreach (var candidate in references.Keys)
+            {
+                if (!string.Equals(candidate, key, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                actual = candidate;
+                return true;
+            }
+
+            return false;
+        }
+
+        static List<LegacyNameVersion> ReadLegacyList(IDictionary<string, List<string>> references, string key)
+        {
+            var result = new List<LegacyNameVersion>();
+            if (key == null || references == null || !references.TryGetValue(key, out var entries) || entries == null)
+                return result;
+
+            foreach (var entry in entries)
+            {
+                if (string.IsNullOrWhiteSpace(entry))
+                    continue;
+
+                var eq = entry.IndexOf('=');
+                var name = (eq >= 0 ? entry.Substring(0, eq) : entry).Trim();
+                var version = eq >= 0 ? entry.Substring(eq + 1).Trim() : "*";
+                if (name.Length == 0)
+                    continue;
+                if (version.Length == 0)
+                    version = "*";
+                if (result.Any(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                result.Add(new LegacyNameVersion { Name = name, Version = version });
+            }
+
+            return result;
+        }
+
+        sealed class LegacyNameVersion
         {
             public string Name;
             public string Version;
-            public bool EveryLine;
-            public bool FromStar;
-            public string Line;
+        }
+
+        sealed class LegacyExtra
+        {
+            public string Name;
+            public string Version;
+            public List<string> Lines;
         }
     }
 
@@ -876,9 +948,10 @@ namespace Twinpack.Configuration
         public ConfigWhen When { get; set; }
 
         /// <summary>
-        /// Turns a legacy <c>patches.platform</c> map into <see cref="ConfigPatches.Target"/>
-        /// and clears the map so the next save writes <c>target</c>.
-        /// A <c>target</c> list that is already present is kept, and the map is dropped.
+        /// Turns product-line keys in a legacy <c>patches.platform</c> map into <see cref="ConfigPatches.Target"/>.
+        /// <c>*</c> and <c>TC3.1</c> apply on every line. A 3-part key becomes <c>when.target</c> for that line.
+        /// A patch key such as <c>TC3.1.4022.29</c> stays in the platform map and still matches that exact version.
+        /// A <c>target</c> list that is already present is kept, and so are any exact platform keys saved beside it.
         /// </summary>
         public static void AdoptLegacyPlatform(ConfigPatches patches)
         {
@@ -887,17 +960,48 @@ namespace Twinpack.Configuration
 
             if (patches.Target != null)
             {
-                patches.Platform = null;
+                if (patches.Platform != null && patches.Platform.Count == 0)
+                    patches.Platform = null;
                 return;
             }
 
             var legacy = patches.Platform;
-            patches.Platform = null;
             if (legacy == null || legacy.Count == 0)
+            {
+                patches.Platform = null;
                 return;
+            }
 
-            var converted = ConvertLegacyPlatform(legacy);
+            var convertible = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in legacy)
+            {
+                if (Twinpack.Core.TwinCatTargets.IsPatchLevelKey(pair.Key))
+                    continue;
+                convertible[pair.Key] = pair.Value;
+            }
+
+            var converted = ConvertLegacyPlatform(convertible);
+            var migrated = new HashSet<string>(
+                converted.Select(patch => patch?.Path).Where(path => !string.IsNullOrWhiteSpace(path)),
+                StringComparer.OrdinalIgnoreCase);
+
+            var exact = new ConfigPlatformPatches();
+            foreach (var pair in legacy)
+            {
+                if (!Twinpack.Core.TwinCatTargets.IsPatchLevelKey(pair.Key))
+                    continue;
+
+                var remaining = (pair.Value ?? Enumerable.Empty<string>())
+                    .Where(path => !string.IsNullOrWhiteSpace(path) && !migrated.Contains(path.Trim()))
+                    .Select(path => path.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (remaining.Count > 0)
+                    exact[pair.Key] = remaining;
+            }
+
             patches.Target = converted.Count == 0 ? null : converted;
+            patches.Platform = exact.Count == 0 ? null : exact;
         }
 
         static List<ConfigTargetPatch> ConvertLegacyPlatform(IDictionary<string, List<string>> legacy)
@@ -987,7 +1091,7 @@ namespace Twinpack.Configuration
         public List<ConfigTargetPatch> Target { get; set; }
 
         /// <summary>
-        /// Legacy platform map. Deserialization only. Cleared once <see cref="Target"/> has been filled.
+        /// Exact platform keys, such as <c>TC3.1.4022.29</c>. Product-line keys move to <see cref="Target"/>.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("platform")]

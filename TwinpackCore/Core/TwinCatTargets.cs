@@ -17,6 +17,45 @@ namespace Twinpack.Core
         }
 
         /// <summary>
+        /// <c>TC3.1.4024</c> names a product line. <c>TC3.1</c> and <c>TC3.1.4024.59</c> do not.
+        /// </summary>
+        public static bool IsProductLineKey(string key)
+        {
+            return VersionPartCount(key) == 3;
+        }
+
+        /// <summary>
+        /// <c>TC3.1.4024.59</c> is a patch build. The legacy map matches that key exactly.
+        /// </summary>
+        public static bool IsPatchLevelKey(string key)
+        {
+            return VersionPartCount(key) >= 4;
+        }
+
+        /// <summary>
+        /// <c>TC3.1</c> is 2, <c>TC3.1.4024</c> is 3, <c>TC3.1.4024.59</c> is 4.
+        /// </summary>
+        public static int VersionPartCount(string tcVersion)
+        {
+            if (string.IsNullOrWhiteSpace(tcVersion))
+                return 0;
+
+            var body = tcVersion.Trim();
+            if (body.StartsWith("TC", StringComparison.OrdinalIgnoreCase))
+                body = body.Substring(2);
+
+            var count = 0;
+            foreach (var part in body.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (!int.TryParse(part, out _))
+                    break;
+                count++;
+            }
+
+            return count;
+        }
+
+        /// <summary>
         /// <c>TC3.1.4024.59</c> and <c>3.1.4024.59</c> become <c>TC3.1.4024</c>.
         /// <c>TC3.1</c> stays <c>TC3.1</c>.
         /// </summary>

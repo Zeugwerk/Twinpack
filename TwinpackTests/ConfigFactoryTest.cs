@@ -407,10 +407,12 @@ namespace TwinpackTests
                                 ""type"": ""Application"",
                                 ""distributor-name"": ""Zeugwerk GmbH"",
                                 ""references"": {
-                                    ""*"": [ ""Tc2_System=*"", ""Tc2_Standard=3.4.24.0"" ],
-                                    ""TC3.1"": [ ""Tc2_System=9.9.9.9"" ],
-                                    ""TC3.1.4024.59"": [ ""Tc2_System=1.0.0.0"", ""Tc3_Mc3Base=*"" ],
-                                    ""TC3.1.4026"": [ ""Only4026=*"" ]
+                                    ""*"": [ ""FromStar=*"" ],
+                                    ""TC3.1"": [ ""Tc2_System=9.9.9.9"", ""Tc2_Standard=*"" ],
+                                    ""TC3.1.4024"": [ ""Tc2_System=1.0.0.0"", ""Tc2_EtherCAT=*"" ],
+                                    ""TC3.1.4024.55"": [ ""Tc2_TcpIp=3.3.10.0"" ],
+                                    ""TC3.1.4026"": [ ""Only4026=*"" ],
+                                    ""TC3.1.4026.0"": [ ""Tc2_Standard=3.4.3.0"" ]
                                 }
                             }
                         ]
@@ -424,19 +426,20 @@ namespace TwinpackTests
                 var plc = config.Projects.Single().Plcs.Single();
                 Assert.IsNull(plc.References);
                 Assert.AreEqual(4, plc.SystemReferences.Count);
+                Assert.IsFalse(plc.SystemReferences.Any(x => x.Name == "FromStar" || x.Name == "Tc2_TcpIp"));
 
                 var system = plc.SystemReferences.Single(x => x.Name == "Tc2_System");
-                Assert.AreEqual("*", system.Version);
+                Assert.AreEqual("9.9.9.9", system.Version);
                 Assert.IsNull(system.DistributorName);
                 Assert.IsNull(system.When);
 
                 var standard = plc.SystemReferences.Single(x => x.Name == "Tc2_Standard");
-                Assert.AreEqual("3.4.24.0", standard.Version);
+                Assert.AreEqual("*", standard.Version);
                 Assert.IsNull(standard.When);
 
-                var mc3 = plc.SystemReferences.Single(x => x.Name == "Tc3_Mc3Base");
-                Assert.AreEqual("*", mc3.Version);
-                CollectionAssert.AreEqual(new[] { "TC3.1.4024" }, mc3.When.Target.ToArray());
+                var ethercat = plc.SystemReferences.Single(x => x.Name == "Tc2_EtherCAT");
+                Assert.AreEqual("*", ethercat.Version);
+                CollectionAssert.AreEqual(new[] { "TC3.1.4024" }, ethercat.When.Target.ToArray());
 
                 var only4026 = plc.SystemReferences.Single(x => x.Name == "Only4026");
                 CollectionAssert.AreEqual(new[] { "TC3.1.4026" }, only4026.When.Target.ToArray());
@@ -449,10 +452,108 @@ namespace TwinpackTests
                 var reloaded = ConfigFactory.Load(dir);
                 var again = reloaded.Projects.Single().Plcs.Single();
                 Assert.IsNull(again.References);
-                Assert.AreEqual("TC3.1.4024", again.SystemReferences.Single(x => x.Name == "Tc3_Mc3Base").When.Target.Single());
+                Assert.AreEqual("TC3.1.4024", again.SystemReferences.Single(x => x.Name == "Tc2_EtherCAT").When.Target.Single());
+                Assert.IsFalse(again.SystemReferences.Any(x => x.Name == "Tc2_TcpIp" || x.Name == "FromStar"));
                 var systemAgain = again.SystemReferences.Single(x => x.Name == "Tc2_System");
                 Assert.IsNull(systemAgain.When);
                 Assert.IsNull(systemAgain.DistributorName);
+            }
+            finally
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
+            }
+        }
+
+        [TestMethod]
+        public void Load_PatchLevelReferenceAndPlatformKey_DoNotBlockTc31()
+        {
+            var dir = Path.Combine(Path.GetTempPath(), "twinpack-legacy-tc31-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.Combine(dir, ".Zeugwerk"));
+            File.WriteAllText(Path.Combine(dir, ".Zeugwerk", "config.json"), @"{
+                ""fileversion"": 1,
+                ""solution"": ""Dummy.sln"",
+                ""projects"": [
+                    {
+                        ""name"": ""MyProject"",
+                        ""plcs"": [
+                            {
+                                ""name"": ""MyPlc"",
+                                ""version"": ""1.0.0.0"",
+                                ""type"": ""Application"",
+                                ""distributor-name"": ""Zeugwerk GmbH"",
+                                ""references"": {
+                                    ""TC3.1"": [ ""Tc2_Standard=*"" ],
+                                    ""TC3.1.4024"": [ ""Tc2_Standard=*"" ],
+                                    ""TC3.1.4024.55"": [ ""Tc2_TcpIp=3.3.10.0"" ]
+                                },
+                                ""patches"": {
+                                    ""platform"": {
+                                        ""TC3.1.4022.29"": [ ""patches/0001-fix-TC3.1.4022.29-remove-abstract-keyword.patch"" ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }");
+
+            try
+            {
+                var config = ConfigFactory.Load(dir);
+                var plc = config.Projects.Single().Plcs.Single();
+                Assert.AreEqual(1, plc.SystemReferences.Count);
+                Assert.AreEqual("Tc2_Standard", plc.SystemReferences.Single().Name);
+                Assert.IsNull(plc.SystemReferences.Single().When);
+                Assert.IsNull(plc.Patches.Target);
+                CollectionAssert.AreEqual(
+                    new[] { "patches/0001-fix-TC3.1.4022.29-remove-abstract-keyword.patch" },
+                    plc.Patches.Platform["TC3.1.4022.29"].ToArray());
+
+                ConfigWhen.EnsureCheckable(config, "TC3.1");
+            }
+            finally
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
+            }
+        }
+
+        [TestMethod]
+        public void Load_LegacyReferences_StarIsTheFallbackWhenTc31IsMissing()
+        {
+            var dir = Path.Combine(Path.GetTempPath(), "twinpack-legacy-star-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.Combine(dir, ".Zeugwerk"));
+            File.WriteAllText(Path.Combine(dir, ".Zeugwerk", "config.json"), @"{
+                ""fileversion"": 1,
+                ""solution"": ""Dummy.sln"",
+                ""projects"": [
+                    {
+                        ""name"": ""MyProject"",
+                        ""plcs"": [
+                            {
+                                ""name"": ""MyPlc"",
+                                ""version"": ""1.0.0.0"",
+                                ""type"": ""Application"",
+                                ""distributor-name"": ""Zeugwerk GmbH"",
+                                ""references"": {
+                                    ""*"": [ ""Tc2_System=*"" ],
+                                    ""TC3.1.4024.59"": [ ""Tc3_Mc3Base=*"" ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }");
+
+            try
+            {
+                var plc = ConfigFactory.Load(dir).Projects.Single().Plcs.Single();
+                Assert.AreEqual(1, plc.SystemReferences.Count);
+                Assert.AreEqual("Tc2_System", plc.SystemReferences.Single().Name);
+                Assert.IsNull(plc.SystemReferences.Single().When);
+
+                ConfigWhen.EnsureCheckable(ConfigFactory.Load(dir), "TC3.1");
             }
             finally
             {
@@ -657,16 +758,12 @@ namespace TwinpackTests
             {
                 var config = ConfigFactory.Load(dir);
                 var patches = config.Projects.Single().Plcs.Single().Patches;
-                Assert.IsNull(patches.Platform);
-                Assert.AreEqual(4, patches.Target.Count);
+                CollectionAssert.AreEqual(new[] { "StripMc3.include" }, patches.Platform["TC3.1.4024.59"].ToArray());
+                Assert.AreEqual(3, patches.Target.Count);
+                Assert.IsFalse(patches.Target.Any(x => x.Path == "StripMc3.include"));
 
                 var always = patches.Target.Single(x => x.Path == "Always.include");
                 Assert.IsNull(always.When);
-
-                var strip = patches.Target.Single(x => x.Path == "StripMc3.include");
-                CollectionAssert.AreEqual(new[] { "TC3.1.4024" }, strip.When.Target.ToArray());
-                Assert.IsTrue(strip.When.Matches("TC3.1.4024.10"));
-                Assert.IsFalse(strip.When.Matches("TC3.1.4026"));
 
                 var mc3 = patches.Target.Single(x => x.Path == "Mc3.include");
                 CollectionAssert.AreEqual(new[] { "TC3.1.4026" }, mc3.When.Target.ToArray());
@@ -681,14 +778,15 @@ namespace TwinpackTests
                 ConfigFactory.Save(config);
                 var json = File.ReadAllText(config.FilePath);
                 Assert.IsTrue(json.Contains("\"target\""));
-                Assert.IsFalse(json.Contains("\"platform\""));
+                Assert.IsTrue(json.Contains("\"platform\""));
+                StringAssert.Contains(json, "StripMc3.include");
                 StringAssert.Contains(json, "USE_MC3");
                 StringAssert.Contains(json, "\"key\": \"ABC\"");
 
                 var again = ConfigFactory.Load(dir).Projects.Single().Plcs.Single().Patches;
-                Assert.IsNull(again.Platform);
+                CollectionAssert.AreEqual(new[] { "StripMc3.include" }, again.Platform["TC3.1.4024.59"].ToArray());
                 Assert.IsNull(again.Target.Single(x => x.Path == "Always.include").When);
-                Assert.AreEqual("TC3.1.4024", again.Target.Single(x => x.Path == "StripMc3.include").When.Target.Single());
+                Assert.IsFalse(again.Target.Any(x => x.Path == "StripMc3.include"));
                 CollectionAssert.AreEqual(new[] { "Mc3Defines.arg" }, again.Argument["USE_MC3"].ToArray());
             }
             finally
@@ -699,7 +797,7 @@ namespace TwinpackTests
         }
 
         [TestMethod]
-        public void Load_ExistingTargetPatches_IgnoresPlatformMap()
+        public void Load_ExistingTargetPatches_KeepsExactPlatformKeys()
         {
             var dir = Path.Combine(Path.GetTempPath(), "twinpack-target-patches-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(Path.Combine(dir, ".Zeugwerk"));
@@ -719,7 +817,7 @@ namespace TwinpackTests
                                     ""target"": [
                                         { ""path"": ""Mc3.include"", ""when"": { ""target"": [ ""[TC3.1.4026,)"" ] } }
                                     ],
-                                    ""platform"": { ""*"": [ ""Ignored.include"" ] },
+                                    ""platform"": { ""TC3.1.4022.29"": [ ""Exact.include"" ] },
                                     ""argument"": { ""USE_MC3"": [ ""Mc3Defines.arg"" ] },
                                     ""license"": { ""runtime"": [ { ""key"": ""ABC"", ""oem-id"": ""1"", ""comment"": ""runtime"" } ] }
                                 }
@@ -732,21 +830,21 @@ namespace TwinpackTests
             try
             {
                 var patches = ConfigFactory.Load(dir).Projects.Single().Plcs.Single().Patches;
-                Assert.IsNull(patches.Platform);
+                CollectionAssert.AreEqual(new[] { "Exact.include" }, patches.Platform["TC3.1.4022.29"].ToArray());
                 var mc3 = patches.Target.Single();
                 Assert.AreEqual("Mc3.include", mc3.Path);
                 CollectionAssert.AreEqual(new[] { "[TC3.1.4026,)" }, mc3.When.Target.ToArray());
                 Assert.IsTrue(mc3.When.Matches("TC3.1.4028"));
                 Assert.IsFalse(mc3.When.Matches("TC3.1.4024"));
-                Assert.IsFalse(patches.Target.Any(x => x.Path == "Ignored.include"));
+                Assert.IsFalse(patches.Target.Any(x => x.Path == "Exact.include"));
                 CollectionAssert.AreEqual(new[] { "Mc3Defines.arg" }, patches.Argument["USE_MC3"].ToArray());
                 Assert.AreEqual("runtime", patches.License["runtime"].Single().Comment);
 
                 var config = ConfigFactory.Load(dir);
                 ConfigFactory.Save(config);
                 var json = File.ReadAllText(config.FilePath);
-                Assert.IsFalse(json.Contains("\"platform\""));
-                Assert.IsFalse(json.Contains("Ignored.include"));
+                Assert.IsTrue(json.Contains("\"platform\""));
+                StringAssert.Contains(json, "Exact.include");
                 StringAssert.Contains(json, "[TC3.1.4026,)");
                 StringAssert.Contains(json, "USE_MC3");
             }
