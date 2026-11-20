@@ -67,6 +67,7 @@
     <Compile Include="SourceRepositoriesCommandTest.cs" />
     <Compile Include="LibraryInstallPlanTest.cs" />
     <Compile Include="AutomationInterfaceVersionTest.cs" />
+    <Compile Include="AutomationInterfaceHeadlessTest.cs" />
     <Compile Include="ConfigFactoryTest.cs" />
     <Compile Include="mocks\PackageServerMock.cs" />
     <Compile Include="NugetPackBuilderTest.cs" />

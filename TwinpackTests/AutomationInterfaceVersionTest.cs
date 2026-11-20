@@ -165,5 +165,28 @@ namespace TwinpackTests
             Assert.AreEqual(publishedVersion, nuspecVersion.ToFullString());
             Assert.IsFalse(nuspecVersion.IsPrerelease);
         }
+
+        [DataTestMethod]
+        [DataRow("3.4.7", "3.4.7.0", null, "3.4.7.0")]
+        [DataRow("3.4.7", "3.4.7", "3.4.7.0", "3.4.7")]
+        [DataRow("3.4.7", "3.4.7.0,3.4.7", null, "3.4.7")]
+        [DataRow("3.4.7", "", "3.4.7.0", "3.4.7.0")]
+        [DataRow("3.4.7", "", null, "3.4.7")]
+        [DataRow("3.4.7", "", "3.4.7.1", "3.4.7")]
+        [DataRow("*", "3.4.7.0", "3.4.7.0", "*")]
+        [DataRow("", "3.4.7.0", "3.4.7.0", "")]
+        public void SelectReferenceVersionUsesTheInstalledSpellingThenTheLibraryFile(string version, string installed, string libraryFileVersion, string expected)
+        {
+            var installedVersions = string.IsNullOrEmpty(installed) ? new string[0] : installed.Split(',');
+
+            Assert.AreEqual(expected, AutomationInterface.SelectReferenceVersion(version, installedVersions, libraryFileVersion));
+        }
+
+        [TestMethod]
+        public void SelectReferenceVersionUsesTheLibraryFileWhenNothingIsInstalled()
+        {
+            Assert.AreEqual("3.4.7.0", AutomationInterface.SelectReferenceVersion("3.4.7", null, "3.4.7.0"));
+            Assert.AreEqual("3.4.7", AutomationInterface.SelectReferenceVersion("3.4.7", null, null));
+        }
     }
 }
