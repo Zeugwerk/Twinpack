@@ -186,7 +186,26 @@ namespace TwinpackTests
         public void SelectReferenceVersionUsesTheLibraryFileWhenNothingIsInstalled()
         {
             Assert.AreEqual("3.4.7.0", AutomationInterface.SelectReferenceVersion("3.4.7", null, "3.4.7.0"));
-            Assert.AreEqual("3.4.7", AutomationInterface.SelectReferenceVersion("3.4.7", null, null));
+            Assert.AreEqual("3.4.7", AutomationInterface.SelectReferenceVersion("3.4.7", null, (string)null));
+        }
+
+        [TestMethod]
+        public void SelectReferenceVersionReadsTheLibraryFileOnlyWhenNothingInstalledMatches()
+        {
+            var reads = 0;
+            string ReadFile()
+            {
+                reads++;
+                return "3.4.7.0";
+            }
+
+            Assert.AreEqual("3.4.7.0", AutomationInterface.SelectReferenceVersion("3.4.7", new[] { "3.4.7.0" }, ReadFile));
+            Assert.AreEqual("3.4.7", AutomationInterface.SelectReferenceVersion("3.4.7", new[] { "3.4.7" }, ReadFile));
+            Assert.AreEqual("*", AutomationInterface.SelectReferenceVersion("*", new[] { "3.4.7.0" }, ReadFile));
+            Assert.AreEqual(0, reads);
+
+            Assert.AreEqual("3.4.7.0", AutomationInterface.SelectReferenceVersion("3.4.7", new string[0], ReadFile));
+            Assert.AreEqual(1, reads);
         }
     }
 }

@@ -240,9 +240,11 @@ namespace Twinpack.Core
         /// <c>x.y.z.0</c> as <c>x.y.z</c>, and TwinCAT allows a library to be versioned <c>x.y.z</c>
         /// outright, so by the time the version gets here the two are the same string. Asking the library
         /// manager which one exists settles it. When the scan finds nothing, an equivalent version
-        /// embedded in the library file is used. Otherwise the requested version is kept.
+        /// embedded in the library file is used. The file is not opened for <c>*</c> or for a scan hit,
+        /// so a system library such as Tc2_System is not parsed on a normal add. Otherwise the requested
+        /// version is kept.
         /// </summary>
-        protected string ResolveInstalledVersion(ITcPlcLibraryManager libraryManager, string libraryName, string version, string libraryFileVersion = null)
+        protected string ResolveInstalledVersion(ITcPlcLibraryManager libraryManager, string libraryName, string version, PackageItem package)
         {
             if (libraryManager == null || string.IsNullOrEmpty(version) || version == "*")
                 return version;
@@ -256,7 +258,7 @@ namespace Twinpack.Core
                 installed.Add(r.Version);
             }
 
-            return SelectReferenceVersion(version, installed, libraryFileVersion);
+            return SelectReferenceVersion(version, installed, () => LibraryFileVersion(package));
         }
 
         protected string GuessDistributorName(ITcPlcLibraryManager libManager, string libraryName, string version)
@@ -359,7 +361,7 @@ namespace Twinpack.Core
 
             var options = package.Config.Options;
             var libraryName = package.PackageVersion.Title;
-            var version = ResolveInstalledVersion(libraryManager, libraryName, TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*", LibraryFileVersion(package));
+            var version = ResolveInstalledVersion(libraryManager, libraryName, TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*", package);
             var distributorName = package.PackageVersion.DistributorName ?? GuessDistributorName(libraryManager, libraryName, version);
 
             // if we can't find the reference with the distributor name from the package, fallback to looking it up

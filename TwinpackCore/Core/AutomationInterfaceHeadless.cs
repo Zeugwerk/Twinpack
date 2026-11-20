@@ -231,7 +231,7 @@ namespace Twinpack.Core
             var referenceVersion = SelectReferenceVersion(
                 TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*",
                 IndexVersions(package),
-                LibraryFileVersion(package));
+                () => LibraryFileVersion(package));
 
             // make sure the package is not present before adding it, we have to
             // force, because the package might not even be installed.

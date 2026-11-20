@@ -226,12 +226,16 @@ namespace Twinpack.Core
         }
 
         /// <summary>
-        /// Version written into a plcproj reference. The installed spelling wins. When nothing installed
-        /// matches, an equivalent version embedded in the library file is used, which is what TwinCAT
-        /// would register on install. <c>*</c> and an empty version stay unchanged, and a missing file
-        /// does not invent a trailing 0.
+        /// Version written into a plcproj reference. The installed spelling wins. The library file is
+        /// read only when nothing installed matches, and only an equivalent file version is used.
+        /// <c>*</c> and an empty version stay unchanged, and a missing file does not invent a trailing 0.
         /// </summary>
         public static string SelectReferenceVersion(string version, IEnumerable<string> installedVersions, string libraryFileVersion)
+        {
+            return SelectReferenceVersion(version, installedVersions, () => libraryFileVersion);
+        }
+
+        public static string SelectReferenceVersion(string version, IEnumerable<string> installedVersions, Func<string> libraryFileVersion)
         {
             if (string.IsNullOrEmpty(version) || version == "*")
                 return version;
@@ -242,8 +246,9 @@ namespace Twinpack.Core
                 || TwinCATLibraryVersionsEquivalent(installedVersion, version)))
                 return SelectInstalledVersion(version, installed);
 
-            if (IsConcreteVersion(libraryFileVersion) && TwinCATLibraryVersionsEquivalent(libraryFileVersion, version))
-                return SelectInstalledVersion(version, new[] { libraryFileVersion });
+            var fileVersion = libraryFileVersion?.Invoke();
+            if (IsConcreteVersion(fileVersion) && TwinCATLibraryVersionsEquivalent(fileVersion, version))
+                return SelectInstalledVersion(version, new[] { fileVersion });
 
             return version;
         }
