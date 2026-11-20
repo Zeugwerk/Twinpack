@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Twinpack;
 using Twinpack.Configuration;
 using Twinpack.Models;
 
@@ -193,6 +194,105 @@ namespace Twinpack.Core
         private static Version PadToFourParts(Version version)
         {
             return new Version(version.Major, version.Minor, Math.Max(version.Build, 0), Math.Max(version.Revision, 0));
+        }
+
+        /// <summary>
+        /// Installed spelling of <paramref name="version"/>. An exact match stays as requested, so a
+        /// library TwinCAT registered with three parts stays three parts. An equivalent spelling such as
+        /// <c>3.4.7.0</c> for NuGet <c>3.4.7</c> is returned instead. No match keeps <paramref name="version"/>.
+        /// </summary>
+        public static string SelectInstalledVersion(string version, IEnumerable<string> installedVersions)
+        {
+            if (string.IsNullOrEmpty(version) || version == "*")
+                return version;
+
+            string equivalent = null;
+            if (installedVersions != null)
+            {
+                foreach (var installed in installedVersions)
+                {
+                    if (!IsConcreteVersion(installed))
+                        continue;
+
+                    if (string.Equals(installed, version, StringComparison.Ordinal))
+                        return version;
+
+                    if (equivalent == null && TwinCATLibraryVersionsEquivalent(installed, version))
+                        equivalent = installed;
+                }
+            }
+
+            return equivalent ?? version;
+        }
+
+        /// <summary>
+        /// Version written into a plcproj reference. The installed spelling wins. The library file is
+        /// read only when nothing installed matches, and only an equivalent file version is used.
+        /// <c>*</c> and an empty version stay unchanged, and a missing file does not invent a trailing 0.
+        /// </summary>
+        public static string SelectReferenceVersion(string version, IEnumerable<string> installedVersions, string libraryFileVersion)
+        {
+            return SelectReferenceVersion(version, installedVersions, () => libraryFileVersion);
+        }
+
+        public static string SelectReferenceVersion(string version, IEnumerable<string> installedVersions, Func<string> libraryFileVersion)
+        {
+            if (string.IsNullOrEmpty(version) || version == "*")
+                return version;
+
+            var installed = installedVersions?.Where(IsConcreteVersion).ToList() ?? new List<string>();
+            if (installed.Any(installedVersion =>
+                string.Equals(installedVersion, version, StringComparison.Ordinal)
+                || TwinCATLibraryVersionsEquivalent(installedVersion, version)))
+                return SelectInstalledVersion(version, installed);
+
+            var fileVersion = libraryFileVersion?.Invoke();
+            if (IsConcreteVersion(fileVersion) && TwinCATLibraryVersionsEquivalent(fileVersion, version))
+                return SelectInstalledVersion(version, new[] { fileVersion });
+
+            return version;
+        }
+
+        static bool IsConcreteVersion(string version)
+        {
+            return !string.IsNullOrEmpty(version) && version != "*";
+        }
+
+        /// <summary>
+        /// Version embedded in the downloaded library whose title is this package. Other files in the
+        /// package are ignored. A file that cannot be read is skipped.
+        /// </summary>
+        public static string LibraryFileVersion(PackageItem package)
+        {
+            var files = package?.PackageVersion?.LibraryFiles;
+            if (files == null || files.Count == 0)
+                return null;
+
+            var title = package.PackageVersion.Title ?? package.PackageVersion.Name;
+            foreach (var file in files)
+            {
+                if (string.IsNullOrEmpty(file) || !File.Exists(file))
+                    continue;
+
+                LibraryReader.LibraryInfo info;
+                try
+                {
+                    info = LibraryReader.Read(File.ReadAllBytes(file));
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                if (info == null || string.IsNullOrEmpty(info.Version))
+                    continue;
+                if (!string.IsNullOrEmpty(title) && !string.Equals(info.Title, title, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                return info.Version;
+            }
+
+            return null;
         }
 
         public abstract string SolutionPath { get; }

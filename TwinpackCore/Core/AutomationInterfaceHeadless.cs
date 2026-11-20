@@ -115,6 +115,24 @@ namespace Twinpack.Core
                 ?? FindMatch(pv, requireDistributor: false);
         }
 
+        private IEnumerable<string> IndexVersions(PackageItem package)
+        {
+            LocalRepository ??= LoadLibraryElements().ToList();
+
+            var title = package?.PackageVersion?.Title;
+            var distributor = package?.PackageVersion?.DistributorName;
+            var titled = LocalRepository.Where(lib =>
+                string.Equals((string)lib.Attribute("Title"), title, StringComparison.InvariantCultureIgnoreCase)).ToList();
+
+            var matches = string.IsNullOrEmpty(distributor)
+                ? titled
+                : titled.Where(lib => string.Equals((string)lib.Attribute("Company"), distributor, StringComparison.InvariantCultureIgnoreCase)).ToList();
+            if (matches.Count == 0)
+                matches = titled;
+
+            return matches.Select(lib => (string)lib.Attribute("Version"));
+        }
+
         public override bool IsPackageInstalled(PackageItem package)
         {
             return FindInstalled(package.PackageVersion) != null;
@@ -210,6 +228,10 @@ namespace Twinpack.Core
             }
 
             ns = string.IsNullOrEmpty(namespaceOverride) ? ns : namespaceOverride;
+            var referenceVersion = SelectReferenceVersion(
+                TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*",
+                IndexVersions(package),
+                () => LibraryFileVersion(package));
 
             // make sure the package is not present before adding it, we have to
             // force, because the package might not even be installed.
@@ -241,7 +263,7 @@ namespace Twinpack.Core
                 }
 
                 var library = new XElement(TcNs + "LibraryReference",
-                        new XAttribute("Include", $"{package.PackageVersion.Title},{(TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*")},{distributorName}"),
+                        new XAttribute("Include", $"{package.PackageVersion.Title},{referenceVersion},{distributorName}"),
                         new List<XElement> {
                             new XElement(TcNs + "Namespace", ns),
                         });
@@ -286,7 +308,7 @@ namespace Twinpack.Core
 
                 var resolution = new XElement(TcNs + "PlaceholderResolution",
                         new XAttribute("Include", package.PackageVersion.Title),
-                        new XElement(TcNs + "Resolution", $"{package.PackageVersion.Title}, {(TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*")} ({distributorName})")
+                        new XElement(TcNs + "Resolution", $"{package.PackageVersion.Title}, {referenceVersion} ({distributorName})")
                      );
                 FormatLike(resolutionsGroup.Elements(TcNs + "PlaceholderResolution").FirstOrDefault(), resolution);
                 AppendPlcItem(resolutionsGroup, resolution);
