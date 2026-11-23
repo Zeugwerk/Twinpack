@@ -99,6 +99,39 @@ namespace TwinpackTests
             Assert.AreEqual(expected, AutomationInterface.TwinCATLibraryVersionsEquivalent(left, right));
         }
 
+        /// <summary>
+        /// What set-version writes into the plcproj, which is the version TwinCAT builds the library
+        /// under and the value of the tp-library-version tag. The prerelease label (a branch name for
+        /// CI builds) stays in config.json and the NuGet version, never in the library.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow("1.2.3.0-feat-ci", "1.2.3.0")]
+        [DataRow("1.2.3.4-feat-ci", "1.2.3.4")]
+        [DataRow("1.2.3.0", "1.2.3.0")]
+        [DataRow("1.2.3", "1.2.3")]
+        [DataRow("1.2", "1.2")]
+        [DataRow("v1.2.3.0", "1.2.3.0")]
+        [DataRow("1.2.3-feat-ci.1", "1.2.3.1")]
+        [DataRow("1.0.0-0", "1.0.0.0")]
+        [DataRow("1.02.3.0", "1.2.3.0")]
+        public void TwinCATProjectVersionIsTheVersionTheLibraryIsBuiltUnder(string configVersion, string libraryVersion)
+        {
+            Assert.AreEqual(libraryVersion, AutomationInterface.TwinCATProjectVersion(configVersion));
+        }
+
+        [DataTestMethod]
+        [DataRow("1.2.3", "1.2.3.0", "1.2.3.0")]
+        [DataRow("1.2.3-feat-ci", "1.2.3.0", "1.2.3.0-feat-ci")]
+        [DataRow("1.2.3.4-feat-ci", "1.2.3.4", "1.2.3.4-feat-ci")]
+        [DataRow("1.2.0", "1.2", "1.2")]
+        [DataRow("1.2.3-feat-ci.1", "1.2.3.1", "1.2.3.1-feat-ci")]
+        [DataRow("1.0.0-0", "1.0.0.0", "1.0.0.0")]
+        [DataRow("1.2.3", null, "1.2.3")]
+        public void WithLibraryVersionKeepsThePrereleaseLabel(string version, string libraryVersion, string expected)
+        {
+            Assert.AreEqual(expected, AutomationInterface.WithLibraryVersion(version, libraryVersion));
+        }
+
         [DataTestMethod]
         [DataRow("feat-ci")]
         [DataRow("1.0.0.0.feat.ci")]

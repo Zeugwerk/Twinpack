@@ -119,6 +119,103 @@ namespace TwinpackTests
                     Assert.IsTrue(text.IndexOf("<title>Tc2_Standard</title>", StringComparison.Ordinal) >= 0, text);
                 }
             }
+
+            // Beckhoff libraries are four part. NuGet publishes 3.4.5.0 as 3.4.5, so the mirrored
+            // package has to say which library version it is, or a consumer reading the mirror cannot
+            // reference it as TwinCAT registered it.
+            Assert.AreEqual("3.4.5.0", await MirroredVersionAsync(targetDir, "Tc2_Standard"));
+            CollectionAssert.Contains(TagsOf(published[0]), "tp-library-version=3.4.5.0");
+        }
+
+        [TestMethod]
+        public async Task TaggedNugetPackageKeepsItsLibraryVersionWhenMirroredAsync()
+        {
+            var sourceDir = Path.Combine(_root, "source");
+            var targetDir = Path.Combine(_root, "target");
+            Directory.CreateDirectory(sourceDir);
+            Directory.CreateDirectory(targetDir);
+            Pack(sourceDir, "Demo.Library", "1.2.3.0-feat-ci", new[] { "library", "tp-library-version=1.2.3.0" });
+
+            var source = new NugetServer("source", sourceDir);
+            var target = new NugetServer("target", targetDir);
+            await source.LoginAsync();
+            await target.LoginAsync();
+
+            var result = await PackageMirror.RunAsync(source, target);
+            Assert.AreEqual(0, result.Failed, string.Join("; ", result.Failures));
+            Assert.AreEqual(1, result.Copied);
+
+            var published = Directory.GetFiles(targetDir, "Demo.Library.*.nupkg").Single();
+            CollectionAssert.Contains(TagsOf(published), "tp-library-version=1.2.3.0");
+            Assert.AreEqual("1.2.3.0-feat-ci", await MirroredVersionAsync(targetDir, "Demo.Library"));
+        }
+
+        /// <summary>
+        /// 1.2.3 on an untagged feed may be a library versioned 1.2.3 or 1.2.3.0. The mirror does not
+        /// guess: the copy carries no tag, so it is exactly as ambiguous as its source and no worse.
+        /// </summary>
+        [TestMethod]
+        public async Task UntaggedNugetPackageIsMirroredWithoutALibraryVersionAsync()
+        {
+            var sourceDir = Path.Combine(_root, "source");
+            var targetDir = Path.Combine(_root, "target");
+            Directory.CreateDirectory(sourceDir);
+            Directory.CreateDirectory(targetDir);
+            Pack(sourceDir, "Demo.Library", "1.2.3.0", new[] { "library" });
+
+            var source = new NugetServer("source", sourceDir);
+            var target = new NugetServer("target", targetDir);
+            await source.LoginAsync();
+            await target.LoginAsync();
+
+            var result = await PackageMirror.RunAsync(source, target);
+            Assert.AreEqual(0, result.Failed, string.Join("; ", result.Failures));
+            Assert.AreEqual(1, result.Copied);
+
+            var published = Directory.GetFiles(targetDir, "Demo.Library.*.nupkg").Single();
+            Assert.IsFalse(TagsOf(published).Any(tag => tag.StartsWith("tp-library-version", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [TestMethod]
+        public async Task TwinpackSourceIsMirroredWithItsLibraryVersionAsync()
+        {
+            var targetDir = Path.Combine(_root, "nuget");
+            Directory.CreateDirectory(targetDir);
+            var target = new NugetServer("nuget", targetDir);
+            await target.LoginAsync();
+
+            var source = new FakeTwinpackServer("twinpack");
+            source.Catalog.Add(new CatalogItemGetResponse { Name = "LibA", DistributorName = "Zeugwerk" });
+            source.Versions.Add(new PackageVersionGetResponse
+            {
+                Name = "LibA",
+                Version = "1.2.3.0",
+                DistributorName = "Zeugwerk",
+                Branch = "main",
+                Target = "TC3.1",
+                Configuration = "Release"
+            });
+
+            var result = await PackageMirror.RunAsync(source, target);
+            Assert.AreEqual(0, result.Failed, string.Join("; ", result.Failures));
+
+            var published = Directory.GetFiles(targetDir, "LibA.*.nupkg").Single();
+            Assert.AreEqual("LibA.1.2.3.nupkg", Path.GetFileName(published));
+            CollectionAssert.Contains(TagsOf(published), "tp-library-version=1.2.3.0");
+        }
+
+        static string[] TagsOf(string nupkg)
+        {
+            using (var reader = new NuGet.Packaging.PackageArchiveReader(File.OpenRead(nupkg)))
+                return (reader.NuspecReader.GetTags() ?? "").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        static async Task<string> MirroredVersionAsync(string feed, string name)
+        {
+            var server = new NugetServer("mirrored", feed);
+            await server.LoginAsync();
+            var package = await server.GetPackageVersionAsync(new PlcLibrary { Name = name }, null, null, null);
+            return package.Version;
         }
 
         [TestMethod]

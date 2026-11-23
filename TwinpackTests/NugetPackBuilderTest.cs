@@ -84,7 +84,7 @@ namespace TwinpackTests
                 Assert.AreEqual("MyTitle", nuspec.GetTitle());
                 Assert.AreEqual("MyDescription", nuspec.GetDescription());
 
-                Assert.AreEqual("library", nuspec.GetTags());
+                Assert.AreEqual("library tp-library-version=1.0.2.4", nuspec.GetTags());
 
                 var files = reader.GetFiles().Where(x => x.EndsWith(".library")).ToList();
                 Assert.AreEqual(1, files.Count, "NugetServer requires exactly one library in the package");
@@ -117,7 +117,165 @@ namespace TwinpackTests
                 var tags = reader.NuspecReader.GetTags().Split(' ');
                 CollectionAssert.Contains(tags, NugetPackService.LibraryTag);
                 CollectionAssert.Contains(tags, NugetPackService.CompiledLibraryTag);
+
+                // ... which is why the package says which library version it really is
+                CollectionAssert.Contains(tags, "tp-library-version=2.0.0.0");
             }
+        }
+
+        [DataTestMethod]
+        [DataRow("1.2.3.0", "tp-library-version=1.2.3.0")]
+        [DataRow("1.2.3.0-feat-ci", "tp-library-version=1.2.3.0")]
+        [DataRow("1.2.3.4-release-1-x", "tp-library-version=1.2.3.4")]
+        [DataRow("1.2.3", "tp-library-version=1.2.3")]
+        [DataRow("1.2", "tp-library-version=1.2")]
+        [DataRow("1.2.3-feat-ci.1", "tp-library-version=1.2.3.1")]
+        [DataRow("1.02.3.0", "tp-library-version=1.2.3.0")]
+        [DataRow("*", null)]
+        [DataRow("", null)]
+        [DataRow(null, null)]
+        [DataRow("feat-ci", null)]
+        public void LibraryVersionTagIsTheVersionSetVersionWritesIntoThePlcproj(string configVersion, string expected)
+        {
+            Assert.AreEqual(expected, NugetPackService.LibraryVersionTag(configVersion));
+            if (expected != null)
+                Assert.AreEqual(expected, $"{NugetPackService.LibraryVersionTagKey}={AutomationInterface.TwinCATProjectVersion(configVersion)}");
+        }
+
+        [DataTestMethod]
+        [DataRow("library tp-compiled-library tp-library-version=1.2.3.0", "1.2.3.0")]
+        [DataRow("library,tp-library-version=1.2.3.0,tp-compiled-library", "1.2.3.0")]
+        [DataRow("LIBRARY TP-LIBRARY-VERSION=1.2.3", "1.2.3")]
+        [DataRow("library tp-library-version=", null)]
+        [DataRow("library tp-library-version=latest", null)]
+        [DataRow("library tp-compiled-library", null)]
+        [DataRow("library library-version=1.2.3.0", null)]
+        [DataRow(null, null)]
+        public void LibraryVersionFromTagsReadsOnlyAWellFormedTag(string tags, string expected)
+        {
+            Assert.AreEqual(expected, NugetPackService.LibraryVersionFromTags(tags));
+        }
+
+        [TestMethod]
+        public void TwinpackTagValuesSkipsFlagsAndForeignTags()
+        {
+            var values = NugetPackService.TwinpackTagValues("library tp-compiled-library tp-library-version=1.2.3.0 other=1 tp-=x");
+
+            Assert.AreEqual(1, values.Count);
+            Assert.AreEqual("1.2.3.0", values["tp-library-version"]);
+        }
+
+        /// <summary>
+        /// The case the tag exists for: a library versioned x.y.z.0 is published as x.y.z, and only the
+        /// tag tells Twinpack that the library TwinCAT registers is x.y.z.0. The prerelease label from
+        /// config.json is part of the package version and comes back with it.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow("1.2.3.0", "1.2.3.0")]
+        [DataRow("1.2.3.0-feat-ci", "1.2.3.0-feat-ci")]
+        [DataRow("1.2.3.4", "1.2.3.4")]
+        [DataRow("1.2.3", "1.2.3")]
+        [DataRow("1.2", "1.2")]
+        public async Task NugetServerReadsTheLibraryVersionBackAsync(string configVersion, string expected)
+        {
+            var feed = Path.Combine(_output, "feed");
+            var plc = new ConfigPlcProject { Name = "PlcLibrary1", Version = configVersion, DistributorName = "MyCompany" };
+            NugetPackService.PackLibrary(plc, _library, "TC3.1", false, feed);
+
+            var server = new NugetServer("Local NuGet", feed);
+            await server.LoginAsync();
+
+            var package = await server.GetPackageVersionAsync(new Twinpack.Models.PlcLibrary { Name = "PlcLibrary1" }, null, null, null);
+            Assert.AreEqual(expected, package.Version);
+            Assert.IsFalse(package.VersionAmbiguous);
+
+            var listed = (await server.GetPackageVersionsAsync(new Twinpack.Models.PlcLibrary { Name = "PlcLibrary1" })).Item1.Single();
+            Assert.AreEqual(expected, listed.Version);
+
+            // looking it up by the version Twinpack now reports finds the same package
+            var byVersion = await server.GetPackageVersionAsync(new Twinpack.Models.PlcLibrary { Name = "PlcLibrary1", Version = expected }, null, null, null);
+            Assert.AreEqual(expected, byVersion.Version);
+        }
+
+        /// <summary>
+        /// A package published before the tag existed, or by another tool, still reads as the NuGet
+        /// version, and is marked as not saying which library version it is.
+        /// </summary>
+        [TestMethod]
+        public async Task NugetServerReadsAnUntaggedPackageAsBeforeAsync()
+        {
+            var feed = Path.Combine(_output, "feed");
+            NugetPackBuilder.Pack(new NugetPackRequest
+            {
+                Id = "PlcLibrary1",
+                Version = "1.2.3.0",
+                Authors = "MyCompany",
+                Description = "untagged",
+                Tags = new[] { NugetPackService.LibraryTag },
+                Files = new[] { new NugetPackFile { Source = _library, Target = "TC3.1" } },
+                OutputDirectory = feed
+            });
+
+            var server = new NugetServer("Local NuGet", feed);
+            await server.LoginAsync();
+
+            var package = await server.GetPackageVersionAsync(new Twinpack.Models.PlcLibrary { Name = "PlcLibrary1" }, null, null, null);
+            Assert.AreEqual("1.2.3", package.Version);
+            Assert.IsTrue(package.VersionAmbiguous);
+        }
+
+        [TestMethod]
+        public async Task NugetServerIgnoresATagForAnotherVersionAsync()
+        {
+            var feed = Path.Combine(_output, "feed");
+            NugetPackBuilder.Pack(new NugetPackRequest
+            {
+                Id = "PlcLibrary1",
+                Version = "1.2.3",
+                Authors = "MyCompany",
+                Description = "wrong tag",
+                Tags = new[] { NugetPackService.LibraryTag, "tp-library-version=1.2.4.0" },
+                Files = new[] { new NugetPackFile { Source = _library, Target = "TC3.1" } },
+                OutputDirectory = feed
+            });
+
+            var server = new NugetServer("Local NuGet", feed);
+            await server.LoginAsync();
+
+            var package = await server.GetPackageVersionAsync(new Twinpack.Models.PlcLibrary { Name = "PlcLibrary1" }, null, null, null);
+            Assert.AreEqual("1.2.3", package.Version);
+            Assert.IsTrue(package.VersionAmbiguous);
+        }
+
+        /// <summary>
+        /// A dependency range only holds the NuGet version ([1.4.2, ) for ZCore 1.4.2.0). The package
+        /// the range resolves to carries the tag, so the dependency is the library version again.
+        /// </summary>
+        [TestMethod]
+        public async Task DependencyResolvesToTheTaggedLibraryVersionAsync()
+        {
+            var feed = Path.Combine(_output, "feed");
+            NugetPackService.PackLibrary(
+                new ConfigPlcProject { Name = "ZCore", Version = "1.4.2.0", DistributorName = "MyCompany" },
+                _library, "TC3.1", false, feed);
+            NugetPackService.PackLibrary(
+                new ConfigPlcProject
+                {
+                    Name = "PlcLibrary1",
+                    Version = "1.0.0.1",
+                    DistributorName = "MyCompany",
+                    Packages = new List<ConfigPlcPackage> { new ConfigPlcPackage { Name = "ZCore", Version = "1.4.2.0" } }
+                },
+                _library, "TC3.1", false, feed);
+
+            var server = new NugetServer("Local NuGet", feed);
+            await server.LoginAsync();
+
+            var package = await server.GetPackageVersionAsync(new Twinpack.Models.PlcLibrary { Name = "PlcLibrary1" }, null, null, null);
+            var dependency = package.Dependencies.Single();
+            Assert.AreEqual("ZCore", dependency.Name);
+            Assert.AreEqual("1.4.2.0", dependency.Version);
+            Assert.IsFalse(dependency.VersionAmbiguous);
         }
 
         [TestMethod]

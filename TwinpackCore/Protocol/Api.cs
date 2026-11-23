@@ -214,6 +214,7 @@ namespace Twinpack.Protocol.Api
             Dependencies = packageVersion?.Dependencies == null ? new List<PackageVersionGetResponse>() : new List<PackageVersionGetResponse>(packageVersion?.Dependencies);
             LibraryFiles = packageVersion?.LibraryFiles == null ? null : new List<string>(packageVersion.LibraryFiles);
             RepositoryFiles = packageVersion?.RepositoryFiles == null ? null : new List<string>(packageVersion.RepositoryFiles);
+            VersionAmbiguous = packageVersion?.VersionAmbiguous ?? false;
 #if !TWINPACK_HEADLESS
             IconBytes = packageVersion?.IconBytes;
 #endif
@@ -272,6 +273,16 @@ namespace Twinpack.Protocol.Api
         /// </summary>
         [JsonIgnore]
         public List<string> RepositoryFiles { get; set; }
+
+        /// <summary>
+        /// True when <see cref="Version"/> is a NuGet version that may not be the version the library
+        /// was built under: a feed reports <c>1.2.3</c> for a library versioned <c>1.2.3.0</c>, and a
+        /// package without a <c>tp-library-version</c> tag does not say which one it is. Not part of
+        /// the server payload.
+        /// </summary>
+        [JsonIgnore]
+        public bool VersionAmbiguous { get; set; }
+
         [JsonPropertyName("type")]
         public string PackageType { get; set; }
 
