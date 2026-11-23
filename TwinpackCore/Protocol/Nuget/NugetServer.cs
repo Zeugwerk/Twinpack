@@ -358,7 +358,8 @@ namespace Twinpack.Protocol
                         Branches = new List<string>() { "main" },
                         Targets = new List<string>() { "TC3.1" },
                         Configurations = new List<string>() { "Release" },
-                        Version = EvaluateVersion(x.Identity.Version),
+                        Version = EvaluateVersion(x),
+                        VersionAmbiguous = IsVersionAmbiguous(x),
                         Branch = "main",
                         Target = "TC3.1",
                         Configuration = "Release",
@@ -513,7 +514,12 @@ namespace Twinpack.Protocol
                             if (reference.IdentityKnown)
                                 packageVersion.Title = reference.Title;
                             if (!string.IsNullOrEmpty(reference.Version))
+                            {
+                                // browsercache/projectinfo or the repository folder name the version
+                                // TwinCAT registers, so it is no longer ambiguous
                                 packageVersion.Version = reference.Version;
+                                packageVersion.VersionAmbiguous = false;
+                            }
                             if (!string.IsNullOrEmpty(reference.Distributor))
                                 packageVersion.DistributorName = reference.Distributor;
 
@@ -594,11 +600,18 @@ namespace Twinpack.Protocol
                             Title = d.Id,
                             DisplayName = d.Id,
                             Version = version,
+                            VersionAmbiguous = IsAmbiguousLibraryVersion(version),
                             Dependencies = null
                         });
                 }
                 else if(dependency?.Tags?.ToLower().Contains("library") == true || dependency?.Tags?.ToLower().Contains("plc-library") == true)
                 {
+                    // A dependency range only holds a NuGet version ([1.4.2, ) for a library 1.4.2.0).
+                    // The package it resolved to is that version, so its own tag says which library
+                    // version the range means.
+                    if (version != null)
+                        version = EvaluateVersion(dependency);
+
                     dependencies.Add(
                         new PackageVersionGetResponse()
                         {
@@ -619,6 +632,7 @@ namespace Twinpack.Protocol
                             Targets = new List<string>() { "TC3.1" },
                             Configurations = new List<string>() { "Release" },
                             Version = version?.ToString(),
+                            VersionAmbiguous = version != null && IsVersionAmbiguous(dependency),
                             Branch = "main",
                             Target = "TC3.1",
                             Configuration = "Release",
@@ -653,7 +667,8 @@ namespace Twinpack.Protocol
                 Branches = new List<string>() { "main" },
                 Targets = new List<string>() { "TC3.1" },
                 Configurations = new List<string>() { "Release" },
-                Version = EvaluateVersion(x.Identity.Version),
+                Version = EvaluateVersion(x),
+                VersionAmbiguous = IsVersionAmbiguous(x),
                 Branch = "main",
                 Target = "TC3.1",
                 Configuration = "Release",
@@ -919,6 +934,62 @@ namespace Twinpack.Protocol
         protected virtual string EvaluateVersion(NuGetVersion version)
         {
             return Core.AutomationInterface.FourPartVersion(version?.OriginalVersion ?? version?.ToString());
+        }
+
+        /// <summary>
+        /// The version of <paramref name="package"/> as TwinCAT spells it. A package Twinpack packed
+        /// records the version the library was built under in its <c>tp-library-version</c> tag, which
+        /// is the only way to tell a library versioned <c>1.2.3.0</c> from one versioned <c>1.2.3</c>
+        /// once NuGet has published both as <c>1.2.3</c>. The tag is used only when it names the same
+        /// version as the package, so a stray or hand-edited tag cannot move a reference to another
+        /// version. The prerelease label of the package version is kept.
+        /// </summary>
+        protected string EvaluateVersion(IPackageSearchMetadata package)
+        {
+            var fromFeed = EvaluateVersion(package?.Identity?.Version);
+            var exact = ExactLibraryVersion(package, fromFeed);
+            return exact == null ? fromFeed : Core.AutomationInterface.WithLibraryVersion(fromFeed, exact);
+        }
+
+        /// <summary>
+        /// Whether <see cref="EvaluateVersion(IPackageSearchMetadata)"/> had to fall back to a NuGet
+        /// version that may have lost a revision of 0.
+        /// </summary>
+        protected bool IsVersionAmbiguous(IPackageSearchMetadata package)
+        {
+            var fromFeed = EvaluateVersion(package?.Identity?.Version);
+            return ExactLibraryVersion(package, fromFeed) == null && IsAmbiguousLibraryVersion(fromFeed);
+        }
+
+        static string ExactLibraryVersion(IPackageSearchMetadata package, string fromFeed)
+        {
+            var exact = Core.NugetPackService.LibraryVersionFromTags(package?.Tags);
+            if (exact == null || string.IsNullOrEmpty(fromFeed))
+                return null;
+
+            if (Core.AutomationInterface.TwinCATLibraryVersionsEquivalent(exact, fromFeed))
+                return exact;
+
+            _logger.Warn("[version] {0} {1} carries {2}={3}, which is not that version, ignoring it",
+                package.Identity?.Id, fromFeed, Core.NugetPackService.LibraryVersionTagKey, exact);
+            return null;
+        }
+
+        /// <summary>A version with fewer than four numbers may be a library versioned with a fourth part of 0.</summary>
+        internal static bool IsAmbiguousLibraryVersion(string version)
+        {
+            if (string.IsNullOrEmpty(version) || version == "*")
+                return false;
+
+            try
+            {
+                var numeric = Core.AutomationInterface.TwinCATLibraryVersion(version);
+                return System.Version.TryParse(numeric, out var parsed) && parsed.Revision < 0;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
         }
 
         // NuGet normalizes a trailing ".0" away, so "1.0.0.0-feat-ci" has to match a package stored as

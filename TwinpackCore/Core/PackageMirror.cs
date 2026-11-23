@@ -169,10 +169,12 @@ namespace Twinpack.Core
 
                 foreach (var version in packageVersions)
                 {
+                    var original = version.OriginalVersion ?? version.ToNormalizedString();
                     versions.Add(new PackageVersionGetResponse
                     {
                         Name = id,
-                        Version = version.OriginalVersion ?? version.ToNormalizedString(),
+                        Version = original,
+                        VersionAmbiguous = NugetServer.IsAmbiguousLibraryVersion(original),
                         Branch = "main",
                         Target = "TC3.1",
                         Configuration = "Release"
@@ -474,6 +476,14 @@ namespace Twinpack.Core
             }
             else
             {
+                // The version is exact when the source knows it: a Twinpack server stores it as it is,
+                // a Beckhoff package names it in browsercache, and a NuGet package Twinpack packed
+                // carries it in its tag. A bare NuGet version such as 1.2.3 is not, so the mirrored
+                // package gets no tag rather than one that might be wrong.
+                if (package.VersionAmbiguous)
+                    _logger.Info("[mirror] {0} {1} does not say which library version it is, publishing it without {2}",
+                        package.Name, package.Version, NugetPackService.LibraryVersionTagKey);
+
                 nupkg = NugetPackService.PackLibrary(
                     plc,
                     libraryFile,
@@ -481,7 +491,8 @@ namespace Twinpack.Core
                     package.Compiled == 1,
                     output,
                     metadata,
-                    repositoryFiles);
+                    repositoryFiles,
+                    libraryVersionKnown: !package.VersionAmbiguous);
             }
 
             await target.PushNupkgAsync(nupkg, cancellationToken);

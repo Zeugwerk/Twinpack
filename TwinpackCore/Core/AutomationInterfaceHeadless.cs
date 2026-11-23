@@ -97,6 +97,53 @@ namespace Twinpack.Core
                 ?? FindMatch(pv, requireDistributor: false);
         }
 
+        /// <summary>
+        /// The version an installed library is registered under when <paramref name="pv"/> names it
+        /// with a different spelling, otherwise null. A NuGet feed publishes a library versioned
+        /// <c>1.2.3.0</c> as <c>1.2.3</c>, and a package without a <c>tp-library-version</c> tag does
+        /// not say which of the two it is. TwinCAT resolves a reference only under the exact string,
+        /// so an installed library is referenced the way TwinCAT registered it. An installed library
+        /// with exactly the requested version wins over one that is only equivalent, the same rule
+        /// the Visual Studio automation interface applies against the library manager.
+        /// </summary>
+        private string InstalledLibraryVersion(PackageVersionGetResponse pv)
+        {
+            if (string.IsNullOrEmpty(pv?.Version) || pv.Version == "*" || string.IsNullOrEmpty(pv.Title))
+                return null;
+
+            string wanted;
+            try
+            {
+                wanted = TwinCATLibraryVersion(pv.Version);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+
+            LocalRepository ??= LoadLibraryElements().ToList();
+            var candidates = LocalRepository
+                .Where(lib => string.Equals((string)lib.Attribute("Title"), pv.Title, StringComparison.InvariantCultureIgnoreCase))
+                .ToList();
+            if (!string.IsNullOrEmpty(pv.DistributorName))
+            {
+                var sameCompany = candidates
+                    .Where(lib => string.Equals((string)lib.Attribute("Company"), pv.DistributorName, StringComparison.InvariantCultureIgnoreCase))
+                    .ToList();
+                if (sameCompany.Count > 0)
+                    candidates = sameCompany;
+            }
+
+            var versions = candidates
+                .Select(lib => (string)lib.Attribute("Version"))
+                .Where(version => !string.IsNullOrEmpty(version))
+                .ToList();
+            if (versions.Any(version => string.Equals(version, wanted, StringComparison.Ordinal)))
+                return null;
+
+            return versions.FirstOrDefault(version => TwinCATLibraryVersionsEquivalent(version, wanted));
+        }
+
         public override bool IsPackageInstalled(PackageItem package)
         {
             return FindInstalled(package.PackageVersion) != null;
@@ -171,6 +218,16 @@ namespace Twinpack.Core
             }
 
             ns = ns.Replace(" ", "_");
+
+            // Written back to the package, so config.json records the version the reference uses.
+            var installedVersion = InstalledLibraryVersion(package.PackageVersion);
+            if (installedVersion != null)
+            {
+                _logger.Info("[reference] {0} {1} is installed as {2}, referencing that version",
+                    package.PackageVersion.Title, package.PackageVersion.Version, installedVersion);
+                package.PackageVersion.Version = WithLibraryVersion(package.PackageVersion.Version, installedVersion);
+                package.PackageVersion.VersionAmbiguous = false;
+            }
 
             var match = FindInstalled(package.PackageVersion);
             var distributorName = match?.Attribute("Company")?.Value ?? package.PackageVersion.DistributorName;
@@ -462,7 +519,7 @@ namespace Twinpack.Core
                     _logger.Info("[plc] updated company to {0}", plc.DistributorName);
                 }
 
-                var versionStr = TwincatNumericVersion(NormalizedVersion(plc.Version));
+                var versionStr = TwinCATProjectVersion(plc.Version);
                 if (!string.IsNullOrEmpty(versionStr))
                 {
                     if (projectVersion != null)

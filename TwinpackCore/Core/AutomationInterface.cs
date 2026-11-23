@@ -103,15 +103,16 @@ namespace Twinpack.Core
         }
 
         /// <summary>
-        /// Inverse of <see cref="FourPartVersion"/>: the NuGet version a TwinCAT
-        /// <c>x.y.z.w[-qualifier]</c> library is published under. A four part version is one NuGet
-        /// understands directly, so it is used as it is and only a leading <c>v</c> is dropped.
-        /// Anything that is not four numbers is returned unchanged.
+        /// The NuGet version a TwinCAT <c>x.y.z.w[-qualifier]</c> library is published under. A four
+        /// part version is one NuGet understands directly, so it is used as it is and only a leading
+        /// <c>v</c> is dropped. Anything that is not four numbers is returned unchanged.
         /// <para>
         /// NuGet normalizes a <c>w</c> of 0 away when it writes the nuspec, so <c>1.0.0.0</c> is
-        /// published as <c>1.0.0</c> and <c>1.0.0.0-feat-ci</c> as <c>1.0.0-feat-ci</c>. That is
-        /// lossless: the two spellings are the same version to NuGet, so a lookup for either finds
-        /// the package, and <see cref="FourPartVersion"/> pads the 0 back for the TwinCAT side.
+        /// published as <c>1.0.0</c> and <c>1.0.0.0-feat-ci</c> as <c>1.0.0-feat-ci</c>. A lookup on
+        /// the feed still finds the package under either spelling, but the published version alone no
+        /// longer says whether the library is <c>1.0.0</c> or <c>1.0.0.0</c>, and
+        /// <see cref="FourPartVersion"/> does not guess. The exact version travels in the package's
+        /// <see cref="NugetPackService.LibraryVersionTagKey"/> tag instead.
         /// </para>
         /// </summary>
         public static string NugetVersion(string version)
@@ -128,6 +129,45 @@ namespace Twinpack.Core
                 return version;
 
             return v;
+        }
+
+        /// <summary>
+        /// The version written into a PLC's plcproj, and therefore the version TwinCAT builds the
+        /// library under: the numeric part of <paramref name="version"/> without its prerelease label,
+        /// spelled the way <see cref="Version.ToString()"/> spells it (no leading zeros, as many parts as
+        /// given). <c>1.2.3.0-feat-ci</c> is <c>1.2.3.0</c>, the superseded <c>1.2.3-feat-ci.1</c> is
+        /// <c>1.2.3.1</c>. Every place that writes the plcproj version or records the library version a
+        /// package was built with goes through here, so the two cannot drift apart.
+        /// </summary>
+        public static string TwinCATProjectVersion(string version)
+        {
+            var numeric = TwincatNumericVersion(NormalizedVersion(version));
+            if (string.IsNullOrEmpty(numeric))
+                return numeric;
+
+            return Version.TryParse(numeric, out var parsed) ? parsed.ToString() : numeric;
+        }
+
+        /// <summary>
+        /// <paramref name="version"/> with its numeric part replaced by the exact library version
+        /// <paramref name="libraryVersion"/>, keeping the prerelease label: <c>1.2.3-feat-ci</c> with
+        /// <c>1.2.3.0</c> is <c>1.2.3.0-feat-ci</c>. A label in the superseded convention that carried
+        /// the revision is decoded first, so the revision is not kept twice.
+        /// </summary>
+        public static string WithLibraryVersion(string version, string libraryVersion)
+        {
+            if (string.IsNullOrEmpty(libraryVersion))
+                return version;
+
+            var decoded = FourPartVersion(version?.Trim().TrimStart(new char[] { 'v', 'V' }));
+            var dash = decoded?.IndexOf('-') ?? -1;
+            if (dash < 0)
+                return libraryVersion;
+
+            var label = decoded.Substring(dash + 1);
+            return string.IsNullOrEmpty(label) || int.TryParse(label, out _)
+                ? libraryVersion
+                : $"{libraryVersion}-{label}";
         }
 
         private static string PrereleaseRevision(string prefix, string suffix)

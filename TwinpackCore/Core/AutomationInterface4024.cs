@@ -821,10 +821,10 @@ namespace Twinpack.Core
                     _logger.Warn("[plc] title '{0}' has invalid characters, skipping", titleStr);
                 }
 
-                var versionStr = TwincatNumericVersion(NormalizedVersion(plc.Version));
+                var versionStr = TwinCATProjectVersion(plc.Version);
                 if (!string.IsNullOrEmpty(versionStr))
                 {
-                    writer.WriteElementString("Version", new Version(versionStr).ToString());
+                    writer.WriteElementString("Version", versionStr);
                     _logger.Info("[plc] updated version to {0}", versionStr);
                 }
                 else if ((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary) && string.IsNullOrEmpty(versionStr))

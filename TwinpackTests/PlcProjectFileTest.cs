@@ -124,6 +124,90 @@ namespace TwinpackTests
             });
         }
 
+        /// <summary>
+        /// A feed without the tp-library-version tag reports a library versioned 3.3.24.0 as 3.3.24.
+        /// TwinCAT only resolves the reference under the version it registered, so headless takes the
+        /// installed spelling, and hands it back so config.json records it too.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow("3.3.24", "3.3.24.0", "3.3.24.0")]
+        [DataRow("3.3.24-feat-ci", "3.3.24.0", "3.3.24.0-feat-ci")]
+        [DataRow("3.3.24.0", "3.3.24", "3.3.24")]
+        [DataRow("3.3.24", "3.3.25.0", "3.3.24")]
+        [DoNotParallelize]
+        public async Task AddReference_UsesTheVersionTheLibraryIsInstalledUnder(string requested, string installed, string expected)
+        {
+            await WithInstalledLibraries(new[] { InstalledLibrary("Tc3_Module", "Beckhoff Automation GmbH", installed) }, async () =>
+            {
+                await WithProject(utf8Bom: false, newline: "\r\n", async (automation, path) =>
+                {
+                    var package = Library("Tc3_Module", requested, "Beckhoff Automation GmbH");
+                    await automation.AddPackageAsync(package);
+
+                    Assert.AreEqual(expected, package.PackageVersion.Version);
+                    Assert.AreEqual($"Tc3_Module, {AutomationInterface.TwinCATLibraryVersion(expected)} (Beckhoff Automation GmbH)",
+                        ResolutionOf(File.ReadAllText(path), "Tc3_Module"));
+                });
+            });
+        }
+
+        /// <summary>
+        /// TwinCAT allows a library to be versioned 1.2.3 and another 1.2.3.0. When the exact version is
+        /// installed it is the one referenced, not the other spelling.
+        /// </summary>
+        [TestMethod]
+        [DoNotParallelize]
+        public async Task AddReference_PrefersTheExactlyInstalledVersion()
+        {
+            var installed = new[]
+            {
+                InstalledLibrary("MyLib", "Vendor", "1.2.3.0"),
+                InstalledLibrary("MyLib", "Vendor", "1.2.3")
+            };
+
+            await WithInstalledLibraries(installed, async () =>
+            {
+                await WithProject(utf8Bom: false, newline: "\r\n", async (automation, path) =>
+                {
+                    var package = Library("MyLib", "1.2.3");
+                    await automation.AddPackageAsync(package);
+
+                    Assert.AreEqual("1.2.3", package.PackageVersion.Version);
+                    Assert.AreEqual("MyLib, 1.2.3 (Vendor)", ResolutionOf(File.ReadAllText(path), "MyLib"));
+                });
+            });
+        }
+
+        static XElement InstalledLibrary(string title, string company, string version)
+        {
+            return new XElement("Library",
+                new XAttribute("Title", title),
+                new XAttribute("Company", company),
+                new XAttribute("Version", version),
+                new XAttribute("DefaultNamespace", title));
+        }
+
+        static async Task WithInstalledLibraries(XElement[] libraries, Func<Task> act)
+        {
+            InstalledLibraries.Use(libraries.ToList());
+            try
+            {
+                await act();
+            }
+            finally
+            {
+                // the next test loads the machine's own library index again
+                InstalledLibraries.Use(null);
+            }
+        }
+
+        sealed class InstalledLibraries : AutomationInterfaceHeadless
+        {
+            InstalledLibraries() : base(new Config()) { }
+
+            public static void Use(System.Collections.Generic.List<XElement> libraries) => LocalRepository = libraries;
+        }
+
         static async Task WithProject(bool utf8Bom, string newline, Func<AutomationInterfaceHeadless, string, Task> act)
         {
             var directory = Path.Combine(Path.GetTempPath(), "twinpack-plcproj-" + Guid.NewGuid().ToString("N"));
