@@ -68,6 +68,7 @@
     <Compile Include="LibraryInstallPlanTest.cs" />
     <Compile Include="AutomationInterfaceVersionTest.cs" />
     <Compile Include="ConfigFactoryTest.cs" />
+    <Compile Include="ConfigPlcFactoryFromPathTest.cs" />
     <Compile Include="mocks\PackageServerMock.cs" />
     <Compile Include="NugetPackBuilderTest.cs" />
     <Compile Include="PackageMirrorTest.cs" />

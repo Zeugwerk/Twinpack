@@ -40,7 +40,7 @@ namespace Twinpack.Commands
             public bool WithoutConfig { get; set; }
 
             [CommandOption("--library-path")]
-            [Description("Only valid when without-config is used, path where .library files are located")]
+            [Description("Only valid when without-config is used, path where .library or .compiled-library files are located")]
             public string LibraryPath { get; set; }
 
             [CommandOption("--skip-duplicate")]
@@ -100,13 +100,14 @@ namespace Twinpack.Commands
             _twinpack.LoginAsync().GetAwaiter().GetResult();
 
             var plcs = (settings.WithoutConfig ?
-                        ConfigPlcProjectFactory.PlcProjectsFromPath(settings.LibraryPath, PackagingServerRegistry.Servers) :
+                        ConfigPlcProjectFactory.PlcProjectsFromPath(settings.LibraryPath, PackagingServerRegistry.Servers, settings.Compiled) :
                         ConfigPlcProjectFactory.PlcProjectsFromConfig(settings.Compiled, settings.Target)).ToList();
 
             if (!plcs.Any())
             {
-                throw new Exception("Could not locate any artifacts to push. " 
-                    + (settings.WithoutConfig ? $"No .library files in '{settings.LibraryPath}'" : ""));
+                var suffix = settings.Compiled ? ".compiled-library" : ".library";
+                throw new Exception("Could not locate any artifacts to push. "
+                    + (settings.WithoutConfig ? $"No {suffix} files in '{settings.LibraryPath}'" : ""));
             }
 
             // explicit --flags win over whatever was auto-derived from the compiled library for every

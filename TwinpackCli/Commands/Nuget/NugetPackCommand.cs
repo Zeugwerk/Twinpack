@@ -28,11 +28,11 @@ namespace Twinpack.Commands
             public string OutputDirectory { get; set; }
 
             [CommandOption("--without-config")]
-            [Description("Don't use a config.json file, but pack every .library found in --library-path")]
+            [Description("Don't use a config.json file, but pack every .library (or .compiled-library with --compiled) found in --library-path")]
             public bool WithoutConfig { get; set; }
 
             [CommandOption("--library-path")]
-            [Description("Only valid together with --without-config, path where the .library files are located")]
+            [Description("Only valid together with --without-config, path where the .library or .compiled-library files are located")]
             public string LibraryPath { get; set; }
 
             [CommandOption("--description")]
@@ -83,7 +83,7 @@ namespace Twinpack.Commands
                 // feeds in memory; this command does not write sourceRepositories.json.
                 target = settings.Target ?? LibraryTargets.Default;
                 PackagingServerRegistry.InitializeAsync(fallbackToDefaults: true, login: false, saveDefaults: false).GetAwaiter().GetResult();
-                plcs = ConfigPlcProjectFactory.PlcProjectsFromPath(settings.LibraryPath, PackagingServerRegistry.Servers).ToList();
+                plcs = ConfigPlcProjectFactory.PlcProjectsFromPath(settings.LibraryPath, PackagingServerRegistry.Servers, settings.Compiled).ToList();
             }
             else
             {
@@ -93,8 +93,9 @@ namespace Twinpack.Commands
 
             if (!plcs.Any())
             {
+                var suffix = settings.Compiled ? ".compiled-library" : ".library";
                 throw new Exception("Could not locate any artifacts to pack. "
-                    + (settings.WithoutConfig ? $"No .library files in '{settings.LibraryPath}'" : ""));
+                    + (settings.WithoutConfig ? $"No {suffix} files in '{settings.LibraryPath}'" : ""));
             }
 
             // explicit --flags win over whatever was derived from the compiled library, same
