@@ -23,6 +23,7 @@ namespace Twinpack.Models
             var content = XDocument.Load(filepath);
 
             Name = name;
+            FilePath = filepath;
             // PrjFilePath / File attributes inside .tsproj/.xti are Windows-style ("ZCore\\ZCore.plcproj");
             // PathUtil.Combine swaps the inner separators so the lookup also succeeds on Linux/macOS.
             Plcs = content?.Root?.Elements("Project")?.Elements("Plc")?.Elements("Project")
@@ -48,6 +49,13 @@ namespace Twinpack.Models
         }
 
         public string Name { get; private set; } = null;
+
+        /// <summary>
+        /// The TwinCAT project file (.tsproj, or .tspproj for a standalone PLC project) this project
+        /// was read from, null when it was assembled from PLC projects without one.
+        /// </summary>
+        public string FilePath { get; private set; } = null;
+
         public List<Plc> Plcs { get; private set; } = new List<Plc>();
     }
 }

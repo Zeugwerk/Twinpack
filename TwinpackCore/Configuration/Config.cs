@@ -75,6 +75,14 @@ namespace Twinpack.Configuration
         [JsonPropertyName("plcs")]
         public List<ConfigPlcProject> Plcs { get; set; }
 
+        /// <summary>
+        /// The TwinCAT project file (.tsproj, or .tspproj for a standalone PLC project), resolved from
+        /// the solution when the config is loaded or created. Not stored in config.json; null when the
+        /// solution could not be read or the project has no project file of its own.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public string FilePath { get; set; }
+
         /// <summary>TF2000 runtime service instance folder name under ProgramData\...\service\.</summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("server-instance")]

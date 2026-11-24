@@ -110,6 +110,59 @@ namespace TwinpackTests
             Assert.AreEqual(2, config.Projects.Count);
         }
 
+        [TestMethod]
+        public async Task CreateFromSolutionFile_ProjectsCarryTheirFilePathAsync()
+        {
+            var config = await ConfigFactory.CreateFromSolutionFileAsync(@"assets\TestSolution\TestSolution.sln");
+            var root = Path.GetFullPath(@"assets\TestSolution");
+
+            Assert.AreEqual(Path.Combine(root, "TestProject", "TestProject.tsproj"),
+                Path.GetFullPath(config.Projects.Single(x => x.Name == "TestProject").FilePath));
+            Assert.AreEqual(Path.Combine(root, "TestProject2", "TestProject2.tspproj"),
+                Path.GetFullPath(config.Projects.Single(x => x.Name == "TestProject2").FilePath));
+        }
+
+        [TestMethod]
+        public void Load_ProjectsCarryTheirFilePath_ButDoNotSaveIt()
+        {
+            var dir = Path.Combine(Path.GetTempPath(), "twinpack-projectpath-" + Guid.NewGuid().ToString("N"));
+            foreach (var file in Directory.GetFiles(@"assets\TestSolution", "*", SearchOption.AllDirectories))
+            {
+                var target = Path.Combine(dir, file.Substring(@"assets\TestSolution\".Length));
+                Directory.CreateDirectory(Path.GetDirectoryName(target));
+                File.Copy(file, target);
+            }
+            Directory.CreateDirectory(Path.Combine(dir, ".Zeugwerk"));
+            File.WriteAllText(Path.Combine(dir, ".Zeugwerk", "config.json"), @"{
+                ""fileversion"": 1,
+                ""solution"": ""TestSolution.sln"",
+                ""projects"": [
+                    { ""name"": ""testproject"", ""plcs"": [] },
+                    { ""name"": ""TestProject2"", ""plcs"": [] },
+                    { ""name"": ""NotInSolution"", ""plcs"": [] }
+                ]
+            }");
+
+            try
+            {
+                var config = ConfigFactory.Load(dir);
+
+                // Matched case-insensitively, like the PLCs of a project.
+                Assert.AreEqual(Path.GetFullPath(Path.Combine(dir, "TestProject", "TestProject.tsproj")),
+                    Path.GetFullPath(config.Projects.Single(x => x.Name == "testproject").FilePath));
+                Assert.AreEqual(Path.GetFullPath(Path.Combine(dir, "TestProject2", "TestProject2.tspproj")),
+                    Path.GetFullPath(config.Projects.Single(x => x.Name == "TestProject2").FilePath));
+                Assert.IsNull(config.Projects.Single(x => x.Name == "NotInSolution").FilePath);
+
+                ConfigFactory.Save(config);
+                StringAssert.DoesNotMatch(File.ReadAllText(config.FilePath), new System.Text.RegularExpressions.Regex("tsproj|tspproj|file-?path", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
         [DataRow(true)]
         [DataRow(false)]
         [DataTestMethod]

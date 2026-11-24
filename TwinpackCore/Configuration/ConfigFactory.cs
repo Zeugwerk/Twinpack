@@ -201,12 +201,15 @@ namespace Twinpack.Configuration
 
                     foreach (var project in config.Projects ?? Enumerable.Empty<ConfigProject>())
                     {
+                        // Compare names case-insensitively so a config.json or .sln authored
+                        // on Windows still matches on a case-sensitive file system.
+                        var solutionProject = solution.Projects?
+                            .FirstOrDefault(x => string.Equals(x.Name, project.Name, StringComparison.OrdinalIgnoreCase));
+                        project.FilePath = solutionProject?.FilePath;
+
                         foreach (var plc in project.Plcs ?? Enumerable.Empty<ConfigPlcProject>())
                         {
-                            // Compare names case-insensitively so a config.json or .sln authored
-                            // on Windows still matches on a case-sensitive file system.
-                            var plcpath = solution.Projects?
-                                .FirstOrDefault(x => string.Equals(x.Name, project.Name, StringComparison.OrdinalIgnoreCase))?
+                            var plcpath = solutionProject?
                                 .Plcs
                                 .FirstOrDefault(x => string.Equals(x.Name, plc.Name, StringComparison.OrdinalIgnoreCase))?
                                 .FilePath;
@@ -272,6 +275,7 @@ namespace Twinpack.Configuration
 
                 var project = new ConfigProject();
                 project.Name = prj.Name;
+                project.FilePath = prj.FullName;
 
                 ITcSmTreeItem plcs = systemManager.LookupTreeItem("TIPC");
                 foreach (ITcSmTreeItem9 plc in plcs)
@@ -368,6 +372,7 @@ namespace Twinpack.Configuration
             {
                 var projectConfig = new ConfigProject();
                 projectConfig.Name = project.Name;
+                projectConfig.FilePath = project.FilePath;
                 projectConfig.Plcs = new List<ConfigPlcProject>();
 
                 foreach (var plc in project.Plcs)
