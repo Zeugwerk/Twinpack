@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using NLog;
 using Twinpack.Models;
+using Twinpack.Protocol;
 using Twinpack.Protocol.Api;
 using Twinpack.Core;
 
@@ -428,10 +429,17 @@ namespace Twinpack.Configuration
             }
         }
 
-        public static IEnumerable<(ConfigPlcProject Plc, PlcPublishMetadata Metadata)> PlcProjectsFromPath(string rootPath, PackageServerCollection packageServers)
+        public static IEnumerable<(ConfigPlcProject Plc, PlcPublishMetadata Metadata)> PlcProjectsFromPath(string rootPath, PackageServerCollection packageServers, bool compiled = false)
         {
-            foreach (var libraryFile in Directory.GetFiles(rootPath, "*.library"))
+            foreach (var libraryFile in Directory.GetFiles(rootPath))
             {
+                if (!PlcLibraryPackage.IsLibraryFile(libraryFile))
+                    continue;
+
+                var isCompiled = libraryFile.IndexOf(".compiled-library", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (isCompiled != compiled)
+                    continue;
+
                 var libraryInfo = LibraryReader.Read(File.ReadAllBytes(libraryFile));
                 var plc = new ConfigPlcProject()
                 {
