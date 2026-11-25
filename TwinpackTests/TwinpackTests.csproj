@@ -82,6 +82,8 @@
     <Compile Include="LibraryReaderTest.cs" />
     <Compile Include="PlcLibraryPackageTest.cs" />
     <Compile Include="TwincatInstallTest.cs" />
+    <Compile Include="InstallIntentCharacterizationTest.cs" />
+    <Compile Include="HeadlessPlcprojGoldenTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -140,6 +142,9 @@
   <ItemGroup>
     <Content Include="assets\TestSolution\TestSolution.sln">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\HeadlessPlcproj\*.plcproj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="assets\Untitled1_4024_35_minimal_infos_123.library">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

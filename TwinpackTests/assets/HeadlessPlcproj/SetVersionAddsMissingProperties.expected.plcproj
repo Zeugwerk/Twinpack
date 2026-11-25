@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <FileVersion>1.0.0.0</FileVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <Name>Plc1</Name>
+  <Title>Plc1</Title><Company>Zeugwerk GmbH</Company><ProjectVersion>1.2.3.4</ProjectVersion></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="POUs\MAIN.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <LibraryReference Include="Tc2_System,3.4.26.0,Beckhoff Automation GmbH">
+      <Namespace>Tc2_System</Namespace>
+    </LibraryReference>
+  </ItemGroup>
+  <ProjectExtensions>
+    <PlcProjectOptions />
+  </ProjectExtensions>
+</Project>
