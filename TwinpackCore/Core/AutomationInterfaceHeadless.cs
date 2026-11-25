@@ -33,6 +33,9 @@ namespace Twinpack.Core
 
         public override string SolutionProductLine => _productLine;
 
+        // Headless edits files only. Its InstallPackageAsync does not install, it just logs a warning.
+        public override bool CanInstallPackages => false;
+
         /// <summary>
         /// <paramref name="requestedTcVersion"/> is the build's <c>--tcversion</c>.
         /// <c>TC3.1.4024</c> and <c>TC3.1.4026</c> select that product line.
@@ -292,10 +295,7 @@ namespace Twinpack.Core
             if (package.Config?.Options?.LibraryReference == true)
             {
                 if (libraryGroup == null)
-                {
-                    libraryGroup = new XElement(TcNs + "ItemGroup");
-                    AppendPlcItem(project, libraryGroup);
-                }
+                    libraryGroup = CreateItemGroup(project, before: null);
 
                 var library = new XElement(TcNs + "LibraryReference",
                         new XAttribute("Include", $"{package.PackageVersion.Title},{(TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*")},{distributorName}"),
@@ -306,23 +306,22 @@ namespace Twinpack.Core
                 AddOptions(library, package.Config?.Options);
                 foreach (var child in preservedChildren)
                     library.Add(new XElement(child));
-                FormatLike(libraryGroup.Elements(TcNs + "LibraryReference").FirstOrDefault()
-                    ?? referencesGroup?.Elements(TcNs + "PlaceholderReference").FirstOrDefault(), library);
-                AppendPlcItem(referencesGroup, library);
+                var libraryTemplate = libraryGroup.Elements(TcNs + "LibraryReference").FirstOrDefault()
+                    ?? referencesGroup?.Elements(TcNs + "PlaceholderReference").FirstOrDefault();
+                if (libraryTemplate != null)
+                    FormatLike(libraryTemplate, library);
+                else
+                    FormatInNewGroup(libraryGroup, library);
+                AppendPlcItem(libraryGroup, library);
             }
             else
             {
-                if (resolutionsGroup == null)
-                {
-                    resolutionsGroup = new XElement(TcNs + "ItemGroup");
-                    AppendPlcItem(project, resolutionsGroup);
-                }
-
+                // TwinCAT keeps the references group in front of the resolutions group.
                 if (referencesGroup == null)
-                {
-                    referencesGroup = new XElement(TcNs + "ItemGroup");
-                    AppendPlcItem(project, referencesGroup);
-                }
+                    referencesGroup = CreateItemGroup(project, before: resolutionsGroup);
+
+                if (resolutionsGroup == null)
+                    resolutionsGroup = CreateItemGroup(project, before: null, after: referencesGroup);
 
                 var reference = new XElement(TcNs + "PlaceholderReference",
                         new XAttribute("Include", package.PackageVersion.Title),
@@ -338,14 +337,22 @@ namespace Twinpack.Core
                 AddParameters(reference, package.Config?.Parameters);
                 foreach (var child in preservedChildren)
                     reference.Add(new XElement(child));
-                FormatLike(referencesGroup.Elements(TcNs + "PlaceholderReference").FirstOrDefault(), reference);
+                var referenceTemplate = referencesGroup.Elements(TcNs + "PlaceholderReference").FirstOrDefault();
+                if (referenceTemplate != null)
+                    FormatLike(referenceTemplate, reference);
+                else
+                    FormatInNewGroup(referencesGroup, reference);
                 AppendPlcItem(referencesGroup, reference);
 
                 var resolution = new XElement(TcNs + "PlaceholderResolution",
                         new XAttribute("Include", package.PackageVersion.Title),
                         new XElement(TcNs + "Resolution", $"{package.PackageVersion.Title}, {(TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*")} ({distributorName})")
                      );
-                FormatLike(resolutionsGroup.Elements(TcNs + "PlaceholderResolution").FirstOrDefault(), resolution);
+                var resolutionTemplate = resolutionsGroup.Elements(TcNs + "PlaceholderResolution").FirstOrDefault();
+                if (resolutionTemplate != null)
+                    FormatLike(resolutionTemplate, resolution);
+                else
+                    FormatInNewGroup(resolutionsGroup, resolution);
                 AppendPlcItem(resolutionsGroup, resolution);
             }
 
@@ -482,7 +489,7 @@ namespace Twinpack.Core
                     if (name != null)
                         name.Value = plc.Name;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "Name", plc.Name));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "Name", plc.Name));
 
                     _logger.Info("[plc] updated name to {0}", plc.Name);
                 }
@@ -499,7 +506,7 @@ namespace Twinpack.Core
                     if (title != null)
                         title.Value = titleStr;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "Title", titleStr));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "Title", titleStr));
 
                     _logger.Info("[plc] updated title to '{0}'", titleStr);
                 }
@@ -518,23 +525,25 @@ namespace Twinpack.Core
                     if (company != null)
                         company.Value = plc.DistributorName;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "Company", plc.DistributorName));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "Company", plc.DistributorName));
 
                     _logger.Info("[plc] updated company to {0}", plc.DistributorName);
-                }
-                else if((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.Library) && string.IsNullOrEmpty(plc.DistributorName))
-                {
-                    throw new ArgumentException("Distributor name is empty, but it is mandatory for libraries!");
                 }
                 else
                 {
+                    // Headed set-version (AutomationInterface4024) throws for a library without a distributor.
+                    // Headless deliberately does not: a PLC without "type" counts as a framework library, and
+                    // failing those would break existing pipelines. It warns instead.
                     var fallbackCompany = "Unknown Company";
+                    if (plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary)
+                        _logger.Warn("[plc] {0} is a library without a distributor, its company is set to '{1}'", plc.Name, fallbackCompany);
+
                     if (company != null)
                         company.Value = fallbackCompany;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "Company", fallbackCompany));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "Company", fallbackCompany));
 
-                    _logger.Info("[plc] updated company to {0}", plc.DistributorName);
+                    _logger.Info("[plc] updated company to {0}", fallbackCompany);
                 }
 
                 var versionStr = TwinCATProjectVersion(plc.Version);
@@ -543,7 +552,7 @@ namespace Twinpack.Core
                     if (projectVersion != null)
                         projectVersion.Value = versionStr;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "ProjectVersion", versionStr));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "ProjectVersion", versionStr));
 
                     _logger.Info("[plc] updated version to {0}", versionStr);
                 }
@@ -600,8 +609,12 @@ namespace Twinpack.Core
             if (existing == null)
                 return new List<XElement>();
 
+            // Parameters from the config replace the ones in the plcproj. Without any in the config, the
+            // plcproj's own (for example set in TwinCAT's library manager) are kept instead of dropped.
+            var keepParameters = !(package.Config?.Parameters?.Count > 0);
             return existing.Elements()
-                .Where(element => !ManagedReferenceChildren.Contains(element.Name.LocalName))
+                .Where(element => !ManagedReferenceChildren.Contains(element.Name.LocalName)
+                    || (keepParameters && element.Name.LocalName == "Parameters"))
                 .Select(element => new XElement(element))
                 .ToList();
         }
@@ -723,7 +736,7 @@ namespace Twinpack.Core
                 .FirstOrDefault(text => string.IsNullOrWhiteSpace(text.Value));
             var trailing = parent.LastNode as XText;
             var hasTrailing = trailing != null && string.IsNullOrWhiteSpace(trailing.Value);
-            var indentText = OneIndent(indent?.Value);
+            var indentText = OneIndent(indent?.Value) ?? parent.Annotation<NewGroupIndent>()?.Child;
 
             if (indentText != null && hasTrailing)
             {
@@ -773,19 +786,114 @@ namespace Twinpack.Core
                 return;
 
             var closing = template.LastNode as XText;
+            var indentText = OneIndent(innerIndent.Value);
+            Format(created, indentText, closing != null && string.IsNullOrWhiteSpace(closing.Value) ? closing.Value : null, IndentStep(template, indentText));
+        }
+
+        // Puts every child of a freshly built element on its own line with the given indent.
+        static void Format(XElement created, string indentText, string closingText, string step)
+        {
             var children = created.Elements().ToList();
             foreach (var child in children)
                 child.Remove();
 
-            var indentText = OneIndent(innerIndent.Value);
             foreach (var child in children)
             {
                 created.Add(new XText(indentText));
                 created.Add(child);
+                if (step != null)
+                    IndentNested(child, indentText, step);
             }
 
-            if (closing != null && string.IsNullOrWhiteSpace(closing.Value))
-                created.Add(new XText(closing.Value));
+            if (closingText != null)
+                created.Add(new XText(closingText));
+        }
+
+        // The indentation a newly created item group gives its children, as long as it has none to copy it from.
+        sealed class NewGroupIndent
+        {
+            public string Child;
+            public string Step;
+        }
+
+        // A new item group goes after the last existing one (in front of ProjectExtensions), or right before
+        // or after the given group, and is indented like its sibling item groups.
+        static XElement CreateItemGroup(XElement project, XElement before, XElement after = null)
+        {
+            var group = new XElement(TcNs + "ItemGroup");
+            var projectIndent = OneIndent(project.Elements()
+                .Select(element => element.PreviousNode)
+                .OfType<XText>()
+                .FirstOrDefault(text => string.IsNullOrWhiteSpace(text.Value))?.Value);
+            var lastNewLine = projectIndent?.LastIndexOf('\n') ?? -1;
+            var step = lastNewLine >= 0 ? projectIndent.Substring(lastNewLine + 1) : null;
+
+            if (!string.IsNullOrEmpty(step))
+            {
+                group.Add(new XText(projectIndent));
+                group.AddAnnotation(new NewGroupIndent { Child = projectIndent + step, Step = step });
+            }
+
+            after = before == null ? after ?? project.Elements(TcNs + "ItemGroup").LastOrDefault() : null;
+            before = before ?? (after == null ? project.Elements(TcNs + "ProjectExtensions").FirstOrDefault() : null);
+
+            if (after != null)
+            {
+                if (projectIndent != null)
+                    after.AddAfterSelf(new XText(projectIndent), group);
+                else
+                    after.AddAfterSelf(group);
+            }
+            else if (before != null)
+            {
+                if (projectIndent != null)
+                    before.AddBeforeSelf(group, new XText(projectIndent));
+                else
+                    before.AddBeforeSelf(group);
+            }
+            else
+            {
+                AppendPlcItem(project, group);
+            }
+
+            return group;
+        }
+
+        static void FormatInNewGroup(XElement group, XElement created)
+        {
+            var indent = group?.Annotation<NewGroupIndent>();
+            if (indent == null || created == null)
+                return;
+
+            Format(created, indent.Child + indent.Step, indent.Child, indent.Step);
+        }
+
+        // One indentation level: how much further the template's children are indented than the template.
+        static string IndentStep(XElement template, string childIndent)
+        {
+            var own = OneIndent((template.PreviousNode as XText)?.Value);
+            if (string.IsNullOrEmpty(own) || childIndent == null || childIndent.Length <= own.Length || !childIndent.StartsWith(own, StringComparison.Ordinal))
+                return null;
+
+            return childIndent.Substring(own.Length);
+        }
+
+        // Lays out an element built without whitespace, such as Parameters, over several lines like the
+        // rest of the file. An element that already holds text nodes (copied from the old reference, or
+        // with a value) is left as it is.
+        static void IndentNested(XElement element, string indent, string step)
+        {
+            if (!element.HasElements || element.Nodes().OfType<XText>().Any())
+                return;
+
+            var inner = indent + step;
+            foreach (var child in element.Elements().ToList())
+            {
+                child.AddBeforeSelf(new XText(inner));
+                IndentNested(child, inner, step);
+            }
+
+            element.Add(new XText(indent));
         }
 
         public override void SaveAsLibrary(ConfigPlcProject plc, string filePath) { }

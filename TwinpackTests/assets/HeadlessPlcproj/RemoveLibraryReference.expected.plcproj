@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <FileVersion>1.0.0.0</FileVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{4f5a6b7c-1111-2222-3333-444455556666}</ProjectGuid>
+    <SubObjectsSortedByName>True</SubObjectsSortedByName>
+    <Name>Plc1</Name>
+    <ProgramVersion>3.1.4026.12</ProgramVersion>
+    <Application>{aa11bb22-cc33-dd44-ee55-ff6677889900}</Application>
+    <TypeSystem>{bb22cc33-dd44-ee55-ff66-778899001122}</TypeSystem>
+    <Implicit_Task_Info>{cc33dd44-ee55-ff66-7788-990011223344}</Implicit_Task_Info>
+    <Implicit_KindOfTask>{dd44ee55-ff66-7788-9900-112233445566}</Implicit_KindOfTask>
+    <Implicit_Jitter_Distribution>{ee55ff66-7788-9900-1122-334455667788}</Implicit_Jitter_Distribution>
+    <LibraryReferences>{ff667788-9900-1122-3344-556677889900}</LibraryReferences>
+    <Company>Zeugwerk GmbH</Company>
+    <Title>Plc1</Title>
+    <ProjectVersion>1.0.0.0</ProjectVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="POUs\MAIN.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="DUTs" />
+    <Folder Include="POUs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PlaceholderReference Include="Tc2_Standard">
+      <DefaultResolution>Tc2_Standard, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_Standard</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc3_Module">
+      <DefaultResolution>Tc3_Module, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc3_Module</Namespace>
+      <SystemLibrary>true</SystemLibrary>
+      <ResolverGuid>2717eb6a-dd07-4c66-8d8d-cacebd7b18ae</ResolverGuid>
+    </PlaceholderReference>
+    <PlaceholderReference Include="ZCore">
+      <DefaultResolution>ZCore, * (Zeugwerk GmbH)</DefaultResolution>
+      <Namespace>ZCore</Namespace>
+    </PlaceholderReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PlaceholderResolution Include="Tc2_Standard">
+      <Resolution>Tc2_Standard, 3.4.5.0 (Beckhoff Automation GmbH)</Resolution>
+    </PlaceholderResolution>
+    <PlaceholderResolution Include="ZCore">
+      <Resolution>ZCore, 1.6.0.1 (Zeugwerk GmbH)</Resolution>
+    </PlaceholderResolution>
+  </ItemGroup>
+  <ProjectExtensions>
+    <PlcProjectOptions>
+      <XmlArchive>
+        <Data>
+          <o xml:space="preserve" t="OptionKey">
+            <v n="Name">"&lt;ProjectRoot&gt;"</v>
+          </o>
+        </Data>
+      </XmlArchive>
+    </PlcProjectOptions>
+  </ProjectExtensions>
+</Project>

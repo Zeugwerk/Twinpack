@@ -240,6 +240,12 @@ namespace Twinpack.Core
         public virtual string SolutionProductLine => null;
 
         /// <summary>
+        /// Whether <see cref="InstallPackageAsync"/> installs libraries on this machine.
+        /// <see cref="TwinpackService"/> only hands libraries to an interface that can install them.
+        /// </summary>
+        public virtual bool CanInstallPackages => true;
+
+        /// <summary>
         /// True when TwinCAT reports that the placeholder or library reference is already in the PLC.
         /// <c>An item with the same key has already been added</c> is not this case: that throw can
         /// happen before the reference exists, and the next attempt has to add it again.

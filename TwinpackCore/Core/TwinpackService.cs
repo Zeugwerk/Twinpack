@@ -793,6 +793,13 @@ namespace Twinpack.Core
             return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
         }
 
+        // Only an interface that can install is asked to install. An IAutomationInterface that is not an
+        // AutomationInterface (a test double, for example) is asked as before.
+        static bool CanInstall(IAutomationInterface automationInterface)
+        {
+            return !(automationInterface is AutomationInterface automation) || automation.CanInstallPackages;
+        }
+
         private static async Task<List<PackageItem>> AddPackagesAsync(Config config, IAutomationInterface automationInterface, PackageServerCollection packageServers, List<PackageItem> cache, List<PackageItem> packages, AddPackageOptions options = default, CancellationToken cancellationToken = default)
         {
             if (config.Modules?.Any() == true)
@@ -848,18 +855,18 @@ namespace Twinpack.Core
                     DownloadPath = downloadPath
                 }, cancellationToken: cancellationToken);
 
-            // Headless mode cannot install, and --skip-download used to skip install entirely
-            // because only freshly downloaded packages were installed. A library that is already
-            // in the cache folder is installed from there instead.
+            // An interface that cannot install (headless) is not asked to, and --skip-download used to
+            // skip install entirely because only freshly downloaded packages were installed. A library
+            // that is already in the cache folder is installed from there instead.
             var installFromCache = options?.SkipDownload == true
                 && automationInterface != null
-                && !(automationInterface is AutomationInterfaceHeadless)
+                && CanInstall(automationInterface)
                 && options?.SkipInstall != true;
             var packagesToInstall = installFromCache
                 ? PackagesFromCache(affectedPackages, downloadPath)
                 : downloadedPackageVersions;
 
-            if(automationInterface != null && !(automationInterface is AutomationInterfaceHeadless) && 
+            if(automationInterface != null && CanInstall(automationInterface) && 
                 (options?.SkipInstall == null || options?.SkipInstall == false))
             {
                 foreach (var package in packagesToInstall)
@@ -1488,18 +1495,26 @@ namespace Twinpack.Core
 
                 plc.Version = version;
 
-                if (_automationInterface != null)
+                if (automationInterface != null)
                     await automationInterface.SetPackageVersionAsync(plc, cancellationToken);
 
                 artifacts.Add(new Artifact(config, plc));
             }
 
-            if (_automationInterface != null)
+            if (automationInterface != null)
                 await automationInterface.SaveAllAsync();
 
             ConfigFactory.Save(config);
 
             return artifacts;
+        }
+
+        // A module gets a headless interface of its own, but only when the caller passed an interface.
+        // No interface means "do not touch plcproj files" (zkmake set-version --skip-plc-update), and
+        // that holds for modules too.
+        IAutomationInterface ModuleAutomationInterface(Config moduleConfig)
+        {
+            return _automationInterface == null ? null : new AutomationInterfaceHeadless(moduleConfig);
         }
 
         public async Task SetPackageVersionAsync(string version, SetPackageVersionOptions options = default, CancellationToken cancellationToken = default)
@@ -1511,12 +1526,12 @@ namespace Twinpack.Core
             {
                 _logger.Info("[set-version] purging packages");
                 await PurgePackagesAsync(_config, _automationInterface);
-                await ConfigUtils.ProcessModulesAsync(_config, moduleConfig => PurgePackagesAsync(moduleConfig, new AutomationInterfaceHeadless(moduleConfig)));
+                await ConfigUtils.ProcessModulesAsync(_config, moduleConfig => PurgePackagesAsync(moduleConfig, ModuleAutomationInterface(moduleConfig)));
             }
 
             version = AutomationInterface.NormalizedVersion(version);
             var artifacts = await SetPackageVersionAsync(_config, _automationInterface, version, options, cancellationToken);
-            var artifactsModules = await ConfigUtils.ProcessModulesCollectAsync(_config, moduleConfig => SetPackageVersionAsync(moduleConfig, new AutomationInterfaceHeadless(moduleConfig), version, options, cancellationToken));
+            var artifactsModules = await ConfigUtils.ProcessModulesCollectAsync(_config, moduleConfig => SetPackageVersionAsync(moduleConfig, ModuleAutomationInterface(moduleConfig), version, options, cancellationToken));
             artifacts.AddRange(artifactsModules.SelectMany(x => x));
 
             // also include all framework packages if required
@@ -1615,6 +1630,8 @@ namespace Twinpack.Core
                 foreach (var artifact in artifacts)
                 {
                     var packagesWithFramework = frameworkPackages[artifact];
+                    // the interface that edits this artifact's plcproj: the caller's for the top level, a headless one for a module
+                    var automationInterface = artifact.Config == _config ? _automationInterface : ModuleAutomationInterface(artifact.Config);
                     var packagesToAdd = options?.PurgePackages == true
                         ? artifact.Packages
                         .Where(x => packagesWithFramework.Any(y => x.Config.Name == y.Package.Config.Name) == false)
@@ -1686,8 +1703,11 @@ namespace Twinpack.Core
                             package.Config.Target = options?.PreferredFrameworkTarget;
                             package.Config.Configuration = options?.PreferredFrameworkConfiguration;
 
-                            // only a headless interface allows to add not existing packages
-                            if (_automationInterface is AutomationInterfaceHeadless)
+                            // only a headless interface allows to add not existing packages. This asks "does this
+                            // interface edit the plcproj file directly", not "can it install", so it stays a type
+                            // check on the interface that edits this PLC until it gets its own flag
+                            // (EditsProjectFilesDirectly).
+                            if (automationInterface is AutomationInterfaceHeadless)
                             {
                                 packagesWithFrameworkToAdd.Add(new PackageItem(affectedPackage)
                                 {
@@ -1706,11 +1726,11 @@ namespace Twinpack.Core
                         }
                     }
 
-                    var automationInterface = artifact.Config == _config ? _automationInterface : new AutomationInterfaceHeadless(artifact.Config);
                     var cache = new List<PackageItem>();
                     await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesToAdd);
                     await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
-                    await automationInterface.SaveAllAsync();
+                    if (automationInterface != null)
+                        await automationInterface.SaveAllAsync();
                     ConfigFactory.Save(artifact.Config);
                 }
             }

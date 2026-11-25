@@ -1,0 +1,2 @@
+# Golden files are compared byte for byte (BOM and CRLF included), so git must not touch them.
+* -text
