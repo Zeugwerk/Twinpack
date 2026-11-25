@@ -84,6 +84,7 @@
     <Compile Include="TwincatInstallTest.cs" />
     <Compile Include="InstallIntentCharacterizationTest.cs" />
     <Compile Include="HeadlessPlcprojGoldenTest.cs" />
+    <Compile Include="SetPackageVersionInterfaceTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1488,18 +1488,26 @@ namespace Twinpack.Core
 
                 plc.Version = version;
 
-                if (_automationInterface != null)
+                if (automationInterface != null)
                     await automationInterface.SetPackageVersionAsync(plc, cancellationToken);
 
                 artifacts.Add(new Artifact(config, plc));
             }
 
-            if (_automationInterface != null)
+            if (automationInterface != null)
                 await automationInterface.SaveAllAsync();
 
             ConfigFactory.Save(config);
 
             return artifacts;
+        }
+
+        // A module gets a headless interface of its own, but only when the caller passed an interface.
+        // No interface means "do not touch plcproj files" (zkmake set-version --skip-plc-update), and
+        // that holds for modules too.
+        IAutomationInterface ModuleAutomationInterface(Config moduleConfig)
+        {
+            return _automationInterface == null ? null : new AutomationInterfaceHeadless(moduleConfig);
         }
 
         public async Task SetPackageVersionAsync(string version, SetPackageVersionOptions options = default, CancellationToken cancellationToken = default)
@@ -1511,12 +1519,12 @@ namespace Twinpack.Core
             {
                 _logger.Info("[set-version] purging packages");
                 await PurgePackagesAsync(_config, _automationInterface);
-                await ConfigUtils.ProcessModulesAsync(_config, moduleConfig => PurgePackagesAsync(moduleConfig, new AutomationInterfaceHeadless(moduleConfig)));
+                await ConfigUtils.ProcessModulesAsync(_config, moduleConfig => PurgePackagesAsync(moduleConfig, ModuleAutomationInterface(moduleConfig)));
             }
 
             version = AutomationInterface.NormalizedVersion(version);
             var artifacts = await SetPackageVersionAsync(_config, _automationInterface, version, options, cancellationToken);
-            var artifactsModules = await ConfigUtils.ProcessModulesCollectAsync(_config, moduleConfig => SetPackageVersionAsync(moduleConfig, new AutomationInterfaceHeadless(moduleConfig), version, options, cancellationToken));
+            var artifactsModules = await ConfigUtils.ProcessModulesCollectAsync(_config, moduleConfig => SetPackageVersionAsync(moduleConfig, ModuleAutomationInterface(moduleConfig), version, options, cancellationToken));
             artifacts.AddRange(artifactsModules.SelectMany(x => x));
 
             // also include all framework packages if required
@@ -1706,11 +1714,12 @@ namespace Twinpack.Core
                         }
                     }
 
-                    var automationInterface = artifact.Config == _config ? _automationInterface : new AutomationInterfaceHeadless(artifact.Config);
+                    var automationInterface = artifact.Config == _config ? _automationInterface : ModuleAutomationInterface(artifact.Config);
                     var cache = new List<PackageItem>();
                     await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesToAdd);
                     await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
-                    await automationInterface.SaveAllAsync();
+                    if (automationInterface != null)
+                        await automationInterface.SaveAllAsync();
                     ConfigFactory.Save(artifact.Config);
                 }
             }
