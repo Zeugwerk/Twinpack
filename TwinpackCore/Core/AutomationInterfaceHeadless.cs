@@ -292,10 +292,7 @@ namespace Twinpack.Core
             if (package.Config?.Options?.LibraryReference == true)
             {
                 if (libraryGroup == null)
-                {
-                    libraryGroup = new XElement(TcNs + "ItemGroup");
-                    AppendPlcItem(project, libraryGroup);
-                }
+                    libraryGroup = CreateItemGroup(project, before: null);
 
                 var library = new XElement(TcNs + "LibraryReference",
                         new XAttribute("Include", $"{package.PackageVersion.Title},{(TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*")},{distributorName}"),
@@ -306,23 +303,22 @@ namespace Twinpack.Core
                 AddOptions(library, package.Config?.Options);
                 foreach (var child in preservedChildren)
                     library.Add(new XElement(child));
-                FormatLike(libraryGroup.Elements(TcNs + "LibraryReference").FirstOrDefault()
-                    ?? referencesGroup?.Elements(TcNs + "PlaceholderReference").FirstOrDefault(), library);
+                var libraryTemplate = libraryGroup.Elements(TcNs + "LibraryReference").FirstOrDefault()
+                    ?? referencesGroup?.Elements(TcNs + "PlaceholderReference").FirstOrDefault();
+                if (libraryTemplate != null)
+                    FormatLike(libraryTemplate, library);
+                else
+                    FormatInNewGroup(libraryGroup, library);
                 AppendPlcItem(libraryGroup, library);
             }
             else
             {
-                if (resolutionsGroup == null)
-                {
-                    resolutionsGroup = new XElement(TcNs + "ItemGroup");
-                    AppendPlcItem(project, resolutionsGroup);
-                }
-
+                // TwinCAT keeps the references group in front of the resolutions group.
                 if (referencesGroup == null)
-                {
-                    referencesGroup = new XElement(TcNs + "ItemGroup");
-                    AppendPlcItem(project, referencesGroup);
-                }
+                    referencesGroup = CreateItemGroup(project, before: resolutionsGroup);
+
+                if (resolutionsGroup == null)
+                    resolutionsGroup = CreateItemGroup(project, before: null, after: referencesGroup);
 
                 var reference = new XElement(TcNs + "PlaceholderReference",
                         new XAttribute("Include", package.PackageVersion.Title),
@@ -338,14 +334,22 @@ namespace Twinpack.Core
                 AddParameters(reference, package.Config?.Parameters);
                 foreach (var child in preservedChildren)
                     reference.Add(new XElement(child));
-                FormatLike(referencesGroup.Elements(TcNs + "PlaceholderReference").FirstOrDefault(), reference);
+                var referenceTemplate = referencesGroup.Elements(TcNs + "PlaceholderReference").FirstOrDefault();
+                if (referenceTemplate != null)
+                    FormatLike(referenceTemplate, reference);
+                else
+                    FormatInNewGroup(referencesGroup, reference);
                 AppendPlcItem(referencesGroup, reference);
 
                 var resolution = new XElement(TcNs + "PlaceholderResolution",
                         new XAttribute("Include", package.PackageVersion.Title),
                         new XElement(TcNs + "Resolution", $"{package.PackageVersion.Title}, {(TwinCATLibraryVersion(package.PackageVersion.Version) ?? "*")} ({distributorName})")
                      );
-                FormatLike(resolutionsGroup.Elements(TcNs + "PlaceholderResolution").FirstOrDefault(), resolution);
+                var resolutionTemplate = resolutionsGroup.Elements(TcNs + "PlaceholderResolution").FirstOrDefault();
+                if (resolutionTemplate != null)
+                    FormatLike(resolutionTemplate, resolution);
+                else
+                    FormatInNewGroup(resolutionsGroup, resolution);
                 AppendPlcItem(resolutionsGroup, resolution);
             }
 
@@ -725,7 +729,7 @@ namespace Twinpack.Core
                 .FirstOrDefault(text => string.IsNullOrWhiteSpace(text.Value));
             var trailing = parent.LastNode as XText;
             var hasTrailing = trailing != null && string.IsNullOrWhiteSpace(trailing.Value);
-            var indentText = OneIndent(indent?.Value);
+            var indentText = OneIndent(indent?.Value) ?? parent.Annotation<NewGroupIndent>()?.Child;
 
             if (indentText != null && hasTrailing)
             {
@@ -775,12 +779,17 @@ namespace Twinpack.Core
                 return;
 
             var closing = template.LastNode as XText;
+            var indentText = OneIndent(innerIndent.Value);
+            Format(created, indentText, closing != null && string.IsNullOrWhiteSpace(closing.Value) ? closing.Value : null, IndentStep(template, indentText));
+        }
+
+        // Puts every child of a freshly built element on its own line with the given indent.
+        static void Format(XElement created, string indentText, string closingText, string step)
+        {
             var children = created.Elements().ToList();
             foreach (var child in children)
                 child.Remove();
 
-            var indentText = OneIndent(innerIndent.Value);
-            var step = IndentStep(template, indentText);
             foreach (var child in children)
             {
                 created.Add(new XText(indentText));
@@ -789,8 +798,67 @@ namespace Twinpack.Core
                     IndentNested(child, indentText, step);
             }
 
-            if (closing != null && string.IsNullOrWhiteSpace(closing.Value))
-                created.Add(new XText(closing.Value));
+            if (closingText != null)
+                created.Add(new XText(closingText));
+        }
+
+        // The indentation a newly created item group gives its children, as long as it has none to copy it from.
+        sealed class NewGroupIndent
+        {
+            public string Child;
+            public string Step;
+        }
+
+        // A new item group goes after the last existing one (in front of ProjectExtensions), or right before
+        // or after the given group, and is indented like its sibling item groups.
+        static XElement CreateItemGroup(XElement project, XElement before, XElement after = null)
+        {
+            var group = new XElement(TcNs + "ItemGroup");
+            var projectIndent = OneIndent(project.Elements()
+                .Select(element => element.PreviousNode)
+                .OfType<XText>()
+                .FirstOrDefault(text => string.IsNullOrWhiteSpace(text.Value))?.Value);
+            var lastNewLine = projectIndent?.LastIndexOf('\n') ?? -1;
+            var step = lastNewLine >= 0 ? projectIndent.Substring(lastNewLine + 1) : null;
+
+            if (!string.IsNullOrEmpty(step))
+            {
+                group.Add(new XText(projectIndent));
+                group.AddAnnotation(new NewGroupIndent { Child = projectIndent + step, Step = step });
+            }
+
+            after = before == null ? after ?? project.Elements(TcNs + "ItemGroup").LastOrDefault() : null;
+            before = before ?? (after == null ? project.Elements(TcNs + "ProjectExtensions").FirstOrDefault() : null);
+
+            if (after != null)
+            {
+                if (projectIndent != null)
+                    after.AddAfterSelf(new XText(projectIndent), group);
+                else
+                    after.AddAfterSelf(group);
+            }
+            else if (before != null)
+            {
+                if (projectIndent != null)
+                    before.AddBeforeSelf(group, new XText(projectIndent));
+                else
+                    before.AddBeforeSelf(group);
+            }
+            else
+            {
+                AppendPlcItem(project, group);
+            }
+
+            return group;
+        }
+
+        static void FormatInNewGroup(XElement group, XElement created)
+        {
+            var indent = group?.Annotation<NewGroupIndent>();
+            if (indent == null || created == null)
+                return;
+
+            Format(created, indent.Child + indent.Step, indent.Child, indent.Step);
         }
 
         // One indentation level: how much further the template's children are indented than the template.

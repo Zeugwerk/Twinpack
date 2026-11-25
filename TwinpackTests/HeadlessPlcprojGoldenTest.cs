@@ -76,6 +76,7 @@ namespace TwinpackTests
         [DataRow("SetVersionWithoutDistributor")]
         [DataRow("ReAddReplacesParameters")]
         [DataRow("ReAddWithoutParameters")]
+        [DataRow("AddPlaceholderWithoutPlaceholders")]
         public async Task HeadlessEdit_MatchesGoldenFile(string scenario)
         {
             var path = Path.Combine(_directory, PlcName, PlcName + ".plcproj");
@@ -237,6 +238,14 @@ namespace TwinpackTests
                     await headless.AddPackageAsync(Library("TcUnit", "1.3.1.0", "www.tcunit.org"));
                     break;
 
+                case "AddPlaceholderWithoutPlaceholders":
+                {
+                    var package = Library("TcUnit", "1.3.1.0", "www.tcunit.org");
+                    package.Config.Parameters = new Dictionary<string, string> { { "GVL_PARAM_TCUNIT.MAXNUMBEROFTESTSUITES", "500" } };
+                    await headless.AddPackageAsync(package);
+                    break;
+                }
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(scenario), scenario, null);
             }
@@ -249,6 +258,7 @@ namespace TwinpackTests
                 case "AddAsLibraryReferenceWithoutPlaceholders":
                 case "SetVersionAddsMissingProperties":
                 case "SetVersionWithoutDistributor":
+                case "AddPlaceholderWithoutPlaceholders":
                     return "Minimal.plcproj";
                 case "ReAddReplacesParameters":
                 case "ReAddWithoutParameters":

@@ -4,6 +4,15 @@
     <Name>Plc1</Name>
     <ProgramVersion>3.1.4024.56</ProgramVersion>
   </PropertyGroup>
-  <ItemGroup><PlaceholderResolution Include="TcUnit"><Resolution>TcUnit, 1.3.1.0 (www.tcunit.org)</Resolution></PlaceholderResolution></ItemGroup>
-  <ItemGroup><PlaceholderReference Include="TcUnit"><DefaultResolution>TcUnit, * (www.tcunit.org)</DefaultResolution><Namespace>TcUnit</Namespace></PlaceholderReference></ItemGroup>
+  <ItemGroup>
+    <PlaceholderReference Include="TcUnit">
+      <DefaultResolution>TcUnit, * (www.tcunit.org)</DefaultResolution>
+      <Namespace>TcUnit</Namespace>
+    </PlaceholderReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PlaceholderResolution Include="TcUnit">
+      <Resolution>TcUnit, 1.3.1.0 (www.tcunit.org)</Resolution>
+    </PlaceholderResolution>
+  </ItemGroup>
 </Project>
