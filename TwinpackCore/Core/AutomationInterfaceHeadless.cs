@@ -308,7 +308,7 @@ namespace Twinpack.Core
                     library.Add(new XElement(child));
                 FormatLike(libraryGroup.Elements(TcNs + "LibraryReference").FirstOrDefault()
                     ?? referencesGroup?.Elements(TcNs + "PlaceholderReference").FirstOrDefault(), library);
-                AppendPlcItem(referencesGroup, library);
+                AppendPlcItem(libraryGroup, library);
             }
             else
             {

@@ -37,8 +37,6 @@ namespace TwinpackTests
         // entry and adds the expected file.
         static readonly Dictionary<string, Type> KnownBugs = new Dictionary<string, Type>
         {
-            // The LibraryReference branch appends to the PlaceholderReference item group, which is null here.
-            { "AddAsLibraryReferenceWithoutPlaceholders", typeof(ArgumentNullException) },
         };
 
         string _directory;

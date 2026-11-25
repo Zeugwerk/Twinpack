@@ -41,9 +41,6 @@
       <DefaultResolution>ZCore, * (Zeugwerk GmbH)</DefaultResolution>
       <Namespace>ZCore</Namespace>
     </PlaceholderReference>
-    <LibraryReference Include="Tc2_Utilities,3.3.59.0,Beckhoff Automation GmbH">
-      <Namespace>Tc2_Utilities</Namespace>
-    </LibraryReference>
   </ItemGroup>
   <ItemGroup>
     <PlaceholderResolution Include="Tc2_Standard">
@@ -56,6 +53,9 @@
   <ItemGroup>
     <LibraryReference Include="Tc2_System,3.4.26.0,Beckhoff Automation GmbH">
       <Namespace>Tc2_System</Namespace>
+    </LibraryReference>
+    <LibraryReference Include="Tc2_Utilities,3.3.59.0,Beckhoff Automation GmbH">
+      <Namespace>Tc2_Utilities</Namespace>
     </LibraryReference>
   </ItemGroup>
   <ProjectExtensions>
