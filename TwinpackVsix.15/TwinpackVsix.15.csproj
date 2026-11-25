@@ -170,5 +170,14 @@
   <Import Project="..\PrivateLibAssemblies.targets" />
   <PropertyGroup>
     <PrivateLibJsonSideVersion>9.0.2</PrivateLibJsonSideVersion>
+    <!--
+      The 32-bit shell has no redirects for System.Text.Json, so a reference that probing cannot
+      satisfy goes through every AssemblyResolve handler in the shell. Beckhoff's TcTestClient
+      (TF1140) registers one that returns any loaded assembly with the same simple name, and
+      TF1140 2.0.4 loads System.Text.Json 10 with Tasks.Extensions 4.2.4.0. Keeping our 6.x stack
+      beside Twinpack.15.dll lets our own references bind by probing, so they never reach
+      those handlers.
+    -->
+    <PrivateLibJsonInRoot>true</PrivateLibJsonInRoot>
   </PropertyGroup>
 </Project>
