@@ -482,7 +482,7 @@ namespace Twinpack.Core
                     if (name != null)
                         name.Value = plc.Name;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "Name", plc.Name));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "Name", plc.Name));
 
                     _logger.Info("[plc] updated name to {0}", plc.Name);
                 }
@@ -499,7 +499,7 @@ namespace Twinpack.Core
                     if (title != null)
                         title.Value = titleStr;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "Title", titleStr));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "Title", titleStr));
 
                     _logger.Info("[plc] updated title to '{0}'", titleStr);
                 }
@@ -518,7 +518,7 @@ namespace Twinpack.Core
                     if (company != null)
                         company.Value = plc.DistributorName;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "Company", plc.DistributorName));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "Company", plc.DistributorName));
 
                     _logger.Info("[plc] updated company to {0}", plc.DistributorName);
                 }
@@ -534,7 +534,7 @@ namespace Twinpack.Core
                     if (company != null)
                         company.Value = fallbackCompany;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "Company", fallbackCompany));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "Company", fallbackCompany));
 
                     _logger.Info("[plc] updated company to {0}", fallbackCompany);
                 }
@@ -545,7 +545,7 @@ namespace Twinpack.Core
                     if (projectVersion != null)
                         projectVersion.Value = versionStr;
                     else
-                        propertyGroup.Add(new XElement(TcNs + "ProjectVersion", versionStr));
+                        AppendPlcItem(propertyGroup, new XElement(TcNs + "ProjectVersion", versionStr));
 
                     _logger.Info("[plc] updated version to {0}", versionStr);
                 }

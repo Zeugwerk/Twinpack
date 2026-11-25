@@ -4,7 +4,10 @@
     <FileVersion>1.0.0.0</FileVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <Name>Plc1</Name>
-  <Title>Plc1</Title><Company>Zeugwerk GmbH</Company><ProjectVersion>1.2.3.4</ProjectVersion></PropertyGroup>
+    <Title>Plc1</Title>
+    <Company>Zeugwerk GmbH</Company>
+    <ProjectVersion>1.2.3.4</ProjectVersion>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="POUs\MAIN.TcPOU">
       <SubType>Code</SubType>
