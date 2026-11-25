@@ -82,6 +82,24 @@ namespace TwinpackTests
             StringAssert.Contains(plcproj, "ZCore, 1.6.0.29 (Zeugwerk GmbH)");
         }
 
+        /// <summary>
+        /// 1.6.0.30 is not published. Only an interface that edits files directly may reference a version that
+        /// does not exist yet. Under a headed top level a module is still edited by its own headless interface,
+        /// so it gets the reference, like a headless top level does.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow(TopLevel, false)]
+        [DataRow(Modules,  true)]
+        public async Task WithHeadedInterface_UnpublishedFrameworkVersion_ReferencedWhereHeadlessEdits(string scope, bool referenced)
+        {
+            var config = Workspace(scope, out var plcFile);
+            var twinpack = new TwinpackService(new PackageServerCollection { FrameworkServer() }, HeadedMock().Object, config);
+
+            await twinpack.SetPackageVersionAsync("1.6.0.30", SyncOptions());
+
+            Assert.AreEqual(referenced, File.ReadAllText(plcFile).Contains("ZCore, 1.6.0.30 (Zeugwerk GmbH)"));
+        }
+
         static TwinpackService.SetPackageVersionOptions SyncOptions()
         {
             return new TwinpackService.SetPackageVersionOptions

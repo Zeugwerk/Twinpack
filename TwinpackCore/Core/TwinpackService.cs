@@ -1623,6 +1623,8 @@ namespace Twinpack.Core
                 foreach (var artifact in artifacts)
                 {
                     var packagesWithFramework = frameworkPackages[artifact];
+                    // the interface that edits this artifact's plcproj: the caller's for the top level, a headless one for a module
+                    var automationInterface = artifact.Config == _config ? _automationInterface : ModuleAutomationInterface(artifact.Config);
                     var packagesToAdd = options?.PurgePackages == true
                         ? artifact.Packages
                         .Where(x => packagesWithFramework.Any(y => x.Config.Name == y.Package.Config.Name) == false)
@@ -1695,7 +1697,7 @@ namespace Twinpack.Core
                             package.Config.Configuration = options?.PreferredFrameworkConfiguration;
 
                             // only a headless interface allows to add not existing packages
-                            if (_automationInterface is AutomationInterfaceHeadless)
+                            if (automationInterface is AutomationInterfaceHeadless)
                             {
                                 packagesWithFrameworkToAdd.Add(new PackageItem(affectedPackage)
                                 {
@@ -1714,7 +1716,6 @@ namespace Twinpack.Core
                         }
                     }
 
-                    var automationInterface = artifact.Config == _config ? _automationInterface : ModuleAutomationInterface(artifact.Config);
                     var cache = new List<PackageItem>();
                     await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesToAdd);
                     await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
