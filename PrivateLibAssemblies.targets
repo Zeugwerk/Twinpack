@@ -115,4 +115,52 @@
       </VSIXSourceItem>
     </ItemGroup>
   </Target>
+
+  <!--
+    PrivateLibJsonShadePrefix gives the package its own copy of the System.Text.Json stack under
+    private assembly names (see Tools\Shade\Program.cs for why). The DLLs that go into the root of
+    the VSIX are copied to obj\...\shade, the tool renames the stack from lib\v9 and rewrites every
+    reference to it there, and those files replace the originals in the VSIX and the Package folder.
+    PrivateLibJsonShadeKey signs what the tool writes; PrivateLibJsonShadeOwnKey is "Name=snk" for
+    an assembly that keeps its own key.
+  -->
+  <Target Name="ShadePrivateJson" AfterTargets="AddLibAssembliesToVsix" Condition="'$(PrivateLibJsonShadePrefix)' != ''">
+    <PropertyGroup>
+      <_ShadeProject>$(MSBuildThisFileDirectory)Tools\Shade\Shade.csproj</_ShadeProject>
+      <_ShadeDir>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)shade</_ShadeDir>
+      <_ShadeStack>$(MSBuildProjectDirectory)\$(OutputPath)lib\v9</_ShadeStack>
+      <_ShadeReport>$(_ShadeDir)\shade.report</_ShadeReport>
+    </PropertyGroup>
+    <MSBuild Projects="$(_ShadeProject)" Targets="Restore" Properties="Configuration=Release;_ShadeRestore=true" />
+    <MSBuild Projects="$(_ShadeProject)" Targets="Build" Properties="Configuration=Release">
+      <Output TaskParameter="TargetOutputs" PropertyName="_ShadeExe" />
+    </MSBuild>
+    <ItemGroup>
+      <_ShadeInput Include="@(VSIXSourceItem)" Condition="'%(VSIXSourceItem.Extension)' == '.dll' and '%(VSIXSourceItem.VSIXSubPath)' == ''" />
+      <_ShadeSearchDir Include="@(ReferencePath->'%(RootDir)%(Directory).')" />
+    </ItemGroup>
+    <RemoveDuplicates Inputs="@(_ShadeSearchDir)">
+      <Output TaskParameter="Filtered" ItemName="_ShadeSearch" />
+    </RemoveDuplicates>
+    <RemoveDir Directories="$(_ShadeDir)" />
+    <Copy SourceFiles="@(_ShadeInput)" DestinationFolder="$(_ShadeDir)" />
+    <PropertyGroup>
+      <_ShadeOwnArg Condition="'$(PrivateLibJsonShadeOwnKey)' != ''">--own &quot;$(PrivateLibJsonShadeOwnKey)&quot;</_ShadeOwnArg>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_ShadeExe)&quot; --dir &quot;$(_ShadeDir)&quot; --stack &quot;$(_ShadeStack)&quot; --prefix $(PrivateLibJsonShadePrefix) --key &quot;$(PrivateLibJsonShadeKey)&quot; $(_ShadeOwnArg) --report &quot;$(_ShadeReport)&quot; @(_ShadeSearch->'--search &quot;%(Identity)&quot;', ' ')" />
+    <ReadLinesFromFile File="$(_ShadeReport)">
+      <Output TaskParameter="Lines" ItemName="_ShadeWritten" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <_ShadeOutput Include="@(_ShadeWritten->'$(_ShadeDir)\%(Identity)')" />
+      <VSIXSourceItem>
+        <_ShadeName>%(VSIXSourceItem.VSIXSubPath)|%(VSIXSourceItem.Filename)%(VSIXSourceItem.Extension)</_ShadeName>
+      </VSIXSourceItem>
+      <_ShadeOutput>
+        <_ShadeName>|%(Filename)%(Extension)</_ShadeName>
+      </_ShadeOutput>
+      <VSIXSourceItem Remove="@(_ShadeOutput)" MatchOnMetadata="_ShadeName" MatchOnMetadataOptions="CaseInsensitive" />
+      <VSIXSourceItem Include="@(_ShadeOutput)" />
+    </ItemGroup>
+  </Target>
 </Project>
