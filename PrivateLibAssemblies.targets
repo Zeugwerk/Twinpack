@@ -1,16 +1,19 @@
 <Project>
   <!--
-    System.Text.Json and the assemblies it needs to load live under lib, not the extension root.
-    The root is on the fusion probe path, so a JSON DLL there is loaded for every request,
-    including Beckhoff's in-shell test client. Assemblies the extension itself references stay
-    in the root and are copied into lib as well.
+    System.Text.Json and the assemblies it needs are copied under lib, where TwinCATAdsAssemblyResolver
+    answers requests that probing cannot satisfy.
+    By default they are also removed from the extension root, so that only a request through
+    AssemblyResolve can reach them. Assemblies the extension itself references stay in the root
+    and are copied into lib as well.
+    PrivateLibJsonInRoot=true keeps System.Text.Json, System.Text.Encodings.Web and
+    Microsoft.Bcl.AsyncInterfaces in the root as well (see Zeugwerk.Creator.15.csproj).
   -->
   <Target Name="StageLibAssemblies" AfterTargets="ResolveAssemblyReferences">
     <ItemGroup>
       <_LibMoved Include="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'System.Text.Json' or '%(Filename)' == 'System.Text.Encodings.Web' or '%(Filename)' == 'Microsoft.Bcl.AsyncInterfaces'" />
       <_LibKept Include="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'System.Runtime.CompilerServices.Unsafe' or '%(Filename)' == 'System.Buffers' or '%(Filename)' == 'System.Numerics.Vectors' or '%(Filename)' == 'System.Threading.Tasks.Extensions' or '%(Filename)' == 'System.ValueTuple' or '%(Filename)' == 'System.Memory'" />
       <_MemoryRef Include="@(ReferencePath)" Condition="'%(Filename)' == 'System.Memory'" />
-      <ReferenceCopyLocalPaths Remove="@(_LibMoved)" />
+      <ReferenceCopyLocalPaths Remove="@(_LibMoved)" Condition="'$(PrivateLibJsonInRoot)' != 'true'" />
     </ItemGroup>
     <PropertyGroup>
       <_MemoryLibPath>$([System.String]::Copy('%(_MemoryRef.Identity)').Replace('\ref\', '\lib\'))</_MemoryLibPath>
@@ -23,7 +26,7 @@
     </ItemGroup>
     <MakeDir Directories="$(OutputPath)lib" Condition="'@(_LibMoved)' != '' or '@(_LibKept)' != ''" />
     <Copy SourceFiles="@(_LibMoved);@(_LibKept)" DestinationFolder="$(OutputPath)lib\" SkipUnchangedFiles="true" Condition="'@(_LibMoved)' != '' or '@(_LibKept)' != ''" />
-    <Delete Files="$(OutputPath)System.Text.Json.dll;$(OutputPath)System.Text.Encodings.Web.dll;$(OutputPath)Microsoft.Bcl.AsyncInterfaces.dll;$(OutputPath)System.IO.Pipelines.dll" />
+    <Delete Files="$(OutputPath)System.Text.Json.dll;$(OutputPath)System.Text.Encodings.Web.dll;$(OutputPath)Microsoft.Bcl.AsyncInterfaces.dll;$(OutputPath)System.IO.Pipelines.dll" Condition="'$(PrivateLibJsonInRoot)' != 'true'" />
   </Target>
 
   <Target Name="EnsureLibOverlayPackages" BeforeTargets="StageLibJsonSideBySide;OverlayLibJson" Condition="'$(PrivateLibJsonVersion)' != '' or '$(PrivateLibJsonSideVersion)' != ''">
@@ -60,7 +63,8 @@
 
   <!--
     32-bit shells have no System.Text.Json redirect, and the extension itself is compiled
-    against 6. Keep that DLL in lib, and put 9 beside it under lib\v9 for Beckhoff's client.
+    against 6. Keep that DLL in lib, and put 9 beside it under lib\v9 for callers that ask
+    for 8 or 9 and ship none, such as Beckhoff's TcTestClient 2.0.1.
   -->
   <Target Name="StageLibJsonSideBySide" AfterTargets="StageLibAssemblies" Condition="'$(PrivateLibJsonSideVersion)' != ''">
     <PropertyGroup>
@@ -88,15 +92,17 @@
     <Copy SourceFiles="@(_SideFile)" DestinationFolder="$(_SideDir)\" SkipUnchangedFiles="false" Condition="'@(_SideFile)' != ''" />
   </Target>
 
-  <Target Name="RemoveProbedAssembliesFromOutput" BeforeTargets="GetVsixSourceItems">
+  <Target Name="RemoveProbedAssembliesFromOutput" BeforeTargets="GetVsixSourceItems" Condition="'$(PrivateLibJsonInRoot)' != 'true'">
     <Delete Files="$(OutputPath)System.Text.Json.dll;$(OutputPath)System.Text.Encodings.Web.dll;$(OutputPath)Microsoft.Bcl.AsyncInterfaces.dll;$(OutputPath)System.IO.Pipelines.dll" />
   </Target>
 
   <Target Name="AddLibAssembliesToVsix" AfterTargets="GetVsixSourceItems">
-    <ItemGroup>
+    <ItemGroup Condition="'$(PrivateLibJsonInRoot)' != 'true'">
       <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'System.Text.Json' and !$([System.String]::Copy('%(Identity)').Contains('\lib\System.Text.Json.dll')) and !$([System.String]::Copy('%(Identity)').Contains('\lib\v'))" />
       <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'System.Text.Encodings.Web' and !$([System.String]::Copy('%(Identity)').Contains('\lib\System.Text.Encodings.Web.dll')) and !$([System.String]::Copy('%(Identity)').Contains('\lib\v'))" />
       <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'Microsoft.Bcl.AsyncInterfaces' and !$([System.String]::Copy('%(Identity)').Contains('\lib\Microsoft.Bcl.AsyncInterfaces.dll')) and !$([System.String]::Copy('%(Identity)').Contains('\lib\v'))" />
+    </ItemGroup>
+    <ItemGroup>
       <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'System.IO.Pipelines' and !$([System.String]::Copy('%(Identity)').Contains('\lib\System.IO.Pipelines.dll')) and !$([System.String]::Copy('%(Identity)').Contains('\lib\v'))" />
       <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Filename)' == 'System.Memory' and !$([System.String]::Copy('%(Identity)').Contains('\lib\'))" />
       <_LibVsix Include="$(OutputPath)lib\*.dll" />
