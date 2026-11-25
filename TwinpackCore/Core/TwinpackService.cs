@@ -793,6 +793,13 @@ namespace Twinpack.Core
             return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
         }
 
+        // Only an interface that can install is asked to install. An IAutomationInterface that is not an
+        // AutomationInterface (a test double, for example) is asked as before.
+        static bool CanInstall(IAutomationInterface automationInterface)
+        {
+            return !(automationInterface is AutomationInterface automation) || automation.CanInstallPackages;
+        }
+
         private static async Task<List<PackageItem>> AddPackagesAsync(Config config, IAutomationInterface automationInterface, PackageServerCollection packageServers, List<PackageItem> cache, List<PackageItem> packages, AddPackageOptions options = default, CancellationToken cancellationToken = default)
         {
             if (config.Modules?.Any() == true)
@@ -848,18 +855,18 @@ namespace Twinpack.Core
                     DownloadPath = downloadPath
                 }, cancellationToken: cancellationToken);
 
-            // Headless mode cannot install, and --skip-download used to skip install entirely
-            // because only freshly downloaded packages were installed. A library that is already
-            // in the cache folder is installed from there instead.
+            // An interface that cannot install (headless) is not asked to, and --skip-download used to
+            // skip install entirely because only freshly downloaded packages were installed. A library
+            // that is already in the cache folder is installed from there instead.
             var installFromCache = options?.SkipDownload == true
                 && automationInterface != null
-                && !(automationInterface is AutomationInterfaceHeadless)
+                && CanInstall(automationInterface)
                 && options?.SkipInstall != true;
             var packagesToInstall = installFromCache
                 ? PackagesFromCache(affectedPackages, downloadPath)
                 : downloadedPackageVersions;
 
-            if(automationInterface != null && !(automationInterface is AutomationInterfaceHeadless) && 
+            if(automationInterface != null && CanInstall(automationInterface) && 
                 (options?.SkipInstall == null || options?.SkipInstall == false))
             {
                 foreach (var package in packagesToInstall)
@@ -1696,7 +1703,10 @@ namespace Twinpack.Core
                             package.Config.Target = options?.PreferredFrameworkTarget;
                             package.Config.Configuration = options?.PreferredFrameworkConfiguration;
 
-                            // only a headless interface allows to add not existing packages
+                            // only a headless interface allows to add not existing packages. This asks "does this
+                            // interface edit the plcproj file directly", not "can it install", so it stays a type
+                            // check on the interface that edits this PLC until it gets its own flag
+                            // (EditsProjectFilesDirectly).
                             if (automationInterface is AutomationInterfaceHeadless)
                             {
                                 packagesWithFrameworkToAdd.Add(new PackageItem(affectedPackage)

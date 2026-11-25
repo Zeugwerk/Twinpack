@@ -33,6 +33,9 @@ namespace Twinpack.Core
 
         public override string SolutionProductLine => _productLine;
 
+        // Headless edits files only. Its InstallPackageAsync does not install, it just logs a warning.
+        public override bool CanInstallPackages => false;
+
         /// <summary>
         /// <paramref name="requestedTcVersion"/> is the build's <c>--tcversion</c>.
         /// <c>TC3.1.4024</c> and <c>TC3.1.4026</c> select that product line.
