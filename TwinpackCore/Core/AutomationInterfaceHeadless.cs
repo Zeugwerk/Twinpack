@@ -606,8 +606,12 @@ namespace Twinpack.Core
             if (existing == null)
                 return new List<XElement>();
 
+            // Parameters from the config replace the ones in the plcproj. Without any in the config, the
+            // plcproj's own (for example set in TwinCAT's library manager) are kept instead of dropped.
+            var keepParameters = !(package.Config?.Parameters?.Count > 0);
             return existing.Elements()
-                .Where(element => !ManagedReferenceChildren.Contains(element.Name.LocalName))
+                .Where(element => !ManagedReferenceChildren.Contains(element.Name.LocalName)
+                    || (keepParameters && element.Name.LocalName == "Parameters"))
                 .Select(element => new XElement(element))
                 .ToList();
         }
