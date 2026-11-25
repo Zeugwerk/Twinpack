@@ -48,7 +48,12 @@
       <HideWhenReferencedAsDependency>true</HideWhenReferencedAsDependency>
       <PublishSymbolsInContainer>true</PublishSymbolsInContainer>
       <QualifiedOnly>true</QualifiedOnly>
-      <Parameters><Parameter ListName="GVL_Param" xmlns=""><Key>MaxAxes</Key><Value>8</Value></Parameter></Parameters>
+      <Parameters>
+        <Parameter ListName="GVL_Param" xmlns="">
+          <Key>MaxAxes</Key>
+          <Value>8</Value>
+        </Parameter>
+      </Parameters>
     </PlaceholderReference>
   </ItemGroup>
   <ItemGroup>

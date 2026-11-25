@@ -778,14 +778,45 @@ namespace Twinpack.Core
                 child.Remove();
 
             var indentText = OneIndent(innerIndent.Value);
+            var step = IndentStep(template, indentText);
             foreach (var child in children)
             {
                 created.Add(new XText(indentText));
                 created.Add(child);
+                if (step != null)
+                    IndentNested(child, indentText, step);
             }
 
             if (closing != null && string.IsNullOrWhiteSpace(closing.Value))
                 created.Add(new XText(closing.Value));
+        }
+
+        // One indentation level: how much further the template's children are indented than the template.
+        static string IndentStep(XElement template, string childIndent)
+        {
+            var own = OneIndent((template.PreviousNode as XText)?.Value);
+            if (string.IsNullOrEmpty(own) || childIndent == null || childIndent.Length <= own.Length || !childIndent.StartsWith(own, StringComparison.Ordinal))
+                return null;
+
+            return childIndent.Substring(own.Length);
+        }
+
+        // Lays out an element built without whitespace, such as Parameters, over several lines like the
+        // rest of the file. An element that already holds text nodes (copied from the old reference, or
+        // with a value) is left as it is.
+        static void IndentNested(XElement element, string indent, string step)
+        {
+            if (!element.HasElements || element.Nodes().OfType<XText>().Any())
+                return;
+
+            var inner = indent + step;
+            foreach (var child in element.Elements().ToList())
+            {
+                child.AddBeforeSelf(new XText(inner));
+                IndentNested(child, inner, step);
+            }
+
+            element.Add(new XText(indent));
         }
 
         public override void SaveAsLibrary(ConfigPlcProject plc, string filePath) { }
