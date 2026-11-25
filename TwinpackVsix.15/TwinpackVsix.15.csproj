@@ -171,13 +171,17 @@
   <PropertyGroup>
     <PrivateLibJsonSideVersion>9.0.2</PrivateLibJsonSideVersion>
     <!--
-      The 32-bit shell has no redirects for System.Text.Json, so a reference that probing cannot
-      satisfy goes through every AssemblyResolve handler in the shell. Beckhoff's TcTestClient
-      (TF1140) registers one that returns any loaded assembly with the same simple name, and
-      TF1140 2.0.4 loads System.Text.Json 10 with Tasks.Extensions 4.2.4.0. Keeping our 6.x stack
-      beside Twinpack.15.dll lets our own references bind by probing, so they never reach
-      those handlers.
+      The 32-bit shell has no redirects for System.Text.Json, and it resolves each assembly identity
+      once per process. Beckhoff's TcTestClient (TF1140) answers AssemblyResolve with any loaded
+      assembly of the same simple name, so a Beckhoff component asking for
+      Microsoft.Bcl.AsyncInterfaces 6.0.0.0 while a solution loads fixes TF1140's 10.0.0.14 for
+      everyone. Twinpack therefore runs on a private copy of the stack (Twinpack.Private.*), which
+      no other extension requests. See Tools\Shade\Program.cs.
+      lib and lib\v9 stay: the private copy is made from lib\v9, and LibAssemblyResolver still
+      answers other extensions' requests from there.
     -->
-    <PrivateLibJsonInRoot>true</PrivateLibJsonInRoot>
+    <PrivateLibJsonShadePrefix>Twinpack.Private.</PrivateLibJsonShadePrefix>
+    <PrivateLibJsonShadeKey>$(MSBuildThisFileDirectory)..\Twinpack.15\Twinpack.15.snk</PrivateLibJsonShadeKey>
+    <PrivateLibJsonShadeOwnKey>Twinpack.15=$(MSBuildThisFileDirectory)..\Twinpack.15\Twinpack.15.snk</PrivateLibJsonShadeOwnKey>
   </PropertyGroup>
 </Project>
