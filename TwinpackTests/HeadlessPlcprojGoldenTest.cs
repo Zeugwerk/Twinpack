@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -114,6 +115,41 @@ namespace TwinpackTests
             // Text first, so a failure shows a readable difference. Bytes second, for BOM and line endings.
             Assert.AreEqual(Encoding.UTF8.GetString(expected), Encoding.UTF8.GetString(actual));
             CollectionAssert.AreEqual(expected, actual, "same text, different bytes (BOM or line endings)");
+        }
+
+        /// <summary>
+        /// A PLC without a distributor gets the company "Unknown Company". Library types (an untyped PLC counts
+        /// as a framework library) also get a warning. Headless does not throw here, unlike headed set-version.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow(null, true)]
+        [DataRow("library", true)]
+        [DataRow("application", false)]
+        public async Task SetVersion_WithoutDistributor_WritesUnknownCompany(string type, bool warns)
+        {
+            var path = Path.Combine(_directory, PlcName, PlcName + ".plcproj");
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.Copy(Path.Combine(AssetFolder, "Minimal.plcproj"), path);
+            var plc = new ConfigPlcProject { Name = PlcName, ProjectName = ProjectName, FilePath = path, Type = type, Version = "1.2.3.4" };
+            var headless = new AutomationInterfaceHeadless(new Config { WorkingDirectory = _directory, Projects = new List<ConfigProject>() });
+
+            var log = new NLog.Targets.MemoryTarget { Layout = "${level:uppercase=true} ${message}" };
+            var previous = NLog.LogManager.Configuration;
+            var logConfig = new NLog.Config.LoggingConfiguration();
+            logConfig.AddRuleForAllLevels(log);
+            NLog.LogManager.Configuration = logConfig;
+            try
+            {
+                await headless.SetPackageVersionAsync(plc);
+            }
+            finally
+            {
+                NLog.LogManager.Configuration = previous;
+            }
+
+            StringAssert.Contains(File.ReadAllText(path), "<Company>Unknown Company</Company>");
+            CollectionAssert.Contains(log.Logs.ToList(), "INFO [plc] updated company to Unknown Company");
+            Assert.AreEqual(warns, log.Logs.Contains("WARN [plc] Plc1 is a library without a distributor, its company is set to 'Unknown Company'"));
         }
 
         static async Task ApplyAsync(string scenario, AutomationInterfaceHeadless headless, ConfigPlcProject plc)

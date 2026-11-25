@@ -522,19 +522,21 @@ namespace Twinpack.Core
 
                     _logger.Info("[plc] updated company to {0}", plc.DistributorName);
                 }
-                else if((plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.Library) && string.IsNullOrEmpty(plc.DistributorName))
-                {
-                    throw new ArgumentException("Distributor name is empty, but it is mandatory for libraries!");
-                }
                 else
                 {
+                    // Headed set-version (AutomationInterface4024) throws for a library without a distributor.
+                    // Headless deliberately does not: a PLC without "type" counts as a framework library, and
+                    // failing those would break existing pipelines. It warns instead.
                     var fallbackCompany = "Unknown Company";
+                    if (plc.PlcType == ConfigPlcProject.PlcProjectType.Library || plc.PlcType == ConfigPlcProject.PlcProjectType.FrameworkLibrary)
+                        _logger.Warn("[plc] {0} is a library without a distributor, its company is set to '{1}'", plc.Name, fallbackCompany);
+
                     if (company != null)
                         company.Value = fallbackCompany;
                     else
                         propertyGroup.Add(new XElement(TcNs + "Company", fallbackCompany));
 
-                    _logger.Info("[plc] updated company to {0}", plc.DistributorName);
+                    _logger.Info("[plc] updated company to {0}", fallbackCompany);
                 }
 
                 var versionStr = TwinCATProjectVersion(plc.Version);
