@@ -86,6 +86,7 @@
     <Compile Include="HeadlessPlcprojGoldenTest.cs" />
     <Compile Include="SetPackageVersionInterfaceTest.cs" />
     <Compile Include="CanInstallPackagesTest.cs" />
+    <Compile Include="InstallOptInTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

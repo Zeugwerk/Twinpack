@@ -93,6 +93,8 @@ namespace Twinpack.Core
         public class SetPackageVersionOptions
         {
             public bool PurgePackages = false;
+            // Framework sync adds libraries. Like AddPackageOptions.SkipInstall, this keeps them from being installed.
+            public bool SkipInstall = false;
             public string? ProjectName;
             public string? PlcName;
             public bool SyncFrameworkPackages;
@@ -1514,7 +1516,12 @@ namespace Twinpack.Core
         // that holds for modules too.
         IAutomationInterface ModuleAutomationInterface(Config moduleConfig)
         {
-            return _automationInterface == null ? null : new AutomationInterfaceHeadless(moduleConfig);
+            if (_automationInterface == null)
+                return null;
+
+            // A headless top level hands its installer to its modules, so they install exactly when it does.
+            return (_automationInterface as AutomationInterfaceHeadless)?.ForModule(moduleConfig)
+                ?? new AutomationInterfaceHeadless(moduleConfig);
         }
 
         public async Task SetPackageVersionAsync(string version, SetPackageVersionOptions options = default, CancellationToken cancellationToken = default)
@@ -1727,8 +1734,9 @@ namespace Twinpack.Core
                     }
 
                     var cache = new List<PackageItem>();
-                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesToAdd);
-                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false });
+                    var skipInstall = options?.SkipInstall == true;
+                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesToAdd, new AddPackageOptions { SkipInstall = skipInstall });
+                    await AddPackagesAsync(artifact.Config, automationInterface, _packageServers, cache, packagesWithFrameworkToAdd, new AddPackageOptions { SkipDownload = true, IncludeDependencies = false, SkipInstall = skipInstall });
                     if (automationInterface != null)
                         await automationInterface.SaveAllAsync();
                     ConfigFactory.Save(artifact.Config);

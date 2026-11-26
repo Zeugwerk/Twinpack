@@ -26,15 +26,35 @@ namespace Twinpack.Core
         protected Config _config;
         string _productLine;
 
+        readonly IPackageInstaller _installer;
+
         public AutomationInterfaceHeadless(Config config)
         {
             _config = config;
         }
 
+        /// <summary>
+        /// A headless interface that installs libraries with <paramref name="installer"/>. Without one it only
+        /// edits files, as the <see cref="AutomationInterfaceHeadless(Config)"/> constructor does.
+        /// </summary>
+        internal AutomationInterfaceHeadless(Config config, IPackageInstaller installer) : this(config)
+        {
+            _installer = installer;
+        }
+
+        /// <summary>
+        /// The interface for a module of this solution: headless too, and installing with the same installer,
+        /// so a module installs exactly when the top level does.
+        /// </summary>
+        internal AutomationInterfaceHeadless ForModule(Config moduleConfig)
+        {
+            return new AutomationInterfaceHeadless(moduleConfig, _installer);
+        }
+
         public override string SolutionProductLine => _productLine;
 
-        // Headless edits files only. Its InstallPackageAsync does not install, it just logs a warning.
-        public override bool CanInstallPackages => false;
+        // Headless edits files. It installs only with an installer; without one InstallPackageAsync just warns.
+        public override bool CanInstallPackages => _installer != null;
 
         /// <summary>
         /// <paramref name="requestedTcVersion"/> is the build's <c>--tcversion</c>.
@@ -453,7 +473,13 @@ namespace Twinpack.Core
 
         public override async System.Threading.Tasks.Task InstallPackageAsync(PackageItem package, string cachePath = null)
         {
-            _logger.Warn("[install] headless mode cannot install packages");
+            if (_installer == null)
+            {
+                _logger.Warn("[install] headless mode cannot install packages");
+                return;
+            }
+
+            await _installer.InstallPackageAsync(package, cachePath);
         }
 
         public override async Task<bool> UninstallPackageAsync(PackageItem package)
