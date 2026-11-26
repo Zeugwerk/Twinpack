@@ -44,13 +44,7 @@ namespace Twinpack.Commands
                 var sw = Stopwatch.StartNew();
                 TwinpackRunLog.LogBanner(_logger, "restore", "Download and install packages from config");
 
-                var restored = _twinpack.RestorePackagesAsync(
-                    new TwinpackService.RestorePackageOptions
-                    {
-                        SkipDownload = settings.SkipDownload,
-                        IncludeProvidedPackages = settings.IncludeProvidedPackages,
-                        ForceDownload = settings.ForceDownload
-                    }).GetAwaiter().GetResult();
+                var restored = _twinpack.RestorePackagesAsync(CreateOptions(settings)).GetAwaiter().GetResult();
 
                 _logger.Info("[restore] {0} package(s) affected", restored.Count);
                 TwinpackRunLog.LogPhaseDone(_logger, "restore", sw.Elapsed.TotalSeconds);
@@ -58,6 +52,15 @@ namespace Twinpack.Commands
             });
         }
 
-
+        internal static TwinpackService.RestorePackageOptions CreateOptions(Settings settings)
+        {
+            return new TwinpackService.RestorePackageOptions
+            {
+                SkipDownload = settings.SkipDownload,
+                SkipInstall = settings.SkipInstall,
+                IncludeProvidedPackages = settings.IncludeProvidedPackages,
+                ForceDownload = settings.ForceDownload
+            };
+        }
     }
 }
