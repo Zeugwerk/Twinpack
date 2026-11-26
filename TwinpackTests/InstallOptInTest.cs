@@ -16,7 +16,7 @@ using Twinpack.Protocol.Api;
 namespace TwinpackTests
 {
     /// <summary>
-    /// WP1.2: install intent is explicit. A headless interface installs only when a caller passes an
+    /// Install intent is explicit. A headless interface installs only when a caller passes an
     /// installer (opt-in), modules install exactly when their top level does, set-version honours
     /// SkipInstall, and restore passes --skip-install on.
     /// </summary>

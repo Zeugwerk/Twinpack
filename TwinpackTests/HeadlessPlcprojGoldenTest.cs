@@ -15,7 +15,7 @@ using Twinpack.Protocol.Api;
 namespace TwinpackTests
 {
     /// <summary>
-    /// WP0.4 golden-file tests for the .plcproj edits of <see cref="AutomationInterfaceHeadless"/>. Every
+    /// Golden-file tests for the .plcproj edits of <see cref="AutomationInterfaceHeadless"/>. Every
     /// scenario starts from one of the inputs in assets\HeadlessPlcproj (UTF-8 with BOM, CRLF, two-space
     /// indent, as TwinCAT writes it) and compares the result byte for byte with &lt;scenario&gt;.expected.plcproj.
     /// Input.plcproj is a typical project, Minimal.plcproj has no placeholder references and no

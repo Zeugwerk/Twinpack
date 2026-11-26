@@ -18,7 +18,7 @@ using Twinpack.Protocol.Api;
 namespace TwinpackTests
 {
     /// <summary>
-    /// WP0.4 characterization tests. They record which libraries <see cref="TwinpackService"/> hands to
+    /// Characterization tests. They record which libraries <see cref="TwinpackService"/> hands to
     /// <see cref="IAutomationInterface.InstallPackageAsync"/> today, for each package operation, automation
     /// interface and install option. They describe the current behaviour, not the desired one: a row that
     /// changes must be a deliberate decision, made in the commit that changes it.
@@ -260,11 +260,10 @@ namespace TwinpackTests
         }
 
         /// <summary>
-        /// Known bug, not expected behaviour: with no automation interface, set-version with
-        /// SyncFrameworkPackages calls <c>automationInterface.SaveAllAsync()</c> on null
-        /// (TwinpackService.cs:1713). zkmake reaches it with <c>set-version --skip-plc-update</c>.
-        /// The test expects the fixed behaviour and reports Inconclusive while the bug is present.
-        /// WP1.2 fixes it, and then this test passes without changes.
+        /// Regression test: with no automation interface, set-version with
+        /// SyncFrameworkPackages used to call <c>automationInterface.SaveAllAsync()</c> on null
+        /// after the framework sync. zkmake reaches this path with <c>set-version --skip-plc-update</c>.
+        /// It reports Inconclusive if the NullReferenceException comes back.
         /// </summary>
         [DataTestMethod]
         [DataRow(false, "1.6.0.29")]
@@ -282,8 +281,8 @@ namespace TwinpackTests
             catch (NullReferenceException ex)
             {
                 AssertInstalls("");
-                Assert.Inconclusive("Known bug (fixed in WP1.2): set-version with SyncFrameworkPackages and no automation interface " +
-                    "throws a NullReferenceException at TwinpackService.cs:1713. " + ex.Message);
+                Assert.Inconclusive("Regression: set-version with SyncFrameworkPackages and no automation interface " +
+                    "throws a NullReferenceException again. " + ex.Message);
             }
 
             AssertInstalls("");
